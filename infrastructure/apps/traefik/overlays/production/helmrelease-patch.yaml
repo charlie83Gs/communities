@@ -4,18 +4,18 @@ metadata:
   name: traefik
 spec:
   values:
-    # Production replica count
+    # Replica count - 1 for resource-constrained cluster
     deployment:
-      replicas: 2
+      replicas: 1
 
-    # Production resources
+    # Resources optimized for current cluster capacity
     resources:
       requests:
+        cpu: 200m
+        memory: 256Mi
+      limits:
         cpu: 500m
         memory: 512Mi
-      limits:
-        cpu: 1000m
-        memory: 1Gi
 
     # Production persistence
     persistence:
