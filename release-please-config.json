@@ -1,0 +1,21 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "packages": {
+    "api": {
+      "release-type": "node",
+      "package-name": "communities-api",
+      "changelog-path": "CHANGELOG.md",
+      "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": true
+    },
+    "frontend": {
+      "release-type": "node",
+      "package-name": "communities-frontend",
+      "changelog-path": "CHANGELOG.md",
+      "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": true
+    }
+  },
+  "separate-pull-requests": true,
+  "group-pull-request-title-pattern": "chore: release ${branch}"
+}
