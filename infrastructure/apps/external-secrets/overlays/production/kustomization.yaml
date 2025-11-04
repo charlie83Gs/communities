@@ -2,13 +2,8 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 # External Secrets - Production
-# No additional production-specific configuration needed
+# Installs External Secrets Operator only
+# ClusterSecretStore and generators are in individual apps
 
 resources:
   - ../../base
-
-  # ClusterSecretStore for password generation
-  - cluster-secret-store.yaml
-
-  # Password generator for database passwords
-  - secret-generator.yaml
