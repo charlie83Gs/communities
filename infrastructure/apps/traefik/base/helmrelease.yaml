@@ -25,18 +25,19 @@ spec:
       web:
         port: 8000
         exposedPort: 80
-        expose: true
+        expose:
+          default: true
       websecure:
         port: 8443
         exposedPort: 443
-        expose: true
-        # Enable TLS
+        expose:
+          default: true
         tls:
           enabled: true
-      # Traefik dashboard
       traefik:
         port: 9000
-        expose: false
+        expose:
+          default: false
 
     # Service configuration - ClusterIP (LoadBalancer managed separately in network/)
     service:
