@@ -8,9 +8,7 @@ resources:
   - deployment.yaml
   - postgres-openfga-cluster.yaml
   - cluster-secret-store.yaml
-  - secret-generator.yaml
-  - external-secret.yaml
-  - openfga-db-uri-secret.yaml
+  - secrets.yaml
 
 patches:
   - path: deployment-patch.yaml

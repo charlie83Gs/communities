@@ -8,8 +8,7 @@ kind: Kustomization
 resources:
   - ../../base
   - postgres-keycloak-cluster.yaml
-  - keycloak-db-password.yaml
-  - keycloak-admin-password.yaml
+  - secrets.yaml
 
 configMapGenerator:
   # Production realm configuration
