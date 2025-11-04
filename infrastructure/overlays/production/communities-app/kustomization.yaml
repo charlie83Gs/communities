@@ -3,5 +3,4 @@ kind: Kustomization
 resources:
   - postgres-api-cluster.yaml
   - postgres-keycloak-cluster.yaml
-  - postgres-openfga-cluster.yaml
   - secrets.yaml

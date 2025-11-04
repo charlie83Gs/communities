@@ -4,4 +4,4 @@ resources:
   - ../../base
   - cnpg
   # - keycloak
-  # - openfga
+  - openfga
