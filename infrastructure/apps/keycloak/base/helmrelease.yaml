@@ -133,6 +133,10 @@ spec:
       periodSeconds: 30
       failureThreshold: 3
 
+    # HTTP configuration for chart templating
+    http:
+      relativePath: "/"
+
     # Resources (can be overridden in overlays)
     resources:
       requests:
