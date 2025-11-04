@@ -4,21 +4,21 @@ metadata:
   name: openfga
 spec:
   values:
-    # Production replica count
-    replicaCount: 2
+    # Replica count - 1 for resource-constrained cluster
+    replicaCount: 1
 
     # Disable playground in production
     playground:
       enabled: false
 
-    # Production resources
+    # Resources optimized for current cluster capacity
     resources:
       requests:
+        cpu: 200m
+        memory: 256Mi
+      limits:
         cpu: 500m
         memory: 512Mi
-      limits:
-        cpu: 1000m
-        memory: 1Gi
 
     # Enable autoscaling in production
     autoscaling:
