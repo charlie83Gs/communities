@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Traefik Base
+# Ingress controller and reverse proxy for Kubernetes
+# Optimized for DigitalOcean LoadBalancer
+
+resources:
+  - namespace.yaml
+  - helmrepository.yaml
+  - helmrelease.yaml
+  - middleware.yaml
+
+namespace: traefik

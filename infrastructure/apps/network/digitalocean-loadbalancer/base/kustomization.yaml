@@ -1,0 +1,9 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# DigitalOcean LoadBalancer Configuration
+# Provides external access to the Traefik ingress controller
+# Configured with PROXY protocol and health checks
+
+resources:
+  - loadbalancer.yaml

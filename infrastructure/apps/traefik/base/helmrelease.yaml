@@ -1,0 +1,118 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: traefik
+spec:
+  interval: 30m
+  targetNamespace: traefik
+  chart:
+    spec:
+      chart: traefik
+      version: ">=30.0.0"
+      sourceRef:
+        kind: HelmRepository
+        name: traefik
+      interval: 12h
+  install:
+    createNamespace: true
+  values:
+    # Deployment configuration
+    deployment:
+      replicas: 1
+
+    # Ports configuration
+    ports:
+      web:
+        port: 8000
+        exposedPort: 80
+        expose: true
+      websecure:
+        port: 8443
+        exposedPort: 443
+        expose: true
+        # Enable TLS
+        tls:
+          enabled: true
+      # Traefik dashboard
+      traefik:
+        port: 9000
+        expose: false
+
+    # Service configuration - ClusterIP (LoadBalancer managed separately in network/)
+    service:
+      enabled: true
+      type: ClusterIP
+
+    # IngressRoute CRD
+    ingressRoute:
+      dashboard:
+        enabled: false
+
+    # Logs
+    logs:
+      general:
+        level: INFO
+      access:
+        enabled: true
+
+    # Enable ping endpoint for health checks
+    ping:
+      enabled: true
+
+    # Providers
+    providers:
+      kubernetesCRD:
+        enabled: true
+        allowCrossNamespace: true
+      kubernetesIngress:
+        enabled: true
+        publishedService:
+          enabled: true
+
+    # TLS configuration
+    tlsOptions:
+      default:
+        minVersion: VersionTLS12
+
+    # Let's Encrypt certificate resolver
+    certResolvers:
+      letsencrypt:
+        acme:
+          email: carlosgomezsoza@gmail.com
+          storage: /data/acme.json
+          caServer: https://acme-v02.api.letsencrypt.org/directory
+          httpChallenge:
+            entryPoint: web
+          tlsChallenge: true
+
+    # Persistence for Let's Encrypt certificates
+    persistence:
+      enabled: true
+      name: traefik-data
+      accessMode: ReadWriteOnce
+      size: 1Gi
+      path: /data
+
+    # Resources
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
+    # Enable PROXY protocol support
+    additionalArguments:
+      - "--entrypoints.web.proxyProtocol.trustedIPs=127.0.0.1/32,10.0.0.0/8"
+      - "--entrypoints.websecure.proxyProtocol.trustedIPs=127.0.0.1/32,10.0.0.0/8"
+      - "--entrypoints.web.forwardedHeaders.trustedIPs=127.0.0.1/32,10.0.0.0/8"
+      - "--entrypoints.websecure.forwardedHeaders.trustedIPs=127.0.0.1/32,10.0.0.0/8"
+
+    # Security context
+    securityContext:
+      capabilities:
+        drop: [ALL]
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+      runAsUser: 65532
