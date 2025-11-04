@@ -19,8 +19,6 @@ spec:
     initdb:
       database: keycloak
       owner: keycloak
-      secret:
-        name: postgres-keycloak-credentials
 
   storage:
     size: 10Gi

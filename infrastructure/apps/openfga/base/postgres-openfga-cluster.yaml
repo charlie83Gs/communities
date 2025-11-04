@@ -15,8 +15,6 @@ spec:
     initdb:
       database: openfga
       owner: openfga_user
-      secret:
-        name: postgres-openfga-credentials
 
   storage:
     size: 10Gi
