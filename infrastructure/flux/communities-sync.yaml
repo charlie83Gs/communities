@@ -1,0 +1,87 @@
+# External Secrets Operator - Must be installed first
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: communities-external-secrets
+  namespace: flux-system
+spec:
+  interval: 5m
+  sourceRef:
+    kind: GitRepository
+    name: communities
+  path: ./infrastructure/apps/external-secrets/overlays/production
+  prune: true
+  wait: true
+  timeout: 10m
+---
+# CNPG Operator - Can install in parallel with external-secrets
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: communities-cnpg
+  namespace: flux-system
+spec:
+  interval: 5m
+  sourceRef:
+    kind: GitRepository
+    name: communities
+  path: ./infrastructure/apps/cnpg/overlays/production
+  prune: true
+  wait: true
+  timeout: 10m
+---
+# PostgreSQL Clusters - Depends on CNPG and External Secrets
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: communities-app
+  namespace: flux-system
+spec:
+  interval: 5m
+  sourceRef:
+    kind: GitRepository
+    name: communities
+  path: ./infrastructure/apps/communities-app/communities-app
+  prune: true
+  wait: true
+  timeout: 15m
+  dependsOn:
+    - name: communities-cnpg
+    - name: communities-external-secrets
+---
+# Keycloak - Depends on PostgreSQL clusters
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: communities-keycloak
+  namespace: flux-system
+spec:
+  interval: 5m
+  sourceRef:
+    kind: GitRepository
+    name: communities
+  path: ./infrastructure/apps/keycloak/overlays/production
+  prune: true
+  wait: true
+  timeout: 15m
+  dependsOn:
+    - name: communities-app
+---
+# OpenFGA - Depends on PostgreSQL clusters and External Secrets
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: communities-openfga
+  namespace: flux-system
+spec:
+  interval: 5m
+  sourceRef:
+    kind: GitRepository
+    name: communities
+  path: ./infrastructure/apps/openfga/overlays/production
+  prune: true
+  wait: true
+  timeout: 15m
+  dependsOn:
+    - name: communities-app
+    - name: communities-external-secrets
