@@ -140,16 +140,6 @@ spec:
     postgresql:
       enabled: false
 
-    # Database configuration for dbchecker
-    database:
-      vendor: postgres
-      hostname: postgres-keycloak-rw
-      port: 5432
-      database: keycloak
-      username: keycloak
-      existingSecret: postgres-keycloak-app
-      existingSecretPasswordKey: password
-
-    # Database vendor
+    # Database vendor (disabled, using extraEnv instead)
     dbchecker:
-      enabled: true
+      enabled: false
