@@ -3,6 +3,6 @@ kind: Kustomization
 namespace: share-app
 resources:
   - ../../base
-  # - cnpg
+  - cnpg
   - keycloak
   # - openfga
