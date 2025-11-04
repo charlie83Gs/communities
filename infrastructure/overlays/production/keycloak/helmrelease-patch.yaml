@@ -1,0 +1,112 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: keycloak
+  namespace: flux-system
+spec:
+  values:
+    # Production settings
+    replicas: 3
+
+    # Production command (without start-dev)
+    command:
+      - "/opt/keycloak/bin/kc.sh"
+    args:
+      - "start"
+      - "--import-realm"
+      - "--health-enabled=true"
+      - "--metrics-enabled=true"
+      - "--optimized"
+
+    # Hostname configuration for production
+    extraEnv: |
+      # Admin Console
+      - name: KEYCLOAK_ADMIN
+        valueFrom:
+          secretKeyRef:
+            name: keycloak-admin
+            key: username
+      - name: KEYCLOAK_ADMIN_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: keycloak-admin
+            key: password
+
+      # Database
+      - name: KC_DB
+        value: postgres
+      - name: KC_DB_URL
+        valueFrom:
+          secretKeyRef:
+            name: keycloak-db
+            key: url
+      - name: KC_DB_USERNAME
+        valueFrom:
+          secretKeyRef:
+            name: keycloak-db
+            key: username
+      - name: KC_DB_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: keycloak-db
+            key: password
+
+      # Hostname (production - CHANGE THIS)
+      - name: KC_HOSTNAME
+        value: auth.yourdomain.com
+      - name: KC_HOSTNAME_STRICT
+        value: "true"
+      - name: KC_HOSTNAME_STRICT_HTTPS
+        value: "true"
+
+      # HTTP Settings
+      - name: KC_HTTP_ENABLED
+        value: "true"
+      - name: KC_HTTP_PORT
+        value: "8080"
+
+      # Proxy settings
+      - name: KC_PROXY
+        value: edge
+
+      # Features
+      - name: KC_FEATURES
+        value: persistent-user-sessions
+
+      # Logging
+      - name: KC_LOG_LEVEL
+        value: warn
+
+    # Ingress for production
+    ingress:
+      enabled: true
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-prod
+        nginx.ingress.kubernetes.io/backend-protocol: HTTP
+      ingressClassName: nginx
+      rules:
+        - host: auth.yourdomain.com  # CHANGE THIS
+          paths:
+            - path: /
+              pathType: Prefix
+      tls:
+        - hosts:
+            - auth.yourdomain.com  # CHANGE THIS
+          secretName: keycloak-tls
+
+    # Production resources
+    resources:
+      requests:
+        cpu: 1000m
+        memory: 1Gi
+      limits:
+        cpu: 2000m
+        memory: 2Gi
+
+    # Horizontal Pod Autoscaler
+    autoscaling:
+      enabled: true
+      minReplicas: 3
+      maxReplicas: 10
+      targetCPUUtilizationPercentage: 80
+      targetMemoryUtilizationPercentage: 80

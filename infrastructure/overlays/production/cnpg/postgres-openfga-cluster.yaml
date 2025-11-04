@@ -1,0 +1,49 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: postgres-openfga
+  namespace: share-app
+spec:
+  instances: 3
+
+  postgresql:
+    parameters:
+      max_connections: "100"
+      shared_buffers: "256MB"
+      effective_cache_size: "768MB"
+
+  bootstrap:
+    initdb:
+      database: openfga
+      owner: openfga_user
+      secret:
+        name: postgres-openfga-credentials
+
+  storage:
+    size: 20Gi
+    storageClass: fast-ssd
+
+  backup:
+    barmanObjectStore:
+      destinationPath: s3://backup-bucket/postgres-openfga
+      s3Credentials:
+        accessKeyId:
+          name: backup-credentials
+          key: ACCESS_KEY_ID
+        secretAccessKey:
+          name: backup-credentials
+          key: ACCESS_SECRET_KEY
+      wal:
+        compression: gzip
+    retentionPolicy: "30d"
+
+  monitoring:
+    enablePodMonitor: true
+
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "500m"
+    limits:
+      memory: "1Gi"
+      cpu: "1000m"

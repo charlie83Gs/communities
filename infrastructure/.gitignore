@@ -1,0 +1,17 @@
+# Ignore generated files
+*.tmp
+*.bak
+*.swp
+
+# Ignore local development secrets (if using overlays/local)
+overlays/local/
+
+# Ignore kubectl generated files
+.kube/
+kubeconfig*
+
+# Ignore Flux generated files
+.flux/
+
+# Ignore backup files
+*.backup

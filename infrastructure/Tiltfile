@@ -1,0 +1,256 @@
+# Share App Infrastructure Tiltfile
+#
+# This Tiltfile deploys the complete infrastructure stack locally for development and testing.
+# Components: CNPG operator, PostgreSQL clusters, Keycloak, OpenFGA
+
+load('ext://helm_remote', 'helm_remote')
+
+# Settings
+allow_k8s_contexts(['docker-desktop', 'kind-kind', 'minikube', 'k3d-local'])
+
+# Create namespace
+k8s_yaml(local('kubectl create namespace share-app --dry-run=client -o yaml'))
+
+print('🚀 Deploying Share App Infrastructure')
+
+# =============================================================================
+# 1. CNPG Operator (PostgreSQL Operator)
+# =============================================================================
+
+print('📦 Installing CNPG Operator...')
+
+helm_remote(
+    'cloudnative-pg',
+    repo_url='https://cloudnative-pg.github.io/charts',
+    namespace='flux-system',
+    version='0.22.0',
+    create_namespace=True,
+    set=[
+        'replicaCount=1',
+        'monitoring.enabled=false',
+    ]
+)
+
+k8s_resource(
+    'cloudnative-pg',
+    labels=['infrastructure', 'database'],
+    auto_init=True,
+    trigger_mode=TRIGGER_MODE_AUTO,
+)
+
+# =============================================================================
+# 2. PostgreSQL Clusters (via CNPG)
+# =============================================================================
+
+print('🐘 Creating PostgreSQL clusters...')
+
+# Apply PostgreSQL cluster secrets
+k8s_yaml(kustomize('overlays/development/cnpg'))
+
+# Resource configuration for PostgreSQL clusters
+k8s_resource(
+    new_name='postgres-api',
+    objects=['postgres-api:cluster'],
+    labels=['database'],
+    resource_deps=['cloudnative-pg'],
+    auto_init=True,
+    trigger_mode=TRIGGER_MODE_AUTO,
+)
+
+k8s_resource(
+    new_name='postgres-keycloak',
+    objects=['postgres-keycloak:cluster'],
+    labels=['database'],
+    resource_deps=['cloudnative-pg'],
+    auto_init=True,
+    trigger_mode=TRIGGER_MODE_AUTO,
+)
+
+k8s_resource(
+    new_name='postgres-openfga',
+    objects=['postgres-openfga:cluster'],
+    labels=['database'],
+    resource_deps=['cloudnative-pg'],
+    auto_init=True,
+    trigger_mode=TRIGGER_MODE_AUTO,
+)
+
+# =============================================================================
+# 3. Keycloak (Identity & Access Management)
+# =============================================================================
+
+print('🔐 Installing Keycloak...')
+
+# Apply Keycloak secrets and realm ConfigMap
+k8s_yaml([
+    'overlays/development/keycloak/secrets.yaml',
+    'base/keycloak/realm-configmap.yaml',
+])
+
+helm_remote(
+    'keycloakx',
+    repo_url='https://codecentric.github.io/helm-charts',
+    release_name='keycloak',
+    namespace='share-app',
+    version='7.1.4',
+    values=['./keycloak-tilt-values.yaml'],
+)
+
+k8s_resource(
+    'keycloak',
+    labels=['auth', 'services'],
+    resource_deps=['postgres-keycloak'],
+    port_forwards=['8081:8080'],
+    auto_init=True,
+    trigger_mode=TRIGGER_MODE_AUTO,
+    links=[
+        link('http://localhost:8081', 'Keycloak Admin Console'),
+    ],
+)
+
+# =============================================================================
+# 4. OpenFGA (Authorization)
+# =============================================================================
+
+print('🔒 Installing OpenFGA...')
+
+# Apply OpenFGA secrets and deployment
+k8s_yaml([
+    'overlays/development/openfga/secrets.yaml',
+    'base/openfga/deployment.yaml',
+])
+
+k8s_resource(
+    new_name='openfga-migrate',
+    objects=['openfga-migrate:job'],
+    labels=['auth', 'services'],
+    resource_deps=['postgres-openfga'],
+    auto_init=True,
+    trigger_mode=TRIGGER_MODE_AUTO,
+)
+
+k8s_resource(
+    'openfga',
+    labels=['auth', 'services'],
+    resource_deps=['openfga-migrate'],
+    port_forwards=[
+        '8080:8080',  # HTTP API
+        '8082:8081',  # gRPC
+        '3001:3001',  # Playground
+    ],
+    auto_init=True,
+    trigger_mode=TRIGGER_MODE_AUTO,
+    links=[
+        link('http://localhost:3001', 'OpenFGA Playground'),
+        link('http://localhost:8080/healthz', 'OpenFGA Health'),
+    ],
+)
+
+# =============================================================================
+# Local Resources for Management
+# =============================================================================
+
+# Check CNPG cluster status
+local_resource(
+    'cnpg-status',
+    cmd='kubectl get clusters.postgresql.cnpg.io -n share-app',
+    labels=['database', 'tools'],
+    auto_init=False,
+    trigger_mode=TRIGGER_MODE_MANUAL,
+    allow_parallel=True,
+)
+
+# Check all PostgreSQL services
+local_resource(
+    'postgres-services',
+    cmd='kubectl get svc -n share-app | grep postgres',
+    labels=['database', 'tools'],
+    auto_init=False,
+    trigger_mode=TRIGGER_MODE_MANUAL,
+    allow_parallel=True,
+)
+
+# View Keycloak logs
+local_resource(
+    'keycloak-logs',
+    serve_cmd='kubectl logs -n share-app -l app.kubernetes.io/name=keycloak -f',
+    labels=['auth', 'tools'],
+    auto_init=False,
+    trigger_mode=TRIGGER_MODE_MANUAL,
+    allow_parallel=True,
+)
+
+# View OpenFGA logs
+local_resource(
+    'openfga-logs',
+    serve_cmd='kubectl logs -n share-app -l app=openfga -f',
+    labels=['auth', 'tools'],
+    auto_init=False,
+    trigger_mode=TRIGGER_MODE_MANUAL,
+    allow_parallel=True,
+)
+
+# Check Keycloak realm import
+local_resource(
+    'keycloak-realm-check',
+    cmd='kubectl exec -n share-app deployment/keycloak -- /opt/keycloak/bin/kcadm.sh get realms --no-config --server http://localhost:8080 --realm master --user admin --password admin 2>/dev/null | grep share-app || echo "Realm not found - may still be initializing"',
+    labels=['auth', 'tools'],
+    auto_init=False,
+    trigger_mode=TRIGGER_MODE_MANUAL,
+    allow_parallel=True,
+)
+
+# Port-forward to PostgreSQL (API DB)
+local_resource(
+    'postgres-api-forward',
+    serve_cmd='kubectl port-forward -n share-app svc/postgres-api-rw 5432:5432',
+    labels=['database', 'tools'],
+    auto_init=False,
+    trigger_mode=TRIGGER_MODE_MANUAL,
+    allow_parallel=True,
+    links=[
+        link('postgresql://api_user:api_password@localhost:5432/api_db', 'PostgreSQL Connection'),
+    ],
+)
+
+# =============================================================================
+# Print Helpful Information
+# =============================================================================
+
+print('''
+================================================================================
+✨ Share App Infrastructure Deployed! ✨
+================================================================================
+
+🎯 Access Points:
+
+  Keycloak Admin Console:
+    URL:      http://localhost:8081
+    Username: admin
+    Password: admin
+    Realm:    share-app
+
+  OpenFGA Playground:
+    URL:      http://localhost:3001
+    API:      http://localhost:8080
+
+  PostgreSQL Databases:
+    Use 'postgres-api-forward' resource to connect:
+    postgresql://api_user:api_password@localhost:5432/api_db
+
+📊 Useful Tilt Resources:
+
+  - cnpg-status          Check PostgreSQL cluster health
+  - postgres-services    List all PostgreSQL services
+  - keycloak-logs        View Keycloak logs
+  - openfga-logs         View OpenFGA logs
+  - postgres-api-forward Port-forward to API database
+
+🔧 kubectl Commands:
+
+  Check clusters:    kubectl get clusters -n share-app
+  Check pods:        kubectl get pods -n share-app
+  All resources:     kubectl get all -n share-app
+
+================================================================================
+''')
