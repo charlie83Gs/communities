@@ -1,0 +1,156 @@
+### Variables
+@baseUrl = http://localhost:3000/api/v1
+# Replace with a valid Bearer token from auth.http
+@authToken = Bearer {{YOUR_TOKEN}}
+# Replace with actual community ID after creating a community
+@communityId = 11111111-1111-1111-1111-111111111111
+# Replace with actual trust level ID after creating one
+@levelId = 22222222-2222-2222-2222-222222222222
+
+# ========== TRUST LEVELS MANAGEMENT ==========
+
+### List all trust levels for a community (includes default levels)
+GET {{baseUrl}}/communities/{{communityId}}/trust-levels
+Authorization: {{authToken}}
+
+### Get a specific trust level by ID
+GET {{baseUrl}}/communities/{{communityId}}/trust-levels/{{levelId}}
+Authorization: {{authToken}}
+
+### Create a new trust level (admin only)
+POST {{baseUrl}}/communities/{{communityId}}/trust-levels
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "Expert",
+  "threshold": 100
+}
+
+### Create another trust level
+POST {{baseUrl}}/communities/{{communityId}}/trust-levels
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "Veteran",
+  "threshold": 200
+}
+
+### Update a trust level (admin only)
+PUT {{baseUrl}}/communities/{{communityId}}/trust-levels/{{levelId}}
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "Expert Updated",
+  "threshold": 120
+}
+
+### Update just the name
+PUT {{baseUrl}}/communities/{{communityId}}/trust-levels/{{levelId}}
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "Master"
+}
+
+### Update just the threshold
+PUT {{baseUrl}}/communities/{{communityId}}/trust-levels/{{levelId}}
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "threshold": 150
+}
+
+### Delete a trust level (admin only)
+DELETE {{baseUrl}}/communities/{{communityId}}/trust-levels/{{levelId}}
+Authorization: {{authToken}}
+
+### Resolve a trust level reference to numeric value
+GET {{baseUrl}}/communities/{{communityId}}/trust-levels/resolve/Stable
+Authorization: {{authToken}}
+
+### Resolve another trust level reference
+GET {{baseUrl}}/communities/{{communityId}}/trust-levels/resolve/Trusted
+Authorization: {{authToken}}
+
+### Resolve custom trust level reference
+GET {{baseUrl}}/communities/{{communityId}}/trust-levels/resolve/Expert
+Authorization: {{authToken}}
+
+# ========== ERROR CASES ==========
+
+### Try to create duplicate level name (should fail)
+POST {{baseUrl}}/communities/{{communityId}}/trust-levels
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "Stable",
+  "threshold": 25
+}
+
+### Try to create duplicate threshold (should fail)
+POST {{baseUrl}}/communities/{{communityId}}/trust-levels
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "Another Level",
+  "threshold": 10
+}
+
+### Try to create with negative threshold (should fail)
+POST {{baseUrl}}/communities/{{communityId}}/trust-levels
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "Invalid Level",
+  "threshold": -5
+}
+
+### Try to resolve non-existent level (should fail)
+GET {{baseUrl}}/communities/{{communityId}}/trust-levels/resolve/NonExistent
+Authorization: {{authToken}}
+
+### Try to create without authentication (should fail)
+POST {{baseUrl}}/communities/{{communityId}}/trust-levels
+Content-Type: application/json
+
+{
+  "name": "Unauthorized",
+  "threshold": 50
+}
+
+### Try to delete without admin permissions (should fail with non-admin token)
+DELETE {{baseUrl}}/communities/{{communityId}}/trust-levels/{{levelId}}
+
+# ========== USAGE NOTES ==========
+
+# Default Trust Levels:
+# When a community is created, three default trust levels are automatically created:
+# - "New": threshold 0
+# - "Stable": threshold 10
+# - "Trusted": threshold 50
+#
+# Trust Requirements in Community Config:
+# Communities can reference trust levels in their configuration using:
+# {"type": "level", "value": "Stable"} - references the "Stable" trust level
+# {"type": "number", "value": 15} - direct numeric threshold
+#
+# The resolve endpoint helps convert level names to numeric thresholds.
+#
+# Permission Checks:
+# - GET endpoints require community membership (any role)
+# - POST, PUT, DELETE require admin role in the community
+#
+# Constraints:
+# - Each community can have multiple trust levels
+# - Level names must be unique within a community
+# - Thresholds must be unique within a community
+# - Thresholds must be non-negative integers
+# - Deleting a level that is referenced in community config may cause issues

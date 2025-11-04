@@ -1,0 +1,33 @@
+### Variables
+@baseUrl = http://localhost:3000/api/v1
+@authToken = Bearer REPLACE_WITH_YOUR_ACCESS_TOKEN
+@filename = REPLACE_WITH_UPLOADED_FILENAME.webp
+
+### Upload Image - Success (requires auth)
+# Note: Replace the file path below with a real local image path in your repo/machine.
+# Example: < ./api/tests/http/assets/sample.png (create this file if it doesn't exist)
+POST {{baseUrl}}/images
+Authorization: {{authToken}}
+Content-Type: multipart/form-data; boundary=boundary123
+
+--boundary123
+Content-Disposition: form-data; name="image"; filename="sample.png"
+Content-Type: image/png
+
+< ./api/tests/http/assets/sample.png
+--boundary123--
+
+### Upload Image - Missing file (requires auth)
+POST {{baseUrl}}/images
+Authorization: {{authToken}}
+Content-Type: multipart/form-data; boundary=boundary123
+
+--boundary123--
+
+### Get Image - Auth required
+# Replace the filename variable with the value returned from the upload response (data.filename)
+GET {{baseUrl}}/images/{{filename}}
+Authorization: {{authToken}}
+
+### Get Image - Unauthorized
+GET {{baseUrl}}/images/{{filename}}

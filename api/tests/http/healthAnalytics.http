@@ -1,0 +1,210 @@
+### Variables
+@baseUrl = http://localhost:3000/api/v1
+@authToken = Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
+@communityId = 123e4567-e89b-12d3-a456-426614174000
+
+### ==============================================
+### WEALTH ANALYTICS
+### ==============================================
+
+### Get Wealth Overview - Default (30 days)
+GET {{baseUrl}}/communities/{{communityId}}/health/wealth/overview
+Authorization: {{authToken}}
+
+### Get Wealth Overview - 7 Days
+GET {{baseUrl}}/communities/{{communityId}}/health/wealth/overview?timeRange=7d
+Authorization: {{authToken}}
+
+### Get Wealth Overview - 90 Days
+GET {{baseUrl}}/communities/{{communityId}}/health/wealth/overview?timeRange=90d
+Authorization: {{authToken}}
+
+### Get Wealth Overview - 1 Year
+GET {{baseUrl}}/communities/{{communityId}}/health/wealth/overview?timeRange=1y
+Authorization: {{authToken}}
+
+### Get Wealth Overview - Unauthorized (no token)
+GET {{baseUrl}}/communities/{{communityId}}/health/wealth/overview
+
+### Get Wealth Overview - Non-existent Community
+GET {{baseUrl}}/communities/00000000-0000-0000-0000-000000000000/health/wealth/overview
+Authorization: {{authToken}}
+
+### Get Wealth Items - Default (30 days)
+GET {{baseUrl}}/communities/{{communityId}}/health/wealth/items
+Authorization: {{authToken}}
+
+### Get Wealth Items - 7 Days
+GET {{baseUrl}}/communities/{{communityId}}/health/wealth/items?timeRange=7d
+Authorization: {{authToken}}
+
+### Get Wealth Items - 90 Days
+GET {{baseUrl}}/communities/{{communityId}}/health/wealth/items?timeRange=90d
+Authorization: {{authToken}}
+
+### Get Wealth Items - 1 Year
+GET {{baseUrl}}/communities/{{communityId}}/health/wealth/items?timeRange=1y
+Authorization: {{authToken}}
+
+### Get Wealth Items - Unauthorized (no token)
+GET {{baseUrl}}/communities/{{communityId}}/health/wealth/items
+
+### ==============================================
+### TRUST ANALYTICS
+### ==============================================
+
+### Get Trust Overview - Default (30 days)
+GET {{baseUrl}}/communities/{{communityId}}/health/trust/overview
+Authorization: {{authToken}}
+
+### Get Trust Overview - 7 Days
+GET {{baseUrl}}/communities/{{communityId}}/health/trust/overview?timeRange=7d
+Authorization: {{authToken}}
+
+### Get Trust Overview - 90 Days
+GET {{baseUrl}}/communities/{{communityId}}/health/trust/overview?timeRange=90d
+Authorization: {{authToken}}
+
+### Get Trust Overview - 1 Year
+GET {{baseUrl}}/communities/{{communityId}}/health/trust/overview?timeRange=1y
+Authorization: {{authToken}}
+
+### Get Trust Overview - Unauthorized (no token)
+GET {{baseUrl}}/communities/{{communityId}}/health/trust/overview
+
+### Get Trust Distribution
+GET {{baseUrl}}/communities/{{communityId}}/health/trust/distribution
+Authorization: {{authToken}}
+
+### Get Trust Distribution - Unauthorized (no token)
+GET {{baseUrl}}/communities/{{communityId}}/health/trust/distribution
+
+### Get Trust Distribution - Non-existent Community
+GET {{baseUrl}}/communities/00000000-0000-0000-0000-000000000000/health/trust/distribution
+Authorization: {{authToken}}
+
+### ==============================================
+### AUTHORIZATION TESTS
+### ==============================================
+
+### Test Insufficient Trust (requires trust >= 20 or admin)
+# This will return 403 if user has trust < 20 and is not admin
+GET {{baseUrl}}/communities/{{communityId}}/health/wealth/overview
+Authorization: {{authToken}}
+
+### Test Admin Access (should work regardless of trust score)
+# Admin users should have access to all analytics
+GET {{baseUrl}}/communities/{{communityId}}/health/trust/overview
+Authorization: {{authToken}}
+
+### ==============================================
+### EXPECTED RESPONSES
+### ==============================================
+
+# Wealth Overview Response Example:
+# {
+#   "status": "success",
+#   "data": {
+#     "openShares": 5,
+#     "totalShares": 20,
+#     "activeCategories": 8,
+#     "timeSeriesData": [
+#       {
+#         "date": "2025-11-01",
+#         "shares": 2,
+#         "requests": 5,
+#         "fulfilled": 3
+#       },
+#       ...
+#     ]
+#   }
+# }
+
+# Wealth Items Response Example:
+# {
+#   "status": "success",
+#   "data": {
+#     "items": [
+#       {
+#         "categoryName": "Objects",
+#         "subcategoryName": "Physical Items",
+#         "itemName": "Carrots",
+#         "shareCount": 10,
+#         "valuePoints": 10.00,
+#         "trend": [
+#           {
+#             "date": "2025-11-01",
+#             "count": 2
+#           },
+#           ...
+#         ]
+#       },
+#       ...
+#     ]
+#   }
+# }
+
+# Trust Overview Response Example:
+# {
+#   "status": "success",
+#   "data": {
+#     "totalTrust": 150,
+#     "averageTrust": 18.75,
+#     "trustPerDay": 5.00,
+#     "timeSeriesData": [
+#       {
+#         "date": "2025-11-01",
+#         "trustAwarded": 10,
+#         "trustRemoved": 2,
+#         "netTrust": 8
+#       },
+#       ...
+#     ]
+#   }
+# }
+
+# Trust Distribution Response Example:
+# {
+#   "status": "success",
+#   "data": {
+#     "distribution": [
+#       {
+#         "trustLevel": "New",
+#         "minScore": 0,
+#         "maxScore": 9,
+#         "userCount": 5
+#       },
+#       {
+#         "trustLevel": "Stable",
+#         "minScore": 10,
+#         "maxScore": 49,
+#         "userCount": 12
+#       },
+#       {
+#         "trustLevel": "Trusted",
+#         "minScore": 50,
+#         "maxScore": 999999,
+#         "userCount": 3
+#       }
+#     ]
+#   }
+# }
+
+# Error Response Examples:
+# 401 Unauthorized:
+# {
+#   "status": "error",
+#   "message": "Unauthorized"
+# }
+
+# 403 Forbidden:
+# {
+#   "status": "error",
+#   "message": "Forbidden: requires trust score of 20 or admin role"
+# }
+
+# 404 Not Found:
+# {
+#   "status": "error",
+#   "message": "Community not found"
+# }

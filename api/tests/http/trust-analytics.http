@@ -1,0 +1,144 @@
+### Variables
+@baseUrl = http://localhost:3000
+@authToken = YOUR_JWT_TOKEN_HERE
+
+### ========================================
+### Trust Analytics Endpoints
+### ========================================
+
+### Get Trust Timeline - All Communities
+GET {{baseUrl}}/api/v1/users/me/trust/timeline
+Authorization: Bearer {{authToken}}
+
+###
+
+### Get Trust Timeline - Filter by Community
+GET {{baseUrl}}/api/v1/users/me/trust/timeline?communityId=123e4567-e89b-12d3-a456-426614174000
+Authorization: Bearer {{authToken}}
+
+###
+
+### Get Trust Timeline - Filter by Date Range
+GET {{baseUrl}}/api/v1/users/me/trust/timeline?startDate=2024-01-01T00:00:00Z&endDate=2024-12-31T23:59:59Z
+Authorization: Bearer {{authToken}}
+
+###
+
+### Get Trust Timeline - Filter by Community and Date Range
+GET {{baseUrl}}/api/v1/users/me/trust/timeline?communityId=123e4567-e89b-12d3-a456-426614174000&startDate=2024-10-01T00:00:00Z&endDate=2024-10-31T23:59:59Z
+Authorization: Bearer {{authToken}}
+
+###
+
+### Get Trust Timeline - Invalid Date Range (Should Fail)
+GET {{baseUrl}}/api/v1/users/me/trust/timeline?startDate=2024-12-31T23:59:59Z&endDate=2024-01-01T00:00:00Z
+Authorization: Bearer {{authToken}}
+
+###
+
+### Get Trust Timeline - Invalid UUID (Should Fail)
+GET {{baseUrl}}/api/v1/users/me/trust/timeline?communityId=invalid-uuid
+Authorization: Bearer {{authToken}}
+
+###
+
+### Get Trust Timeline - Invalid Date Format (Should Fail)
+GET {{baseUrl}}/api/v1/users/me/trust/timeline?startDate=2024-01-01
+Authorization: Bearer {{authToken}}
+
+###
+
+### Get Trust Timeline - No Auth (Should Fail with 401)
+GET {{baseUrl}}/api/v1/users/me/trust/timeline
+
+###
+
+### ========================================
+### Trust Summary Endpoints
+### ========================================
+
+### Get Trust Summary - All Communities
+GET {{baseUrl}}/api/v1/users/me/trust/summary
+Authorization: Bearer {{authToken}}
+
+###
+
+### Get Trust Summary - Filter by Community
+GET {{baseUrl}}/api/v1/users/me/trust/summary?communityId=123e4567-e89b-12d3-a456-426614174000
+Authorization: Bearer {{authToken}}
+
+###
+
+### Get Trust Summary - Invalid UUID (Should Fail)
+GET {{baseUrl}}/api/v1/users/me/trust/summary?communityId=invalid-uuid
+Authorization: Bearer {{authToken}}
+
+###
+
+### Get Trust Summary - No Auth (Should Fail with 401)
+GET {{baseUrl}}/api/v1/users/me/trust/summary
+
+###
+
+### ========================================
+### Example Response Formats
+### ========================================
+
+### Trust Timeline Response Example:
+# {
+#   "status": "success",
+#   "data": [
+#     {
+#       "timestamp": "2024-10-15T14:30:00Z",
+#       "type": "award",
+#       "fromUserId": "user-uuid-123",
+#       "fromUserDisplayName": "John Doe",
+#       "amount": 1,
+#       "cumulativeTrust": 15,
+#       "communityId": "community-uuid-456",
+#       "communityName": "Tech Community"
+#     },
+#     {
+#       "timestamp": "2024-10-14T10:00:00Z",
+#       "type": "admin_grant",
+#       "fromUserId": "admin-uuid-789",
+#       "fromUserDisplayName": "Admin User",
+#       "amount": 10,
+#       "cumulativeTrust": 14,
+#       "communityId": "community-uuid-456",
+#       "communityName": "Tech Community"
+#     },
+#     {
+#       "timestamp": "2024-10-10T08:15:00Z",
+#       "type": "remove",
+#       "fromUserId": "user-uuid-999",
+#       "fromUserDisplayName": "Jane Smith",
+#       "amount": -1,
+#       "cumulativeTrust": 4,
+#       "communityId": "community-uuid-456",
+#       "communityName": "Tech Community"
+#     }
+#   ]
+# }
+
+### Trust Summary Response Example:
+# {
+#   "status": "success",
+#   "data": {
+#     "totalTrustPoints": 42,
+#     "totalAwardsReceived": 35,
+#     "totalAwardsRemoved": 3,
+#     "trustByCommunity": [
+#       {
+#         "communityId": "community-uuid-456",
+#         "communityName": "Tech Community",
+#         "trustPoints": 25
+#       },
+#       {
+#         "communityId": "community-uuid-789",
+#         "communityName": "Garden Community",
+#         "trustPoints": 17
+#       }
+#     ]
+#   }
+# }

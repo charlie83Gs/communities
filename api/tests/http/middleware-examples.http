@@ -1,0 +1,301 @@
+# Middleware Test Examples
+#
+# This file contains HTTP request examples for testing middleware functionality.
+# Use with REST Client extension in VS Code or similar HTTP client.
+#
+# Prerequisites:
+# 1. Start the API server: cd api && bun dev
+# 2. Create a test user and get auth token
+# 3. Replace @authToken with your actual token
+# 4. Replace community/wealth IDs with actual IDs from your database
+
+### Variables
+@baseUrl = http://localhost:3000/api/v1
+@authToken = Bearer YOUR_TOKEN_HERE
+@communityId = YOUR_COMMUNITY_ID
+@wealthId = YOUR_WEALTH_ID
+
+### ============================================================================
+### Authorization Middleware Tests
+### ============================================================================
+
+### Test 1: requireAdmin - Update Community Settings (Success)
+# Expected: 200 OK (if user is admin)
+# Expected: 403 Forbidden (if user is not admin)
+PUT {{baseUrl}}/communities/{{communityId}}
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "Updated Community Name",
+  "description": "Updated by admin"
+}
+
+### Test 2: requireRole (member) - List Community Wealth (Success)
+# Expected: 200 OK (if user is member or admin)
+# Expected: 403 Forbidden (if user is not a member)
+GET {{baseUrl}}/communities/{{communityId}}/wealth
+Authorization: {{authToken}}
+
+### Test 3: requireRole (admin) - Delete Community (Success/Forbidden)
+# Expected: 200 OK (if user is admin)
+# Expected: 403 Forbidden (if user is not admin)
+DELETE {{baseUrl}}/communities/{{communityId}}
+Authorization: {{authToken}}
+
+### Test 4: requireOwnership - Update Own Wealth (Success)
+# Expected: 200 OK (if user owns the wealth)
+# Expected: 403 Forbidden (if user doesn't own the wealth)
+PUT {{baseUrl}}/wealth/{{wealthId}}
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "Updated Wealth Item",
+  "description": "Updated by owner"
+}
+
+### Test 5: No Auth Token - Should Return 401
+# Expected: 401 Unauthorized
+GET {{baseUrl}}/communities/{{communityId}}/wealth
+
+### Test 6: Invalid Community ID - Should Return 403
+# Expected: 403 Forbidden (user is not a member of non-existent community)
+GET {{baseUrl}}/communities/00000000-0000-0000-0000-000000000000/wealth
+Authorization: {{authToken}}
+
+### ============================================================================
+### Trust Middleware Tests
+### ============================================================================
+
+### Test 7: requireTrust - Award Trust (Success/Forbidden based on trust score)
+# Expected: 201 Created (if user has >= minTrustToAwardTrust points OR is admin)
+# Expected: 403 Forbidden (if user has < minTrustToAwardTrust points)
+POST {{baseUrl}}/communities/{{communityId}}/trust/awards/TARGET_USER_ID
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "message": "You're a trusted member!"
+}
+
+### Test 8: requireTrust - Access Wealth (Success/Forbidden based on trust)
+# Expected: 200 OK (if user has >= minTrustForWealth points)
+# Expected: 403 Forbidden (if user has < minTrustForWealth points)
+GET {{baseUrl}}/communities/{{communityId}}/wealth
+Authorization: {{authToken}}
+
+### Test 9: requireWealthTrust - Request Trust-Capped Wealth
+# Expected: 201 Created (if user has sufficient trust for this specific wealth item)
+# Expected: 403 Forbidden (if user doesn't meet wealth's minTrustRequired)
+POST {{baseUrl}}/wealth/{{wealthId}}/request
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "message": "I would like to request this item"
+}
+
+### Test 10: requireTrust - Admin Exempt from Trust Requirement
+# Expected: 201 Created (admin can award trust regardless of their trust score)
+POST {{baseUrl}}/communities/{{communityId}}/trust/awards/TARGET_USER_ID
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "message": "Admin awarding trust"
+}
+
+### ============================================================================
+### Combined Middleware Tests
+### ============================================================================
+
+### Test 11: requireRole + requireTrust - Create Wealth
+# Expected: 201 Created (if user is member AND has sufficient trust)
+# Expected: 403 Forbidden (if user is not member OR lacks trust)
+POST {{baseUrl}}/communities/{{communityId}}/wealth
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "Test Wealth Item",
+  "description": "Testing combined middleware",
+  "type": "offer",
+  "status": "active"
+}
+
+### Test 12: requireRole + requireTrust + requireOwnership - Update Wealth
+# Expected: 200 OK (if user is member AND has trust AND owns the wealth)
+# Expected: 403 Forbidden (missing any requirement)
+PUT {{baseUrl}}/wealth/{{wealthId}}
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "description": "Updated with all checks passing"
+}
+
+### ============================================================================
+### Error Response Tests
+### ============================================================================
+
+### Test 13: Missing Session - Should Return 401
+# Expected: 401 Unauthorized
+GET {{baseUrl}}/communities/{{communityId}}/wealth
+
+### Test 14: Not a Member - Should Return 403
+# Expected: 403 Forbidden with "not a member" message
+GET {{baseUrl}}/communities/DIFFERENT_COMMUNITY_ID/wealth
+Authorization: {{authToken}}
+
+### Test 15: Insufficient Trust - Should Return 403 with Trust Message
+# Expected: 403 Forbidden with "You need X trust points (you have Y)"
+# Note: Only works if you have a user with insufficient trust
+POST {{baseUrl}}/communities/{{communityId}}/trust/awards/TARGET_USER_ID
+Authorization: {{authToken}}
+
+### Test 16: Not Resource Owner - Should Return 403
+# Expected: 403 Forbidden with "Only the owner" message
+# Note: Use a wealth ID you don't own
+PUT {{baseUrl}}/wealth/SOMEONE_ELSES_WEALTH_ID
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "description": "Trying to update someone else's wealth"
+}
+
+### ============================================================================
+### Edge Cases
+### ============================================================================
+
+### Test 17: Self-Access - User Can Remove Themselves
+# Expected: 200 OK (user can remove themselves even if not admin)
+DELETE {{baseUrl}}/communities/{{communityId}}/members/YOUR_USER_ID
+Authorization: {{authToken}}
+
+### Test 18: Community ID in Body (instead of params)
+# Expected: 200 OK (middleware can read communityId from body)
+POST {{baseUrl}}/search/communities
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "communityId": "{{communityId}}",
+  "query": "test"
+}
+
+### Test 19: Custom Threshold - Fixed Trust Requirement
+# Expected: 201 Created (if custom threshold is met)
+# Note: This would be for a route with customThreshold option
+POST {{baseUrl}}/communities/{{communityId}}/special-action
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "data": "test"
+}
+
+### ============================================================================
+### User Permission Tests (Future Features)
+### ============================================================================
+
+### Test 20: requireUserPermission - Create Poll (if in pollCreatorUsers list)
+# Expected: 201 Created (if user is in pollCreatorUsers list)
+# Expected: 403 Forbidden (if user is not in list)
+# Note: This endpoint may not exist yet
+POST {{baseUrl}}/communities/{{communityId}}/polls
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "question": "Should we implement this feature?",
+  "options": ["Yes", "No", "Maybe"]
+}
+
+### Test 21: requireTrustOrUserPermission - Create Poll (trust OR permission)
+# Expected: 201 Created (if user has minTrustForPolls OR is in pollCreatorUsers)
+# Expected: 403 Forbidden (if neither condition is met)
+POST {{baseUrl}}/communities/{{communityId}}/polls
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "question": "Another poll question",
+  "options": ["Option A", "Option B"]
+}
+
+### ============================================================================
+### Helper Functions Tests
+### ============================================================================
+
+### Test 22: requireAdmin() helper
+# Expected: 200 OK (if admin)
+# Expected: 403 Forbidden (if not admin)
+PUT {{baseUrl}}/communities/{{communityId}}/settings
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "minTrustToAwardTrust": 20
+}
+
+### Test 23: requireMember() helper
+# Expected: 200 OK (if any role: admin, member, or reader)
+# Expected: 403 Forbidden (if not a member)
+GET {{baseUrl}}/communities/{{communityId}}/info
+Authorization: {{authToken}}
+
+### ============================================================================
+### Performance Tests
+### ============================================================================
+
+### Test 24: Multiple Middleware Checks - Measure Response Time
+# This tests the performance impact of stacking multiple middleware
+# Expected: Response should still be reasonably fast (<200ms)
+POST {{baseUrl}}/communities/{{communityId}}/wealth
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "Performance Test Wealth",
+  "type": "offer",
+  "status": "active"
+}
+
+### ============================================================================
+### Notes
+### ============================================================================
+#
+# Test Scenarios to Verify:
+#
+# 1. Authorization Middleware:
+#    - ✓ Admin can access admin-only routes
+#    - ✓ Non-admin cannot access admin-only routes
+#    - ✓ Members can access member routes
+#    - ✓ Non-members cannot access member routes
+#    - ✓ Resource owners can modify their resources
+#    - ✓ Non-owners cannot modify others' resources
+#    - ✓ Self-access works when enabled
+#
+# 2. Trust Middleware:
+#    - ✓ Users with sufficient trust can perform actions
+#    - ✓ Users with insufficient trust are rejected
+#    - ✓ Admins are exempted when exemptAdmins=true
+#    - ✓ Admins are not exempted when exemptAdmins=false
+#    - ✓ Custom thresholds work
+#    - ✓ Config-based thresholds work
+#    - ✓ Wealth-specific trust requirements work
+#
+# 3. Combined Middleware:
+#    - ✓ Multiple middleware can be stacked
+#    - ✓ All checks must pass for access
+#    - ✓ Request context is properly attached
+#
+# 4. Error Handling:
+#    - ✓ 401 for missing auth
+#    - ✓ 403 for insufficient permissions
+#    - ✓ 403 for insufficient trust with detailed message
+#    - ✓ 404 for non-existent resources
+#    - ✓ 400 for missing required parameters
+#

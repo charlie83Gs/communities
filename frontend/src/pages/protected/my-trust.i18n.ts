@@ -1,0 +1,107 @@
+export const myTrustDict = {
+  en: {
+    myTrust: {
+      title: 'My Trust Timeline',
+      subtitle: 'Track your trust journey across communities',
+      filterLabel: 'Filter by Community',
+      allCommunities: 'All Communities',
+      loading: 'Loading trust data...',
+      error: 'Failed to load trust data',
+      noData: 'No trust events yet',
+      noDataDescription: 'Your trust timeline will appear here as you receive trust from community members.',
+
+      // Summary Card
+      summaryTitle: 'Trust Summary',
+      totalTrust: 'Total Trust Points',
+      awardsReceived: 'Awards Received',
+      awardsRemoved: 'Awards Removed',
+      byCommunity: 'By Community',
+
+      // Timeline Graph
+      graphTitle: 'Trust Over Time',
+      trustPoints: 'Trust Points',
+
+      // Events List
+      eventsTitle: 'Trust Events',
+      eventAwarded: 'awarded you trust',
+      eventRemoved: 'removed trust',
+      eventAdminGrant: 'Admin granted trust',
+      points: 'points',
+      totalPoints: 'Total',
+      justNow: 'just now',
+      minutesAgo: '{count} minutes ago',
+      hoursAgo: '{count} hours ago',
+      daysAgo: '{count} days ago',
+      monthsAgo: '{count} months ago',
+      yearsAgo: '{count} years ago',
+    },
+  },
+  es: {
+    myTrust: {
+      title: 'Mi Línea de Tiempo de Confianza',
+      subtitle: 'Rastrea tu viaje de confianza a través de las comunidades',
+      filterLabel: 'Filtrar por Comunidad',
+      allCommunities: 'Todas las Comunidades',
+      loading: 'Cargando datos de confianza...',
+      error: 'Error al cargar datos de confianza',
+      noData: 'Aún no hay eventos de confianza',
+      noDataDescription: 'Tu línea de tiempo de confianza aparecerá aquí cuando recibas confianza de miembros de la comunidad.',
+
+      summaryTitle: 'Resumen de Confianza',
+      totalTrust: 'Puntos Totales de Confianza',
+      awardsReceived: 'Premios Recibidos',
+      awardsRemoved: 'Premios Removidos',
+      byCommunity: 'Por Comunidad',
+
+      graphTitle: 'Confianza a lo Largo del Tiempo',
+      trustPoints: 'Puntos de Confianza',
+
+      eventsTitle: 'Eventos de Confianza',
+      eventAwarded: 'te otorgó confianza',
+      eventRemoved: 'removió confianza',
+      eventAdminGrant: 'Admin otorgó confianza',
+      points: 'puntos',
+      totalPoints: 'Total',
+      justNow: 'ahora mismo',
+      minutesAgo: 'hace {count} minutos',
+      hoursAgo: 'hace {count} horas',
+      daysAgo: 'hace {count} días',
+      monthsAgo: 'hace {count} meses',
+      yearsAgo: 'hace {count} años',
+    },
+  },
+  hi: {
+    myTrust: {
+      title: 'मेरा विश्वास समयरेखा',
+      subtitle: 'समुदायों में अपनी विश्वास यात्रा को ट्रैक करें',
+      filterLabel: 'समुदाय द्वारा फ़िल्टर करें',
+      allCommunities: 'सभी समुदाय',
+      loading: 'विश्वास डेटा लोड हो रहा है...',
+      error: 'विश्वास डेटा लोड करने में विफल',
+      noData: 'अभी तक कोई विश्वास घटना नहीं',
+      noDataDescription: 'जब आपको समुदाय के सदस्यों से विश्वास मिलेगा तो आपकी विश्वास समयरेखा यहां दिखाई देगी।',
+
+      summaryTitle: 'विश्वास सारांश',
+      totalTrust: 'कुल विश्वास अंक',
+      awardsReceived: 'प्राप्त पुरस्कार',
+      awardsRemoved: 'हटाए गए पुरस्कार',
+      byCommunity: 'समुदाय द्वारा',
+
+      graphTitle: 'समय के साथ विश्वास',
+      trustPoints: 'विश्वास अंक',
+
+      eventsTitle: 'विश्वास घटनाएं',
+      eventAwarded: 'ने आपको विश्वास दिया',
+      eventRemoved: 'ने विश्वास हटाया',
+      eventAdminGrant: 'व्यवस्थापक ने विश्वास दिया',
+      points: 'अंक',
+      totalPoints: 'कुल',
+      justNow: 'अभी',
+      minutesAgo: '{count} मिनट पहले',
+      hoursAgo: '{count} घंटे पहले',
+      daysAgo: '{count} दिन पहले',
+      monthsAgo: '{count} महीने पहले',
+      yearsAgo: '{count} साल पहले',
+    },
+  },
+} as const;

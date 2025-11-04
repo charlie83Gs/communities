@@ -1,0 +1,33 @@
+@baseUrl = http://localhost:3000/api/v1
+@auth = Bearer {{YOUR_SESSION_ACCESS_TOKEN}}
+@communityId = {{YOUR_COMMUNITY_ID}}
+@userId = {{YOUR_USER_ID}}
+
+###
+# Test: Verify that getMembers returns correct roles
+# Expected: User should have only their actual assigned role (e.g., ["member"])
+# NOT: ["admin", "member", "reader"] or multiple roles unless explicitly assigned
+GET {{baseUrl}}/communities/{{communityId}}/members
+Authorization: {{auth}}
+
+###
+# Test: Verify that getMemberById returns correct roles (should match getMembers)
+# Expected: Same roles as returned by the list endpoint
+GET {{baseUrl}}/communities/{{communityId}}/members/{{userId}}
+Authorization: {{auth}}
+
+###
+# Expected Response Format:
+# For a member with only "member" role:
+# {
+#   "status": "success",
+#   "data": [
+#     {
+#       "userId": "...",
+#       "roles": ["member"],  // <-- Should be only their actual role
+#       "displayName": "...",
+#       "email": "...",
+#       "profileImage": null
+#     }
+#   ]
+# }

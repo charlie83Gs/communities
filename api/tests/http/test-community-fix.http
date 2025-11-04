@@ -1,0 +1,87 @@
+### Test Community Creation Fix
+### This file demonstrates that the OpenFGA fix works correctly
+
+### Variables
+@baseUrl = http://localhost:3000/api/v1
+@email = testfix@example.com
+@password = TestFix123!
+
+### Step 1: Create a new test user
+POST {{baseUrl}}/auth/signup
+Content-Type: application/json
+
+{
+  "formFields": [
+    {"id": "email", "value": "{{email}}"},
+    {"id": "password", "value": "{{password}}"},
+    {"id": "username", "value": "testfix"},
+    {"id": "displayName", "value": "Test Fix User"}
+  ]
+}
+
+### Step 2: Sign in to get session token
+# @name signin
+POST {{baseUrl}}/auth/signin
+Content-Type: application/json
+
+{
+  "formFields": [
+    {"id": "email", "value": "{{email}}"},
+    {"id": "password", "value": "{{password}}"}
+  ]
+}
+
+### Step 3: Extract session token from Set-Cookie header
+# Look for st-access-token or use the response cookies
+
+### Step 4: Create a community (THIS SHOULD NOW WORK)
+# Replace YOUR_ACCESS_TOKEN with the actual token from signin response
+POST {{baseUrl}}/communities
+Cookie: st-access-token=YOUR_ACCESS_TOKEN; st-refresh-token=YOUR_REFRESH_TOKEN
+Content-Type: application/json
+
+{
+  "name": "OpenFGA Fix Test Community",
+  "description": "Testing that community creation works after OpenFGA fix",
+  "type": "digital",
+  "visibility": "public"
+}
+
+### Expected Result:
+# 201 Created
+# {
+#   "status": "success",
+#   "data": {
+#     "id": "...",
+#     "name": "OpenFGA Fix Test Community",
+#     ...
+#   }
+# }
+
+### Step 5: Verify creator was assigned as admin
+# Replace COMMUNITY_ID with the ID from Step 4 response
+GET {{baseUrl}}/communities/COMMUNITY_ID/members/me
+Cookie: st-access-token=YOUR_ACCESS_TOKEN; st-refresh-token=YOUR_REFRESH_TOKEN
+
+### Expected Result:
+# {
+#   "status": "success",
+#   "data": {
+#     "userId": "...",
+#     "roles": ["admin"],
+#     ...
+#   }
+# }
+
+### Verification Commands (run in terminal):
+# 1. Check OpenFGA store ID is set in .env:
+#    grep OPENFGA_STORE_ID api/.env
+#
+# 2. Verify OpenFGA tuples exist:
+#    curl http://localhost:8080/stores/{STORE_ID}/read \
+#      -H "Content-Type: application/json" \
+#      -d '{"tuple_key":{}}'
+#
+# 3. Check server logs for "Created OpenFGA store" message:
+#    - Should only appear ONCE on first run
+#    - Subsequent runs should NOT create new stores

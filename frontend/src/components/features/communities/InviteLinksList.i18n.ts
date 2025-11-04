@@ -1,0 +1,55 @@
+export const inviteLinksListDict = {
+  en: {
+    inviteLinksList: {
+      title: 'Active Link Invites',
+      loading: 'Loading link invites...',
+      titleCol: 'Title',
+      linkSecretCol: 'Link Secret',
+      roleCol: 'Role',
+      expiresCol: 'Expires',
+      createdCol: 'Created',
+      actionsCol: 'Actions',
+      untitled: 'Untitled',
+      noExpiration: 'No expiration',
+      cancel: 'Cancel',
+      cancelConfirm: 'Cancel link invite ending in {{secret}}?',
+      noInvites: 'No active link invites.',
+    },
+  },
+  es: {
+    inviteLinksList: {
+      title: 'Invitaciones de enlace activas',
+      loading: 'Cargando invitaciones de enlace...',
+      titleCol: 'Título',
+      linkSecretCol: 'Secreto del enlace',
+      roleCol: 'Rol',
+      expiresCol: 'Expira',
+      createdCol: 'Creado',
+      actionsCol: 'Acciones',
+      untitled: 'Sin título',
+      noExpiration: 'Sin expiración',
+      cancel: 'Cancelar',
+      cancelConfirm: '¿Cancelar invitación de enlace que termina en {{secret}}?',
+      noInvites: 'No hay invitaciones de enlace activas.',
+    },
+  },
+  hi: {
+    inviteLinksList: {
+      title: 'सक्रिय लिंक आमंत्रण',
+      loading: 'लिंक आमंत्रण लोड हो रहे हैं...',
+      titleCol: 'शीर्षक',
+      linkSecretCol: 'लिंक सीक्रेट',
+      roleCol: 'भूमिका',
+      expiresCol: 'समाप्ति',
+      createdCol: 'बनाया गया',
+      actionsCol: 'क्रियाएं',
+      untitled: 'शीर्षकहीन',
+      noExpiration: 'कोई समाप्ति नहीं',
+      cancel: 'रद्द करें',
+      cancelConfirm: '{{secret}} में समाप्त होने वाले लिंक आमंत्रण को रद्द करें?',
+      noInvites: 'कोई सक्रिय लिंक आमंत्रण नहीं।',
+    },
+  },
+} as const;
+
+export type InviteLinksListDict = typeof inviteLinksListDict['en']['inviteLinksList'];

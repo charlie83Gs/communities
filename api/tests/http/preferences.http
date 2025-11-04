@@ -1,0 +1,78 @@
+### Variables
+@baseUrl = http://localhost:3000/api/v1
+@authToken = Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
+
+### Get User Preferences - Success
+GET {{baseUrl}}/users/preferences
+Authorization: {{authToken}}
+
+### Get User Preferences - Unauthorized (no token)
+GET {{baseUrl}}/users/preferences
+
+### Update User Preferences - Success
+PUT {{baseUrl}}/users/preferences
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "displayName": "Ada Lovelace",
+  "country": "US",
+  "stateProvince": "California",
+  "city": "San Francisco",
+  "description": "Software engineer interested in tech communities"
+}
+
+### Update User Preferences - Update displayName only
+PUT {{baseUrl}}/users/preferences
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "displayName": "Grace Hopper"
+}
+
+### Update User Preferences - Invalid country length
+PUT {{baseUrl}}/users/preferences
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "country": "USA"
+}
+
+### Update User Preferences - Missing auth
+PUT {{baseUrl}}/users/preferences
+Content-Type: application/json
+
+{
+  "displayName": "Unauth User",
+  "country": "US"
+}
+
+### Upload Profile Image - Success
+POST {{baseUrl}}/users/preferences/profile-image
+Authorization: {{authToken}}
+
+# Note: Use a tool like VS Code REST Client or curl with -F for file upload
+# Example curl: curl -X POST -H "Authorization: {{authToken}}" -F "image=@/path/to/profile.jpg" {{baseUrl}}/users/preferences/profile-image
+
+### Upload Profile Image - No file
+POST {{baseUrl}}/users/preferences/profile-image
+Authorization: {{authToken}}
+
+### Upload Profile Image - Invalid file type (e.g., PDF)
+POST {{baseUrl}}/users/preferences/profile-image
+Authorization: {{authToken}}
+
+# Note: Upload a non-image file
+
+### Upload Profile Image - File too large (>5MB)
+POST {{baseUrl}}/users/preferences/profile-image
+Authorization: {{authToken}}
+
+# Note: Upload a file larger than 5MB
+
+### Upload Profile Image - Unauthorized
+POST {{baseUrl}}/users/preferences/profile-image
+
+# Note: No auth token, upload file

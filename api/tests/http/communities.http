@@ -1,0 +1,146 @@
+### Variables
+@baseUrl = http://localhost:3000/api/v1
+@authToken = Bearer YOUR_TOKEN_HERE
+
+### Create Community - Success (session required)
+POST {{baseUrl}}/communities
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "Local Gardening Group",
+  "description": "A community for sharing gardening tips and tools",
+  "type": "physical",
+  "visibility": "public",
+  "locationRestricted": true,
+  "country": "US",
+  "stateProvince": "California",
+  "city": "San Francisco"
+}
+
+### Create Community - Private (session required)
+POST {{baseUrl}}/communities
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "Private Tech Meetup",
+  "description": "Exclusive tech discussions",
+  "type": "digital",
+  "visibility": "private"
+}
+
+### Create Community - Missing required field (should return 400)
+POST {{baseUrl}}/communities
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "description": "Missing name field"
+}
+
+### Create Community - Invalid type (should return 400)
+POST {{baseUrl}}/communities
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "Test Community",
+  "type": "invalid",
+  "visibility": "public"
+}
+
+### List Communities - Authenticated (public + accessible private)
+GET {{baseUrl}}/communities?page=1&limit=10
+Authorization: {{authToken}}
+
+### List Communities - No auth (public only)
+GET {{baseUrl}}/communities?page=1&limit=10
+
+### Get Community by ID - Authenticated (public or private with access)
+GET {{baseUrl}}/communities/123e4567-e89b-12d3-a456-426614174000
+Authorization: {{authToken}}
+
+### Get Community by ID - No auth (public only)
+GET {{baseUrl}}/communities/123e4567-e89b-12d3-a456-426614174000
+
+### Update Community (requires admin role)
+PUT {{baseUrl}}/communities/123e4567-e89b-12d3-a456-426614174000
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "Updated Community Name",
+  "description": "Updated description"
+}
+
+### Update Community - Forum Configuration (requires admin role)
+PUT {{baseUrl}}/communities/123e4567-e89b-12d3-a456-426614174000
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "minTrustForThreadCreation": {
+    "type": "number",
+    "value": 15
+  },
+  "minTrustForForumModeration": {
+    "type": "number",
+    "value": 25
+  }
+}
+
+### Delete Community (requires admin role)
+DELETE {{baseUrl}}/communities/123e4567-e89b-12d3-a456-426614174000
+Authorization: {{authToken}}
+
+### Get Members List (requires admin role)
+GET {{baseUrl}}/communities/123e4567-e89b-12d3-a456-426614174000/members
+Authorization: {{authToken}}
+
+### Get Member by ID (admin or self)
+GET {{baseUrl}}/communities/123e4567-e89b-12d3-a456-426614174000/members/456e7890-e89b-12d3-a456-426614174000
+Authorization: {{authToken}}
+
+### Get My Role (authenticated user)
+GET {{baseUrl}}/communities/123e4567-e89b-12d3-a456-426614174000/members/me
+Authorization: {{authToken}}
+
+### Remove Member (requires admin role)
+DELETE {{baseUrl}}/communities/123e4567-e89b-12d3-a456-426614174000/members/456e7890-e89b-12d3-a456-426614174000
+Authorization: {{authToken}}
+
+### Update Member Role (requires admin role)
+PUT {{baseUrl}}/communities/123e4567-e89b-12d3-a456-426614174000/members/456e7890-e89b-12d3-a456-426614174000
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "role": "admin"
+}
+
+### Unauthorized Request (no token) - should return 401
+POST {{baseUrl}}/communities
+Content-Type: application/json
+
+{
+  "name": "Test",
+  "type": "physical",
+  "visibility": "public"
+}
+
+### Search Communities - Public (returns public only, no trust scores)
+GET {{baseUrl}}/communities/search?q=garden&type=physical&page=1&limit=10
+
+### Search Communities - Authenticated (includes user's trust score for each community)
+# Response includes "userTrustScore" field for each community
+GET {{baseUrl}}/communities/search?q=tech&visibility=public&page=1&limit=10
+Authorization: {{authToken}}
+
+### Search Communities - Authenticated, private only (must belong)
+GET {{baseUrl}}/communities/search?visibility=private&page=1&limit=10
+Authorization: {{authToken}}
+
+### Search Communities - With location filters
+GET {{baseUrl}}/communities/search?country=US&stateProvince=California&city=San%20Francisco&locationRestricted=true
+Authorization: {{authToken}}

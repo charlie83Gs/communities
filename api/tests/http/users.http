@@ -1,0 +1,51 @@
+### Variables
+@baseUrl = http://localhost:3000/api/v1
+@authToken = Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
+
+### Get User Preferences
+GET {{baseUrl}}/users/preferences
+Authorization: {{authToken}}
+
+### Update User Preferences
+PUT {{baseUrl}}/users/preferences
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "displayName": "Test User",
+  "country": "US",
+  "stateProvince": "CA",
+  "city": "San Francisco",
+  "description": "Updated description"
+}
+
+### Upload Profile Image
+POST {{baseUrl}}/users/preferences/profile-image
+Authorization: {{authToken}}
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="image"; filename="profile.jpg"
+Content-Type: image/jpeg
+
+(binary image data here)
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### Get Profile Image via Images Endpoint
+GET {{baseUrl}}/images/some-uuid.webp
+Authorization: {{authToken}}
+
+### Get Pending Invites for User - Success
+GET {{baseUrl}}/users/123e4567-e89b-12d3-a456-426614174000/invites
+Authorization: {{authToken}}
+
+### Get Pending Invites for User - Unauthorized (no token)
+GET {{baseUrl}}/users/123e4567-e89b-12d3-a456-426614174000/invites
+
+### Get Pending Invites for User - Forbidden (wrong user)
+GET {{baseUrl}}/users/123e4567-e89b-12d3-a456-426614174000/invites
+Authorization: {{authToken}}
+
+### Get Pending Invites for User - Invalid ID
+GET {{baseUrl}}/users/invalid-uuid/invites
+Authorization: {{authToken}}

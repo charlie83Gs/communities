@@ -1,0 +1,2704 @@
+customModes:
+  - slug: express
+    name: Express
+    roleDefinition: |-
+      # Coding Agent Prompt: Express API Development Guide
+
+      ## 🎯 Overview
+
+      You are working on an Express.js API service with the following technology stack:
+
+      ## 🧪 **TEST-FIRST DEVELOPMENT (CRITICAL)**
+
+      **⚠️ ALWAYS CHECK FOR TESTS BEFORE MODIFYING CODE ⚠️**
+
+      Before making ANY changes to source files:
+
+      1. **Discover Tests**: Look for `*.test.ts` file in the SAME directory as the source file
+        - Tests are co-located: `service.ts` → `service.test.ts` (same folder)
+        - Example: `src/services/community.service.ts` → `src/services/community.service.test.ts`
+
+      2. **Read Tests First**: Understand current behavior and expectations
+
+      3. **Update Tests First**: Modify tests to reflect new behavior BEFORE changing implementation
+
+      4. **Run Tests**: Verify with `bun test [path-to-test-file]`
+
+      5. **Then Modify Code**: Only after tests are updated and passing
+
+      **Test Locations:**
+      - **Unit tests**: Co-located with source files (e.g., `src/services/*.test.ts`)
+      - **Integration tests**: `tests/integration/` (cross-component)
+      - **E2E tests**: `tests/e2e/` (end-to-end flows)
+      - **Test utilities**: `tests/helpers/testUtils.ts`
+
+      **Running Tests:**
+      ```bash
+      # Run all tests
+      bun test
+
+      # Run specific test file
+      bun test src/services/community.service.test.ts
+
+      # Run tests in watch mode
+      bun test --watch
+
+      # Run tests for a specific layer
+      bun test src/services/
+      ```
+
+      **Never skip tests!** If a test file exists, you MUST read and update it.
+
+      ### Technology Stack
+      - **Runtime**: Bun (latest)
+      - **Framework**: Express.js with TypeScript
+      - **Authentication**: SuperTokens (token-based with Authorization header)
+      - **Database**: PostgreSQL with Drizzle ORM
+      - **Migrations**: Automatic runtime migrations (Drizzle ORM)
+      - **Authorization**: openFGA (fine-grained access control)
+      - **API Documentation**: Swagger (auto-generated from JSDoc)
+      - **Validation**: Zod + express-validator
+      - **Testing**: Jest (unit/integration) + Playwright (E2E)
+      - **Package Manager**: Bun
+
+      ### 🚨 Critical: Database Migration Approach
+
+      **This project uses AUTOMATIC RUNTIME MIGRATIONS:**
+      - ✅ Modify schema in TypeScript
+      - ✅ Run `bun run db:generate` to create SQL migration files
+      - ✅ Restart server → migrations apply automatically
+      - ✅ Commit migration files to git
+
+      **NEVER use `db:push` - it bypasses migration tracking and causes schema drift!**
+
+      See "Database Migrations with Drizzle ORM" section below for complete workflow.
+
+      ### Project Structure
+      ```
+      project-root/
+      ├── src/
+      │   ├── api/
+      │   │   ├── controllers/
+      │   │   │   ├── community.controller.ts
+      │   │   │   └── community.controller.test.ts     # Co-located unit test
+      │   │   ├── routes/           # Route definitions
+      │   │   ├── middlewares/
+      │   │   │   ├── authorization.middleware.ts
+      │   │   │   └── authorization.middleware.test.ts # Co-located unit test
+      │   │   └── validators/
+      │   │       ├── community.validator.ts
+      │   │       └── community.validator.test.ts      # Co-located unit test
+      │   ├── config/               # Configuration files
+      │   ├── db/
+      │   │   ├── schema/          # Drizzle schema definitions
+      │   │   ├── migrations/      # Database migrations
+      │   │   └── seeds/           # Seed data
+      │   ├── services/
+      │   │   ├── community.service.ts
+      │   │   └── community.service.test.ts            # Co-located unit test
+      │   ├── repositories/        # Data access layer
+      │   ├── types/              # TypeScript type definitions
+      │   ├── utils/
+      │   │   ├── errors.ts
+      │   │   └── errors.test.ts                       # Co-located unit test
+      │   ├── app.ts              # Express app setup
+      │   └── server.ts           # Server entry point
+      ├── tests/
+      │   ├── helpers/            # Test utilities (testUtils.ts, etc.)
+      │   ├── integration/        # Integration tests (cross-component)
+      │   ├── e2e/               # End-to-end tests (full user flows)
+      │   └── http/              # HTTP request examples (.http files)
+      ├── docker/
+      │   ├── docker-compose.yml  # Local development services
+      │   └── Dockerfile          # Production container
+      ├── .env.example
+      └── bun.lockb
+      ```
+
+      ## 🏗️ Architecture
+
+      ### Layered Architecture Pattern
+      ```
+      Request → Route → Middleware → Controller → Service → Repository → Database
+                                          ↓
+                                  openFGA (Authorization)
+      ```
+
+      ### Key Components
+
+      1. **Controllers**: Handle HTTP requests/responses, no business logic
+      2. **Services**: Contain business logic, coordinate between repositories
+      3. **Repositories**: Database operations using Drizzle ORM
+      4. **Middlewares**:
+          - Authentication (SuperTokens session verification)
+          - Authorization (openFGA enforcement)
+          - Validation (Zod schemas)
+          - Error handling
+      5. **Database Schema**: Drizzle ORM schema definitions with relations
+
+      ### Authentication Flow
+      - Token-based authentication using SuperTokens
+      - Bearer tokens in Authorization header
+      - Session management handled by SuperTokens
+
+      ## Authorization with openFGA
+
+      This guide explains the fine-grained authorization system implemented with openFGA in this API. It provides relationship-based access control with support for hierarchical permissions, attribute-based policies, and contextual authorization.
+
+      ### Key Concepts
+
+      **openFGA (Fine-Grained Authorization)**
+      - **Tuple-based**: Access control via relationship tuples (user, relation, object)
+      - **Relationship-Based**: Models real-world relationships (e.g., "user X is owner of community Y")
+      - **Hierarchical**: Supports inheritance (e.g., owner inherits member permissions)
+      - **Scalable**: Designed for millions of authorization checks per second
+
+      ### Core Concepts
+
+      - **User**: Subject making the request (SuperTokens userId)
+      - **Object**: Resource being accessed (e.g., `community:uuid`, `share:uuid`)
+      - **Relation**: Type of relationship (e.g., `owner`, `member`, `viewer`)
+      - **Tuple**: Authorization fact stored in openFGA (e.g., `user:alice owner community:abc123`)
+
+      ### Authorization Model
+
+      The openFGA model defines:
+      - **Types**: Resource types (community, share, comment, etc.)
+      - **Relations**: Relationships users can have with resources
+      - **Permissions**: Computed from relations (e.g., `can_edit` if `owner` or `admin`)
+
+      Example model snippet:
+      ```
+      type community
+        relations
+          define owner: [user]
+          define admin: [user]
+          define member: [user] or admin or owner
+          define viewer: [user] or member
+        permissions
+          define can_create_share: member
+          define can_edit: admin or owner
+          define can_delete: owner
+          define can_view: viewer or public
+      ```
+
+      ### Public vs Authenticated Endpoints
+
+      Communities router follows openFGA authorization:
+
+      - **Public** (no session):
+        - GET `/api/v1/communities` - returns only public communities
+        - GET `/api/v1/communities/:id` - returns if community is public OR user has `can_view`
+
+      - **Authenticated** (session required):
+        - POST `/api/v1/communities` - creates community; creator assigned `owner` relation
+        - PUT `/api/v1/communities/:id` - requires `can_edit` permission
+        - DELETE `/api/v1/communities/:id` - requires `can_delete` permission
+
+      ### Service-Level Authorization
+
+      Services check permissions via openFGA client:
+
+      ```typescript
+      // Check if user can edit community
+      const canEdit = await fgaClient.check({
+        user: `user:${userId}`,
+        relation: 'can_edit',
+        object: `community:${communityId}`
+      });
+
+      if (!canEdit.allowed) {
+        throw new AppError('Forbidden', 403);
+      }
+      ```
+
+      Common patterns:
+      - **Create**: Assigns creator as `owner` relation
+      - **Read**: Checks `can_view` permission (includes public, viewer, member, admin, owner)
+      - **Update**: Checks `can_edit` permission (admin or owner)
+      - **Delete**: Checks `can_delete` permission (owner only)
+      - **List**: Queries openFGA for all resources where user has `can_view`
+
+      ### Middleware Integration
+
+      openFGA middleware for route protection:
+
+      ```typescript
+      // Global permission check
+      import { checkPermission } from '@/api/middlewares/fga.middleware';
+
+      router.delete(
+        '/:id',
+        verifySession(),
+        checkPermission('community', 'can_delete'),
+        communityController.delete
+      );
+      ```
+
+      ### Managing Relations
+
+      **Via Service Layer** (recommended):
+      ```typescript
+      // Assign owner when creating community
+      await fgaClient.write({
+        writes: [{
+          user: `user:${userId}`,
+          relation: 'owner',
+          object: `community:${communityId}`
+        }]
+      });
+
+      // Add member to community
+      await fgaClient.write({
+        writes: [{
+          user: `user:${memberId}`,
+          relation: 'member',
+          object: `community:${communityId}`
+        }]
+      });
+
+      // Remove member
+      await fgaClient.write({
+        deletes: [{
+          user: `user:${memberId}`,
+          relation: 'member',
+          object: `community:${communityId}`
+        }]
+      });
+      ```
+
+      ### Querying Permissions
+
+      **List Accessible Resources**:
+      ```typescript
+      // Get all communities user can view
+      const accessible = await fgaClient.listObjects({
+        user: `user:${userId}`,
+        relation: 'can_view',
+        type: 'community'
+      });
+      ```
+
+      **Check Specific Permission**:
+      ```typescript
+      const canEdit = await fgaClient.check({
+        user: `user:${userId}`,
+        relation: 'can_edit',
+        object: `community:${id}`
+      });
+      ```
+
+      **List User Relations**:
+      ```typescript
+      // Get all communities where user is owner
+      const owned = await fgaClient.read({
+        user: `user:${userId}`,
+        relation: 'owner',
+        object_type: 'community'
+      });
+      ```
+
+      ### Extending the Model
+
+      To add new resource types or permissions:
+
+      1. **Update Authorization Model**:
+      ```
+      type document
+        relations
+          define owner: [user]
+          define editor: [user] or owner
+          define viewer: [user] or editor
+        permissions
+          define can_read: viewer
+          define can_write: editor
+          define can_delete: owner
+      ```
+
+      2. **Apply Model**:
+      ```bash
+      (cd api && bun run fga:model:write)
+      ```
+
+      3. **Use in Services**:
+      ```typescript
+      await fgaClient.check({
+        user: `user:${userId}`,
+        relation: 'can_write',
+        object: `document:${docId}`
+      });
+      ```
+
+      ### Running Locally
+
+      1. **Start openFGA Server**:
+      ```bash
+      docker-compose up -d openfga
+      ```
+
+      2. **Environment Variables**:
+      ```bash
+      # .env
+      FGA_API_URL=http://localhost:8080
+      FGA_STORE_ID=your-store-id
+      FGA_MODEL_ID=your-model-id
+      ```
+
+      3. **Initialize Model**:
+      ```bash
+      (cd api && bun run fga:model:write)
+      ```
+
+      4. **Seed Initial Relations** (optional):
+      ```bash
+      (cd api && bun run src/db/seeds/initial-fga.seed.ts)
+      ```
+
+      ### Troubleshooting
+
+      - **403 Forbidden**: Verify user has required relation/permission via openFGA
+      - **Empty Results**: Check tuples exist in openFGA store
+      - **Performance Issues**: Use `listObjects` for filtering instead of checking each resource individually
+      - **Model Changes**: Re-apply model and verify model_id in environment
+
+      ### Security Best Practices
+
+      - **Deny by Default**: No relation = no access
+      - **Verify Sessions**: Always use `verifySession()` middleware before openFGA checks
+      - **Least Privilege**: Assign minimal required relations
+      - **Audit Relations**: Log all relation changes for compliance
+      - **Contextual Checks**: Use openFGA's contextual tuples for time-based or attribute-based access
+
+      ## 🗄️ Database Migrations with Drizzle ORM
+
+      ### 📌 Quick Reference
+
+      **When you change the database schema:**
+
+      ```bash
+      # 1. Edit schema file (e.g., src/db/schema/products.schema.ts)
+      # 2. Generate migration
+      (cd api && bun run db:generate)
+
+      # 3. Restart server (migrations apply automatically)
+      (cd api && bun dev)
+
+      # 4. Commit migration files
+      git add api/src/db/migrations/
+      git commit -m "Add feature X"
+      ```
+
+      **Commands you should use:**
+      - ✅ `bun run db:generate` - Generate migration from schema changes
+      - ✅ `bun run db:studio` - View database in Drizzle Studio
+      - ✅ `bun dev` - Start server (applies migrations automatically)
+
+      **Commands you should NEVER use:**
+      - ❌ `bun run db:push` - Bypasses migration system
+      - ❌ `bun run db:migrate` - Migrations run automatically now
+
+      ---
+
+      ### Migration Philosophy
+
+      This project uses **automatic runtime migrations** with Drizzle ORM. The database schema is defined in TypeScript, migrations are generated as SQL files, and they run automatically on application startup.
+
+      ### ✅ The Correct Workflow
+
+      **Step 1: Modify Schema**
+      ```typescript
+      // src/db/schema/products.schema.ts
+      import { pgTable, uuid, varchar, decimal, timestamp, text } from 'drizzle-orm/pg-core';
+      import { relations } from 'drizzle-orm';
+      import { users } from './users.schema';
+
+      export const products = pgTable('products', {
+        id: uuid('id').defaultRandom().primaryKey(),
+        name: varchar('name', { length: 255 }).notNull(),
+        description: text('description'),
+        price: decimal('price', { precision: 10, scale: 2 }).notNull(),
+        createdBy: uuid('created_by').references(() => users.id),
+        createdAt: timestamp('created_at').defaultNow(),
+        updatedAt: timestamp('updated_at').defaultNow(),
+      });
+
+      export const productsRelations = relations(products, ({ one }) => ({
+        creator: one(users, {
+          fields: [products.createdBy],
+          references: [users.id],
+        }),
+      }));
+      ```
+
+      **Step 2: Generate Migration**
+      ```bash
+      # ONLY command you need to run manually
+      (cd api && bun run db:generate)
+      ```
+
+      This creates a timestamped SQL migration file in `src/db/migrations/`.
+
+      **Step 3: Restart Server**
+      ```bash
+      # Migrations run automatically on startup
+      (cd api && bun dev)
+      ```
+
+      **Step 4: Commit Migration Files**
+      ```bash
+      # Always commit generated migrations to git
+      git add api/src/db/migrations/
+      git commit -m "Add products table migration"
+      ```
+
+      ### ❌ What NOT to Do
+
+      **NEVER use these commands:**
+      ```bash
+      # ❌ DON'T use db:push - it bypasses the migration system
+      (cd api && bun run db:push)
+
+      # ❌ DON'T use db:migrate - migrations run automatically now
+      (cd api && bun run db:migrate)
+
+      # ❌ DON'T manually edit migration files after they're generated
+      ```
+
+      **Why avoid `db:push`?**
+      - Bypasses migration tracking
+      - No migration history
+      - Can cause schema drift
+      - Makes deployments unreliable
+
+      ### 🔍 How It Works
+
+      1. **Schema First**: You define your database schema in TypeScript
+      2. **Generate**: `bun run db:generate` creates SQL migration files
+      3. **Automatic Execution**: Migrations run on server startup (before SuperTokens/OpenFGA)
+      4. **Idempotent**: Previously applied migrations are skipped
+      5. **Tracked**: `__drizzle_migrations` table tracks what's been applied
+
+      ### 📋 Migration Best Practices
+
+      **DO:**
+      - ✅ Always generate migrations for schema changes
+      - ✅ Commit migration files to version control
+      - ✅ Review generated SQL before committing
+      - ✅ Test migrations locally before pushing
+      - ✅ Use descriptive schema file names
+
+      **DON'T:**
+      - ❌ Manually edit the database schema
+      - ❌ Use `db:push` in any environment
+      - ❌ Skip generating migrations
+      - ❌ Manually edit migration files
+      - ❌ Delete migration files
+
+      ### 🛠️ Allowed Commands
+
+      ```bash
+      # ✅ Generate migration from schema changes (REQUIRED for schema changes)
+      (cd api && bun run db:generate)
+
+      # ✅ Open Drizzle Studio to inspect database
+      (cd api && bun run db:studio)
+
+      # ✅ Start dev server (runs migrations automatically)
+      (cd api && bun dev)
+      ```
+
+      ### 🔄 Example Workflow
+
+      **Scenario: Adding a new column to products table**
+
+      ```typescript
+      // 1. Edit src/db/schema/products.schema.ts
+      export const products = pgTable('products', {
+        // ... existing fields
+        stockQuantity: integer('stock_quantity').default(0),  // New field
+      });
+      ```
+
+      ```bash
+      # 2. Generate migration
+      cd api
+      bun run db:generate
+      # Output: Created 0017_new_product_fields.sql
+
+      # 3. Review the generated SQL
+      cat src/db/migrations/0017_new_product_fields.sql
+      # Verify it looks correct
+
+      # 4. Restart server to apply migration
+      bun dev
+      # Output: [Migrations] Database migrations completed successfully
+
+      # 5. Commit the migration
+      git add src/db/migrations/0017_new_product_fields.sql
+      git commit -m "Add stock quantity to products"
+      ```
+
+      ### 🚨 Troubleshooting
+
+      **Problem: Migration fails on startup**
+      ```bash
+      # Check the migration logs in console
+      # Fix the schema issue
+      # Regenerate migration with db:generate
+      # The new migration will be applied on next startup
+      ```
+
+      **Problem: Schema out of sync with database**
+      ```bash
+      # NEVER use db:push to "fix" this
+      # Instead: Generate a new migration to sync the changes
+      (cd api && bun run db:generate)
+      ```
+
+      **Problem: Need to rollback a migration**
+      ```bash
+      # Drizzle doesn't support automatic rollback
+      # You must create a new "reverse" migration manually
+      # Or restore from database backup
+      ```
+
+      ### 📊 Migration System Architecture
+
+      ```
+      Schema Change → Generate SQL → Commit to Git → Deploy → Auto-Run on Startup
+          ↓              ↓              ↓              ↓            ↓
+        schema.ts    migrations/    version ctrl    server.ts   Database
+                      0017.sql                      (migrate)
+      ```
+
+      ## 🚀 Development Process
+
+      ### Step 1: Database Schema Definition
+
+      **When to do**: Before creating any new feature that requires data persistence
+
+      **Instructions**:
+      1. Create or modify schema file in `src/db/schema/`
+      2. Use Drizzle ORM syntax for table definitions
+      3. Define relations if applicable
+      4. **Generate migration** (REQUIRED - see Migration Workflow above)
+      5. **Restart server** (migrations run automatically)
+
+      **Commands**:
+      ```bash
+      # ONLY use this command for migrations
+      (cd api && bun run db:generate)
+
+      # Verify in Drizzle Studio
+      (cd api && bun run db:studio)
+      ```
+
+      ### Step 2: Repository Creation
+
+      **When to do**: After database schema is defined
+
+      **Instructions**:
+      1. Create repository file in `src/repositories/`
+      2. Implement CRUD operations using Drizzle
+      3. Use transactions where necessary
+      4. Return typed responses
+
+      **Example**:
+      ```typescript
+      // src/repositories/product.repository.ts
+      import { db } from '@db/index';
+      import { products } from '@db/schema';
+      import { eq } from 'drizzle-orm';
+      import { CreateProductDto, UpdateProductDto } from '@types/product.types';
+
+      export class ProductRepository {
+      async create(data: CreateProductDto) {
+          const [product] = await db.insert(products).values(data).returning();
+          return product;
+      }
+
+      async findById(id: string) {
+          const [product] = await db
+          .select()
+          .from(products)
+          .where(eq(products.id, id));
+          return product;
+      }
+
+      async findAll(limit = 10, offset = 0) {
+          return await db
+          .select()
+          .from(products)
+          .limit(limit)
+          .offset(offset);
+      }
+
+      async update(id: string, data: UpdateProductDto) {
+          const [updated] = await db
+          .update(products)
+          .set({ ...data, updatedAt: new Date() })
+          .where(eq(products.id, id))
+          .returning();
+          return updated;
+      }
+
+      async delete(id: string) {
+          const [deleted] = await db
+          .delete(products)
+          .where(eq(products.id, id))
+          .returning();
+          return deleted;
+      }
+      }
+
+      export const productRepository = new ProductRepository();
+      ```
+
+      ### Step 3: Service Implementation
+
+      **When to do**: After repository is created
+
+      **Instructions**:
+      1. Create service file in `src/services/`
+      2. Implement business logic
+      3. Handle errors and edge cases
+      4. Integrate with openFGA for authorization checks
+
+      **Example**:
+      ```typescript
+      // src/services/product.service.ts
+      import { productRepository } from '@repositories/product.repository';
+      import { fgaClient } from '@/config/fga.config';
+      import { AppError } from '@utils/errors';
+      import { CreateProductDto } from '@types/product.types';
+
+      export class ProductService {
+      async createProduct(data: CreateProductDto, userId: string) {
+          // Check permission using openFGA
+          const canCreate = await fgaClient.check({
+            user: `user:${userId}`,
+            relation: 'can_create',
+            object: 'product:*'
+          });
+
+          if (!canCreate.allowed) {
+            throw new AppError('Forbidden', 403);
+          }
+
+          // Business logic validation
+          if (data.price < 0) {
+            throw new AppError('Price cannot be negative', 400);
+          }
+
+          // Create product with creator info
+          const product = await productRepository.create({
+            ...data,
+            createdBy: userId,
+          });
+
+          // Assign creator as owner
+          await fgaClient.write({
+            writes: [{
+              user: `user:${userId}`,
+              relation: 'owner',
+              object: `product:${product.id}`
+            }]
+          });
+
+          return product;
+      }
+
+      async getProduct(id: string, userId: string) {
+          const product = await productRepository.findById(id);
+
+          if (!product) {
+            throw new AppError('Product not found', 404);
+          }
+
+          // Check read permission
+          const canRead = await fgaClient.check({
+            user: `user:${userId}`,
+            relation: 'can_view',
+            object: `product:${id}`
+          });
+
+          if (!canRead.allowed) {
+            throw new AppError('Forbidden', 403);
+          }
+
+          return product;
+      }
+
+      async listProducts(userId: string, page = 1, limit = 10) {
+          // Get all products user can view
+          const accessible = await fgaClient.listObjects({
+            user: `user:${userId}`,
+            relation: 'can_view',
+            type: 'product'
+          });
+
+          const offset = (page - 1) * limit;
+          return await productRepository.findByIds(accessible.objects, limit, offset);
+      }
+      }
+
+      export const productService = new ProductService();
+      ```
+
+      ### Step 4: Validation Schema
+
+      **When to do**: Before creating controller
+
+      **Instructions**:
+      1. Create validator file in `src/api/validators/`
+      2. Define Zod schemas for request validation
+      3. Create middleware functions for validation
+
+      **Example**:
+      ```typescript
+      // src/api/validators/product.validator.ts
+      import { z } from 'zod';
+      import { Request, Response, NextFunction } from 'express';
+
+      export const createProductSchema = z.object({
+      body: z.object({
+          name: z.string().min(1).max(255),
+          description: z.string().optional(),
+          price: z.string().transform(Number).pipe(z.number().positive()),
+      }),
+      });
+
+      export const updateProductSchema = z.object({
+      body: z.object({
+          name: z.string().min(1).max(255).optional(),
+          description: z.string().optional(),
+          price: z.string().transform(Number).pipe(z.number().positive()).optional(),
+      }),
+      params: z.object({
+          id: z.string().uuid(),
+      }),
+      });
+
+      export const validateCreateProduct = (req: Request, res: Response, next: NextFunction) => {
+      try {
+          createProductSchema.parse(req);
+          next();
+      } catch (error) {
+          if (error instanceof z.ZodError) {
+          return res.status(400).json({
+              status: 'error',
+              errors: error.errors,
+          });
+          }
+          next(error);
+      }
+      };
+      ```
+
+      ### Step 5: Controller Creation
+
+      **When to do**: After service and validation are ready
+
+      **Instructions**:
+      1. Create controller file in `src/api/controllers/`
+      2. Add JSDoc comments for Swagger documentation
+      3. Handle requests and delegate to services
+      4. Use proper HTTP status codes
+
+      **Example**:
+      ```typescript
+      // src/api/controllers/product.controller.ts
+      import { Request, Response, NextFunction } from 'express';
+      import { productService } from '@services/product.service';
+      import { ApiResponse } from '@utils/response';
+
+      export class ProductController {
+      /**
+          * @swagger
+          * /api/v1/products:
+          *   post:
+          *     summary: Create a new product
+          *     tags: [Products]
+          *     security:
+          *       - bearerAuth: []
+          *     requestBody:
+          *       required: true
+          *       content:
+          *         application/json:
+          *           schema:
+          *             type: object
+          *             required:
+          *               - name
+          *               - price
+          *             properties:
+          *               name:
+          *                 type: string
+          *                 example: "MacBook Pro"
+          *               description:
+          *                 type: string
+          *                 example: "High-performance laptop"
+          *               price:
+          *                 type: number
+          *                 example: 2499.99
+          *     responses:
+          *       201:
+          *         description: Product created successfully
+          *       400:
+          *         description: Validation error
+          *       401:
+          *         description: Unauthorized
+          *       403:
+          *         description: Forbidden
+          */
+      async create(req: Request, res: Response, next: NextFunction) {
+          try {
+          const userId = req.session?.getUserId();
+          const product = await productService.createProduct(req.body, userId);
+          return ApiResponse.created(res, product, 'Product created successfully');
+          } catch (error) {
+          next(error);
+          }
+      }
+
+      /**
+          * @swagger
+          * /api/v1/products/{id}:
+          *   get:
+          *     summary: Get product by ID
+          *     tags: [Products]
+          *     security:
+          *       - bearerAuth: []
+          *     parameters:
+          *       - in: path
+          *         name: id
+          *         required: true
+          *         schema:
+          *           type: string
+          *           format: uuid
+          *     responses:
+          *       200:
+          *         description: Product details
+          *       404:
+          *         description: Product not found
+          */
+      async getById(req: Request, res: Response, next: NextFunction) {
+          try {
+          const userId = req.session?.getUserId();
+          const product = await productService.getProduct(req.params.id, userId);
+          return ApiResponse.success(res, product);
+          } catch (error) {
+          next(error);
+          }
+      }
+
+      async list(req: Request, res: Response, next: NextFunction) {
+          try {
+          const { page = 1, limit = 10 } = req.query;
+          const products = await productService.listProducts(Number(page), Number(limit));
+          return ApiResponse.success(res, products);
+          } catch (error) {
+          next(error);
+          }
+      }
+      }
+
+      export const productController = new ProductController();
+      ```
+
+      ### Step 6: Route Configuration
+
+      **When to do**: After controller is created
+
+      **Instructions**:
+      1. Create or update route file in `src/api/routes/`
+      2. Apply authentication middleware
+      3. Apply validation middleware
+      4. Connect to controller methods
+
+      **Example**:
+      ```typescript
+      // src/api/routes/product.routes.ts
+      import { Router } from 'express';
+      import { verifySession } from 'supertokens-node/recipe/session/framework/express';
+      import { productController } from '@api/controllers/product.controller';
+      import { validateCreateProduct, validateUpdateProduct } from '@api/validators/product.validator';
+      import { checkPermission } from '@api/middlewares/fga.middleware';
+
+      const router = Router();
+
+      // All routes require authentication
+      router.use(verifySession());
+
+      router.post(
+        '/',
+        validateCreateProduct,
+        checkPermission('product', 'can_create'),
+        productController.create
+      );
+
+      router.get(
+        '/',
+        productController.list  // Authorization handled in service layer
+      );
+
+      router.get(
+        '/:id',
+        checkPermission('product', 'can_view'),
+        productController.getById
+      );
+
+      router.put(
+        '/:id',
+        validateUpdateProduct,
+        checkPermission('product', 'can_edit'),
+        productController.update
+      );
+
+      router.delete(
+        '/:id',
+        checkPermission('product', 'can_delete'),
+        productController.delete
+      );
+
+      export default router;
+      ```
+
+      ### Step 7: HTTP Testing File
+
+      **When to do**: Immediately after creating endpoints
+
+      **Instructions**:
+      1. Create `.http` file in `tests/http/`
+      2. Include examples for all scenarios
+      3. Test with valid and invalid data
+      4. Verify error cases
+
+      **Example**:
+      ```http
+      # tests/http/products.http
+
+      ### Variables
+      @baseUrl = http://localhost:3000/api/v1
+      @authToken = Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
+
+      ### Create Product - Success
+      POST {{baseUrl}}/products
+      Authorization: {{authToken}}
+      Content-Type: application/json
+
+      {
+      "name": "MacBook Pro M3",
+      "description": "Latest Apple laptop with M3 chip",
+      "price": 2499.99
+      }
+
+      ### Create Product - Missing required field
+      POST {{baseUrl}}/products
+      Authorization: {{authToken}}
+      Content-Type: application/json
+
+      {
+      "description": "Missing name field"
+      }
+
+      ### Create Product - Invalid price
+      POST {{baseUrl}}/products
+      Authorization: {{authToken}}
+      Content-Type: application/json
+
+      {
+      "name": "Test Product",
+      "price": -100
+      }
+
+      ### Get Product by ID
+      GET {{baseUrl}}/products/123e4567-e89b-12d3-a456-426614174000
+      Authorization: {{authToken}}
+
+      ### List Products with Pagination
+      GET {{baseUrl}}/products?page=1&limit=20
+      Authorization: {{authToken}}
+
+      ### Unauthorized Request (no token)
+      GET {{baseUrl}}/products
+      ```
+
+      ### Step 8: E2E Testing
+
+      **When to do**: After endpoints are working
+
+      **Instructions**:
+      1. Create E2E test file in `tests/e2e/`
+      2. Test complete user flows
+      3. Include authentication setup
+      4. Verify database state
+
+      **Example**:
+      ```typescript
+      // tests/e2e/products.e2e.test.ts
+      import { test, expect } from '@playwright/test';
+
+      test.describe('Product Management Flow', () => {
+      let authToken: string;
+      let productId: string;
+
+      test.beforeAll(async ({ request }) => {
+          // Setup: Login and get token
+          const loginResponse = await request.post('/api/v1/auth/signin', {
+          data: {
+              formFields: [
+              { id: 'email', value: 'test@example.com' },
+              { id: 'password', value: 'testPassword123!' }
+              ]
+          }
+          });
+          
+          const cookies = loginResponse.headers()['set-cookie'];
+          authToken = extractTokenFromCookies(cookies);
+      });
+
+      test('should create a new product', async ({ request }) => {
+          const response = await request.post('/api/v1/products', {
+          headers: {
+              'Authorization': `Bearer ${authToken}`
+          },
+          data: {
+              name: 'E2E Test Product',
+              description: 'Created by E2E test',
+              price: 99.99
+          }
+          });
+
+          expect(response.status()).toBe(201);
+          const body = await response.json();
+          expect(body.data).toHaveProperty('id');
+          productId = body.data.id;
+      });
+
+      test('should retrieve created product', async ({ request }) => {
+          const response = await request.get(`/api/v1/products/${productId}`, {
+          headers: {
+              'Authorization': `Bearer ${authToken}`
+          }
+          });
+
+          expect(response.status()).toBe(200);
+          const body = await response.json();
+          expect(body.data.name).toBe('E2E Test Product');
+      });
+
+      test('should handle unauthorized access', async ({ request }) => {
+          const response = await request.get('/api/v1/products');
+          expect(response.status()).toBe(401);
+      });
+      });
+      ```
+
+      ### Step 9: Verification
+
+      **When to do**: Before marking task as complete
+
+      **Instructions**:
+      1. Run all migrations
+      2. Test all endpoints with curl
+      3. Run unit tests
+      4. Run E2E tests
+      5. Verify Swagger documentation
+
+      **Commands**:
+      ```bash
+      # Test with curl
+      curl -X POST http://localhost:3000/api/v1/products \
+      -H "Authorization: Bearer YOUR_TOKEN" \
+      -H "Content-Type: application/json" \
+      -d '{"name":"Test Product","price":99.99}'
+
+      # Run tests
+      bun test
+      bun test:e2e
+
+      # Check Swagger
+      open http://localhost:3000/api-docs
+      ```
+
+      ## 🐳 Local Environment Setup
+
+      ### Docker Compose Configuration
+
+      ```yaml
+      # docker/docker-compose.yml
+      version: '3.8'
+
+      services:
+      postgres:
+          image: postgres:16-alpine
+          container_name: api_postgres
+          environment:
+          POSTGRES_DB: api_db
+          POSTGRES_USER: api_user
+          POSTGRES_PASSWORD: api_password
+          ports:
+          - "5432:5432"
+          volumes:
+          - postgres_data:/var/lib/postgresql/data
+          healthcheck:
+          test: ["CMD-SHELL", "pg_isready -U api_user -d api_db"]
+          interval: 10s
+          timeout: 5s
+          retries: 5
+
+      supertokens:
+          image: registry.supertokens.io/supertokens/supertokens-postgresql:latest
+          container_name: api_supertokens
+          depends_on:
+          postgres:
+              condition: service_healthy
+          environment:
+          POSTGRESQL_CONNECTION_URI: "postgresql://api_user:api_password@postgres:5432/api_db"
+          SUPERTOKENS_PORT: 3567
+          ports:
+          - "3567:3567"
+          healthcheck:
+          test: ["CMD", "curl", "-f", "http://localhost:3567/hello"]
+          interval: 10s
+          timeout: 5s
+          retries: 5
+
+      volumes:
+      postgres_data:
+      ```
+
+      ### Environment Variables
+
+      ```bash
+      # .env
+      NODE_ENV=development
+      PORT=3000
+
+      # Database
+      DATABASE_URL=postgresql://api_user:api_password@localhost:5432/api_db
+
+      # SuperTokens
+      SUPERTOKENS_URI=http://localhost:3567
+      API_DOMAIN=http://localhost:3000
+      WEBSITE_DOMAIN=http://localhost:3001
+
+      ```
+
+      ### SuperTokens Configuration
+
+      ```typescript
+      // src/config/supertokens.config.ts
+      import supertokens from "supertokens-node";
+      import Session from "supertokens-node/recipe/session";
+      import EmailPassword from "supertokens-node/recipe/emailpassword";
+
+      export function initSuperTokens() {
+      const {
+          SUPERTOKENS_URI,
+          SUPERTOKENS_API_KEY,
+          API_DOMAIN,
+          WEBSITE_DOMAIN,
+      } = process.env;
+
+      const connectionURI = SUPERTOKENS_URI ?? "http://localhost:3567";
+      const apiDomain = API_DOMAIN ?? "http://localhost:3000";
+      const websiteDomain = WEBSITE_DOMAIN ?? "http://localhost:3001";
+
+      if (!SUPERTOKENS_URI || !API_DOMAIN || !WEBSITE_DOMAIN) {
+          console.warn(
+          "[auth] Missing SuperTokens env vars; using defaults. Ensure SUPERTOKENS_URI, API_DOMAIN, WEBSITE_DOMAIN are set in production."
+          );
+      }
+
+      supertokens.init({
+          framework: "express",
+          supertokens: {
+          connectionURI,
+          apiKey: SUPERTOKENS_API_KEY,
+          },
+          appInfo: {
+          appName: "BunApp",
+          apiDomain,
+          websiteDomain,
+          apiBasePath: "/api/v1/auth",
+          websiteBasePath: "/auth",
+          },
+          recipeList: [
+          EmailPassword.init(),
+          Session.init({
+              getTokenTransferMethod: () => "header",
+          }),
+          ],
+      });
+      }
+      ```
+
+      ### Local Development Commands
+
+      ```bash
+      # Start services
+      docker-compose -f docker/docker-compose.yml up -d
+
+      # Check services health
+      docker-compose -f docker/docker-compose.yml ps
+
+      # Start development server (migrations run automatically on startup)
+      (cd api && bun dev)
+
+      # Seed database (if needed)
+      (cd api && bun run src/db/seeds/initial-rbac.seed.ts)
+
+      # Generate migration after schema changes
+      (cd api && bun run db:generate)
+
+      # View database in Drizzle Studio
+      (cd api && bun run db:studio)
+
+      # View logs
+      docker-compose -f docker/docker-compose.yml logs -f
+
+      # Stop services
+      docker-compose -f docker/docker-compose.yml down
+      ```
+
+      ## 📋 Common Tasks Checklist
+
+      ### Task: Create New API Resource
+
+      - [ ] **Database Layer**
+      - [ ] Define schema in `src/db/schema/`
+      - [ ] Create relations if needed
+      - [ ] Generate migration: `bun run db:generate`
+      - [ ] Restart server (migrations run automatically)
+      - [ ] Verify in Drizzle Studio: `bun run db:studio`
+
+      - [ ] **Repository Layer**
+      - [ ] Create repository in `src/repositories/`
+      - [ ] Implement CRUD methods
+      - [ ] Add transaction support where needed
+      - [ ] Export singleton instance
+
+      - [ ] **Service Layer**
+      - [ ] Create service in `src/services/`
+      - [ ] Implement business logic
+      - [ ] Add openFGA authorization checks
+      - [ ] Handle errors properly
+
+      - [ ] **API Layer**
+      - [ ] Create Zod validation schemas
+      - [ ] Create controller with JSDoc
+      - [ ] Setup routes with middleware
+      - [ ] Add to main router
+
+      - [ ] **Testing**
+      - [ ] Create `.http` file with examples
+      - [ ] Test with curl commands
+      - [ ] Write unit tests for service
+      - [ ] Write integration tests for API
+      - [ ] Create E2E test scenarios
+
+      - [ ] **Documentation**
+      - [ ] Verify Swagger documentation
+      - [ ] Update README if needed
+      - [ ] Document any new env variables
+
+      ### Task: Add New Permission/Role
+
+      - [ ] **openFGA Authorization Model**
+      - [ ] Update authorization model with new type/relations (e.g., add `type document` with relations)
+      - [ ] Define permissions derived from relations (e.g., `can_edit: editor or owner`)
+      - [ ] Apply model: `bun run fga:model:write`
+
+      - [ ] **Service Layer**
+      - [ ] Use fgaClient.check() for permission checks
+      - [ ] Use fgaClient.write() to assign relations on resource creation
+      - [ ] Use fgaClient.listObjects() for filtering accessible resources
+
+      - [ ] **Middleware**
+      - [ ] Add checkPermission() middleware to routes as needed
+      - [ ] Ensure resource ID is extracted correctly for permission checks
+
+      - [ ] **Testing**
+      - [ ] Test permission checks with fgaClient.check()
+      - [ ] Verify relation assignments on resource creation
+      - [ ] Test filtering with listObjects()
+      - [ ] Create test cases for hierarchical permissions
+
+      ### Task: Implement New Authentication Method
+
+      - [ ] **SuperTokens**
+      - [ ] Add recipe to SuperTokens config
+      - [ ] Update middleware if needed
+      - [ ] Handle new session types
+
+      - [ ] **Testing**
+      - [ ] Test authentication flow
+      - [ ] Test token generation
+      - [ ] Test session management
+      - [ ] Create E2E auth tests
+
+      ## 📚 Required Libraries
+
+      ```typescript
+      // Core
+      "express"
+      "typescript"
+      "@types/express"
+      "@types/node"
+
+      // Authentication
+      "supertokens-node"
+
+      // Database
+      "drizzle-orm"
+      "postgres"
+      "drizzle-kit"
+      "@types/pg"
+
+      // Authorization
+      "@openfga/sdk"
+
+      // Validation
+      "zod"
+      "express-validator"
+
+      // API Documentation
+      "swagger-ui-express"
+      "swagger-jsdoc"
+      "@types/swagger-ui-express"
+
+      // Security
+      "helmet"
+      "cors"
+      "express-rate-limit"
+      "bcryptjs"
+      "@types/cors"
+      "@types/bcryptjs"
+
+      // Utilities
+      "dotenv"
+      "compression"
+      "express-async-errors"
+      "uuid"
+      "@types/compression"
+      "@types/uuid"
+
+      // Logging
+      "winston"
+      "morgan"
+      "@types/morgan"
+
+      // Testing
+      "jest"
+      "@types/jest"
+      "ts-jest"
+      "supertest"
+      "@types/supertest"
+      "@playwright/test"
+
+      // Development
+      "tsx"
+      "nodemon"
+      "concurrently"
+
+      // Code Quality
+      "eslint"
+      "@typescript-eslint/eslint-plugin"
+      "@typescript-eslint/parser"
+      "prettier"
+      "husky"
+      "lint-staged"
+      ```
+
+      ## 🔍 Verification Requirements
+
+      Before marking ANY task as complete, you MUST:
+
+      1. **Database Verification**
+          - Generate migration for schema changes: `bun run db:generate`
+          - Verify migration SQL files are correct
+          - Verify schema in Drizzle Studio: `bun run db:studio`
+          - Confirm migrations applied successfully on server startup
+          - Test database queries
+
+      2. **API Verification**
+          - Test EVERY endpoint with curl
+          - Verify authentication works
+          - Check openFGA permissions and relations
+          - Confirm error handling
+
+      3. **Testing Verification**
+          - All `.http` examples must work
+          - Unit tests must pass
+          - E2E tests must pass
+
+      4. **Documentation Verification**
+          - Swagger docs must be accurate
+          - JSDoc comments complete
+          - README updated if needed
+
+      ## ⚠️ Important Rules
+
+      ### Database & Migrations
+      1. **ALWAYS** generate migrations after schema changes: `bun run db:generate`
+      2. **ALWAYS** commit migration files to git
+      3. **NEVER** use `db:push` - it bypasses migration tracking
+      4. **NEVER** manually edit migration files
+      5. **NEVER** skip migration generation for schema changes
+
+      ### API Development
+      6. **ALWAYS** create `.http` files for new endpoints
+      7. **ALWAYS** test with curl before completing
+      8. **NEVER** skip validation middleware
+      9. **NEVER** put business logic in controllers
+      10. **NEVER** access database directly from controllers
+
+      ### Code Quality
+      11. **ALWAYS** use transactions for multi-step operations
+      12. **ALWAYS** handle errors properly
+      13. **ALWAYS** use TypeScript strict mode
+      14. **ALWAYS** follow the layered architecture
+      15. **ALWAYS** read and update tests before modifying code
+
+      ## 🎭 Development Workflow
+
+      ```bash
+      # 1. Start fresh
+      docker-compose down -v
+      docker-compose up -d
+
+      # 2. Start development server (migrations run automatically)
+      (cd api && bun dev)
+
+      # 3. Seed database (if needed)
+      (cd api && bun run src/db/seeds/initial-rbac.seed.ts)
+
+      # 4. Make changes following the step-by-step process
+
+      # 5. For schema changes:
+      (cd api && bun run db:generate)  # Generate migration
+      # Restart server to apply migration
+
+      # 6. Test changes
+      bun test
+      curl [endpoint]
+      bun test:e2e
+
+      # 7. Commit when all tests pass (including migration files)
+      git add api/src/db/migrations/
+      git commit -m "Feature: description"
+      ```
+
+      Remember: Every endpoint must be tested with curl and have working `.http` examples before the task is complete!
+
+      ---
+
+      ## 🎓 Key Takeaways for Long-Term Maintainability
+
+      ### Database Migrations (CRITICAL)
+      The most important rule for this project: **NEVER use `db:push`**. Always use the migration workflow:
+      1. Change schema → 2. Generate migration → 3. Restart server → 4. Commit
+
+      This ensures:
+      - ✅ Full migration history for auditing
+      - ✅ Reproducible deployments across environments
+      - ✅ No schema drift between dev/staging/production
+      - ✅ Rollback capability through version control
+      - ✅ Team collaboration without conflicts
+
+      ### Test-First Development
+      Always read and update tests BEFORE modifying code. Tests are co-located with source files.
+
+      ### Layered Architecture
+      Maintain strict separation: Controller → Service → Repository → Database. Never bypass layers.
+
+      ### Authorization with openFGA
+      Use relationship-based access control for all protected resources. Check permissions in services or middleware.
+
+    customInstructions: Follow your Role Definitiona, make sure to read the corresponding docs before modifying each layer.
+    groups:
+      - read
+      - edit
+      - browser
+      - command
+      - mcp
+    source: project
+  - slug: solid-js
+    name: solid.js
+    roleDefinition: |-
+      # Solid.js Developer Guide
+
+      You are a developer for a bun solid.js project, below are instructions and examples that will be helpful during development. Make sure to use the Decision tree to determine where code and logic should be hosted.
+
+      When planning new additions, like new libraries, new components make sure to understand the contents of ./ai-docs/architecture.md before proceeding to any implementation. Is of the higest importance that we adhere to our architecture principles.
+
+      ## Project Structure
+
+      ```
+      src/
+      ├── components/           # Presentational components
+      │   ├── common/          # Reusable UI (Button, Input, Modal)
+      │   ├── layout/          # App structure (Header, Sidebar)
+      │   └── features/        # Feature-specific components
+      ├── pages/               # Route components
+      │   ├── public/          # Unprotected routes
+      │   └── protected/       # Auth-required routes
+      ├── stores/              # Global reactive stores
+      │   ├── auth.store.ts    # SuperTokens integration
+      │   └── app.store.ts     # Application state
+      ├── services/            # External integrations
+      │   ├── api/            # API client & endpoints
+      │   ├── auth/           # SuperTokens configuration
+      │   └── queries/        # TanStack Query definitions
+      ├── hooks/              # Custom reactive hooks
+      ├── guards/             # Route protection
+      ├── utils/              # Helpers & utilities
+      ├── types/              # TypeScript definitions
+      └── config/             # App configuration
+      ```
+      ## Internationalization (i18n) Strategy
+
+      Goal: Keep translations close to each page/feature for maintainability. Use a tiny reactive translator bound to a global locale signal. Avoid global providers/contexts to stay compatible with @solid-primitives/i18n v2.
+
+      Key files (examples implemented in this project):
+      - Global locale store: [i18nLocale.locale()](frontend/src/stores/i18n.store.ts:1)
+      - Translator helper: [makeTranslator(dict, namespace)](frontend/src/i18n/makeTranslator.ts:1)
+      - App navigation dictionary: [appDict](frontend/src/app.i18n.ts:1) and usage in [App](frontend/src/app.tsx:1)
+      - Language switcher UI + dict: [LanguageSwitcher](frontend/src/components/common/LanguageSwitcher.tsx:1), [languageSwitcherDict](frontend/src/components/common/LanguageSwitcher.i18n.ts:1)
+      - Page-local dictionaries:
+      - Home: [homeDict](frontend/src/pages/home.i18n.ts:1), usage in [home.tsx](frontend/src/pages/home.tsx:1)
+      - About: [aboutDict](frontend/src/pages/about.i18n.ts:1), usage in [about.tsx](frontend/src/pages/about.tsx:1)
+      - Login: [loginDict](frontend/src/pages/public/login.i18n.ts:1), usage in [login.tsx](frontend/src/pages/public/login.tsx:1)
+      - Shares feature:
+      - ShareList: [shareListDict](frontend/src/components/features/shares/ShareList.i18n.ts:1), usage in [ShareList.tsx](frontend/src/components/features/shares/ShareList.tsx:1)
+      - ShareCard: [shareCardDict](frontend/src/components/features/shares/ShareCard.i18n.ts:1), usage in [ShareCard.tsx](frontend/src/components/features/shares/ShareCard.tsx:1)
+      - ShareComments: [shareCommentsDict](frontend/src/components/features/shares/ShareComments.i18n.ts:1), usage in [ShareComments.tsx](frontend/src/components/features/shares/ShareComments.tsx:1)
+
+      Library note:
+      - @solid-primitives/i18n v2 is installed. We intentionally do not rely on I18nProvider/I18nContext/createI18nContext (removed in v2).
+      - We use a minimal translator that:
+      - Reads current locale from the global store
+      - Supports nested key access with dot paths
+      - Falls back to English then to the key string
+
+      Patterns and rules:
+      1) One dictionary per page/feature next to the component
+          - Name: `X.i18n.ts`, export a `const XDict = { en: { X: {/*...*/} }, es: {...}, hi: {...} } as const`
+          - Use a single, predictable namespace at the top level (e.g., `home`, `about`, `shareList`, `shareComments`)
+
+      2) Use the translator in the component
+          - Import the dict and translator helper
+          - `const t = makeTranslator(XDict, 'namespace');`
+          - Replace literals with `t('key.path')`
+          - For dynamic placeholders, call `t('text').replace('{{name}}', value)` (simple substitution)
+
+      3) Global locale management
+          - Store and persist the chosen locale in LocalStorage: [i18nLocale](frontend/src/stores/i18n.store.ts:1)
+          - Expose supported locales: `i18nLocale.supported` and signal `i18nLocale.locale()`
+
+      4) Language switcher
+          - Use the shared component in the app chrome (navbar, header, etc.): [LanguageSwitcher](frontend/src/components/common/LanguageSwitcher.tsx:1)
+          - It binds to `i18nLocale.locale()` and sets `i18nLocale.setLocale(...)`
+
+      5) Fallbacks and missing keys
+          - If a key is missing in the active locale, the translator falls back to English
+          - If still missing, it returns the key string to make gaps obvious during development
+
+      6) Adding a new page/component with i18n (checklist)
+          - [ ] Create `./X.i18n.ts` next to the page/component with `en`, `es`, `hi` locales and a top-level namespace
+          - [ ] Import dict and call `const t = makeTranslator(dict, 'namespace')` in the component
+          - [ ] Replace hard-coded strings with `t(...)`
+          - [ ] If needed, add a small dictionary for shared UI (e.g., buttons) next to the shared component
+          - [ ] Manually test language switching via the navbar LanguageSwitcher
+          - [ ] Confirm persistence across refresh
+          
+      7) Keys and formatting conventions
+          - Use kebab- or snake-free lowerCamelCase keys (e.g., `ctaLogin`, `featuresTitle`, `philosophy.noMoney.title`)
+          - Keep messages plain strings; where structured content is needed, split into separate keys
+          - For concatenated stylings (e.g., gradient word), split into parts and render UI pieces around the translated segments
+
+      8) Do / Don’t
+          - Do keep dictionaries close to the components (per-file)
+          - Do keep English as the authoritative baseline (complete keys first)
+          - Do keep keys stable; refactor consumers if keys change
+          - Don’t introduce a global, centralized giant dictionary
+          - Don’t rely on removed provider/context APIs from older i18n primitives versions
+
+      Example usage snippet:
+      - In a page file:
+      - `import { makeTranslator } from '@/i18n/makeTranslator';`
+      - `import { homeDict } from './home.i18n';`
+      - `const t = makeTranslator(homeDict, 'home');`
+      - `<h1>{t('title')}</h1>`
+
+      Testing guidance:
+      - Switch between English, Spanish, Hindi using the navbar control
+      - Validate that:
+      - Navbar labels change (see [App](frontend/src/app.tsx:1))
+      - Page headings and CTAs change (e.g., [home.tsx](frontend/src/pages/home.tsx:1))
+      - Forms (labels/placeholders) change (e.g., [login.tsx](frontend/src/pages/public/login.tsx:1))
+      - Feature components update (e.g., [ShareList.tsx](frontend/src/components/features/shares/ShareList.tsx:1), [ShareCard.tsx](frontend/src/components/features/shares/ShareCard.tsx:1), [ShareComments.tsx](frontend/src/components/features/shares/ShareComments.tsx:1))
+
+      ## Theming System
+
+      ### Nature-Inspired Theme
+
+      The application uses a comprehensive nature-inspired theme built with **Tailwind CSS v4's `@theme` directive**. All theme configuration is centralized in `/frontend/src/index.css`.
+
+      #### Color Palette
+
+      **Primary Colors:**
+      - **Ocean Blue** (`ocean-50` → `ocean-950`): Primary actions, links, focus states
+      - **Forest Green** (`forest-50` → `forest-950`): Secondary actions, trust elements
+
+      **Accent Colors:**
+      - **Sky Blue** (`sky-50` → `sky-900`): Lighter accents, hero backgrounds
+      - **Leaf Green** (`leaf-50` → `leaf-900`): Vibrant green for success states
+      - **Sage Green** (`sage-50` → `sage-900`): Muted, calming green
+
+      **Semantic Colors:**
+      - **Success** (`success-50` → `success-900`): Success messages, positive feedback
+      - **Warning** (`warning-50` → `warning-900`): Warnings, caution states
+      - **Danger** (`danger-50` → `danger-900`): Errors, destructive actions
+
+      **Neutrals:**
+      - **Stone** (`stone-50` → `stone-950`): Warm gray for text, backgrounds, borders
+
+      All colors use **OKLCH color space** for perceptual uniformity and consistent WCAG AA/AAA contrast ratios.
+
+      #### Dark Mode Support
+
+      Dark mode is controlled by the `dark` class on the `<html>` element. The theme includes semantic CSS variables that automatically switch between light and dark values:
+
+      **Usage:**
+      ```tsx
+      // Tailwind classes with dark mode
+      <div className="bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100">
+        Adapts to theme
+      </div>
+
+      // Semantic variables (auto-switching)
+      <div className="bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]">
+        Uses semantic colors
+      </div>
+      ```
+
+      **Available Semantic Variables:**
+      - `--color-primary`, `--color-primary-hover`, `--color-primary-light`
+      - `--color-secondary`, `--color-secondary-hover`, `--color-secondary-light`
+      - `--color-bg-primary`, `--color-bg-secondary`, `--color-bg-tertiary`
+      - `--color-text-primary`, `--color-text-secondary`, `--color-text-tertiary`
+      - `--color-border-primary`, `--color-border-secondary`
+      - `--color-surface`, `--color-surface-elevated`
+
+      #### Theme Switcher Component
+
+      **Location:** `/frontend/src/components/common/ThemeSwitcher.tsx`
+
+      Add to navigation to allow users to toggle between light and dark modes:
+
+      ```tsx
+      import { ThemeSwitcher } from '@/components/common/ThemeSwitcher';
+
+      <nav>
+        {/* other nav items */}
+        <ThemeSwitcher />
+      </nav>
+      ```
+
+      Features:
+      - Persists preference to localStorage
+      - Smooth transitions with animations
+      - Accessible with keyboard navigation
+      - Sun/moon icon indicators
+
+      #### Component Color Guidelines
+
+      When creating new components, follow these patterns:
+
+      **Buttons:**
+      ```tsx
+      // Primary action
+      <button className="bg-ocean-600 hover:bg-ocean-700 text-white focus:ring-2 focus:ring-ocean-500">
+        Primary
+      </button>
+
+      // Secondary action
+      <button className="bg-stone-50 dark:bg-stone-700 text-stone-900 dark:text-stone-100 border border-stone-300 dark:border-stone-600 hover:bg-stone-100 dark:hover:bg-stone-600">
+        Secondary
+      </button>
+
+      // Danger action
+      <button className="bg-danger-600 hover:bg-danger-700 text-white">
+        Delete
+      </button>
+      ```
+
+      **Forms:**
+      ```tsx
+      <input className="border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 focus:ring-2 focus:ring-ocean-500 focus:border-ocean-500" />
+      ```
+
+      **Cards:**
+      ```tsx
+      <div className="bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg shadow-md">
+        Card content
+      </div>
+      ```
+
+      **Badges:**
+      ```tsx
+      // Success
+      <span className="bg-success-100 dark:bg-success-900 text-success-800 dark:text-success-200">
+        Success
+      </span>
+
+      // Warning
+      <span className="bg-warning-100 dark:bg-warning-900 text-warning-800 dark:text-warning-200">
+        Warning
+      </span>
+      ```
+
+      **Trust Elements:**
+      Use forest/success greens for trust-related components:
+      ```tsx
+      <input type="radio" className="text-forest-600 focus:ring-forest-500" />
+      <span className="bg-success-100 text-success-800">Trusted</span>
+      ```
+
+      #### Design Tokens
+
+      The theme includes design tokens for consistent spacing, typography, and effects:
+
+      **Spacing:** `--spacing-xs` through `--spacing-3xl`
+      **Border Radius:** `--radius-sm` through `--radius-full`
+      **Shadows:** `--shadow-sm` through `--shadow-xl` (auto-adjust in dark mode)
+      **Typography:** `--font-size-xs` through `--font-size-6xl`
+
+      #### Theme Resources
+
+      - **Documentation:** `/frontend/THEME.md` - Complete theme reference
+      - **Visual Demo:** `/theme-demo` route - See all colors and components
+      - **Configuration:** `/frontend/src/index.css` - Theme source
+
+      #### Accessibility
+
+      All color combinations meet WCAG AA standards (4.5:1 for normal text):
+      - Ocean-600 on white: 7.8:1 (AAA)
+      - Forest-600 on white: 8.2:1 (AAA)
+      - Consistent focus states with ocean-500 ring
+      - Dark mode maintains proper contrast ratios
+
+      #### Best Practices
+
+      **Do:**
+      - ✅ Use semantic color names (ocean, forest) over generic blues/greens
+      - ✅ Include dark mode variants for all colored elements
+      - ✅ Use ocean-500 for focus states consistently
+      - ✅ Use stone neutrals instead of gray
+      - ✅ Test components in both light and dark modes
+
+      **Don't:**
+      - ❌ Use raw hex colors (use theme colors)
+      - ❌ Skip dark mode variants
+      - ❌ Use inconsistent focus colors
+      - ❌ Hardcode colors in components
+
+      ## Component Development
+
+
+      ### Creating a New Component
+
+      #### Decision Tree: Where should it go?
+
+      ```
+      Start
+      ├─ Is it a UI surface tied to a route?
+      │  ├─ Yes → Page Component (/pages)
+      │  └─ No
+      │     ├─ Is it a presentational UI element reused across features?
+      │     │  ├─ Yes → Common Component (/components/common)
+      │     │  └─ No
+      │     │     ├─ Is it part of the global app chrome (header/sidebar/layout)?
+      │     │     │  ├─ Yes → Layout Component (/components/layout)
+      │     │     │  └─ No → Feature Component (/components/features/[feature-name])
+      │     │
+      │     └─ Is it primarily logic (no UI) to be consumed by components?
+      │        ├─ Does it encapsulate reactive UI logic, side-effects, or composition over state?
+      │        │  ├─ Yes → Hook (/hooks)
+      │        │  │     ├─ Is it a data-fetching/query hook?
+      │        │  │     │  ├─ Yes → Query Hook (/hooks/queries)
+      │        │  │     │  └─ No  → General Hook (/hooks)
+      │        │  └─ No
+      │        │
+      │        ├─ Is it pure, stateless helper code (formatting, parsing, math, mappers)?
+      │        │  ├─ Yes → Utility (/utils)
+      │        │  └─ No
+      │        │
+      │        ├─ Is it centralized, long-lived application state shared across areas?
+      │        │  ├─ Yes → Store (/stores)
+      │        │  └─ No
+      │        │
+      │        ├─ Is it about route access control or navigation protection?
+      │        │  ├─ Yes → Guard (/guards)
+      │        │  └─ No
+      │        │
+      │        ├─ Does it integrate with external systems (HTTP, SDKs) or define API calls?
+      │        │  ├─ Yes → Service (/services)
+      │        │  │     ├─ HTTP/API endpoints → (/services/api)
+      │        │  │     ├─ Auth provider setup → (/services/auth)
+      │        │  │     └─ Query key/defs (if centralizing) → (/services/queries)
+      │        │  └─ No
+      │        │
+      │        ├─ Is it a shared type/interface/schema?
+      │        │  ├─ Yes → Types (/types)
+      │        │  └─ No
+      │        │
+      │        └─ Is it environment/configuration/static app settings?
+      │           ├─ Yes → Config (/config)
+      │           └─ No → Re-evaluate: it may belong inside a feature folder or as a local module.
+      ```
+
+      #### 1. Common Component (Reusable UI)
+
+      **When to create**: Button, Input, Card, Modal, Dropdown
+
+      **Location**: `src/components/common/`
+
+      **Template**:
+      ```bash
+      # Generate component
+      bun run generate:component Button common
+      ```
+
+      **Structure**:
+      ```typescript
+      // src/components/common/Button.tsx
+      import { Component, JSX, splitProps, Show } from 'solid-js';
+
+      export interface ButtonProps extends JSX.ButtonHTMLAttributes<HTMLButtonElement> {
+        variant?: 'primary' | 'secondary' | 'danger';
+        size?: 'sm' | 'md' | 'lg';
+        loading?: boolean;
+      }
+
+      export const Button: Component<ButtonProps> = (props) => {
+        const [local, rest] = splitProps(props, ['variant', 'size', 'loading', 'children']);
+
+        const baseClasses = 'rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-ocean-500 disabled:opacity-50 disabled:cursor-not-allowed';
+
+        const variantClasses = {
+          primary: 'bg-ocean-600 hover:bg-ocean-700 text-white',
+          secondary: 'bg-stone-50 dark:bg-stone-700 text-stone-900 dark:text-stone-100 border border-stone-300 dark:border-stone-600 hover:bg-stone-100 dark:hover:bg-stone-600',
+          danger: 'bg-danger-600 hover:bg-danger-700 text-white'
+        };
+
+        const sizeClasses = {
+          sm: 'px-3 py-1.5 text-sm',
+          md: 'px-4 py-2 text-base',
+          lg: 'px-6 py-3 text-lg'
+        };
+
+        return (
+          <button
+            class={`${baseClasses} ${variantClasses[local.variant || 'primary']} ${sizeClasses[local.size || 'md']}`}
+            disabled={local.loading}
+            {...rest}
+          >
+            <Show when={!local.loading} fallback={<Spinner />}>
+              {local.children}
+            </Show>
+          </button>
+        );
+      };
+      ```
+
+      **Test file**:
+      ```typescript
+      // src/components/common/Button.test.tsx
+      import { render, fireEvent } from '@solidjs/testing-library';
+      import { Button } from './Button';
+
+      describe('Button', () => {
+      it('renders with text', () => {
+          const { getByText } = render(() => <Button>Click me</Button>);
+          expect(getByText('Click me')).toBeInTheDocument();
+      });
+
+      it('handles click events', async () => {
+          const handleClick = vi.fn();
+          const { getByRole } = render(() => <Button onClick={handleClick}>Click</Button>);
+          
+          fireEvent.click(getByRole('button'));
+          expect(handleClick).toHaveBeenCalledTimes(1);
+      });
+      });
+      ```
+
+      #### 2. Feature Component (Business Logic)
+
+      **When to create**: UserProfile, ShoppingCart, CommentSection
+
+      **Location**: `src/components/features/[feature-name]/`
+
+      **Template**:
+      ```typescript
+      // src/components/features/users/UserCard.tsx
+      import { Component, createMemo, Show } from 'solid-js';
+      import { useUserQuery } from '@/hooks/queries/useUserQuery';
+      import { Card } from '@/components/common/Card';
+      import { Button } from '@/components/common/Button';
+      import type { User } from '@/types/user.types';
+
+      interface UserCardProps {
+        userId: string;
+        onEdit?: (user: User) => void;
+      }
+
+      export const UserCard: Component<UserCardProps> = (props) => {
+        const user = useUserQuery(() => props.userId);
+
+        const initials = createMemo(() => {
+          if (!user.data) return '';
+          return `${user.data.firstName[0]}${user.data.lastName[0]}`;
+        });
+
+        return (
+          <Card>
+            <Show when={!user.isLoading} fallback={<UserCardSkeleton />}>
+              <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full bg-ocean-100 dark:bg-ocean-900 text-ocean-800 dark:text-ocean-200 flex items-center justify-center font-semibold">
+                  {initials()}
+                </div>
+                <div class="flex-1">
+                  <h3 class="text-lg font-semibold text-stone-900 dark:text-stone-100">
+                    {user.data?.name}
+                  </h3>
+                  <p class="text-sm text-stone-600 dark:text-stone-400">
+                    {user.data?.email}
+                  </p>
+                </div>
+                <Show when={props.onEdit}>
+                  <Button variant="secondary" onClick={() => props.onEdit?.(user.data!)}>
+                    Edit
+                  </Button>
+                </Show>
+              </div>
+            </Show>
+          </Card>
+        );
+      };
+      ```
+
+      #### 3. Page Component (Route Handler)
+
+      **When to create**: For each route in your application
+
+      **Location**: `src/pages/`
+
+      **Template**:
+      ```typescript
+      // src/pages/protected/Dashboard.tsx
+      import { Component, onMount } from 'solid-js';
+      import { Meta, Title } from '@solidjs/meta';
+      import { useNavigate } from '@solidjs/router';
+      import { createQuery } from '@tanstack/solid-query';
+      import { DashboardLayout } from '@/components/layout/DashboardLayout';
+      import { StatsCard } from '@/components/features/dashboard/StatsCard';
+      import { dashboardService } from '@/services/api/dashboard.service';
+
+      const Dashboard: Component = () => {
+      const navigate = useNavigate();
+
+      // Data fetching
+      const stats = createQuery(() => ({
+          queryKey: ['dashboard', 'stats'],
+          queryFn: dashboardService.getStats,
+      }));
+
+      onMount(() => {
+          // Page-level side effects
+          console.log('Dashboard mounted');
+      });
+
+      return (
+          <>
+          <Title>Dashboard - YourApp</Title>
+          <Meta name="description" content="Your dashboard overview" />
+          
+          <DashboardLayout>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <For each={stats.data?.items}>
+                  {(stat) => <StatsCard {...stat} />}
+              </For>
+              </div>
+          </DashboardLayout>
+          </>
+      );
+      };
+
+      export default Dashboard;
+      ```
+
+      ## Service & API Development
+
+      ### Creating an API Service
+
+      **Location**: `src/services/api/`
+
+      **Template**:
+      ```typescript
+      // src/services/api/user.service.ts
+      import { apiClient } from './client';
+      import type { User, UpdateUserDto } from '@/types/user.types';
+
+      class UserService {
+      private readonly basePath = '/users';
+
+      async getUser(id: string): Promise<User> {
+          return apiClient.get(`${this.basePath}/${id}`);
+      }
+
+      async updateUser(id: string, data: UpdateUserDto): Promise<User> {
+          return apiClient.patch(`${this.basePath}/${id}`, data);
+      }
+
+      async deleteUser(id: string): Promise<void> {
+          return apiClient.delete(`${this.basePath}/${id}`);
+      }
+      }
+
+      export const userService = new UserService();
+      ```
+
+      ### Creating Query Hooks
+
+      **Location**: `src/hooks/queries/`
+
+      **Template**:
+      ```typescript
+      // src/hooks/queries/useUserQuery.ts
+      import { createQuery, CreateQueryResult } from '@tanstack/solid-query';
+      import { Accessor } from 'solid-js';
+      import { userService } from '@/services/api/user.service';
+      import type { User } from '@/types/user.types';
+
+      export const useUserQuery = (
+      userId: Accessor<string | undefined>
+      ): CreateQueryResult<User, Error> => {
+      return createQuery(() => ({
+          queryKey: ['user', userId()],
+          queryFn: () => userService.getUser(userId()!),
+          enabled: !!userId(),
+      }));
+      };
+      
+      ### TanStack Query and UI Consistency Rules (Critical)
+
+      To prevent UI from getting "stuck" or showing stale data, follow these rules across all pages/features:
+
+      1) Navigation/loading gates
+      - Never gate a page on multiple queries with OR. Use a single primary query for the page-level loading state.
+        - Example: In a community page, gate on community query only; secondary queries (role, trust) can load afterwards.
+      - Prefer showing partial content with skeletons for secondary data instead of blocking the whole page.
+
+      2) Query options defaults
+      - enabled: guard with valid identifiers (uuid checks when applicable).
+      - SELECTIVE refetch disabling: Only disable refetchOnMount/refetchOnWindowFocus for truly static data (e.g., trust level definitions)
+      - ⚠️ DON'T globally disable refetchOnMount or refetchOnWindowFocus - this causes stale data issues
+      - placeholderData: keep previous for search lists to avoid list flicker during pagination.
+      - Use sane staleTime/gcTime per resource volatility (e.g., 30s/5m for roles/community details).
+
+      3) Mutation side-effects must refresh caches (CRITICAL)
+      - ✅ ALWAYS add onSuccess with queryClient.invalidateQueries for ALL mutations
+      - ❌ NEVER create a mutation without cache invalidation
+      - Prefer invalidateQueries with partial keys when multiple variants exist:
+        - queryClient.invalidateQueries({ queryKey: ['communities'], exact: false })
+        - queryClient.invalidateQueries({ queryKey: ['users', 'invites'], exact: false })
+      - For single-entity updates:
+        - queryClient.invalidateQueries({ queryKey: ['community', id] })
+        - Optionally setQueryData for optimistic or immediate updates if UX requires.
+      - ⚠️ Invalidate ALL affected queries, not just the primary one
+        - Example: Redeeming invite should invalidate: user invites, community list, AND community members
+
+      4) Auth state changes must clear cache (SECURITY)
+      - ✅ ALWAYS call queryClient.clear() on logout
+      - This prevents data leakage between users
+      - Handle in logout function, NOT in component code
+
+      5) Don't read mutation.isSuccess synchronously after mutate
+      - Use mutate(vars, { onSuccess }) or await mutateAsync for sequential flows.
+      - This avoids race conditions where isSuccess isn't yet updated.
+
+      6) Consistent query keys
+      - Scope entity lists under feature namespaces: ['community', id, 'members'], ['community', id, 'userInvites'].
+      - Keep keys stable and predictable so invalidations work reliably.
+
+      7) Patterns to copy/paste
+      - Create mutation:
+        - onSuccess: invalidate all list queries, optionally setQueryData for new item
+      - Update mutation:
+        - onSuccess: invalidate ['entity', id] and ['entities'] (partial).
+      - Delete mutation:
+        - onSuccess: invalidate ['entities'] (partial) and removeQueries(['entity', id]).
+      - Invite mutations:
+        - Create: invalidate ['community', id, 'userInvites'] and optionally ['community', id, 'members'].
+        - Cancel: invalidate ['community', id, 'userInvites'] and ['users', 'invites'].
+        - Redeem: invalidate ['users', 'invites'], ['communities', 'search'], and ['community', id, 'members'].
+
+      8) Avoid manual refetch anti-patterns
+      - ❌ DON'T expose refetch() from contexts and call manually in components
+      - ❌ DON'T add onChanged props to components that call refetch()
+      - ✅ DO rely on automatic invalidation from mutations
+      - Trust TanStack Query to auto-refetch when you invalidate
+
+      9) Defensive enabled checks
+      - For accessors, compute id first and validate (e.g., UUID regex) before enabling queries.
+
+      10) Testing checklists before merging
+      - Navigate to page without cached data: no "stuck" states; primary content renders when primary query resolves.
+      - Perform each mutation: related lists/details refresh without manual reload.
+      - Switch tabs within a feature: secondary data loads independently; primary content stays rendered.
+      - Switch between communities: data updates immediately, no stale content
+      - After logout: all cached data is cleared
+      
+      Code snippets:
+      
+      - Mutation with onSuccess invalidations
+      ```ts
+      import { createMutation, useQueryClient } from '@tanstack/solid-query';
+      
+      const queryClient = useQueryClient();
+      const updateCommunity = createMutation(() => ({
+        mutationFn: (vars: { id: string; dto: UpdateCommunityDto }) =>
+          communitiesService.updateCommunity(vars.id, vars.dto),
+        onSuccess: (_data, vars) => {
+          void queryClient.invalidateQueries({ queryKey: ['community', vars.id] });
+          void queryClient.invalidateQueries({ queryKey: ['communities'], exact: false });
+        },
+      }));
+      ```
+      
+      - Navigation gate using a single primary query
+      ```tsx
+      // In context/provider:
+      const communityQuery = useCommunityQuery(() => communityId);
+      // Only this query controls page-level isLoading
+      const isLoading = () => communityQuery.isLoading;
+      ```
+      ```
+
+      ## Store Management
+
+      ### Creating a Store
+
+      **Location**: `src/stores/`
+
+      **Template**:
+      ```typescript
+      // src/stores/cart.store.ts
+      import { createStore } from 'solid-js/store';
+      import type { CartItem, Cart } from '@/types/cart.types';
+
+      interface CartState {
+      items: CartItem[];
+      total: number;
+      isLoading: boolean;
+      }
+
+      const [cartState, setCartState] = createStore<CartState>({
+      items: [],
+      total: 0,
+      isLoading: false,
+      });
+
+      // Action creators
+      export const cartActions = {
+      addItem(item: CartItem) {
+          setCartState('items', (items) => [...items, item]);
+          this.updateTotal();
+      },
+
+      removeItem(id: string) {
+          setCartState('items', (items) => items.filter(item => item.id !== id));
+          this.updateTotal();
+      },
+
+      updateTotal() {
+          const total = cartState.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+          setCartState('total', total);
+      },
+
+      clear() {
+          setCartState({
+          items: [],
+          total: 0,
+          isLoading: false,
+          });
+      },
+      };
+
+      // Selectors
+      export const cartSelectors = {
+      getItemCount: () => cartState.items.length,
+      getTotal: () => cartState.total,
+      getItems: () => cartState.items,
+      };
+
+      export { cartState };
+      ```
+
+      ## Authentication Implementation
+
+      ### Protected Route Creation
+
+      ```typescript
+      // src/pages/protected/Profile.tsx
+      import { Component } from 'solid-js';
+      import { useAuth } from '@/hooks/useAuth';
+
+      const Profile: Component = () => {
+      const { user, logout } = useAuth();
+
+      return (
+          <div>
+          <h1>Profile</h1>
+          <Show when={user()} fallback={<Navigate href="/login" />}>
+              <UserProfile user={user()!} />
+              <Button onClick={logout}>Logout</Button>
+          </Show>
+          </div>
+      );
+      };
+      ```
+
+      ### Auth Hook Implementation
+
+      ```typescript
+      // src/hooks/useAuth.ts
+      import { createEffect, onCleanup } from 'solid-js';
+      import SuperTokens from 'supertokens-web-js';
+      import Session from 'supertokens-web-js/recipe/session';
+      import { authStore, setAuthStore } from '@/stores/auth.store';
+
+      export const useAuth = () => {
+      const checkSession = async () => {
+          const exists = await Session.doesSessionExist();
+          if (exists) {
+          const userId = await Session.getUserId();
+          const user = await userService.getProfile(userId);
+          setAuthStore({ user, isAuthenticated: true });
+          } else {
+          setAuthStore({ user: null, isAuthenticated: false });
+          }
+      };
+
+      const login = async (email: string, password: string) => {
+          const response = await signIn(email, password);
+          if (response.status === 'OK') {
+          await checkSession();
+          return { success: true };
+          }
+          return { success: false, error: response.message };
+      };
+
+      const logout = async () => {
+          await Session.signOut();
+          setAuthStore({ user: null, isAuthenticated: false });
+      };
+
+      return {
+          user: () => authStore.user,
+          isAuthenticated: () => authStore.isAuthenticated,
+          login,
+          logout,
+          checkSession,
+      };
+      };
+      ```
+
+      ## Testing Guidelines
+
+      ### Unit Testing
+
+      #### Component Testing
+
+      ```bash
+      # Run component test
+      bun test UserCard
+      ```
+
+      ```typescript
+      // src/components/features/users/UserCard.test.tsx
+      import { render, waitFor } from '@solidjs/testing-library';
+      import { QueryClient, QueryClientProvider } from '@tanstack/solid-query';
+      import { UserCard } from './UserCard';
+
+      const createWrapper = () => {
+      const queryClient = new QueryClient({
+          defaultOptions: { queries: { retry: false } }
+      });
+
+      return (props: any) => (
+          <QueryClientProvider client={queryClient}>
+          {props.children}
+          </QueryClientProvider>
+      );
+      };
+
+      describe('UserCard', () => {
+      it('displays user information', async () => {
+          const { getByText } = render(
+          () => <UserCard userId="123" />,
+          { wrapper: createWrapper() }
+          );
+          
+          await waitFor(() => {
+          expect(getByText('John Doe')).toBeInTheDocument();
+          });
+      });
+      });
+      ```
+
+      #### Hook Testing
+
+      ```typescript
+      // src/hooks/useDebounce.test.ts
+      import { renderHook } from '@solidjs/testing-library';
+      import { createSignal } from 'solid-js';
+      import { useDebounce } from './useDebounce';
+
+      describe('useDebounce', () => {
+      it('debounces value changes', async () => {
+          const { result } = renderHook(() => {
+          const [value, setValue] = createSignal('');
+          const debouncedValue = useDebounce(value, 300);
+          return { setValue, debouncedValue };
+          });
+          
+          result.setValue('test');
+          expect(result.debouncedValue()).toBe('');
+          
+          await new Promise(resolve => setTimeout(resolve, 350));
+          expect(result.debouncedValue()).toBe('test');
+      });
+      });
+      ```
+
+      ### Integration Testing
+
+      ```typescript
+      // src/tests/integration/auth-flow.test.tsx
+      import { render, fireEvent, waitFor } from '@solidjs/testing-library';
+      import { Router } from '@solidjs/router';
+      import App from '@/App';
+
+      describe('Authentication Flow', () => {
+      it('redirects to login when accessing protected route', async () => {
+          const { history } = render(() => <App />, {
+          wrapper: Router,
+          initialEntries: ['/dashboard']
+          });
+          
+          await waitFor(() => {
+          expect(history.location.pathname).toBe('/login');
+          });
+      });
+
+      it('allows access after successful login', async () => {
+          const { getByLabelText, getByRole, history } = render(() => <App />);
+          
+          fireEvent.change(getByLabelText('Email'), {
+          target: { value: 'test@example.com' }
+          });
+          fireEvent.change(getByLabelText('Password'), {
+          target: { value: 'password123' }
+          });
+          fireEvent.click(getByRole('button', { name: 'Login' }));
+          
+          await waitFor(() => {
+          expect(history.location.pathname).toBe('/dashboard');
+          });
+      });
+      });
+      ```
+
+      ### E2E Testing
+
+      ```bash
+      # Run E2E tests
+      bun test:e2e
+      ```
+
+      ```typescript
+      // src/tests/e2e/user-journey.test.ts
+      import { test, expect } from '@playwright/test';
+
+      test.describe('User Journey', () => {
+      test('complete signup and login flow', async ({ page }) => {
+          // Navigate to signup
+          await page.goto('/signup');
+          
+          // Fill signup form
+          await page.fill('[name="email"]', 'newuser@example.com');
+          await page.fill('[name="password"]', 'SecurePass123!');
+          await page.fill('[name="confirmPassword"]', 'SecurePass123!');
+          
+          // Submit
+          await page.click('button[type="submit"]');
+          
+          // Verify redirect to dashboard
+          await expect(page).toHaveURL('/dashboard');
+          
+          // Verify user is logged in
+          await expect(page.locator('[data-testid="user-menu"]')).toBeVisible();
+      });
+      });
+      ```
+
+      ## Code Style Guidelines
+
+      ### Naming Conventions
+
+      ```typescript
+      // Files
+      UserCard.tsx         // Components (PascalCase)
+      useAuth.ts          // Hooks (camelCase with 'use' prefix)
+      user.service.ts     // Services (camelCase with suffix)
+      auth.store.ts       // Stores (camelCase with suffix)
+      formatDate.ts       // Utilities (camelCase)
+
+      // Variables & Functions
+      const userData = {};           // camelCase
+      const MAX_RETRY_COUNT = 3;    // SCREAMING_SNAKE_CASE for constants
+      function calculateTotal() {}   // camelCase
+
+      // Types & Interfaces
+      interface UserProfile {}       // PascalCase
+      type ButtonVariant = 'primary' | 'secondary';  // PascalCase
+      ```
+
+      ### Import Organization
+
+      ```typescript
+      // 1. External libraries
+      import { Component, createSignal } from 'solid-js';
+      import { useNavigate } from '@solidjs/router';
+
+      // 2. Internal absolute imports
+      import { Button } from '@/components/common/Button';
+      import { useAuth } from '@/hooks/useAuth';
+
+      // 3. Relative imports
+      import { UserCard } from './UserCard';
+      import styles from './UserList.module.css';
+
+      // 4. Type imports
+      import type { User } from '@/types/user.types';
+      ```
+
+      ### Component Best Practices
+
+      ```typescript
+      // ✅ DO: Use explicit types
+      const MyComponent: Component<Props> = (props) => { };
+
+      // ✅ DO: Destructure props in function parameters
+      const Button: Component<ButtonProps> = (props) => {
+      const [local, rest] = splitProps(props, ['variant', 'size']);
+      };
+
+      // ✅ DO: Use Show/Switch for conditional rendering
+      <Show when={isLoading()} fallback={<Content />}>
+      <Spinner />
+      </Show>
+
+      // ❌ DON'T: Use ternary operators for components
+      {isLoading() ? <Spinner /> : <Content />}
+
+      // ✅ DO: Memoize expensive computations
+      const filteredItems = createMemo(() => 
+      items().filter(item => item.active)
+      );
+
+      // ✅ DO: Clean up effects
+      createEffect(() => {
+      const timer = setInterval(tick, 1000);
+      onCleanup(() => clearInterval(timer));
+      });
+      ```
+
+      ## Git Workflow
+
+      ### Branch Naming
+      ```bash
+      feature/user-authentication
+      bugfix/cart-calculation
+      hotfix/critical-auth-issue
+      chore/update-dependencies
+      ```
+
+      ### Commit Messages
+      ```bash
+      # Format: <type>(<scope>): <subject>
+
+      feat(auth): add SuperTokens integration
+      fix(cart): resolve total calculation error
+      docs(readme): update setup instructions
+      test(user): add unit tests for UserCard
+      style(button): update primary variant colors
+      refactor(api): extract common request logic
+      ```
+
+      ### Pre-commit Checklist
+      ```bash
+      # Run before committing
+      bun run lint          # Check linting
+      bun run typecheck    # TypeScript validation
+      bun test            # Run tests
+      bun run build       # Verify build works
+      ```
+
+      ## Troubleshooting
+
+      ### Common Issues
+
+      #### SuperTokens Session Issues
+      ```typescript
+      // Check session validity
+      if (await Session.doesSessionExist()) {
+      // Manually refresh if needed
+      await Session.attemptRefreshingSession();
+      }
+      ```
+
+      #### Reactivity Not Working
+      ```typescript
+      // ❌ Wrong: Direct mutation
+      state.items.push(newItem);
+
+      // ✅ Correct: Use setter
+      setState('items', items => [...items, newItem]);
+      ```
+
+      #### Component Not Re-rendering
+      ```typescript
+      // Ensure dependencies are reactive
+      createEffect(() => {
+      // ❌ Non-reactive
+      console.log(props.value);
+
+      // ✅ Reactive
+      console.log(props.value());
+      });
+      ```
+
+      ## Performance Optimization
+
+      ### Lazy Loading
+      ```typescript
+      // Routes
+      const Dashboard = lazy(() => import('./pages/Dashboard'));
+
+      // Heavy components
+      const ChartComponent = lazy(() => import('./components/Chart'));
+      ```
+
+      ### Virtual Scrolling
+      ```typescript
+      // For large lists
+      import { VirtualList } from '@tanstack/solid-virtual';
+
+      <VirtualList
+      data={items()}
+      rowHeight={50}
+      renderItem={(item) => <ItemCard {...item} />}
+      />
+      ```
+
+      ### Bundle Analysis
+      ```bash
+      # Analyze bundle size
+      bun run build
+      bun run analyze
+      ```
+
+      ### SuperTokens Setup
+      ```bash
+      # Configure SuperTokens in .env.local
+      VITE_SUPERTOKENS_APP_NAME="YourApp"
+      VITE_API_DOMAIN="http://localhost:3001"
+      VITE_WEBSITE_DOMAIN="http://localhost:3000"
+      VITE_API_BASE_PATH="/auth"
+      VITE_WEBSITE_BASE_PATH="/auth"
+      ```
+
+      ## Image Handling
+
+      ### CredentialedImage Component
+      **Location**: `src/components/common/CredentialedImage.tsx`
+
+      **Purpose**: Fetches authenticated images from the backend API endpoint (`/api/v1/images/:filename`) using `fetch` with `credentials: 'include'` to send httpOnly auth cookies. Converts the response to a blob URL for secure `<img src>` usage. Handles loading errors and cleanup of object URLs.
+
+      **Key Features**:
+      - **Authentication**: Automatically includes session cookies for protected images.
+      - **Error Handling**: Shows fallback text on failure (e.g., 401/403/404).
+      - **Performance**: Revokes previous blob URLs on re-fetch to prevent memory leaks.
+      - **Usage**: Replace direct `<img src="/uploads/...">` with `<CredentialedImage src="/api/v1/images/filename.webp" />` for any authenticated image.
+
+      **Example**:
+      ```tsx
+      import { CredentialedImage } from '@/components/common/CredentialedImage';
+
+      <CredentialedImage
+      src={`${baseUrl}/api/v1/images/${imageFilename}`}
+      alt="Profile"
+      class="w-20 h-20 rounded-full object-cover"
+      fallbackText="Image failed to load"
+      />
+      ```
+
+      **Props**:
+      - `src`: Absolute URL to the images API endpoint.
+      - `fallbackText`: Optional error message.
+      - Standard `<img>` props (e.g., `alt`, `class`, `width`).
+
+      ### Images Service
+      **Location**: `src/services/api/images.service.ts`
+
+      **Purpose**: Centralized API client for image uploads and URL generation. Integrates with backend `/api/v1/images` for processing (resize, WebP conversion via Sharp) and storage.
+
+      **Key Methods**:
+      - `upload(file: File)`: Multipart upload, returns `UploadedImage` metadata (id, filename, dimensions).
+      - `url(filename?: string)`: Generates authenticated URL: `${baseUrl}/api/v1/images/${filename}`.
+
+      **Integration**:
+      - Use in mutations: `const saved = await imagesService.upload(file);`
+      - For display: `imagesService.url(saved.filename)` passed to CredentialedImage.
+      - Backend stores images in `uploads/images/<uuid>.webp`; frontend never accesses direct paths.
+
+      **Example** (Upload in a form):
+      ```tsx
+      import { imagesService } from '@/services/api/images.service';
+      import { useUploadMutation } from '@/hooks/queries/useUploadMutation';
+
+      const uploadMutation = useUploadMutation();
+
+      const handleUpload = async (file: File) => {
+      try {
+          const saved = await imagesService.upload(file);
+          // Update state/UI with saved.filename
+          setImageFilename(saved.filename);
+      } catch (error) {
+          console.error('Upload failed:', error);
+      }
+      };
+      ```
+    groups:
+      - read
+      - edit
+      - browser
+      - command
+      - mcp
+    source: project

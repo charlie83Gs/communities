@@ -1,0 +1,304 @@
+### Variables
+@baseUrl = http://localhost:3000/api/v1
+@authToken = Bearer YOUR_AUTH_TOKEN_HERE
+@communityId = YOUR_COMMUNITY_ID_HERE
+@categoryId = YOUR_CATEGORY_ID_HERE
+@threadId = YOUR_THREAD_ID_HERE
+@postId = YOUR_POST_ID_HERE
+
+###############################################
+# FORUM CATEGORIES
+###############################################
+
+### 1. List all categories in a community
+GET {{baseUrl}}/communities/{{communityId}}/forum/categories
+Authorization: {{authToken}}
+
+### 2. Create a new category (Admin/Forum Manager only)
+POST {{baseUrl}}/communities/{{communityId}}/forum/categories
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "General Discussion",
+  "description": "General topics and community discussions"
+}
+
+### 3. Create another category
+POST {{baseUrl}}/communities/{{communityId}}/forum/categories
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "Questions & Answers",
+  "description": "Ask questions and get help from the community"
+}
+
+### 4. Update a category
+PUT {{baseUrl}}/communities/{{communityId}}/forum/categories/{{categoryId}}
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "General Discussion (Updated)",
+  "description": "Updated description for general topics",
+  "displayOrder": 1
+}
+
+### 5. Delete a category (Admin/Forum Manager only)
+DELETE {{baseUrl}}/communities/{{communityId}}/forum/categories/{{categoryId}}
+Authorization: {{authToken}}
+
+###############################################
+# FORUM THREADS
+###############################################
+
+### 6. List threads in a category (newest)
+GET {{baseUrl}}/communities/{{communityId}}/forum/categories/{{categoryId}}/threads?page=1&limit=20&sort=newest
+Authorization: {{authToken}}
+
+### 7. List threads in a category (most popular)
+GET {{baseUrl}}/communities/{{communityId}}/forum/categories/{{categoryId}}/threads?sort=popular
+Authorization: {{authToken}}
+
+### 8. List threads in a category (most upvoted)
+GET {{baseUrl}}/communities/{{communityId}}/forum/categories/{{categoryId}}/threads?sort=mostUpvoted
+Authorization: {{authToken}}
+
+### 9. Create a new thread
+POST {{baseUrl}}/communities/{{communityId}}/forum/categories/{{categoryId}}/threads
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "title": "Welcome to the Forum!",
+  "content": "This is the first thread in our community forum. Feel free to introduce yourself!",
+  "tags": ["welcome", "introduction"]
+}
+
+### 10. Create another thread (question)
+POST {{baseUrl}}/communities/{{communityId}}/forum/categories/{{categoryId}}/threads
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "title": "How do I request shared resources?",
+  "content": "I'm new to the community and would like to know how to request shared resources from other members.",
+  "tags": ["question", "help"]
+}
+
+### 11. Get thread details with all posts
+GET {{baseUrl}}/communities/{{communityId}}/forum/threads/{{threadId}}
+Authorization: {{authToken}}
+
+### 12. Pin a thread (Admin/Forum Manager only)
+PUT {{baseUrl}}/communities/{{communityId}}/forum/threads/{{threadId}}/pin
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "isPinned": true
+}
+
+### 13. Unpin a thread
+PUT {{baseUrl}}/communities/{{communityId}}/forum/threads/{{threadId}}/pin
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "isPinned": false
+}
+
+### 14. Lock a thread (Admin/Forum Manager only)
+PUT {{baseUrl}}/communities/{{communityId}}/forum/threads/{{threadId}}/lock
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "isLocked": true
+}
+
+### 15. Unlock a thread
+PUT {{baseUrl}}/communities/{{communityId}}/forum/threads/{{threadId}}/lock
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "isLocked": false
+}
+
+### 16. Vote up on a thread
+POST {{baseUrl}}/communities/{{communityId}}/forum/threads/{{threadId}}/vote
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "voteType": "up"
+}
+
+### 17. Vote down on a thread
+POST {{baseUrl}}/communities/{{communityId}}/forum/threads/{{threadId}}/vote
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "voteType": "down"
+}
+
+### 18. Remove vote from a thread
+POST {{baseUrl}}/communities/{{communityId}}/forum/threads/{{threadId}}/vote
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "voteType": "remove"
+}
+
+### 19. Delete a thread (Author or Admin/Forum Manager)
+DELETE {{baseUrl}}/communities/{{communityId}}/forum/threads/{{threadId}}
+Authorization: {{authToken}}
+
+###############################################
+# FORUM POSTS
+###############################################
+
+### 20. Create a new post (reply to thread)
+POST {{baseUrl}}/communities/{{communityId}}/forum/threads/{{threadId}}/posts
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "content": "Thanks for starting this thread! I'm excited to be part of this community."
+}
+
+### 21. Create another post
+POST {{baseUrl}}/communities/{{communityId}}/forum/threads/{{threadId}}/posts
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "content": "You can request resources by browsing the wealth section and clicking the 'Request' button on items that interest you."
+}
+
+### 22. Update a post (Author or Admin/Forum Manager)
+PUT {{baseUrl}}/communities/{{communityId}}/forum/posts/{{postId}}
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "content": "Updated content: You can request resources by browsing the wealth section, filtering by category, and clicking 'Request' on available items."
+}
+
+### 23. Vote up on a post
+POST {{baseUrl}}/communities/{{communityId}}/forum/posts/{{postId}}/vote
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "voteType": "up"
+}
+
+### 24. Vote down on a post
+POST {{baseUrl}}/communities/{{communityId}}/forum/posts/{{postId}}/vote
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "voteType": "down"
+}
+
+### 25. Remove vote from a post
+POST {{baseUrl}}/communities/{{communityId}}/forum/posts/{{postId}}/vote
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "voteType": "remove"
+}
+
+### 26. Set best answer (Thread author only)
+PUT {{baseUrl}}/communities/{{communityId}}/forum/threads/{{threadId}}/best-answer
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "postId": "{{postId}}"
+}
+
+### 27. Delete a post (Author or Admin/Forum Manager)
+DELETE {{baseUrl}}/communities/{{communityId}}/forum/posts/{{postId}}
+Authorization: {{authToken}}
+
+###############################################
+# ERROR CASES - Testing Authorization
+###############################################
+
+### 28. Try to create thread without sufficient trust (should fail with 403)
+POST {{baseUrl}}/communities/{{communityId}}/forum/categories/{{categoryId}}/threads
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "title": "Test Thread",
+  "content": "This should fail if user doesn't have minTrustForThreadCreation"
+}
+
+### 29. Try to post in locked thread (should fail with 400)
+POST {{baseUrl}}/communities/{{communityId}}/forum/threads/{{threadId}}/posts
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "content": "This should fail if thread is locked"
+}
+
+### 30. Try to create category without admin/forum manager role (should fail with 403)
+POST {{baseUrl}}/communities/{{communityId}}/forum/categories
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "Unauthorized Category",
+  "description": "This should fail if user is not admin or forum manager"
+}
+
+###############################################
+# VALIDATION ERROR CASES
+###############################################
+
+### 31. Create thread with missing title (should fail with 400)
+POST {{baseUrl}}/communities/{{communityId}}/forum/categories/{{categoryId}}/threads
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "content": "Content without title"
+}
+
+### 32. Create post with empty content (should fail with 400)
+POST {{baseUrl}}/communities/{{communityId}}/forum/threads/{{threadId}}/posts
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "content": ""
+}
+
+### 33. Create thread with title too long (should fail with 400)
+POST {{baseUrl}}/communities/{{communityId}}/forum/categories/{{categoryId}}/threads
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "title": "This is a very long title that exceeds the maximum allowed length of 200 characters. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation.",
+  "content": "Test content"
+}
+
+### 34. Vote with invalid vote type (should fail with 400)
+POST {{baseUrl}}/communities/{{communityId}}/forum/threads/{{threadId}}/vote
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "voteType": "invalid"
+}

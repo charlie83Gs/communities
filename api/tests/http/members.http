@@ -1,0 +1,59 @@
+@baseUrl = http://localhost:3000/api/v1
+@auth = Bearer {{YOUR_SESSION_ACCESS_TOKEN}}
+
+/**
+Community Members API HTTP Examples
+
+Endpoints:
+- GET /communities/:id/members (list members - admin only)
+- DELETE /communities/:id/members/:userId (remove member - admin only)
+- PUT /communities/:id/members/:userId (update role - admin only)
+- GET /users/search?q=query (search users for invite - authenticated)
+
+Notes:
+- All endpoints require an authenticated session (Authorization header).
+- Members endpoints require the caller to be admin of the community (g, userId, community:<id>:admin).
+- Search is for inviting users; returns matching displayName/email.
+*/
+
+
+### List community members (admin only)
+GET {{baseUrl}}/communities/11111111-1111-1111-1111-111111111111/members
+Authorization: {{auth}}
+
+
+### Remove member (admin only)
+# Replace :id and :userId with actual values
+DELETE {{baseUrl}}/communities/11111111-1111-1111-1111-111111111111/members/22222222-2222-2222-2222-222222222222
+Authorization: {{auth}}
+
+
+### Update member role (admin only)
+# Replace :id and :userId with actual values
+PUT {{baseUrl}}/communities/11111111-1111-1111-1111-111111111111/members/22222222-2222-2222-2222-222222222222
+Authorization: {{auth}}
+Content-Type: application/json
+
+{
+  "role": "admin"
+}
+
+
+### Search users (for invite form)
+GET {{baseUrl}}/users/search?q=john
+Authorization: {{auth}}
+
+
+### Search users with limit
+GET {{baseUrl}}/users/search?q=john&limit=5
+Authorization: {{auth}}
+
+
+### Negative: Search without query
+GET {{baseUrl}}/users/search
+Authorization: {{auth}}
+
+
+### Negative: List members as non-admin
+GET {{baseUrl}}/communities/11111111-1111-1111-1111-111111111111/members
+Authorization: {{auth}}  # non-admin token

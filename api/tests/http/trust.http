@@ -1,0 +1,75 @@
+### Variables
+@baseUrl = http://localhost:3000/api/v1
+# Replace with a valid Bearer token
+@authToken = Bearer {{YOUR_TOKEN}}
+@communityId = 11111111-1111-1111-1111-111111111111
+@targetUserId = 22222222-2222-2222-2222-222222222222
+@someUserId = 33333333-3333-3333-3333-333333333333
+
+# ========== NEW TRUST AWARD ENDPOINTS ==========
+
+### Award trust to a user (1 point)
+POST {{baseUrl}}/communities/{{communityId}}/trust/awards/{{targetUserId}}
+Authorization: {{authToken}}
+
+### Remove trust award from a user
+DELETE {{baseUrl}}/communities/{{communityId}}/trust/awards/{{targetUserId}}
+Authorization: {{authToken}}
+
+### List all awards I've given in this community
+GET {{baseUrl}}/communities/{{communityId}}/trust/awards
+Authorization: {{authToken}}
+
+### List all awards received by a specific user
+GET {{baseUrl}}/communities/{{communityId}}/trust/awards/{{someUserId}}
+Authorization: {{authToken}}
+
+### Get trust history for a user
+GET {{baseUrl}}/communities/{{communityId}}/trust/history/{{someUserId}}?page=1&limit=50
+Authorization: {{authToken}}
+
+# ========== ADMIN GRANT ENDPOINTS ==========
+
+### Get all admin grants in community (admin only)
+GET {{baseUrl}}/communities/{{communityId}}/trust/admin/grants
+Authorization: {{authToken}}
+
+### Set admin trust grant for a user (admin only)
+POST {{baseUrl}}/communities/{{communityId}}/trust/admin/grants/{{targetUserId}}
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "amount": 50
+}
+
+### Update admin trust grant for a user (admin only)
+PUT {{baseUrl}}/communities/{{communityId}}/trust/admin/grants/{{targetUserId}}
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "amount": 100
+}
+
+### Delete admin trust grant (admin only)
+DELETE {{baseUrl}}/communities/{{communityId}}/trust/admin/grants/{{targetUserId}}
+Authorization: {{authToken}}
+
+# ========== TRUST VIEW & SUMMARY ==========
+
+### Get trust view (points) for a user
+GET {{baseUrl}}/communities/{{communityId}}/trust/users/{{someUserId}}
+Authorization: {{authToken}}
+
+### List trust view for community
+GET {{baseUrl}}/communities/{{communityId}}/trust/users?page=1&limit=20
+Authorization: {{authToken}}
+
+### Trust summary for me
+GET {{baseUrl}}/communities/{{communityId}}/trust/me
+Authorization: {{authToken}}
+
+### Get trust timeline/roadmap
+GET {{baseUrl}}/communities/{{communityId}}/trust/timeline
+Authorization: {{authToken}}

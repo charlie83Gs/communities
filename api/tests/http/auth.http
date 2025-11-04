@@ -1,0 +1,93 @@
+### Variables
+@baseUrl = http://localhost:3000
+@host = localhost:3001
+
+### Create User (Signup) - Success
+POST {{baseUrl}}/api/v1/auth/signup
+Content-Type: application/json
+
+{
+  "formFields": [
+    {
+      "id": "email",
+      "value": "test@example.com"
+    },
+    {
+      "id": "password",
+      "value": "testPassword123!"
+    },
+    {
+      "id": "username",
+      "value": "test_user_1"
+    },
+    {
+      "id": "displayName",
+      "value": "Test User One"
+    }
+  ]
+}
+
+###
+
+### Sign In (Login) - Success
+POST {{baseUrl}}/api/v1/auth/signin
+Content-Type: application/json
+
+{
+  "formFields": [
+    {
+      "id": "email",
+      "value": "test@example.com"
+    },
+    {
+      "id": "password",
+      "value": "testPassword123!"
+    }
+  ]
+}
+
+###
+
+### Sign In - Invalid Credentials
+POST {{baseUrl}}/api/v1/auth/signin
+Content-Type: application/json
+
+{
+  "formFields": [
+    {
+      "id": "email",
+      "value": "invalid@example.com"
+    },
+    {
+      "id": "password",
+      "value": "wrongpassword"
+    }
+  ]
+}
+
+###
+
+### Get Session - Valid Token
+GET {{baseUrl}}/api/v1/user/session
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+
+###
+
+### Get Session - No Token (Unauthorized)
+GET {{baseUrl}}/api/v1/user/session
+
+###
+
+### Sign Out
+POST {{baseUrl}}/api/v1/user/signout
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+
+###
+
+### Health Check (No Auth Required)
+GET {{baseUrl}}/health
+
+###
+
+### API Docs
+GET {{baseUrl}}/api-docs

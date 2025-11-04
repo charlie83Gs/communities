@@ -1,0 +1,66 @@
+import type { Dict } from '@/i18n/makeTranslator';
+
+export const inviteUserFormDict = {
+  en: {
+    inviteUserForm: {
+      title: 'Invite User',
+      searchPlaceholder: 'Search by name, username, or email...',
+      searching: 'Searching...',
+      noResults: 'No users found',
+      selectedLabel: 'Selected',
+      currentRoles: 'Current roles',
+      pendingRoles: 'Pending invites for',
+      roleMember: 'Member',
+      roleAdmin: 'Admin',
+      sending: 'Inviting...',
+      send: 'Send Invite',
+      searchError: 'Search error',
+      errorPrefix: 'Error:',
+      success: 'Invite sent successfully!',
+      alreadyHasRole: 'This user already has the {{role}} role',
+      pendingInviteExists: 'This user already has a pending invite for the {{role}} role',
+    },
+  },
+  es: {
+    inviteUserForm: {
+      title: 'Invitar usuario',
+      searchPlaceholder: 'Buscar por nombre, usuario o correo...',
+      searching: 'Buscando...',
+      noResults: 'No se encontraron usuarios',
+      selectedLabel: 'Seleccionado',
+      currentRoles: 'Roles actuales',
+      pendingRoles: 'Invitaciones pendientes para',
+      roleMember: 'Miembro',
+      roleAdmin: 'Administrador',
+      sending: 'Invitando...',
+      send: 'Enviar invitación',
+      searchError: 'Error de búsqueda',
+      errorPrefix: 'Error:',
+      success: '¡Invitación enviada con éxito!',
+      alreadyHasRole: 'Este usuario ya tiene el rol de {{role}}',
+      pendingInviteExists: 'Este usuario ya tiene una invitación pendiente para el rol de {{role}}',
+    },
+  },
+  hi: {
+    inviteUserForm: {
+      title: 'उपयोगकर्ता आमंत्रित करें',
+      searchPlaceholder: 'नाम, उपयोगकर्ता नाम या ईमेल से खोजें...',
+      searching: 'खोज जारी है...',
+      noResults: 'कोई उपयोगकर्ता नहीं मिला',
+      selectedLabel: 'चयनित',
+      currentRoles: 'वर्तमान भूमिकाएं',
+      pendingRoles: 'लंबित आमंत्रण',
+      roleMember: 'सदस्य',
+      roleAdmin: 'प्रशासक',
+      sending: 'आमंत्रण भेजा जा रहा है...',
+      send: 'आमंत्रण भेजें',
+      searchError: 'खोज त्रुटि',
+      errorPrefix: 'त्रुटि:',
+      success: 'आमंत्रण सफलतापूर्वक भेजा गया!',
+      alreadyHasRole: 'इस उपयोगकर्ता के पास पहले से ही {{role}} भूमिका है',
+      pendingInviteExists: 'इस उपयोगकर्ता के पास पहले से ही {{role}} भूमिका के लिए एक लंबित आमंत्रण है',
+    },
+  },
+} as const satisfies Dict;
+
+export type InviteUserFormNamespace = 'inviteUserForm';

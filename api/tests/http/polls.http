@@ -1,0 +1,273 @@
+### Variables
+@baseUrl = http://localhost:3000/api/v1
+@authToken = Bearer YOUR_AUTH_TOKEN_HERE
+@communityId = YOUR_COMMUNITY_ID_HERE
+@pollId = YOUR_POLL_ID_HERE
+@optionId = YOUR_OPTION_ID_HERE
+@councilId = YOUR_COUNCIL_ID_HERE
+@poolId = YOUR_POOL_ID_HERE
+
+###############################################
+# Poll API Tests
+###############################################
+
+### 1. Create Poll - User Created
+POST {{baseUrl}}/communities/{{communityId}}/polls
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "title": "What should we plant in the community garden?",
+  "description": "Vote for your preferred vegetables for the spring season",
+  "options": [
+    "Tomatoes",
+    "Carrots",
+    "Lettuce",
+    "Peppers"
+  ],
+  "duration": 168,
+  "creatorType": "user"
+}
+
+### 2. Create Poll - Council Created
+POST {{baseUrl}}/communities/{{communityId}}/polls
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "title": "Should we extend garden hours?",
+  "description": "Council proposal to extend community garden access hours",
+  "options": [
+    "Yes, extend to 9 PM",
+    "No, keep current hours",
+    "Extend on weekends only"
+  ],
+  "duration": 72,
+  "creatorType": "council",
+  "creatorId": "{{councilId}}"
+}
+
+### 3. Create Poll - Pool Created
+POST {{baseUrl}}/communities/{{communityId}}/polls
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "title": "Which tool should we purchase for the tool pool?",
+  "description": "Community tool pool needs to prioritize next purchase",
+  "options": [
+    "Power drill",
+    "Circular saw",
+    "Air compressor",
+    "Pressure washer"
+  ],
+  "duration": 120,
+  "creatorType": "pool",
+  "creatorId": "{{poolId}}"
+}
+
+### 4. Create Poll - Invalid (Too Few Options)
+POST {{baseUrl}}/communities/{{communityId}}/polls
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "title": "Test poll",
+  "options": [
+    "Only one option"
+  ],
+  "duration": 24,
+  "creatorType": "user"
+}
+
+### 5. Create Poll - Invalid (Duration Too Long)
+POST {{baseUrl}}/communities/{{communityId}}/polls
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "title": "Test poll",
+  "options": [
+    "Option 1",
+    "Option 2"
+  ],
+  "duration": 1000,
+  "creatorType": "user"
+}
+
+### 6. List All Polls
+GET {{baseUrl}}/communities/{{communityId}}/polls
+Authorization: {{authToken}}
+
+### 7. List Active Polls Only
+GET {{baseUrl}}/communities/{{communityId}}/polls?status=active
+Authorization: {{authToken}}
+
+### 8. List Closed Polls Only
+GET {{baseUrl}}/communities/{{communityId}}/polls?status=closed
+Authorization: {{authToken}}
+
+### 9. List User-Created Polls
+GET {{baseUrl}}/communities/{{communityId}}/polls?creatorType=user
+Authorization: {{authToken}}
+
+### 10. List Council-Created Polls
+GET {{baseUrl}}/communities/{{communityId}}/polls?creatorType=council
+Authorization: {{authToken}}
+
+### 11. List Pool-Created Polls
+GET {{baseUrl}}/communities/{{communityId}}/polls?creatorType=pool
+Authorization: {{authToken}}
+
+### 12. List Active User-Created Polls
+GET {{baseUrl}}/communities/{{communityId}}/polls?status=active&creatorType=user
+Authorization: {{authToken}}
+
+### 13. Get Poll by ID
+GET {{baseUrl}}/communities/{{communityId}}/polls/{{pollId}}
+Authorization: {{authToken}}
+
+### 14. Get Poll by ID - Not Found
+GET {{baseUrl}}/communities/{{communityId}}/polls/00000000-0000-0000-0000-000000000000
+Authorization: {{authToken}}
+
+### 15. Vote on Poll
+POST {{baseUrl}}/communities/{{communityId}}/polls/{{pollId}}/vote
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "optionId": "{{optionId}}"
+}
+
+### 16. Vote on Poll - Invalid Option ID
+POST {{baseUrl}}/communities/{{communityId}}/polls/{{pollId}}/vote
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "optionId": "00000000-0000-0000-0000-000000000000"
+}
+
+### 17. Vote on Poll - Already Voted (Should Fail)
+POST {{baseUrl}}/communities/{{communityId}}/polls/{{pollId}}/vote
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "optionId": "{{optionId}}"
+}
+
+### 18. Close Poll (Creator or Admin)
+POST {{baseUrl}}/communities/{{communityId}}/polls/{{pollId}}/close
+Authorization: {{authToken}}
+
+### 19. Close Poll - Already Closed (Should Fail)
+POST {{baseUrl}}/communities/{{communityId}}/polls/{{pollId}}/close
+Authorization: {{authToken}}
+
+### 20. Create Comment on Poll
+POST {{baseUrl}}/communities/{{communityId}}/polls/{{pollId}}/comments
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "content": "I think tomatoes are the best choice for the spring season!"
+}
+
+### 21. Create Reply to Comment
+POST {{baseUrl}}/communities/{{communityId}}/polls/{{pollId}}/comments
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "content": "I agree! Tomatoes grow well in our climate.",
+  "parentId": "PARENT_COMMENT_ID_HERE"
+}
+
+### 22. List Comments for Poll
+GET {{baseUrl}}/communities/{{communityId}}/polls/{{pollId}}/comments
+Authorization: {{authToken}}
+
+### 23. List Comments with Pagination
+GET {{baseUrl}}/communities/{{communityId}}/polls/{{pollId}}/comments?limit=10&offset=0
+Authorization: {{authToken}}
+
+### 24. Create Poll - Unauthorized (No Token)
+POST {{baseUrl}}/communities/{{communityId}}/polls
+Content-Type: application/json
+
+{
+  "title": "Unauthorized poll",
+  "options": ["Option 1", "Option 2"],
+  "duration": 24,
+  "creatorType": "user"
+}
+
+### 25. Vote on Poll - Unauthorized (No Token)
+POST {{baseUrl}}/communities/{{communityId}}/polls/{{pollId}}/vote
+Content-Type: application/json
+
+{
+  "optionId": "{{optionId}}"
+}
+
+###############################################
+# Test Scenarios
+###############################################
+
+### Scenario 1: Complete Poll Lifecycle
+# 1. Create a poll
+# 2. List polls (verify it appears)
+# 3. Get poll details
+# 4. Vote on the poll
+# 5. Get poll details again (verify vote recorded)
+# 6. Close the poll
+# 7. Try to vote again (should fail)
+
+### Scenario 2: Multiple Users Voting
+# 1. User A creates poll
+# 2. User B votes on poll
+# 3. User C votes on poll
+# 4. User A gets poll details (sees results)
+
+### Scenario 3: Council Poll Creation
+# 1. Council member creates poll on behalf of council
+# 2. Filter polls by creatorType=council
+# 3. Verify poll shows council as creator
+
+### Scenario 4: Poll Expiration
+# 1. Create poll with duration=1 (1 hour)
+# 2. Wait 1 hour
+# 3. Try to vote (should fail - poll expired)
+
+### Scenario 5: Permission Testing
+# 1. Low-trust user tries to create poll (should fail)
+# 2. Admin grants poll_creator role to user
+# 3. User tries to create poll again (should succeed)
+# 4. User with sufficient trust creates poll (should succeed)
+
+###############################################
+# Notes
+###############################################
+
+# Replace the following variables before testing:
+# - YOUR_AUTH_TOKEN_HERE: Bearer token from authentication
+# - YOUR_COMMUNITY_ID_HERE: UUID of the community
+# - YOUR_POLL_ID_HERE: UUID of a poll (after creating one)
+# - YOUR_OPTION_ID_HERE: UUID of a poll option
+# - YOUR_COUNCIL_ID_HERE: UUID of a council
+# - YOUR_POOL_ID_HERE: UUID of a pool
+
+# Authorization Requirements:
+# - User must be a member of the community
+# - Poll creation requires poll_creator role OR sufficient trust level
+# - Council/pool polls require membership in that council/pool
+# - Only creator or admin can close polls
+
+# Validation Rules:
+# - Poll must have 2-10 options
+# - Duration must be 1-720 hours (1 hour to 30 days)
+# - One vote per user per poll
+# - Cannot vote on closed polls
+# - Cannot vote on expired polls

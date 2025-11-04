@@ -1,0 +1,150 @@
+@baseUrl = http://localhost:3000/api/v1
+@auth = Bearer {{YOUR_SESSION_ACCESS_TOKEN}}
+
+/**
+Invite API HTTP Examples
+
+Endpoints:
+- GET /invites/communities/:communityId/users            (list pending user invites, admin only)
+- POST /invites/communities/:communityId/users           (create user invite, admin only)
+- GET /invites/communities/:communityId/links            (list active link invites, admin only)
+- POST /invites/communities/:communityId/links           (create link invite, admin only)
+- DELETE /invites/:id                                    (cancel invite, admin or creator)
+- POST /invites/:id/redeem                               (redeem user invite)
+- POST /invites/links/redeem                             (redeem link invite by secret)
+
+Notes:
+- All endpoints require an authenticated session (Authorization header).
+- Creation/cancel require the caller to be admin of the community (AccessControl admin role for the community).
+- On redeem, user is granted role membership for the community.
+*/
+
+
+### Get pending USER invites (admin only)
+GET {{baseUrl}}/invites/communities/11111111-1111-1111-1111-111111111111/users
+Authorization: {{auth}}
+
+### Create USER invite (admin only)
+POST {{baseUrl}}/invites/communities/11111111-1111-1111-1111-111111111111/users
+Authorization: {{auth}}
+Content-Type: application/json
+
+{
+  "invitedUserId": "22222222-2222-2222-2222-222222222222",
+  "role": "member"
+}
+
+
+### Get active LINK invites (admin only)
+GET {{baseUrl}}/invites/communities/11111111-1111-1111-1111-111111111111/links
+Authorization: {{auth}}
+
+### Create LINK invite (admin only) - expires in 24h with title
+POST {{baseUrl}}/invites/communities/11111111-1111-1111-1111-111111111111/links
+Authorization: {{auth}}
+Content-Type: application/json
+
+{
+  "role": "member",
+  "title": "Launch Party Invite",
+  "expiresAt": "2024-12-31T23:59:59Z"
+}
+
+### Cancel invite (admin or creator) - general
+# Replace :id with an actual invite id returned by creation endpoints
+DELETE {{baseUrl}}/invites/33333333-3333-3333-3333-333333333333
+Authorization: {{auth}}
+
+### Delete specific LINK invite (admin or creator)
+# Replace :communityId and :id with actual values
+DELETE {{baseUrl}}/invites/communities/11111111-1111-1111-1111-111111111111/links/33333333-3333-3333-3333-333333333333
+Authorization: {{auth}}
+
+
+
+### Redeem USER invite (must be the invited user)
+# Replace :id with a pending user invite id
+POST {{baseUrl}}/invites/33333333-3333-3333-3333-333333333333/redeem
+Authorization: {{auth}}
+
+
+### Redeem LINK invite by secret (any authenticated user)
+# Replace "secret" with the secret returned by create link invite
+POST {{baseUrl}}/invites/links/redeem
+Authorization: {{auth}}
+Content-Type: application/json
+
+{
+  "secret": "REPLACE_WITH_SECRET_FROM_CREATE_LINK_RESPONSE"
+}
+
+
+### Negative: Create USER invite without role (should fail with 400)
+POST {{baseUrl}}/invites/communities/11111111-1111-1111-1111-111111111111/users
+Authorization: {{auth}}
+Content-Type: application/json
+
+{
+  "invitedUserId": "22222222-2222-2222-2222-222222222222"
+}
+
+### Negative: Create USER invite with invalid role (should fail with 400)
+POST {{baseUrl}}/invites/communities/11111111-1111-1111-1111-111111111111/users
+Authorization: {{auth}}
+Content-Type: application/json
+
+{
+  "invitedUserId": "22222222-2222-2222-2222-222222222222",
+  "role": "invalid_role"
+}
+
+### Negative: Create USER invite with empty role (should fail with 400)
+POST {{baseUrl}}/invites/communities/11111111-1111-1111-1111-111111111111/users
+Authorization: {{auth}}
+Content-Type: application/json
+
+{
+  "invitedUserId": "22222222-2222-2222-2222-222222222222",
+  "role": ""
+}
+
+### Negative: Create LINK invite without role (should fail with 400)
+POST {{baseUrl}}/invites/communities/11111111-1111-1111-1111-111111111111/links
+Authorization: {{auth}}
+Content-Type: application/json
+
+{
+  "title": "No role invite",
+  "expiresAt": "2024-12-31T23:59:59Z"
+}
+
+### Negative: Create LINK invite with invalid role (should fail with 400)
+POST {{baseUrl}}/invites/communities/11111111-1111-1111-1111-111111111111/links
+Authorization: {{auth}}
+Content-Type: application/json
+
+{
+  "role": "superuser",
+  "title": "Invalid role invite",
+  "expiresAt": "2024-12-31T23:59:59Z"
+}
+
+### Negative: Create link invite with invalid expiresAt
+POST {{baseUrl}}/invites/communities/11111111-1111-1111-1111-111111111111/links
+Authorization: {{auth}}
+Content-Type: application/json
+
+{
+  "role": "member",
+  "expiresAt": "invalid-date"
+}
+
+
+### Negative: Redeem link invite with wrong/expired secret
+POST {{baseUrl}}/invites/links/redeem
+Authorization: {{auth}}
+Content-Type: application/json
+
+{
+  "secret": "INVALID_OR_EXPIRED_SECRET"
+}

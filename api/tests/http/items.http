@@ -1,0 +1,129 @@
+@baseUrl = http://localhost:3000/api/v1
+@auth = Bearer {{YOUR_JWT_HERE}}
+@communityId = 11111111-1111-1111-1111-111111111111
+@itemId = 22222222-2222-2222-2222-222222222222
+
+### List items for a community
+GET {{baseUrl}}/items?communityId={{communityId}}
+Authorization: {{auth}}
+
+### List items including deleted
+GET {{baseUrl}}/items?communityId={{communityId}}&includeDeleted=true
+Authorization: {{auth}}
+
+### Search items by name or description
+GET {{baseUrl}}/items/search?communityId={{communityId}}&query=carrot
+Authorization: {{auth}}
+
+### Search items by kind
+GET {{baseUrl}}/items/search?communityId={{communityId}}&kind=object
+Authorization: {{auth}}
+
+### Search items - combined filters
+GET {{baseUrl}}/items/search?communityId={{communityId}}&query=repair&kind=service
+Authorization: {{auth}}
+
+### Create item - object type
+POST {{baseUrl}}/items
+Authorization: {{auth}}
+Content-Type: application/json
+
+{
+  "communityId": "{{communityId}}",
+  "name": "Carrots",
+  "description": "Fresh organic carrots",
+  "kind": "object"
+}
+
+### Create item - service type
+POST {{baseUrl}}/items
+Authorization: {{auth}}
+Content-Type: application/json
+
+{
+  "communityId": "{{communityId}}",
+  "name": "Car Repair Service",
+  "description": "Basic car maintenance and repairs",
+  "kind": "service"
+}
+
+### Create item - missing required field (should fail)
+POST {{baseUrl}}/items
+Authorization: {{auth}}
+Content-Type: application/json
+
+{
+  "communityId": "{{communityId}}",
+  "description": "Missing name field"
+}
+
+### Create item - duplicate name (should fail)
+POST {{baseUrl}}/items
+Authorization: {{auth}}
+Content-Type: application/json
+
+{
+  "communityId": "{{communityId}}",
+  "name": "Carrots",
+  "description": "This should fail - name already exists",
+  "kind": "object"
+}
+
+### Get item by ID
+GET {{baseUrl}}/items/{{itemId}}
+Authorization: {{auth}}
+
+### Update item - name only
+PUT {{baseUrl}}/items/{{itemId}}
+Authorization: {{auth}}
+Content-Type: application/json
+
+{
+  "name": "Organic Carrots"
+}
+
+### Update item - description only
+PUT {{baseUrl}}/items/{{itemId}}
+Authorization: {{auth}}
+Content-Type: application/json
+
+{
+  "description": "Fresh organic carrots from local farm"
+}
+
+### Update item - multiple fields
+PUT {{baseUrl}}/items/{{itemId}}
+Authorization: {{auth}}
+Content-Type: application/json
+
+{
+  "name": "Premium Organic Carrots",
+  "description": "Highest quality carrots available",
+  "kind": "object"
+}
+
+### Delete item (soft delete)
+DELETE {{baseUrl}}/items/{{itemId}}
+Authorization: {{auth}}
+
+### Delete item - default item (should fail)
+DELETE {{baseUrl}}/items/{{itemId}}
+Authorization: {{auth}}
+
+### Delete item - has active wealth (should fail)
+DELETE {{baseUrl}}/items/{{itemId}}
+Authorization: {{auth}}
+
+### Unauthorized request (no token)
+GET {{baseUrl}}/items?communityId={{communityId}}
+
+### Insufficient permissions (non-admin, trust < 20)
+POST {{baseUrl}}/items
+Authorization: {{auth}}
+Content-Type: application/json
+
+{
+  "communityId": "{{communityId}}",
+  "name": "Test Item",
+  "kind": "object"
+}

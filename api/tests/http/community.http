@@ -1,0 +1,121 @@
+### Community API Tests
+
+@baseUrl = http://localhost:3000/api/v1
+@authToken = {{$dotenv SUPERTOKENS_SESSION_TOKEN}}
+
+### Step 1: Sign up a new user
+POST {{baseUrl}}/auth/signup
+Content-Type: application/json
+
+{
+  "formFields": [
+    { "id": "email", "value": "testuser@example.com" },
+    { "id": "password", "value": "TestPassword123!" },
+    { "id": "username", "value": "testuser" },
+    { "id": "displayName", "value": "Test User" }
+  ]
+}
+
+### Step 2: Sign in (if user already exists)
+# @name signin
+POST {{baseUrl}}/auth/signin
+Content-Type: application/json
+
+{
+  "formFields": [
+    { "id": "email", "value": "testuser@example.com" },
+    { "id": "password", "value": "TestPassword123!" }
+  ]
+}
+
+### Step 3: Create a new community (SHOULD assign creator as admin)
+# @name createCommunity
+POST {{baseUrl}}/communities
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "Test Community",
+  "description": "This is a test community to verify role assignment"
+}
+
+### Step 4: Get the community (should work immediately after creation)
+# Use the community ID from the previous response
+GET {{baseUrl}}/communities/{{createCommunity.response.body.data.id}}
+Authorization: {{authToken}}
+
+### Step 5: List all communities (should include the created community)
+GET {{baseUrl}}/communities
+Authorization: {{authToken}}
+
+### Step 6: Get community members (should show creator as admin)
+GET {{baseUrl}}/communities/{{createCommunity.response.body.data.id}}/members
+Authorization: {{authToken}}
+
+### Step 7: Get current user's role in the community
+GET {{baseUrl}}/communities/{{createCommunity.response.body.data.id}}/members/me
+Authorization: {{authToken}}
+
+### Step 8: Update the community (should work because creator is admin)
+PUT {{baseUrl}}/communities/{{createCommunity.response.body.data.id}}
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "Updated Test Community",
+  "description": "Updated description"
+}
+
+### Step 9: Delete the community (cleanup)
+DELETE {{baseUrl}}/communities/{{createCommunity.response.body.data.id}}
+Authorization: {{authToken}}
+
+### ===== Test Without Authentication (should fail) =====
+
+### Create community without auth (should fail)
+POST {{baseUrl}}/communities
+Content-Type: application/json
+
+{
+  "name": "Unauthorized Community",
+  "description": "This should fail"
+}
+
+### Get community without auth (should fail for private communities)
+GET {{baseUrl}}/communities/some-id
+
+### ===== Multiple Community Creation Test =====
+
+### Create first community
+# @name community1
+POST {{baseUrl}}/communities
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "Community One",
+  "description": "First test community"
+}
+
+### Create second community
+# @name community2
+POST {{baseUrl}}/communities
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "Community Two",
+  "description": "Second test community"
+}
+
+### List all communities (should show both)
+GET {{baseUrl}}/communities
+Authorization: {{authToken}}
+
+### Verify access to first community
+GET {{baseUrl}}/communities/{{community1.response.body.data.id}}
+Authorization: {{authToken}}
+
+### Verify access to second community
+GET {{baseUrl}}/communities/{{community2.response.body.data.id}}
+Authorization: {{authToken}}

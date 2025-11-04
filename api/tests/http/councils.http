@@ -1,0 +1,203 @@
+### Variables
+@baseUrl = http://localhost:3000/api/v1
+@authToken = Bearer YOUR_TOKEN_HERE
+@communityId = YOUR_COMMUNITY_ID_HERE
+@councilId = YOUR_COUNCIL_ID_HERE
+@userId = YOUR_USER_ID_HERE
+@managerUserId = YOUR_MANAGER_USER_ID_HERE
+
+### ========== Council Management ==========
+
+### List all councils in a community
+GET {{baseUrl}}/communities/{{communityId}}/councils
+Authorization: {{authToken}}
+
+### List councils with pagination and sorting
+GET {{baseUrl}}/communities/{{communityId}}/councils?page=1&limit=20&sortBy=trustScore&order=desc
+Authorization: {{authToken}}
+
+### Get council details
+GET {{baseUrl}}/communities/{{communityId}}/councils/{{councilId}}
+Authorization: {{authToken}}
+
+### Create a new council
+# Note: Creator is automatically assigned as a manager
+# Check the response to verify memberCount is 1
+POST {{baseUrl}}/communities/{{communityId}}/councils
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "Food Council",
+  "description": "Managing community food resources and ensuring sustainable food distribution across the community"
+}
+
+### Verify creator is auto-assigned as manager
+# After creating a council, get its details to verify the creator is in the managers list
+GET {{baseUrl}}/communities/{{communityId}}/councils/{{councilId}}
+Authorization: {{authToken}}
+
+### Create council - Invalid name (too short)
+POST {{baseUrl}}/communities/{{communityId}}/councils
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "FC",
+  "description": "Managing community food resources and ensuring sustainable food distribution"
+}
+
+### Create council - Invalid description (too short)
+POST {{baseUrl}}/communities/{{communityId}}/councils
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "Food Council",
+  "description": "Too short"
+}
+
+### Update council details
+PUT {{baseUrl}}/communities/{{communityId}}/councils/{{councilId}}
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "Community Food Council",
+  "description": "Updated description: Managing all aspects of community food resources, distribution, and sustainability initiatives"
+}
+
+### Delete a council (admin only)
+DELETE {{baseUrl}}/communities/{{communityId}}/councils/{{councilId}}
+Authorization: {{authToken}}
+
+### ========== Council Trust System ==========
+
+### Get trust status for current user
+GET {{baseUrl}}/communities/{{communityId}}/councils/{{councilId}}/trust-status
+Authorization: {{authToken}}
+
+### Award trust to a council
+POST {{baseUrl}}/communities/{{communityId}}/councils/{{councilId}}/trust
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "award": true
+}
+
+### Remove trust from a council
+DELETE {{baseUrl}}/communities/{{communityId}}/councils/{{councilId}}/trust
+Authorization: {{authToken}}
+
+### Award trust - Already awarded (should fail)
+POST {{baseUrl}}/communities/{{communityId}}/councils/{{councilId}}/trust
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "award": true
+}
+
+### ========== Council Managers ==========
+
+### List community members (for manager selection dropdown)
+GET {{baseUrl}}/communities/{{communityId}}/members
+Authorization: {{authToken}}
+
+### List community members with search
+GET {{baseUrl}}/communities/{{communityId}}/members?search=john
+Authorization: {{authToken}}
+
+### Add a manager to a council (admin or existing council manager)
+# Note: Creator is automatically added as manager when council is created
+POST {{baseUrl}}/communities/{{communityId}}/councils/{{councilId}}/managers
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "userId": "{{userId}}"
+}
+
+### Add manager by existing council manager (not just admin)
+# After creating a council, the creator can add other managers
+POST {{baseUrl}}/communities/{{communityId}}/councils/{{councilId}}/managers
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "userId": "{{managerUserId}}"
+}
+
+### Add manager - User not in community (should fail)
+POST {{baseUrl}}/communities/{{communityId}}/councils/{{councilId}}/managers
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "userId": "non-existent-user-id"
+}
+
+### Add manager - User already a manager (should fail)
+POST {{baseUrl}}/communities/{{communityId}}/councils/{{councilId}}/managers
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "userId": "{{userId}}"
+}
+
+### Remove a manager from a council (admin only)
+DELETE {{baseUrl}}/communities/{{communityId}}/councils/{{councilId}}/managers/{{userId}}
+Authorization: {{authToken}}
+
+### ========== Council Inventory & Transactions ==========
+
+### Get council inventory
+GET {{baseUrl}}/communities/{{communityId}}/councils/{{councilId}}/inventory
+Authorization: {{authToken}}
+
+### Get council transactions
+GET {{baseUrl}}/communities/{{communityId}}/councils/{{councilId}}/transactions
+Authorization: {{authToken}}
+
+### Get council transactions with pagination
+GET {{baseUrl}}/communities/{{communityId}}/councils/{{councilId}}/transactions?page=1&limit=20
+Authorization: {{authToken}}
+
+### ========== Error Cases ==========
+
+### Unauthorized - No token
+GET {{baseUrl}}/communities/{{communityId}}/councils
+
+### Council not found
+GET {{baseUrl}}/communities/{{communityId}}/councils/00000000-0000-0000-0000-000000000000
+Authorization: {{authToken}}
+
+### Non-member trying to access council (should fail)
+GET {{baseUrl}}/communities/{{communityId}}/councils/{{councilId}}
+Authorization: Bearer INVALID_TOKEN_FOR_NON_MEMBER
+
+### Insufficient trust to create council (should fail if user has < 25 trust)
+POST {{baseUrl}}/communities/{{communityId}}/councils
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "Test Council",
+  "description": "This should fail if the user doesn't have sufficient trust score"
+}
+
+### Non-admin trying to delete council (should fail)
+DELETE {{baseUrl}}/communities/{{communityId}}/councils/{{councilId}}
+Authorization: {{authToken}}
+
+### Non-admin non-manager trying to add manager (should fail)
+# This should fail if the requester is neither an admin nor an existing council manager
+POST {{baseUrl}}/communities/{{communityId}}/councils/{{councilId}}/managers
+Authorization: Bearer TOKEN_OF_NON_ADMIN_NON_MANAGER
+Content-Type: application/json
+
+{
+  "userId": "{{userId}}"
+}

@@ -1,0 +1,120 @@
+.themeSwitcher {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0.5rem;
+  background-color: transparent;
+  border: 2px solid var(--color-ocean-200);
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.themeSwitcher:hover {
+  background-color: var(--color-ocean-50);
+  border-color: var(--color-ocean-300);
+  transform: scale(1.05);
+}
+
+.themeSwitcher:focus {
+  outline: none;
+  ring: 2px;
+  ring-color: var(--color-ocean-500);
+  ring-offset: 2px;
+}
+
+.themeSwitcher:active {
+  transform: scale(0.95);
+}
+
+/* Icon base styles */
+.icon {
+  position: absolute;
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--color-ocean-400);
+  transition: all 0.3s ease;
+  opacity: 0;
+  transform: scale(0) rotate(180deg);
+}
+
+/* Active icon state */
+.icon.active {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+  color: var(--color-ocean-600);
+}
+
+/* Sun icon specific animations */
+.sunIcon.active {
+  animation: sunRise 0.3s ease-out;
+}
+
+/* Moon icon specific animations */
+.moonIcon.active {
+  animation: moonRise 0.3s ease-out;
+}
+
+/* Keyframe animations */
+@keyframes sunRise {
+  0% {
+    opacity: 0;
+    transform: scale(0) rotate(-180deg);
+  }
+  50% {
+    transform: scale(1.2) rotate(-90deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes moonRise {
+  0% {
+    opacity: 0;
+    transform: scale(0) rotate(180deg);
+  }
+  50% {
+    transform: scale(1.2) rotate(90deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+/* Dark mode styles */
+:global(.dark) .themeSwitcher {
+  border-color: var(--color-ocean-700);
+}
+
+:global(.dark) .themeSwitcher:hover {
+  background-color: var(--color-ocean-900);
+  border-color: var(--color-ocean-600);
+}
+
+:global(.dark) .icon {
+  color: var(--color-ocean-300);
+}
+
+:global(.dark) .icon.active {
+  color: var(--color-ocean-400);
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .themeSwitcher {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+
+  .icon {
+    width: 1.125rem;
+    height: 1.125rem;
+  }
+}
