@@ -9,6 +9,5 @@ resources:
   - namespace.yaml
   - helmrepository.yaml
   - helmrelease.yaml
-  - middleware.yaml
 
 namespace: traefik

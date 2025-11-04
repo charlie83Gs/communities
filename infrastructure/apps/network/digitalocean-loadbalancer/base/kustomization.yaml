@@ -4,6 +4,8 @@ kind: Kustomization
 # DigitalOcean LoadBalancer Configuration
 # Provides external access to the Traefik ingress controller
 # Configured with PROXY protocol and health checks
+# Includes middleware (requires Traefik CRDs to be installed first)
 
 resources:
   - loadbalancer.yaml
+  - middleware.yaml
