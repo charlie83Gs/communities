@@ -79,3 +79,6 @@ uploads/*
 .yarn/
 .pnp.*
 *.pem
+
+# Kustomize generated manifests
+infrastructure/overlays/*/generated.yaml
