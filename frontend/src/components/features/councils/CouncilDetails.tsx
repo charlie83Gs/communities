@@ -197,10 +197,56 @@ export const CouncilDetails: Component<CouncilDetailsProps> = (props) => {
                 </div>
               </div>
 
+              {/* Tabs */}
+              <div class="border-b border-stone-200 dark:border-stone-700 px-6">
+                <nav class="flex gap-4">
+                  <button
+                    onClick={() => setActiveTab('managers')}
+                    class={`py-3 px-1 text-sm font-medium border-b-2 transition-colors ${
+                      activeTab() === 'managers'
+                        ? 'border-ocean-600 text-ocean-600 dark:text-ocean-400'
+                        : 'border-transparent text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300'
+                    }`}
+                  >
+                    {t('managersSection')}
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('inventory')}
+                    class={`py-3 px-1 text-sm font-medium border-b-2 transition-colors ${
+                      activeTab() === 'inventory'
+                        ? 'border-ocean-600 text-ocean-600 dark:text-ocean-400'
+                        : 'border-transparent text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300'
+                    }`}
+                  >
+                    {t('inventory')}
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('transactions')}
+                    class={`py-3 px-1 text-sm font-medium border-b-2 transition-colors ${
+                      activeTab() === 'transactions'
+                        ? 'border-ocean-600 text-ocean-600 dark:text-ocean-400'
+                        : 'border-transparent text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300'
+                    }`}
+                  >
+                    {t('transactions')}
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('initiatives')}
+                    class={`py-3 px-1 text-sm font-medium border-b-2 transition-colors ${
+                      activeTab() === 'initiatives'
+                        ? 'border-ocean-600 text-ocean-600 dark:text-ocean-400'
+                        : 'border-transparent text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300'
+                    }`}
+                  >
+                    {t('initiativesTab')}
+                  </button>
+                </nav>
+              </div>
+
               {/* Content */}
               <div class="p-6 space-y-6">
                 {/* Managers Section */}
-                <Show when={canManageCouncil()}>
+                <Show when={activeTab() === 'managers' && canManageCouncil()}>
                   <div>
                     <div class="flex items-center justify-between mb-2">
                       <h3 class="text-lg font-semibold text-stone-900 dark:text-stone-100">
@@ -332,6 +378,7 @@ export const CouncilDetails: Component<CouncilDetailsProps> = (props) => {
                 </Show>
 
                 {/* Inventory Section */}
+                <Show when={activeTab() === 'inventory'}>
                 <div>
                   <h3 class="text-lg font-semibold text-stone-900 dark:text-stone-100 mb-3">
                     {t('inventory')}
@@ -375,8 +422,10 @@ export const CouncilDetails: Component<CouncilDetailsProps> = (props) => {
                     </Show>
                   </Show>
                 </div>
+                </Show>
 
                 {/* Transactions Section */}
+                <Show when={activeTab() === 'transactions'}>
                 <div>
                   <h3 class="text-lg font-semibold text-stone-900 dark:text-stone-100 mb-3">
                     {t('transactions')}
@@ -464,11 +513,45 @@ export const CouncilDetails: Component<CouncilDetailsProps> = (props) => {
                     </Show>
                   </Show>
                 </div>
+                </Show>
+
+                {/* Initiatives Section */}
+                <Show when={activeTab() === 'initiatives'}>
+                  <div>
+                    <div class="flex items-center justify-between mb-4">
+                      <h3 class="text-lg font-semibold text-stone-900 dark:text-stone-100">
+                        {t('initiativesTab')}
+                      </h3>
+                      <Show when={canManageCouncil()}>
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => setShowCreateInitiative(true)}
+                        >
+                          {t('createInitiative')}
+                        </Button>
+                      </Show>
+                    </div>
+                    <InitiativesList
+                      communityId={props.communityId}
+                      councilId={props.councilId}
+                      canCreateReport={canManageCouncil()}
+                    />
+                  </div>
+                </Show>
               </div>
             </>
           )}
         </Show>
       </Show>
+
+      {/* Create initiative modal */}
+      <CreateInitiativeModal
+        communityId={props.communityId}
+        councilId={props.councilId}
+        isOpen={showCreateInitiative()}
+        onClose={() => setShowCreateInitiative(false)}
+      />
     </div>
   );
 };
