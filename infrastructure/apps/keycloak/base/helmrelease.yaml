@@ -71,8 +71,6 @@ spec:
         value: "true"
       - name: KC_HTTP_PORT
         value: "8080"
-      - name: KC_HTTP_RELATIVE_PATH
-        value: "/"
 
       # Proxy settings
       - name: KC_PROXY
@@ -111,31 +109,6 @@ spec:
     # Ingress (disabled by default, configure in overlays)
     ingress:
       enabled: false
-
-    # Health checks (chart expects string format)
-    livenessProbe: |
-      httpGet:
-        path: /health/live
-        port: 8080
-        scheme: HTTP
-      initialDelaySeconds: 120
-      timeoutSeconds: 10
-      periodSeconds: 30
-      failureThreshold: 5
-
-    readinessProbe: |
-      httpGet:
-        path: /health/ready
-        port: 8080
-        scheme: HTTP
-      initialDelaySeconds: 60
-      timeoutSeconds: 10
-      periodSeconds: 30
-      failureThreshold: 3
-
-    # HTTP configuration for chart templating
-    http:
-      relativePath: "/"
 
     # Resources (can be overridden in overlays)
     resources:
