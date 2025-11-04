@@ -9,7 +9,7 @@ spec:
     - match: Host(`openfga.plv.it.com`)
       kind: Rule
       services:
-        - name: openfga
+        - name: openfga-openfga
           port: 8080
   tls:
     certResolver: letsencrypt

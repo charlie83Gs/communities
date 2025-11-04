@@ -9,7 +9,7 @@ spec:
     - match: Host(`auth.plv.it.com`)
       kind: Rule
       services:
-        - name: keycloak
+        - name: keycloak-keycloakx-http
           port: 80
   tls:
     certResolver: letsencrypt
