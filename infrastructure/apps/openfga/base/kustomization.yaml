@@ -8,7 +8,7 @@ resources:
   - deployment.yaml
   - postgres-openfga-cluster.yaml
   - secrets.yaml
-  - namespace
+  - namespace.yaml
 
 namespace: openfga
 
