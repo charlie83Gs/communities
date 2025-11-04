@@ -55,10 +55,6 @@ spec:
       access:
         enabled: true
 
-    # Enable ping endpoint for health checks
-    ping:
-      enabled: true
-
     # Providers
     providers:
       kubernetesCRD:
@@ -69,13 +65,8 @@ spec:
         publishedService:
           enabled: true
 
-    # TLS configuration
-    tlsOptions:
-      default:
-        minVersion: VersionTLS12
-
     # Let's Encrypt certificate resolver
-    certResolvers:
+    certificatesResolvers:
       letsencrypt:
         acme:
           email: carlosgomezsoza@gmail.com
@@ -83,7 +74,6 @@ spec:
           caServer: https://acme-v02.api.letsencrypt.org/directory
           httpChallenge:
             entryPoint: web
-          tlsChallenge: true
 
     # Persistence for Let's Encrypt certificates
     persistence:
@@ -104,15 +94,8 @@ spec:
 
     # Enable PROXY protocol support
     additionalArguments:
+      - "--ping=true"
       - "--entrypoints.web.proxyProtocol.trustedIPs=127.0.0.1/32,10.0.0.0/8"
       - "--entrypoints.websecure.proxyProtocol.trustedIPs=127.0.0.1/32,10.0.0.0/8"
       - "--entrypoints.web.forwardedHeaders.trustedIPs=127.0.0.1/32,10.0.0.0/8"
       - "--entrypoints.websecure.forwardedHeaders.trustedIPs=127.0.0.1/32,10.0.0.0/8"
-
-    # Security context
-    securityContext:
-      capabilities:
-        drop: [ALL]
-      readOnlyRootFilesystem: true
-      runAsNonRoot: true
-      runAsUser: 65532
