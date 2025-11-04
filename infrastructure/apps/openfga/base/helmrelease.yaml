@@ -1,0 +1,102 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: openfga
+spec:
+  interval: 30m
+  targetNamespace: openfga
+  chart:
+    spec:
+      chart: openfga
+      version: ">=0.2.0"
+      sourceRef:
+        kind: HelmRepository
+        name: openfga
+      interval: 12h
+  install:
+    createNamespace: true
+  values:
+    # Replica count
+    replicaCount: 1
+
+    # OpenFGA image (uses default from chart)
+    image:
+      pullPolicy: IfNotPresent
+
+    # Datastore configuration
+    datastore:
+      engine: postgres
+      uriSecret: openfga-db
+      metrics:
+        enabled: true
+
+    # gRPC service
+    grpc:
+      enabled: true
+      port: 8081
+
+    # HTTP service
+    http:
+      enabled: true
+      port: 8080
+      cors:
+        enabled: true
+
+    # Playground (enabled for base, can be disabled in production overlay)
+    playground:
+      enabled: true
+      port: 3000
+
+    # Service configuration
+    service:
+      type: ClusterIP
+      annotations: {}
+
+    # Health checks
+    livenessProbe:
+      enabled: true
+      initialDelaySeconds: 10
+      periodSeconds: 5
+      timeoutSeconds: 3
+      failureThreshold: 3
+      httpGet:
+        path: /healthz
+        port: 8080
+
+    readinessProbe:
+      enabled: true
+      initialDelaySeconds: 5
+      periodSeconds: 5
+      timeoutSeconds: 3
+      failureThreshold: 3
+      httpGet:
+        path: /healthz
+        port: 8080
+
+    # Resources (can be overridden in overlays)
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
+    # PostgreSQL (disabled, using external CNPG cluster)
+    postgresql:
+      enabled: false
+
+    # Telemetry and logging
+    telemetry:
+      metrics:
+        enabled: true
+      trace:
+        enabled: false
+
+    log:
+      format: json
+      level: info
+
+    # Autoscaling (disabled by default)
+    autoscaling:
+      enabled: false

@@ -5,15 +5,13 @@ kind: Kustomization
 # Authorization and fine-grained access control service
 
 resources:
-  - deployment.yaml
+  - namespace.yaml
+  - helmrepository.yaml
+  - helmrelease.yaml
   - postgres-openfga-cluster.yaml
   - secrets.yaml
-  - namespace.yaml
 
 namespace: openfga
 
-patches:
-  - path: deployment-patch.yaml
-    target:
-      kind: Deployment
-      name: openfga
+configurations:
+  - kustomizeconfig.yaml

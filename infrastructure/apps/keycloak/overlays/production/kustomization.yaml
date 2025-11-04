@@ -4,15 +4,14 @@ kind: Kustomization
 # Keycloak - Production
 # Identity and access management with production realm configuration
 # Depends on: PostgreSQL cluster for Keycloak
-namespace: keycloack
+namespace: keycloak
 
 resources:
   - ../../base
   - postgres-keycloak-cluster.yaml
-`
+
 configMapGenerator:
   # Production realm configuration
   - name: keycloak-realm
-    namespace: share-app
     files:
-      - realm-export.json=../../base/keycloak/realm-prod.json
+      - realm-export.json
