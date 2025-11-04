@@ -75,6 +75,10 @@ spec:
       # Proxy settings
       - name: KC_PROXY
         value: edge
+      - name: KC_HOSTNAME
+        value: auth.plv.it.com
+      - name: KC_HOSTNAME_STRICT
+        value: "false"
 
       # Features
       - name: KC_FEATURES
