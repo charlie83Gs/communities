@@ -147,7 +147,7 @@ spec:
       port: 5432
       database: keycloak
       username: keycloak
-      existingSecret: keycloak-db
+      existingSecret: postgres-keycloak-app
       existingSecretPasswordKey: password
 
     # Database vendor
