@@ -30,25 +30,6 @@ spec:
   wait: true
   timeout: 10m
 ---
-# PostgreSQL Clusters - Depends on CNPG and External Secrets
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
-  name: communities-app
-  namespace: flux-system
-spec:
-  interval: 5m
-  sourceRef:
-    kind: GitRepository
-    name: communities
-  path: ./infrastructure/apps/communities-app/communities-app
-  prune: true
-  wait: true
-  timeout: 15m
-  dependsOn:
-    - name: communities-cnpg
-    - name: communities-external-secrets
----
 # Keycloak - Depends on PostgreSQL clusters
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
@@ -65,7 +46,8 @@ spec:
   wait: true
   timeout: 15m
   dependsOn:
-    - name: communities-app
+    - name: communities-cnpg
+    - name: communities-external-secrets
 ---
 # OpenFGA - Depends on PostgreSQL clusters and External Secrets
 apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -83,5 +65,26 @@ spec:
   wait: true
   timeout: 15m
   dependsOn:
-    - name: communities-app
+    - name: communities-cnpg
     - name: communities-external-secrets
+---
+# PostgreSQL Clusters - Depends on CNPG and External Secrets
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: communities-app
+  namespace: flux-system
+spec:
+  interval: 5m
+  sourceRef:
+    kind: GitRepository
+    name: communities
+  path: ./infrastructure/apps/overlays/production
+  prune: true
+  wait: true
+  timeout: 15m
+  dependsOn:
+    - name: communities-cnpg
+    - name: communities-external-secrets
+    - name: communities-keycloak
+    - name: communities-openfga
