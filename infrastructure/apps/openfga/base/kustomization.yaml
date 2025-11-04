@@ -8,7 +8,6 @@ resources:
   - namespace.yaml
   - helmrepository.yaml
   - postgres-openfga-cluster.yaml
-  - secret-generator-job.yaml
   - helmrelease.yaml
   - ingressroute.yaml
 

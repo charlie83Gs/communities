@@ -53,17 +53,17 @@ spec:
       - name: KC_DB_URL
         valueFrom:
           secretKeyRef:
-            name: keycloak-db
-            key: url
+            name: postgres-keycloak-app
+            key: jdbc-uri
       - name: KC_DB_USERNAME
         valueFrom:
           secretKeyRef:
-            name: keycloak-db
+            name: postgres-keycloak-app
             key: username
       - name: KC_DB_PASSWORD
         valueFrom:
           secretKeyRef:
-            name: keycloak-db
+            name: postgres-keycloak-app
             key: password
 
       # HTTP Settings

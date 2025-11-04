@@ -27,7 +27,7 @@ spec:
     # Datastore configuration
     datastore:
       engine: postgres
-      uriSecret: openfga-db
+      uriSecret: postgres-openfga-app
       metrics:
         enabled: true
       # Database migrations
