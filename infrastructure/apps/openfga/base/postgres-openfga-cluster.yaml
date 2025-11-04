@@ -3,7 +3,7 @@ kind: Cluster
 metadata:
   name: postgres-openfga
 spec:
-  instances: 3
+  instances: 1
 
   postgresql:
     parameters:
@@ -19,8 +19,8 @@ spec:
         name: postgres-openfga-credentials
 
   storage:
-    size: 20Gi
-    storageClass: fast-ssd
+    size: 10Gi
+    storageClass: do-block-storage
 
   backup:
     barmanObjectStore:
@@ -41,8 +41,8 @@ spec:
 
   resources:
     requests:
+      memory: "256Mi"
+      cpu: "200m"
+    limits:
       memory: "512Mi"
       cpu: "500m"
-    limits:
-      memory: "1Gi"
-      cpu: "1000m"
