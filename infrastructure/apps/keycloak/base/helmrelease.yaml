@@ -15,6 +15,7 @@ spec:
       interval: 12h
   install:
     createNamespace: true
+    timeout: 10m
   values:
     # Keycloak image
     image:
@@ -72,13 +73,13 @@ spec:
       - name: KC_HTTP_PORT
         value: "8080"
 
-      # Proxy settings
-      - name: KC_PROXY
-        value: edge
+      # Hostname settings (v2)
       - name: KC_HOSTNAME
         value: auth.plv.it.com
       - name: KC_HOSTNAME_STRICT
         value: "false"
+      - name: KC_PROXY_HEADERS
+        value: "xforwarded"
 
       # Features
       - name: KC_FEATURES
