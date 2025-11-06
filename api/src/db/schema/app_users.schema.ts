@@ -11,9 +11,6 @@ import { pgTable, timestamp, uuid, text, varchar } from 'drizzle-orm/pg-core';
  * - email: User's email address
  * - username: Unique username (required)
  * - displayName: Optional display name
- * - country: Optional country
- * - stateProvince: Optional state/province
- * - city: Optional city
  * - description: Optional user bio/description
  * - profileImage: Optional profile image URL
  * - lastSeenAt: App-specific tracking
@@ -23,9 +20,6 @@ export const appUsers = pgTable('app_users', {
   email: varchar('email', { length: 255 }).notNull(),
   username: varchar('username', { length: 50 }).notNull().unique(),
   displayName: varchar('display_name', { length: 255 }),
-  country: varchar('country', { length: 100 }),
-  stateProvince: varchar('state_province', { length: 100 }),
-  city: varchar('city', { length: 100 }),
   description: text('description'),
   profileImage: text('profile_image'),
   lastSeenAt: timestamp('last_seen_at', { withTimezone: true }),

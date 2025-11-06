@@ -11,6 +11,14 @@ export const wealthRequestsPanelDict = {
       accept: 'Accept',
       rejecting: 'Rejecting...',
       reject: 'Reject',
+      statusLabels: {
+        pending: 'Pending',
+        accepted: 'Accepted - Awaiting Confirmation',
+        fulfilled: 'Completed',
+        failed: 'Failed',
+        rejected: 'Rejected',
+        cancelled: 'Cancelled',
+      },
     },
   },
   es: {
@@ -25,6 +33,14 @@ export const wealthRequestsPanelDict = {
       accept: 'Aceptar',
       rejecting: 'Rechazando...',
       reject: 'Rechazar',
+      statusLabels: {
+        pending: 'Pendiente',
+        accepted: 'Aceptada - Esperando Confirmación',
+        fulfilled: 'Completada',
+        failed: 'Fallida',
+        rejected: 'Rechazada',
+        cancelled: 'Cancelada',
+      },
     },
   },
   hi: {
@@ -39,6 +55,14 @@ export const wealthRequestsPanelDict = {
       accept: 'स्वीकार करें',
       rejecting: 'अस्वीकार कर रहे हैं...',
       reject: 'अस्वीकार करें',
+      statusLabels: {
+        pending: 'लंबित',
+        accepted: 'स्वीकृत - पुष्टि की प्रतीक्षा में',
+        fulfilled: 'पूर्ण',
+        failed: 'असफल',
+        rejected: 'अस्वीकृत',
+        cancelled: 'रद्द',
+      },
     },
   },
 } as const;

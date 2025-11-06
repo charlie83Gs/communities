@@ -336,20 +336,13 @@ export class WealthService {
       throw new AppError('Only pending requests can be accepted', 400);
     }
 
-    let updatedWealth = wealthItem;
-    // If unit-based, decrement units using requested value or 1
-    if (wealthItem.distributionType === 'unit_based') {
-      const units = req.unitsRequested ?? 1;
-      const dec = await wealthRepository.decrementUnits(wealthItem.id, units);
-      if (!dec) throw new AppError('Failed to update wealth units', 500);
-      updatedWealth = dec;
-    }
-
+    // NOTE: Units are NOT decremented here anymore
+    // They will be decremented when the requester confirms receipt via confirmRequest()
     const updatedReq = await wealthRepository.acceptRequest(requestId);
     if (!updatedReq) throw new AppError('Failed to accept request', 500);
 
     return {
-      wealth: updatedWealth,
+      wealth: wealthItem,
       request: {
         ...updatedReq,
       }
@@ -466,6 +459,74 @@ export class WealthService {
 
     const updatedReq = await wealthRepository.cancelRequest(requestId);
     if (!updatedReq) throw new AppError('Failed to cancel request', 500);
+    return {
+      ...updatedReq,
+    };
+  }
+
+  async confirmRequest(wealthId: string, requestId: string, userId: string): Promise<{ wealth: WealthRecord; request: WealthRequestRecord }> {
+    const wealthItem = await wealthRepository.findById(wealthId);
+    if (!wealthItem) throw new AppError('Wealth not found', 404);
+
+    const req = await wealthRepository.findRequestById(requestId);
+    if (!req || req.wealthId !== wealthId) {
+      throw new AppError('Request not found for this wealth', 404);
+    }
+
+    // Only the requester can confirm they received the wealth
+    if (req.requesterId !== userId) {
+      throw new AppError('Forbidden: only the requester can confirm receipt', 403);
+    }
+
+    // Can only confirm accepted requests
+    if (req.status !== 'accepted') {
+      throw new AppError('Only accepted requests can be confirmed', 400);
+    }
+
+    let updatedWealth = wealthItem;
+    // If unit-based, decrement units now that confirmation is happening
+    if (wealthItem.distributionType === 'unit_based') {
+      const units = req.unitsRequested ?? 1;
+      const dec = await wealthRepository.decrementUnits(wealthItem.id, units);
+      if (!dec) throw new AppError('Failed to update wealth units', 500);
+      updatedWealth = dec;
+    }
+
+    // Mark request as fulfilled
+    const updatedReq = await wealthRepository.confirmRequest(requestId);
+    if (!updatedReq) throw new AppError('Failed to confirm request', 500);
+
+    return {
+      wealth: updatedWealth,
+      request: {
+        ...updatedReq,
+      }
+    };
+  }
+
+  async failRequest(wealthId: string, requestId: string, userId: string): Promise<WealthRequestRecord> {
+    const wealthItem = await wealthRepository.findById(wealthId);
+    if (!wealthItem) throw new AppError('Wealth not found', 404);
+
+    const req = await wealthRepository.findRequestById(requestId);
+    if (!req || req.wealthId !== wealthId) {
+      throw new AppError('Request not found for this wealth', 404);
+    }
+
+    // Only the requester can mark as failed
+    if (req.requesterId !== userId) {
+      throw new AppError('Forbidden: only the requester can mark request as failed', 403);
+    }
+
+    // Can only fail accepted requests
+    if (req.status !== 'accepted') {
+      throw new AppError('Only accepted requests can be marked as failed', 400);
+    }
+
+    // Mark request as failed (units are NOT decremented)
+    const updatedReq = await wealthRepository.failRequest(requestId);
+    if (!updatedReq) throw new AppError('Failed to mark request as failed', 500);
+
     return {
       ...updatedReq,
     };

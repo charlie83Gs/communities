@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: communities-frontend
+  labels:
+    app: communities-frontend
+    component: frontend
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app: communities-frontend

@@ -321,6 +321,7 @@ describe('CommunityController', () => {
     it('should get community members', async () => {
       const req = createMockAuthenticatedRequest('user-123', {
         params: { id: 'comm-123' },
+        query: {},
       });
       const res = createMockResponse();
       const next = createMockNext();
@@ -333,7 +334,7 @@ describe('CommunityController', () => {
 
       await communityController.getMembers(req, res, next);
 
-      expect(mockCommunityService.getMembers).toHaveBeenCalledWith('comm-123', 'user-123');
+      expect(mockCommunityService.getMembers).toHaveBeenCalledWith('comm-123', 'user-123', undefined);
       expect(res.json).toHaveBeenCalledWith({
         status: 'success',
         message: 'Success',

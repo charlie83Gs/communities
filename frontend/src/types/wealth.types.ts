@@ -71,7 +71,7 @@ export interface WealthListItem extends Wealth {
 /**
  * Wealth Request types (derived from endpoints in OpenAPI)
  */
-export type WealthRequestStatus = 'pending' | 'accepted' | 'rejected' | 'cancelled' | 'fulfilled';
+export type WealthRequestStatus = 'pending' | 'accepted' | 'rejected' | 'cancelled' | 'fulfilled' | 'failed';
 
 export interface WealthRequest {
   id: string;

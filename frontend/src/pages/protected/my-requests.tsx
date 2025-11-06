@@ -26,7 +26,7 @@ const MyRequestsPage: Component = () => {
 
   const myRequestsQuery = useUserRequestsQuery(statusesParam);
   const incomingRequestsQuery = useIncomingRequestsQuery(statusesParam);
-  const { accept: acceptMutation, reject: rejectMutation, cancel: cancelMutation } = useManageRequestMutations();
+  const { accept: acceptMutation, reject: rejectMutation, cancel: cancelMutation, confirm: confirmMutation, fail: failMutation } = useManageRequestMutations();
 
   const tabs = [
     { id: 'my-requests', label: t('tabs.myRequests') },
@@ -69,17 +69,64 @@ const MyRequestsPage: Component = () => {
     }
   };
 
-  const getStatusBadgeVariant = (status: WealthRequestStatus): 'success' | 'warning' | 'danger' | 'secondary' => {
+  const handleConfirm = async (req: WealthRequest) => {
+    setError(null);
+    setSuccessMessage(null);
+    try {
+      await confirmMutation.mutateAsync({ wealthId: req.wealthId, requestId: req.id });
+      setSuccessMessage(t('confirmSuccess'));
+      myRequestsQuery.refetch();
+    } catch (e: any) {
+      setError(e?.message ?? t('confirmError'));
+    }
+  };
+
+  const handleFail = async (req: WealthRequest) => {
+    setError(null);
+    setSuccessMessage(null);
+    try {
+      await failMutation.mutateAsync({ wealthId: req.wealthId, requestId: req.id });
+      setSuccessMessage(t('failSuccess'));
+      myRequestsQuery.refetch();
+    } catch (e: any) {
+      setError(e?.message ?? t('failError'));
+    }
+  };
+
+  const getStatusBadgeVariant = (status: WealthRequestStatus): 'success' | 'warning' | 'danger' | 'secondary' | 'ocean' => {
     switch (status) {
-      case 'accepted':
+      case 'fulfilled':
         return 'success';
+      case 'accepted':
+        return 'ocean';
       case 'pending':
         return 'warning';
+      case 'failed':
+        return 'danger';
       case 'rejected':
       case 'cancelled':
         return 'secondary';
       default:
         return 'secondary';
+    }
+  };
+
+  const getStatusLabel = (status: WealthRequestStatus): string => {
+    switch (status) {
+      case 'pending':
+        return t('statusLabels.pending');
+      case 'accepted':
+        return t('statusLabels.accepted');
+      case 'fulfilled':
+        return t('statusLabels.fulfilled');
+      case 'failed':
+        return t('statusLabels.failed');
+      case 'rejected':
+        return t('statusLabels.rejected');
+      case 'cancelled':
+        return t('statusLabels.cancelled');
+      default:
+        return status;
     }
   };
 
@@ -144,6 +191,13 @@ const MyRequestsPage: Component = () => {
             >
               {t('filter.fulfilled')}
             </Button>
+            <Button
+              variant={statusFilter() === 'failed' ? 'primary' : 'secondary'}
+              size="sm"
+              onClick={() => setStatusFilter('failed')}
+            >
+              {t('filter.failed')}
+            </Button>
           </div>
 
           {/* Messages */}
@@ -197,7 +251,7 @@ const MyRequestsPage: Component = () => {
                                 </Show>
                               </div>
                               <Badge variant={getStatusBadgeVariant(req.status)}>
-                                {req.status}
+                                {getStatusLabel(req.status)}
                               </Badge>
                             </div>
 
@@ -223,6 +277,15 @@ const MyRequestsPage: Component = () => {
                               </div>
                             </div>
 
+                            {/* Helper text for accepted requests */}
+                            <Show when={req.status === 'accepted'}>
+                              <div class="p-3 bg-ocean-50 dark:bg-ocean-900 rounded border border-ocean-200 dark:border-ocean-700">
+                                <p class="text-sm text-ocean-800 dark:text-ocean-200">
+                                  {t('card.acceptedHelperText')}
+                                </p>
+                              </div>
+                            </Show>
+
                             {/* Actions */}
                             <div class="flex items-center gap-2 pt-2">
                               <A href={`/wealth/${req.wealthId}`}>
@@ -238,6 +301,24 @@ const MyRequestsPage: Component = () => {
                                   disabled={cancelMutation.isPending}
                                 >
                                   {cancelMutation.isPending ? t('card.cancelling') : t('card.cancel')}
+                                </Button>
+                              </Show>
+                              <Show when={req.status === 'accepted'}>
+                                <Button
+                                  variant="primary"
+                                  size="sm"
+                                  onClick={() => handleConfirm(req)}
+                                  disabled={confirmMutation.isPending}
+                                >
+                                  {confirmMutation.isPending ? t('card.confirming') : t('card.confirmReceipt')}
+                                </Button>
+                                <Button
+                                  variant="danger"
+                                  size="sm"
+                                  onClick={() => handleFail(req)}
+                                  disabled={failMutation.isPending}
+                                >
+                                  {failMutation.isPending ? t('card.marking') : t('card.markAsFailed')}
                                 </Button>
                               </Show>
                             </div>
@@ -282,7 +363,7 @@ const MyRequestsPage: Component = () => {
                                 </Show>
                               </div>
                               <Badge variant={getStatusBadgeVariant(req.status)}>
-                                {req.status}
+                                {getStatusLabel(req.status)}
                               </Badge>
                             </div>
 

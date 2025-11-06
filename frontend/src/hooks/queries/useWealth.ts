@@ -219,7 +219,47 @@ export const useManageRequestMutations = () => {
     },
   }));
 
-  return { accept, reject, cancel };
+  const confirm = createMutation(() => ({
+    mutationFn: (args: { wealthId: string; requestId: string }) => wealthService.confirmRequest(args.wealthId, args.requestId),
+    onMutate: async ({ wealthId, requestId }) => {
+      const key = ['wealth', 'requests', wealthId];
+      await qc.cancelQueries({ queryKey: key });
+      const previous = qc.getQueryData<WealthRequest[]>(key) || [];
+      const updated = previous.map((r) => (r.id === requestId ? { ...r, status: 'fulfilled' as const } : r));
+      qc.setQueryData<WealthRequest[]>(key, updated);
+      return { key, previous };
+    },
+    onError: (_e, _vars, ctx) => {
+      if (ctx?.key) qc.setQueryData(ctx.key, ctx.previous);
+    },
+    onSuccess: (req) => {
+      qc.invalidateQueries({ queryKey: ['wealth', 'detail', req.wealthId] });
+      qc.invalidateQueries({ queryKey: ['wealth', 'requests', 'me'] });
+      qc.invalidateQueries({ queryKey: ['wealth', 'requests', 'incoming'] });
+    },
+  }));
+
+  const fail = createMutation(() => ({
+    mutationFn: (args: { wealthId: string; requestId: string }) => wealthService.failRequest(args.wealthId, args.requestId),
+    onMutate: async ({ wealthId, requestId }) => {
+      const key = ['wealth', 'requests', wealthId];
+      await qc.cancelQueries({ queryKey: key });
+      const previous = qc.getQueryData<WealthRequest[]>(key) || [];
+      const updated = previous.map((r) => (r.id === requestId ? { ...r, status: 'failed' as const } : r));
+      qc.setQueryData<WealthRequest[]>(key, updated);
+      return { key, previous };
+    },
+    onError: (_e, _vars, ctx) => {
+      if (ctx?.key) qc.setQueryData(ctx.key, ctx.previous);
+    },
+    onSuccess: (req) => {
+      qc.invalidateQueries({ queryKey: ['wealth', 'detail', req.wealthId] });
+      qc.invalidateQueries({ queryKey: ['wealth', 'requests', 'me'] });
+      qc.invalidateQueries({ queryKey: ['wealth', 'requests', 'incoming'] });
+    },
+  }));
+
+  return { accept, reject, cancel, confirm, fail };
 };
 
 export const useUserRequestsQuery = (statuses?: Accessor<WealthRequestStatus | WealthRequestStatus[] | undefined>) => {

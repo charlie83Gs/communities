@@ -115,6 +115,8 @@ export class InitiativeService {
     userId: string,
     options: { page?: number; limit?: number } = {}
   ) {
+    logger.info(`[InitiativeService listInitiatives] Listing initiatives for councilId: ${councilId}`);
+
     const council = await councilRepository.findById(councilId);
     if (!council) {
       throw new AppError('Council not found', 404);
@@ -126,7 +128,14 @@ export class InitiativeService {
       throw new AppError('Forbidden: not a member of this community', 403);
     }
 
-    return await initiativeRepository.findByCouncil(councilId, userId, options);
+    try {
+      const result = await initiativeRepository.findByCouncil(councilId, userId, options);
+      logger.info(`[InitiativeService listInitiatives] Found ${result.initiatives.length} initiatives`);
+      return result;
+    } catch (error) {
+      logger.error(`[InitiativeService listInitiatives] Error fetching initiatives:`, error);
+      throw error;
+    }
   }
 
   /**

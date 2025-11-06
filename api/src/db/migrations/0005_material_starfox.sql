@@ -1,0 +1,1 @@
+ALTER TYPE "public"."wealth_request_status" ADD VALUE 'failed';

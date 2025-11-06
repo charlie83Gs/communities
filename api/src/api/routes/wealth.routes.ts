@@ -63,6 +63,12 @@ router.post('/:id/requests/:requestId/reject', validateRequestIdParams, wealthCo
 // Cancel a request (requester or owner)
 router.post('/:id/requests/:requestId/cancel', validateRequestIdParams, wealthController.cancelRequest);
 
+// Confirm a request (requester only)
+router.post('/:id/requests/:requestId/confirm', validateRequestIdParams, wealthController.confirmRequest);
+
+// Mark a request as failed (requester only)
+router.post('/:id/requests/:requestId/fail', validateRequestIdParams, wealthController.failRequest);
+
 router.post(
   '/:wealthId/comments',
   verifyToken,

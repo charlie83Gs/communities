@@ -6,14 +6,28 @@
       "package-name": "communities-api",
       "changelog-path": "CHANGELOG.md",
       "bump-minor-pre-major": true,
-      "bump-patch-for-minor-pre-major": true
+      "bump-patch-for-minor-pre-major": true,
+      "extra-files": [
+        {
+          "type": "yaml",
+          "path": "infrastructure/apps/communities-app/base/api-deployment.yaml",
+          "jsonpath": "$.spec.template.spec.containers[0].image"
+        }
+      ]
     },
     "frontend": {
       "release-type": "node",
       "package-name": "communities-frontend",
       "changelog-path": "CHANGELOG.md",
       "bump-minor-pre-major": true,
-      "bump-patch-for-minor-pre-major": true
+      "bump-patch-for-minor-pre-major": true,
+      "extra-files": [
+        {
+          "type": "yaml",
+          "path": "infrastructure/apps/communities-app/base/frontend-deployment.yaml",
+          "jsonpath": "$.spec.template.spec.containers[0].image"
+        }
+      ]
     }
   },
   "separate-pull-requests": true,
