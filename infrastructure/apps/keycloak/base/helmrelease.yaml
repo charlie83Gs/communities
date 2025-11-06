@@ -111,6 +111,15 @@ spec:
     ingress:
       enabled: false
 
+    # HTTP configuration
+    # Override the default /auth prefix for Keycloak 17+
+    # Since Keycloak 17, the Quarkus-based distribution removes /auth from the default context path
+    # The codecentric/keycloakx chart sets relativePath: "/auth" for backwards compatibility,
+    # but this causes health check probes to fail on modern Keycloak versions (17+)
+    # Reference: https://www.keycloak.org/migration/migrating-to-quarkus
+    http:
+      relativePath: "/"
+
     # Resources (can be overridden in overlays)
     resources:
       requests:
