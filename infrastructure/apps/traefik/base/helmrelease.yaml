@@ -19,17 +19,14 @@ spec:
     # Deployment configuration
     deployment:
       replicas: 1
-      initContainers:
-        # Fix permissions for acme.json file
-        - name: volume-permissions
-          image: busybox:1.31.1
-          command: ['sh', '-c', 'touch /data/acme.json && chmod 600 /data/acme.json']
-          securityContext:
-            runAsUser: 65532
-            runAsGroup: 65532
-          volumeMounts:
-            - name: traefik-data
-              mountPath: /data
+
+    # Pod Security Context
+    # Set fsGroup to allow Traefik (UID 65532) to write to persistent volume
+    # This is required for acme.json storage with block storage providers
+    # See: https://github.com/traefik/traefik-helm-chart/issues/396
+    podSecurityContext:
+      fsGroup: 65532
+      fsGroupChangePolicy: "OnRootMismatch"
 
     # Ports configuration
     ports:
