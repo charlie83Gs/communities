@@ -9,7 +9,6 @@ resources:
   - helmrepository.yaml
   - postgres-openfga-cluster.yaml
   - helmrelease.yaml
-  - ingressroute.yaml
 
 namespace: openfga
 
