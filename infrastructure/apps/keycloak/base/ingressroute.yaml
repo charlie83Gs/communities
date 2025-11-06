@@ -1,3 +1,29 @@
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: keycloak-http
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`auth.plv.it.com`)
+      kind: Rule
+      services:
+        - name: keycloak-keycloak-keycloakx-http
+          port: 80
+      middlewares:
+        - name: redirect-to-https
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: redirect-to-https
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true
+---
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:

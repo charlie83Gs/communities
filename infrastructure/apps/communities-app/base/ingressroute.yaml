@@ -1,5 +1,30 @@
 ---
 apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: redirect-to-https
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: communities-api-http
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`api.plv.it.com`)
+      kind: Rule
+      services:
+        - name: communities-api
+          port: 80
+      middlewares:
+        - name: redirect-to-https
+---
+apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
   name: communities-api
@@ -18,12 +43,28 @@ spec:
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
+  name: communities-frontend-http
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`communities.plv.it.com`)
+      kind: Rule
+      services:
+        - name: communities-frontend
+          port: 80
+      middlewares:
+        - name: redirect-to-https
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
   name: communities-frontend
 spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`app.plv.it.com`)
+    - match: Host(`communities.plv.it.com`)
       kind: Rule
       services:
         - name: communities-frontend
