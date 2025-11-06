@@ -23,7 +23,10 @@ spec:
         # Fix permissions for acme.json file
         - name: volume-permissions
           image: busybox:1.31.1
-          command: ['sh', '-c', 'touch /data/acme.json && chmod 600 /data/acme.json && chown 65532:65532 /data/acme.json']
+          command: ['sh', '-c', 'touch /data/acme.json && chmod 600 /data/acme.json']
+          securityContext:
+            runAsUser: 65532
+            runAsGroup: 65532
           volumeMounts:
             - name: traefik-data
               mountPath: /data
