@@ -26,6 +26,8 @@ const mockWealthRepository = {
   rejectRequest: mock(() => Promise.resolve({ id: 'req-123', status: 'rejected' as const })),
   cancelRequest: mock(() => Promise.resolve({ id: 'req-123', status: 'cancelled' as const })),
   decrementUnits: mock(() => Promise.resolve(testData.wealth)),
+  confirmRequest: mock(() => Promise.resolve({ id: 'req-123', status: 'fulfilled' as const })),
+  failRequest: mock(() => Promise.resolve({ id: 'req-123', status: 'failed' as const })),
 };
 
 const mockCommunityMemberRepository = {
@@ -62,6 +64,8 @@ describe('WealthService', () => {
     (wealthRepository.rejectRequest as any) = mockWealthRepository.rejectRequest;
     (wealthRepository.cancelRequest as any) = mockWealthRepository.cancelRequest;
     (wealthRepository.decrementUnits as any) = mockWealthRepository.decrementUnits;
+    (wealthRepository.confirmRequest as any) = mockWealthRepository.confirmRequest;
+    (wealthRepository.failRequest as any) = mockWealthRepository.failRequest;
     (communityMemberRepository.getUserRole as any) = mockCommunityMemberRepository.getUserRole;
     (communityMemberRepository.findByUser as any) = mockCommunityMemberRepository.findByUser;
     (openFGAService.assignRole as any) = mockOpenFGAService.assignRole;
@@ -238,7 +242,7 @@ describe('WealthService', () => {
   });
 
   describe('acceptRequest', () => {
-    it('should accept request when owner', async () => {
+    it('should accept request when owner without decrementing units', async () => {
       // Reconfigure mocks for this test
       mockWealthRepository.findById.mockResolvedValue({
         ...testData.wealth,
@@ -259,6 +263,8 @@ describe('WealthService', () => {
       const result = await wealthService.acceptRequest('wealth-123', 'req-123', 'user-123');
 
       expect(result.request.status).toBe('accepted');
+      // Verify decrementUnits is NOT called
+      expect(mockWealthRepository.decrementUnits).not.toHaveBeenCalled();
     });
 
     it('should throw forbidden when not owner', async () => {
@@ -275,6 +281,139 @@ describe('WealthService', () => {
       await expect(
         wealthService.acceptRequest('wealth-123', 'req-123', 'user-123')
       ).rejects.toThrow('Forbidden');
+    });
+  });
+
+  describe('confirmRequest', () => {
+    it('should confirm request and decrement units when requester', async () => {
+      // Reconfigure mocks for this test
+      mockWealthRepository.findById.mockResolvedValue({
+        ...testData.wealth,
+        distributionType: 'unit_based',
+        unitsAvailable: 10,
+      });
+      mockWealthRepository.findRequestById.mockResolvedValue({
+        id: 'req-123',
+        wealthId: 'wealth-123',
+        requesterId: 'user-456',
+        status: 'accepted' as const,
+        unitsRequested: 2,
+      });
+      mockWealthRepository.decrementUnits.mockResolvedValue({
+        ...testData.wealth,
+        unitsAvailable: 8,
+      });
+      mockWealthRepository.confirmRequest.mockResolvedValue({
+        id: 'req-123',
+        status: 'fulfilled' as const,
+      });
+
+      const result = await wealthService.confirmRequest('wealth-123', 'req-123', 'user-456');
+
+      expect(result.request.status).toBe('fulfilled');
+      expect(mockWealthRepository.decrementUnits).toHaveBeenCalledWith('wealth-123', 2);
+      expect(mockWealthRepository.confirmRequest).toHaveBeenCalledWith('req-123');
+    });
+
+    it('should confirm request without decrementing units for request_based', async () => {
+      mockWealthRepository.findById.mockResolvedValue({
+        ...testData.wealth,
+        distributionType: 'request_based',
+      });
+      mockWealthRepository.findRequestById.mockResolvedValue({
+        id: 'req-123',
+        wealthId: 'wealth-123',
+        requesterId: 'user-456',
+        status: 'accepted' as const,
+      });
+      mockWealthRepository.confirmRequest.mockResolvedValue({
+        id: 'req-123',
+        status: 'fulfilled' as const,
+      });
+
+      const result = await wealthService.confirmRequest('wealth-123', 'req-123', 'user-456');
+
+      expect(result.request.status).toBe('fulfilled');
+      expect(mockWealthRepository.decrementUnits).not.toHaveBeenCalled();
+    });
+
+    it('should throw forbidden when not requester', async () => {
+      mockWealthRepository.findById.mockResolvedValue(testData.wealth);
+      mockWealthRepository.findRequestById.mockResolvedValue({
+        id: 'req-123',
+        wealthId: 'wealth-123',
+        requesterId: 'user-456',
+        status: 'accepted' as const,
+      });
+
+      await expect(
+        wealthService.confirmRequest('wealth-123', 'req-123', 'user-789')
+      ).rejects.toThrow('Forbidden: only the requester can confirm receipt');
+    });
+
+    it('should throw error if request is not accepted', async () => {
+      mockWealthRepository.findById.mockResolvedValue(testData.wealth);
+      mockWealthRepository.findRequestById.mockResolvedValue({
+        id: 'req-123',
+        wealthId: 'wealth-123',
+        requesterId: 'user-456',
+        status: 'pending' as const,
+      });
+
+      await expect(
+        wealthService.confirmRequest('wealth-123', 'req-123', 'user-456')
+      ).rejects.toThrow('Only accepted requests can be confirmed');
+    });
+  });
+
+  describe('failRequest', () => {
+    it('should mark request as failed when requester', async () => {
+      mockWealthRepository.findById.mockResolvedValue(testData.wealth);
+      mockWealthRepository.findRequestById.mockResolvedValue({
+        id: 'req-123',
+        wealthId: 'wealth-123',
+        requesterId: 'user-456',
+        status: 'accepted' as const,
+      });
+      mockWealthRepository.failRequest.mockResolvedValue({
+        id: 'req-123',
+        status: 'failed' as const,
+      });
+
+      const result = await wealthService.failRequest('wealth-123', 'req-123', 'user-456');
+
+      expect(result.status).toBe('failed');
+      expect(mockWealthRepository.failRequest).toHaveBeenCalledWith('req-123');
+      // Verify units are NOT decremented when failing
+      expect(mockWealthRepository.decrementUnits).not.toHaveBeenCalled();
+    });
+
+    it('should throw forbidden when not requester', async () => {
+      mockWealthRepository.findById.mockResolvedValue(testData.wealth);
+      mockWealthRepository.findRequestById.mockResolvedValue({
+        id: 'req-123',
+        wealthId: 'wealth-123',
+        requesterId: 'user-456',
+        status: 'accepted' as const,
+      });
+
+      await expect(
+        wealthService.failRequest('wealth-123', 'req-123', 'user-789')
+      ).rejects.toThrow('Forbidden: only the requester can mark request as failed');
+    });
+
+    it('should throw error if request is not accepted', async () => {
+      mockWealthRepository.findById.mockResolvedValue(testData.wealth);
+      mockWealthRepository.findRequestById.mockResolvedValue({
+        id: 'req-123',
+        wealthId: 'wealth-123',
+        requesterId: 'user-456',
+        status: 'pending' as const,
+      });
+
+      await expect(
+        wealthService.failRequest('wealth-123', 'req-123', 'user-456')
+      ).rejects.toThrow('Only accepted requests can be marked as failed');
     });
   });
 });

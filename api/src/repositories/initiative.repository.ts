@@ -109,17 +109,22 @@ export class InitiativeRepository {
 
     // Get user votes for all initiatives in the list
     const initiativeIds = initiativesList.map(i => i.initiative.id);
-    const userVotes = await db
-      .select()
-      .from(initiativeVotes)
-      .where(and(
-        sql`${initiativeVotes.initiativeId} = ANY(${initiativeIds})`,
-        eq(initiativeVotes.userId, userId)
-      ));
 
-    const userVoteMap = new Map(
-      userVotes.map(v => [v.initiativeId, v.voteType])
-    );
+    // Only query for user votes if there are initiatives
+    let userVoteMap = new Map<string, 'upvote' | 'downvote'>();
+    if (initiativeIds.length > 0) {
+      const userVotes = await db
+        .select()
+        .from(initiativeVotes)
+        .where(and(
+          sql`${initiativeVotes.initiativeId} = ANY(${initiativeIds})`,
+          eq(initiativeVotes.userId, userId)
+        ));
+
+      userVoteMap = new Map(
+        userVotes.map(v => [v.initiativeId, v.voteType])
+      );
+    }
 
     // Get total count
     const [{ count: total }] = await db

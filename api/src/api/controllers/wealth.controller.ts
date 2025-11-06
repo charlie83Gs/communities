@@ -94,7 +94,7 @@ import { ApiResponse } from '@utils/response';
  *           nullable: true
  *         status:
  *           type: string
- *           enum: [pending, accepted, rejected, cancelled, fulfilled]
+ *           enum: [pending, accepted, rejected, cancelled, fulfilled, failed]
  *         createdAt:
  *           type: string
  *           format: date-time
@@ -744,6 +744,99 @@ export class WealthController {
       const userId = (req as any).user?.id;
       const result = await wealthService.cancelRequest(req.params.id, req.params.requestId, userId);
       return ApiResponse.success(res, result, 'Request cancelled');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
+   * @swagger
+   * /api/v1/wealths/{id}/requests/{requestId}/confirm:
+   *   post:
+   *     summary: Confirm receipt of wealth (requester only)
+   *     description: The requester confirms they received the wealth. This decrements units and marks the request as fulfilled.
+   *     tags: [Wealths]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         schema: { type: string, format: uuid }
+   *         required: true
+   *         description: Wealth ID
+   *       - in: path
+   *         name: requestId
+   *         schema: { type: string, format: uuid }
+   *         required: true
+   *         description: Request ID
+   *     responses:
+   *       200:
+   *         description: Request confirmed successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 wealth:
+   *                   $ref: '#/components/schemas/Wealth'
+   *                 request:
+   *                   $ref: '#/components/schemas/WealthRequest'
+   *       400:
+   *         description: Invalid request status (only accepted requests can be confirmed)
+   *       403:
+   *         description: Forbidden (only requester can confirm)
+   *       404:
+   *         description: Wealth or request not found
+   */
+  async confirmRequest(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = (req as any).user?.id;
+      const result = await wealthService.confirmRequest(req.params.id, req.params.requestId, userId);
+      return ApiResponse.success(res, result, 'Request confirmed successfully');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
+   * @swagger
+   * /api/v1/wealths/{id}/requests/{requestId}/fail:
+   *   post:
+   *     summary: Mark request as failed (requester only)
+   *     description: The requester marks that they did not receive the wealth. Units are NOT decremented.
+   *     tags: [Wealths]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         schema: { type: string, format: uuid }
+   *         required: true
+   *         description: Wealth ID
+   *       - in: path
+   *         name: requestId
+   *         schema: { type: string, format: uuid }
+   *         required: true
+   *         description: Request ID
+   *     responses:
+   *       200:
+   *         description: Request marked as failed
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/WealthRequest'
+   *       400:
+   *         description: Invalid request status (only accepted requests can be marked as failed)
+   *       403:
+   *         description: Forbidden (only requester can mark as failed)
+   *       404:
+   *         description: Wealth or request not found
+   */
+  async failRequest(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = (req as any).user?.id;
+      const result = await wealthService.failRequest(req.params.id, req.params.requestId, userId);
+      return ApiResponse.success(res, result, 'Request marked as failed');
     } catch (err) {
       next(err);
     }

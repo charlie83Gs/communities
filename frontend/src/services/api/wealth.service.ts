@@ -100,6 +100,16 @@ class WealthService {
     return apiClient.post(`${this.basePath}/${wealthId}/requests/${requestId}/cancel`, {});
   }
 
+  /** Confirm a request as fulfilled (requester only) */
+  async confirmRequest(wealthId: string, requestId: string): Promise<WealthRequest> {
+    return apiClient.post(`${this.basePath}/${wealthId}/requests/${requestId}/confirm`, {});
+  }
+
+  /** Mark a request as failed (requester only) */
+  async failRequest(wealthId: string, requestId: string): Promise<WealthRequest> {
+    return apiClient.post(`${this.basePath}/${wealthId}/requests/${requestId}/fail`, {});
+  }
+
   /** Get current user's own requests across all communities */
   async getUserRequests(statuses?: WealthRequestStatus | WealthRequestStatus[]): Promise<WealthRequest[]> {
     const search = new URLSearchParams();

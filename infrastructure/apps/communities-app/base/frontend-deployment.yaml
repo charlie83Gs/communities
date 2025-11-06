@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: communities-frontend
+  labels:
+    app: communities-frontend
+    component: frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: communities-frontend
+  template:
+    metadata:
+      labels:
+        app: communities-frontend
+        component: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: ghcr.io/OWNER/communities-frontend:0.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          env:
+            - name: VITE_API_URL
+              value: "https://api.plv.it.com"
+            - name: VITE_KEYCLOAK_URL
+              value: "https://auth.plv.it.com"
+            - name: VITE_KEYCLOAK_REALM
+              value: "share-app"
+            - name: VITE_KEYCLOAK_CLIENT_ID
+              value: "communities-app"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+      imagePullSecrets:
+        - name: ghcr-credentials

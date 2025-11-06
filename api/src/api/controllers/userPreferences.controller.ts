@@ -22,19 +22,10 @@ import { SavedImage } from '@/services/images.service';
  *               properties:
  *                 displayName:
  *                   type: string
- *                 country:
- *                   type: string
- *                 stateProvince:
- *                   type: string
- *                 city:
- *                   type: string
  *                 description:
  *                   type: string
  *             example:
  *               displayName: "Ada Lovelace"
- *               country: "US"
- *               stateProvince: "California"
- *               city: "San Francisco"
  *               description: "Software engineer interested in tech communities"
  *       401:
  *         description: Unauthorized
@@ -86,15 +77,6 @@ export const getPreferences = async (req: Request, res: Response, next: NextFunc
  *               displayName:
  *                 type: string
  *                 example: "Ada Lovelace"
- *               country:
- *                 type: string
- *                 example: "US"
- *               stateProvince:
- *                 type: string
- *                 example: "California"
- *               city:
- *                 type: string
- *                 example: "San Francisco"
  *               description:
  *                 type: string
  *                 example: "Software engineer interested in tech communities"
@@ -108,19 +90,10 @@ export const getPreferences = async (req: Request, res: Response, next: NextFunc
  *               properties:
  *                 displayName:
  *                   type: string
- *                 country:
- *                   type: string
- *                 stateProvince:
- *                   type: string
- *                 city:
- *                   type: string
  *                 description:
  *                   type: string
  *             example:
  *               displayName: "Ada Lovelace"
- *               country: "US"
- *               stateProvince: "California"
- *               city: "San Francisco"
  *               description: "Software engineer interested in tech communities"
  *       400:
  *         description: Validation error

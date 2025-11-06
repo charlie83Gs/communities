@@ -18,6 +18,7 @@ export const wealthRequestStatusEnum = pgEnum('wealth_request_status', [
   'rejected',
   'cancelled',
   'fulfilled',
+  'failed',
 ]);
 
 /**

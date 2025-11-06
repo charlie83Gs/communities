@@ -112,11 +112,12 @@ The frontend will be available at `http://localhost:5173`
 
 ```
 share-8/
-├── api/              # Express.js backend
-├── frontend/         # SolidJS frontend
-├── uploads/          # User-uploaded files
-├── logs/             # Application logs
-└── docker-compose.yml
+├── api/                  # Express.js backend
+├── frontend/             # SolidJS frontend
+├── infrastructure/       # Kubernetes/Flux deployment configs
+├── uploads/              # User-uploaded files
+├── logs/                 # Application logs
+└── docker-compose.yml    # Local Docker Compose setup
 ```
 
 ## Development
@@ -153,6 +154,33 @@ bun run build
 # Run tests
 bun test
 ```
+
+## Kubernetes Deployment
+
+For production Kubernetes deployment with Flux CD:
+
+```bash
+cd infrastructure
+
+# See available deployment options
+./deploy.sh development  # Local/staging deployment
+./deploy.sh production   # Production deployment
+```
+
+Or use Tilt for local development:
+
+```bash
+cd infrastructure
+tilt up  # Opens Tilt UI at http://localhost:10350
+```
+
+See the [infrastructure/README.md](./infrastructure/README.md) for full deployment documentation.
+
+### Infrastructure Documentation
+
+- [infrastructure/README.md](./infrastructure/README.md) - Complete Kubernetes deployment guide
+- [infrastructure/QUICK_START.md](./infrastructure/QUICK_START.md) - Quick reference guide
+- [infrastructure/TILT.md](./infrastructure/TILT.md) - Local development with Tilt
 
 ## Documentation
 

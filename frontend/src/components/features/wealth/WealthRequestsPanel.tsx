@@ -1,10 +1,11 @@
 import { Component, For, Show, createSignal } from 'solid-js';
 import { Card } from '@/components/common/Card';
 import { Button } from '@/components/common/Button';
+import { Badge } from '@/components/common/Badge';
 import { CredentialedImage } from '@/components/common/CredentialedImage';
 import { useManageRequestMutations, useWealthRequestsQuery } from '@/hooks/queries/useWealth';
 import { useUserQuery } from '@/hooks/queries/useUserQuery';
-import type { WealthRequest } from '@/types/wealth.types';
+import type { WealthRequest, WealthRequestStatus } from '@/types/wealth.types';
 import type { SearchUser } from '@/types/user.types';
 import { makeTranslator } from '@/i18n/makeTranslator';
 import { wealthRequestsPanelDict } from '@/components/features/wealth/WealthRequestsPanel.i18n';
@@ -37,6 +38,43 @@ export const WealthRequestsPanel: Component<WealthRequestsPanelProps> = (props) 
       requests.refetch();
     } catch (e: any) {
       setError(e?.message ?? 'Failed to reject request');
+    }
+  };
+
+  const getStatusBadgeVariant = (status: WealthRequestStatus): 'success' | 'warning' | 'danger' | 'secondary' | 'ocean' => {
+    switch (status) {
+      case 'fulfilled':
+        return 'success';
+      case 'accepted':
+        return 'ocean';
+      case 'pending':
+        return 'warning';
+      case 'failed':
+        return 'danger';
+      case 'rejected':
+      case 'cancelled':
+        return 'secondary';
+      default:
+        return 'secondary';
+    }
+  };
+
+  const getStatusLabel = (status: WealthRequestStatus): string => {
+    switch (status) {
+      case 'pending':
+        return t('statusLabels.pending');
+      case 'accepted':
+        return t('statusLabels.accepted');
+      case 'fulfilled':
+        return t('statusLabels.fulfilled');
+      case 'failed':
+        return t('statusLabels.failed');
+      case 'rejected':
+        return t('statusLabels.rejected');
+      case 'cancelled':
+        return t('statusLabels.cancelled');
+      default:
+        return status;
     }
   };
 
@@ -97,25 +135,29 @@ export const WealthRequestsPanel: Component<WealthRequestsPanelProps> = (props) 
                       <Show when={req.unitsRequested != null}>
                         <p class="text-xs text-stone-500 dark:text-stone-400">{t('units').replace('{{units}}', String(req.unitsRequested))}</p>
                       </Show>
-                      <p class="text-xs text-stone-400 dark:text-stone-500">{t('status').replace('{{status}}', req.status)}</p>
-                      <div class="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="primary"
-                          onClick={() => handleAccept(req)}
-                          disabled={accept.isPending || requests.isLoading || userQuery.isLoading}
-                        >
-                          {accept.isPending ? t('accepting') : t('accept')}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="danger"
-                          onClick={() => handleReject(req)}
-                          disabled={reject.isPending || requests.isLoading || userQuery.isLoading}
-                        >
-                          {reject.isPending ? t('rejecting') : t('reject')}
-                        </Button>
-                      </div>
+                      <Badge variant={getStatusBadgeVariant(req.status)}>
+                        {getStatusLabel(req.status)}
+                      </Badge>
+                      <Show when={req.status === 'pending'}>
+                        <div class="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="primary"
+                            onClick={() => handleAccept(req)}
+                            disabled={accept.isPending || requests.isLoading || userQuery.isLoading}
+                          >
+                            {accept.isPending ? t('accepting') : t('accept')}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="danger"
+                            onClick={() => handleReject(req)}
+                            disabled={reject.isPending || requests.isLoading || userQuery.isLoading}
+                          >
+                            {reject.isPending ? t('rejecting') : t('reject')}
+                          </Button>
+                        </div>
+                      </Show>
                     </div>
                   </div>
                 );

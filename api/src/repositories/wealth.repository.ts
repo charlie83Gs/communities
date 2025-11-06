@@ -270,6 +270,24 @@ export class WealthRepository {
       .returning();
     return row;
   }
+
+  async confirmRequest(requestId: string): Promise<WealthRequestRecord | undefined> {
+    const [row] = await db
+      .update(wealthRequests)
+      .set({ status: 'fulfilled', updatedAt: new Date() })
+      .where(eq(wealthRequests.id, requestId))
+      .returning();
+    return row;
+  }
+
+  async failRequest(requestId: string): Promise<WealthRequestRecord | undefined> {
+    const [row] = await db
+      .update(wealthRequests)
+      .set({ status: 'failed', updatedAt: new Date() })
+      .where(eq(wealthRequests.id, requestId))
+      .returning();
+    return row;
+  }
 }
 
 export const wealthRepository = new WealthRepository();

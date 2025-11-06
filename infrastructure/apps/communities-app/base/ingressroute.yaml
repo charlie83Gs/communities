@@ -1,0 +1,32 @@
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: communities-api
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`api.plv.it.com`)
+      kind: Rule
+      services:
+        - name: communities-api
+          port: 80
+  tls:
+    certResolver: letsencrypt
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: communities-frontend
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`app.plv.it.com`)
+      kind: Rule
+      services:
+        - name: communities-frontend
+          port: 80
+  tls:
+    certResolver: letsencrypt
