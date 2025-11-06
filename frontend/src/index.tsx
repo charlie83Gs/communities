@@ -72,3 +72,4 @@ keycloakService.initAuth({
     root!,
   );
 });
+// Trigger release
