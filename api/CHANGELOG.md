@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.0](https://github.com/charlie83Gs/communities/compare/communities-api-v1.1.0...communities-api-v1.2.0) (2025-11-06)
+
+
+### Features
+
+* add Kubernetes deployment manifests and release automation ([2fe3f36](https://github.com/charlie83Gs/communities/commit/2fe3f36eb192e01be124d7e05f19c6284972f272))
+* **api:** add deployment configuration support ([9f3612c](https://github.com/charlie83Gs/communities/commit/9f3612c8a9c9bea307d3285c90dc9a816a54beeb))
+
 ## [1.1.0](https://github.com/charlie83Gs/communities/compare/communities-api-v1.0.0...communities-api-v1.1.0) (2025-11-06)
 
 
