@@ -71,7 +71,7 @@ metadata:
   name: communities-keycloak
   namespace: flux-system
 spec:
-  interval: 5m
+  interval: 10m
   sourceRef:
     kind: GitRepository
     name: communities
