@@ -19,6 +19,14 @@ spec:
     # Deployment configuration
     deployment:
       replicas: 1
+      initContainers:
+        # Fix permissions for acme.json file
+        - name: volume-permissions
+          image: busybox:1.31.1
+          command: ['sh', '-c', 'touch /data/acme.json && chmod 600 /data/acme.json && chown 65532:65532 /data/acme.json']
+          volumeMounts:
+            - name: traefik-data
+              mountPath: /data
 
     # Ports configuration
     ports:
