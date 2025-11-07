@@ -268,6 +268,19 @@ bun run migrate
 
 ## Database Connection
 
+### PostgreSQL Client Library
+
+**IMPORTANT:** This project uses the [`postgres`](https://github.com/porsager/postgres) npm package as the PostgreSQL client library, NOT `pg`.
+
+**Why `postgres` over `pg`:**
+- Better performance and smaller bundle size
+- First-class TypeScript support
+- Tagged template literals for safe queries
+- Works seamlessly with Drizzle ORM
+- Built-in connection pooling
+
+**Usage Pattern:**
+
 ```typescript
 // api/src/db/index.ts
 import { drizzle } from 'drizzle-orm/postgres-js';
@@ -276,9 +289,46 @@ import * as schema from './schema';
 
 const connectionString = process.env.DATABASE_URL!;
 
+// Create postgres client
 export const connection = postgres(connectionString);
+
+// Wrap with Drizzle for type-safe queries
 export const db = drizzle(connection, { schema });
 ```
+
+**Direct SQL queries (when needed):**
+
+```typescript
+import postgres from 'postgres';
+
+const sql = postgres(connectionString);
+
+// Tagged template literals prevent SQL injection
+const users = await sql`
+  SELECT * FROM users
+  WHERE id = ${userId}
+`;
+
+// Always close when done
+await sql.end();
+```
+
+**Configuration options:**
+
+```typescript
+const sql = postgres(connectionString, {
+  max: 10,                    // Connection pool size (default: 10)
+  idle_timeout: 20,           // Close idle connections after 20s
+  connect_timeout: 30,        // Connection timeout in seconds
+  ssl: 'require',             // SSL mode: 'require', 'prefer', false
+  onnotice: () => {},         // Handle PostgreSQL notices
+  transform: {
+    undefined: null,          // Transform undefined to null
+  },
+});
+```
+
+**DO NOT use `pg` package** - it's not in dependencies and would require additional setup. Always use `postgres` for consistency.
 
 ## Common Column Types
 

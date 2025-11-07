@@ -1,4 +1,4 @@
-import { Client } from 'pg';
+import postgres from 'postgres';
 
 /**
  * Run OpenFGA database migrations
@@ -19,31 +19,29 @@ export async function runOpenFGAMigrations(): Promise<void> {
 
   console.log('[OpenFGA Migrations] Checking if migrations are needed...');
 
-  // Parse the database URI for local connection
-  const client = new Client({
-    connectionString: localDatastoreUri.replace(/\?.*$/, ''), // Remove query params
-    ssl: localDatastoreUri.includes('sslmode=require') ? { rejectUnauthorized: false } : false,
+  // Create postgres client for local connection
+  const sql = postgres(localDatastoreUri, {
+    max: 1, // Single connection for migration checks
+    ssl: localDatastoreUri.includes('sslmode=require') ? 'require' : false,
   });
 
   try {
-    await client.connect();
-
     // Check if migration is needed by querying the migration table
     // OpenFGA uses a table called 'migration' to track the current schema version
-    const result = await client.query(`
+    const result = await sql`
       SELECT EXISTS (
         SELECT FROM information_schema.tables
         WHERE table_schema = 'public'
         AND table_name = 'migration'
-      ) as table_exists;
-    `);
+      ) as table_exists
+    `;
 
     let needsMigration = false;
 
-    if (result.rows[0].table_exists) {
+    if (result[0].table_exists) {
       // Check current migration version
-      const versionResult = await client.query('SELECT version FROM migration LIMIT 1;');
-      const currentVersion = versionResult.rows[0]?.version || 0;
+      const versionResult = await sql`SELECT version FROM migration LIMIT 1`;
+      const currentVersion = versionResult[0]?.version || 0;
 
       // OpenFGA v1.10.3 requires version 4
       const requiredVersion = 4;
@@ -114,6 +112,6 @@ export async function runOpenFGAMigrations(): Promise<void> {
     console.error('[OpenFGA Migrations] Failed to run migrations:', error);
     throw error;
   } finally {
-    await client.end();
+    await sql.end();
   }
 }
