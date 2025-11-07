@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.1](https://github.com/charlie83Gs/communities/compare/communities-api-v1.3.0...communities-api-v1.3.1) (2025-11-07)
+
+
+### Bug Fixes
+
+* replace pg with postgres package in openfga-migrate ([de6a93a](https://github.com/charlie83Gs/communities/commit/de6a93a09357bb5ea1003dab2a9d91ce89f7957f))
+
 ## [1.3.0](https://github.com/charlie83Gs/communities/compare/communities-api-v1.2.0...communities-api-v1.3.0) (2025-11-07)
 
 
