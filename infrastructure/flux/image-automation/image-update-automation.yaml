@@ -9,7 +9,7 @@ spec:
   interval: 10m
   sourceRef:
     kind: GitRepository
-    name: communities
+    name: communities-ssh
   git:
     checkout:
       ref:

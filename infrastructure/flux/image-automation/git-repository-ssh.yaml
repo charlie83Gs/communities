@@ -1,0 +1,15 @@
+---
+# SSH-based GitRepository for write access (image automation commits)
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: communities-ssh
+  namespace: flux-system
+spec:
+  interval: 1m0s
+  ref:
+    branch: main
+  secretRef:
+    name: flux-system
+  timeout: 60s
+  url: ssh://git@github.com/charlie83Gs/communities
