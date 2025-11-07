@@ -20,7 +20,10 @@ export class AdminTrustGrantRepository {
           updatedAt: new Date(),
         })
         .where(
-          and(eq(adminTrustGrants.communityId, communityId), eq(adminTrustGrants.toUserId, toUserId))
+          and(
+            eq(adminTrustGrants.communityId, communityId),
+            eq(adminTrustGrants.toUserId, toUserId)
+          )
         )
         .returning();
       return updated;

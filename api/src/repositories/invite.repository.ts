@@ -1,8 +1,5 @@
 import { db } from '@db/index';
-import {
-  communityUserInvites,
-  communityLinkInvites
-} from '@db/schema';
+import { communityUserInvites, communityLinkInvites } from '@db/schema';
 import { and, eq, lt, or, gt, isNull } from 'drizzle-orm';
 
 export type UserInviteRecord = typeof communityUserInvites.$inferSelect;
@@ -56,23 +53,32 @@ export class InviteRepository {
   }
 
   async findUserInviteById(id: string): Promise<UserInviteRecord | undefined> {
-    const [row] = await db.select().from(communityUserInvites).where(eq(communityUserInvites.id, id));
+    const [row] = await db
+      .select()
+      .from(communityUserInvites)
+      .where(eq(communityUserInvites.id, id));
     return row;
   }
 
   async findLinkInviteById(id: string): Promise<LinkInviteRecord | undefined> {
-    const [row] = await db.select().from(communityLinkInvites).where(eq(communityLinkInvites.id, id));
+    const [row] = await db
+      .select()
+      .from(communityLinkInvites)
+      .where(eq(communityLinkInvites.id, id));
     return row;
   }
 
   async findInviteById(id: string): Promise<InviteRecord | undefined> {
-    let invite = await this.findUserInviteById(id);
+    const invite = await this.findUserInviteById(id);
     if (invite) return invite as InviteRecord;
     return await this.findLinkInviteById(id);
   }
 
   async findBySecret(secret: string): Promise<LinkInviteRecord | undefined> {
-    const [row] = await db.select().from(communityLinkInvites).where(eq(communityLinkInvites.secret, secret));
+    const [row] = await db
+      .select()
+      .from(communityLinkInvites)
+      .where(eq(communityLinkInvites.secret, secret));
     return row;
   }
 
@@ -162,7 +168,9 @@ export class InviteRepository {
     const result = await db
       .update(communityLinkInvites)
       .set({ status: 'expired', updatedAt: new Date() })
-      .where(and(eq(communityLinkInvites.status, 'pending'), lt(communityLinkInvites.expiresAt, now)));
+      .where(
+        and(eq(communityLinkInvites.status, 'pending'), lt(communityLinkInvites.expiresAt, now))
+      );
     // @ts-ignore
     return result?.rowCount ?? 0;
   }
@@ -207,10 +215,7 @@ export class InviteRepository {
         and(
           eq(communityLinkInvites.communityId, communityId),
           eq(communityLinkInvites.status, 'pending'),
-          or(
-            gt(communityLinkInvites.expiresAt, now),
-            isNull(communityLinkInvites.expiresAt)
-          )
+          or(gt(communityLinkInvites.expiresAt, now), isNull(communityLinkInvites.expiresAt))
         )
       )
       .orderBy(communityLinkInvites.createdAt);

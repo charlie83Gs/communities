@@ -247,7 +247,12 @@ export class ForumService {
       limit?: number;
       sort?: 'newest' | 'popular' | 'mostUpvoted';
     } = {}
-  ): Promise<{ threads: ForumThreadWithDetails[]; total: number; page: number; limit: number }> {
+  ): Promise<{
+    threads: ForumThreadWithDetails[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
     const communityId = await this.getCommunityIdFromCategory(categoryId);
     await this.ensureMemberOrAdmin(communityId, userId);
 
@@ -291,7 +296,10 @@ export class ForumService {
   async getThread(
     threadId: string,
     userId: string
-  ): Promise<{ thread: ForumThreadWithDetails; posts: ForumPostWithDetails[] }> {
+  ): Promise<{
+    thread: ForumThreadWithDetails;
+    posts: ForumPostWithDetails[];
+  }> {
     const communityId = await this.getCommunityIdFromThread(threadId);
     await this.ensureMemberOrAdmin(communityId, userId);
 
@@ -348,7 +356,10 @@ export class ForumService {
     const canManage = await this.checkIsForumManager(communityId, userId);
 
     if (!isAuthor && !canManage) {
-      throw new AppError('Forbidden: only the thread author or forum managers can edit this thread', 403);
+      throw new AppError(
+        'Forbidden: only the thread author or forum managers can edit this thread',
+        403
+      );
     }
 
     // Only admins/forum managers can update isPinned, isLocked, bestAnswerPostId
@@ -377,7 +388,10 @@ export class ForumService {
     const canManage = await this.checkIsForumManager(communityId, userId);
 
     if (!isAuthor && !canManage) {
-      throw new AppError('Forbidden: only the thread author or forum managers can delete this thread', 403);
+      throw new AppError(
+        'Forbidden: only the thread author or forum managers can delete this thread',
+        403
+      );
     }
 
     await forumRepository.deleteThread(threadId);
@@ -387,11 +401,19 @@ export class ForumService {
     return await this.updateThread(threadId, { isPinned }, userId);
   }
 
-  async lockThread(threadId: string, isLocked: boolean, userId: string): Promise<ForumThreadRecord> {
+  async lockThread(
+    threadId: string,
+    isLocked: boolean,
+    userId: string
+  ): Promise<ForumThreadRecord> {
     return await this.updateThread(threadId, { isLocked }, userId);
   }
 
-  async setBestAnswer(threadId: string, postId: string, userId: string): Promise<ForumThreadRecord> {
+  async setBestAnswer(
+    threadId: string,
+    postId: string,
+    userId: string
+  ): Promise<ForumThreadRecord> {
     return await this.updateThread(threadId, { bestAnswerPostId: postId }, userId);
   }
 
@@ -456,7 +478,10 @@ export class ForumService {
     const canManage = await this.checkIsForumManager(communityId, userId);
 
     if (!isAuthor && !canManage) {
-      throw new AppError('Forbidden: only the post author or forum managers can edit this post', 403);
+      throw new AppError(
+        'Forbidden: only the post author or forum managers can edit this post',
+        403
+      );
     }
 
     const updated = await forumRepository.updatePost(postId, data);
@@ -475,7 +500,10 @@ export class ForumService {
     const canManage = await this.checkIsForumManager(communityId, userId);
 
     if (!isAuthor && !canManage) {
-      throw new AppError('Forbidden: only the post author or forum managers can delete this post', 403);
+      throw new AppError(
+        'Forbidden: only the post author or forum managers can delete this post',
+        403
+      );
     }
 
     await forumRepository.deletePost(postId);

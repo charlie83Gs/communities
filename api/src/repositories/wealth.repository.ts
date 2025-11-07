@@ -1,10 +1,18 @@
 import { db } from '@db/index';
-import { wealth, wealthRequests, wealthStatusEnum, wealthDistributionTypeEnum, wealthRequestStatusEnum } from '@db/schema/wealth.schema';
+import {
+  wealth,
+  wealthRequests,
+  wealthStatusEnum,
+  wealthDistributionTypeEnum,
+  wealthRequestStatusEnum,
+} from '@db/schema/wealth.schema';
 import { and, desc, eq, inArray, ilike, or, gte, lte, sql } from 'drizzle-orm';
 
 export type WealthRecord = typeof wealth.$inferSelect;
 export type CreateWealthInput = typeof wealth.$inferInsert;
-export type UpdateWealthInput = Partial<Omit<typeof wealth.$inferInsert, 'id' | 'createdAt' | 'createdBy' | 'communityId'>>;
+export type UpdateWealthInput = Partial<
+  Omit<typeof wealth.$inferInsert, 'id' | 'createdAt' | 'createdBy' | 'communityId'>
+>;
 
 export type WealthRequestRecord = typeof wealthRequests.$inferSelect;
 export type CreateWealthRequestInput = {
@@ -44,7 +52,10 @@ export class WealthRepository {
     return row;
   }
 
-  async listByCommunities(communityIds: string[], status?: (typeof wealthStatusEnum.enumValues)[number]): Promise<WealthRecord[]> {
+  async listByCommunities(
+    communityIds: string[],
+    status?: (typeof wealthStatusEnum.enumValues)[number]
+  ): Promise<WealthRecord[]> {
     if (communityIds.length === 0) return [];
     const where = status
       ? and(inArray(wealth.communityId, communityIds), eq(wealth.status, status))
@@ -52,8 +63,13 @@ export class WealthRepository {
     return await db.select().from(wealth).where(where).orderBy(desc(wealth.createdAt));
   }
 
-  async listByCommunity(communityId: string, status?: (typeof wealthStatusEnum.enumValues)[number]): Promise<WealthRecord[]> {
-    const where = status ? and(eq(wealth.communityId, communityId), eq(wealth.status, status)) : eq(wealth.communityId, communityId);
+  async listByCommunity(
+    communityId: string,
+    status?: (typeof wealthStatusEnum.enumValues)[number]
+  ): Promise<WealthRecord[]> {
+    const where = status
+      ? and(eq(wealth.communityId, communityId), eq(wealth.status, status))
+      : eq(wealth.communityId, communityId);
     return await db.select().from(wealth).where(where).orderBy(desc(wealth.createdAt));
   }
 
@@ -91,7 +107,9 @@ export class WealthRepository {
     if (!wealthItem) return undefined;
     const remaining = (wealthItem.unitsAvailable ?? 0) - units;
     const nextStatus =
-      (wealthItem.distributionType === 'unit_based' && remaining <= 0) ? 'fulfilled' : wealthItem.status;
+      wealthItem.distributionType === 'unit_based' && remaining <= 0
+        ? 'fulfilled'
+        : wealthItem.status;
     const [row] = await db
       .update(wealth)
       .set({
@@ -178,11 +196,16 @@ export class WealthRepository {
       .orderBy(desc(wealthRequests.createdAt));
   }
 
-  async listRequestsForWealthByRequester(wealthId: string, requesterId: string): Promise<WealthRequestRecord[]> {
+  async listRequestsForWealthByRequester(
+    wealthId: string,
+    requesterId: string
+  ): Promise<WealthRequestRecord[]> {
     return await db
       .select()
       .from(wealthRequests)
-      .where(and(eq(wealthRequests.wealthId, wealthId), eq(wealthRequests.requesterId, requesterId)))
+      .where(
+        and(eq(wealthRequests.wealthId, wealthId), eq(wealthRequests.requesterId, requesterId))
+      )
       .orderBy(desc(wealthRequests.createdAt));
   }
 
@@ -192,7 +215,10 @@ export class WealthRepository {
   ): Promise<WealthRequestRecord[]> {
     const where =
       statuses && statuses.length > 0
-        ? and(eq(wealthRequests.requesterId, requesterId), inArray(wealthRequests.status, statuses as any))
+        ? and(
+            eq(wealthRequests.requesterId, requesterId),
+            inArray(wealthRequests.status, statuses as any)
+          )
         : eq(wealthRequests.requesterId, requesterId);
 
     return await db

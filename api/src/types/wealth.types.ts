@@ -11,7 +11,18 @@ export type CreateWealthDto = {
   automationEnabled?: boolean;
 };
 
-export type UpdateWealthDto = Partial<Pick<CreateWealthDto, 'title' | 'description' | 'image' | 'endDate' | 'unitsAvailable' | 'maxUnitsPerUser' | 'automationEnabled'>> & {
+export type UpdateWealthDto = Partial<
+  Pick<
+    CreateWealthDto,
+    | 'title'
+    | 'description'
+    | 'image'
+    | 'endDate'
+    | 'unitsAvailable'
+    | 'maxUnitsPerUser'
+    | 'automationEnabled'
+  >
+> & {
   status?: 'active' | 'fulfilled' | 'expired' | 'cancelled';
 };
 

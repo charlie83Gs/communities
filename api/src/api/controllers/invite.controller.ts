@@ -683,7 +683,7 @@ export class InviteController {
       next(err);
     }
   }
-  
+
   /**
    * @swagger
    * /api/v1/invites/communities/{communityId}/links/{id}:

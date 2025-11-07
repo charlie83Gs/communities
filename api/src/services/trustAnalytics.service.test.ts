@@ -25,21 +25,26 @@ const mockCommunityMemberRepository = {
 
 const mockTrustAnalyticsRepository = {
   getTrustTimeline: mock(() => Promise.resolve([])),
-  getTrustSummary: mock(() => Promise.resolve({ currentScore: 0, totalAwarded: 0, totalReceived: 0 })),
+  getTrustSummary: mock(() =>
+    Promise.resolve({ currentScore: 0, totalAwarded: 0, totalReceived: 0 })
+  ),
   getCurrentTrustScore: mock(() => Promise.resolve(0)),
 };
 
 describe('TrustAnalyticsService', () => {
   beforeEach(() => {
     // Reset all mocks
-    Object.values(mockCommunityMemberRepository).forEach(m => m.mockReset());
-    Object.values(mockTrustAnalyticsRepository).forEach(m => m.mockReset());
+    Object.values(mockCommunityMemberRepository).forEach((m) => m.mockReset());
+    Object.values(mockTrustAnalyticsRepository).forEach((m) => m.mockReset());
 
     // Replace dependencies with mocks
     (communityMemberRepository.getUserRole as any) = mockCommunityMemberRepository.getUserRole;
-    (trustAnalyticsRepository.getTrustTimeline as any) = mockTrustAnalyticsRepository.getTrustTimeline;
-    (trustAnalyticsRepository.getTrustSummary as any) = mockTrustAnalyticsRepository.getTrustSummary;
-    (trustAnalyticsRepository.getCurrentTrustScore as any) = mockTrustAnalyticsRepository.getCurrentTrustScore;
+    (trustAnalyticsRepository.getTrustTimeline as any) =
+      mockTrustAnalyticsRepository.getTrustTimeline;
+    (trustAnalyticsRepository.getTrustSummary as any) =
+      mockTrustAnalyticsRepository.getTrustSummary;
+    (trustAnalyticsRepository.getCurrentTrustScore as any) =
+      mockTrustAnalyticsRepository.getCurrentTrustScore;
 
     // Default mock behaviors
     mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
@@ -48,8 +53,18 @@ describe('TrustAnalyticsService', () => {
   describe('getMyTrustTimeline', () => {
     it('should allow member to get their trust timeline', async () => {
       const timeline = [
-        { eventType: 'award', fromUserId: 'user-2', timestamp: new Date('2025-11-01'), cumulativeScore: 5 },
-        { eventType: 'award', fromUserId: 'user-3', timestamp: new Date('2025-11-02'), cumulativeScore: 8 },
+        {
+          eventType: 'award',
+          fromUserId: 'user-2',
+          timestamp: new Date('2025-11-01'),
+          cumulativeScore: 5,
+        },
+        {
+          eventType: 'award',
+          fromUserId: 'user-3',
+          timestamp: new Date('2025-11-02'),
+          cumulativeScore: 8,
+        },
       ];
       mockTrustAnalyticsRepository.getTrustTimeline.mockResolvedValue(timeline);
 
@@ -70,7 +85,9 @@ describe('TrustAnalyticsService', () => {
       mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
 
       await expect(
-        trustAnalyticsService.getMyTrustTimeline(VALID_USER_ID, { communityId: VALID_COMM_ID })
+        trustAnalyticsService.getMyTrustTimeline(VALID_USER_ID, {
+          communityId: VALID_COMM_ID,
+        })
       ).rejects.toThrow('You are not a member of this community');
     });
 
@@ -112,7 +129,9 @@ describe('TrustAnalyticsService', () => {
       mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
 
       await expect(
-        trustAnalyticsService.getMyTrustSummary(VALID_USER_ID, { communityId: VALID_COMM_ID })
+        trustAnalyticsService.getMyTrustSummary(VALID_USER_ID, {
+          communityId: VALID_COMM_ID,
+        })
       ).rejects.toThrow('You are not a member of this community');
     });
   });

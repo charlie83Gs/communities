@@ -1,4 +1,8 @@
-import { itemsRepository, CreateItemDto as RepoCreateItemDto, UpdateItemDto as RepoUpdateItemDto } from '@repositories/items.repository';
+import {
+  itemsRepository,
+  CreateItemDto as RepoCreateItemDto,
+  UpdateItemDto as RepoUpdateItemDto,
+} from '@repositories/items.repository';
 import { communityMemberRepository } from '@repositories/communityMember.repository';
 import { communityRepository } from '@repositories/community.repository';
 import { AppError } from '@utils/errors';
@@ -70,7 +74,10 @@ export class ItemsService {
       return false;
     }
 
-    const minTrustForItemManagement = community.minTrustForItemManagement as { type: string; value: number };
+    const minTrustForItemManagement = community.minTrustForItemManagement as {
+      type: string;
+      value: number;
+    };
     const threshold = minTrustForItemManagement?.value ?? 20;
 
     return await openFGAService.checkTrustLevel(userId, communityId, threshold);
@@ -79,7 +86,11 @@ export class ItemsService {
   /**
    * List all items for a community
    */
-  async listItems(communityId: string, userId: string, includeDeleted = false): Promise<ItemListItem[]> {
+  async listItems(
+    communityId: string,
+    userId: string,
+    includeDeleted = false
+  ): Promise<ItemListItem[]> {
     // Verify user is a member of the community
     await this.ensureCommunityMember(communityId, userId);
 
@@ -126,7 +137,10 @@ export class ItemsService {
     // Check name uniqueness (case-insensitive)
     const existing = await itemsRepository.findByName(dto.communityId, dto.name);
     if (existing) {
-      throw new AppError(`An item with the name "${dto.name}" already exists in this community`, 400);
+      throw new AppError(
+        `An item with the name "${dto.name}" already exists in this community`,
+        400
+      );
     }
 
     // Validate name length
@@ -181,7 +195,10 @@ export class ItemsService {
     if (dto.name && dto.name.toLowerCase() !== item.name.toLowerCase()) {
       const existing = await itemsRepository.findByName(item.communityId, dto.name);
       if (existing && existing.id !== itemId) {
-        throw new AppError(`An item with the name "${dto.name}" already exists in this community`, 400);
+        throw new AppError(
+          `An item with the name "${dto.name}" already exists in this community`,
+          400
+        );
       }
 
       // Validate name length
@@ -197,7 +214,7 @@ export class ItemsService {
     // Update item
     const updated = await itemsRepository.update(itemId, {
       name: dto.name?.trim(),
-      description: dto.description !== undefined ? (dto.description?.trim() || null) : undefined,
+      description: dto.description !== undefined ? dto.description?.trim() || null : undefined,
       kind: dto.kind,
       wealthValue: dto.wealthValue,
     });
@@ -243,7 +260,10 @@ export class ItemsService {
     // Check if item has active wealth references
     const hasActiveReferences = await itemsRepository.hasActiveWealthReferences(itemId);
     if (hasActiveReferences) {
-      throw new AppError('Cannot delete item that has active wealth shares. Please wait for them to be fulfilled or cancelled.', 400);
+      throw new AppError(
+        'Cannot delete item that has active wealth shares. Please wait for them to be fulfilled or cancelled.',
+        400
+      );
     }
 
     // Soft delete
@@ -273,28 +293,128 @@ export class ItemsService {
     // Define all default items with specific, valuable items
     const defaultItems = [
       // Objects (physical items with clear value)
-      { name: 'Fresh Vegetables (kg)', description: 'Fresh vegetables sold by weight', kind: 'object' as const, wealthValue: '5' },
-      { name: 'Canned Food (unit)', description: 'Non-perishable canned food items', kind: 'object' as const, wealthValue: '3' },
-      { name: 'Bread (loaf)', description: 'Fresh baked bread', kind: 'object' as const, wealthValue: '2' },
-      { name: 'Clothing Item', description: 'Clothing items (shirts, pants, jackets, etc.)', kind: 'object' as const, wealthValue: '10' },
-      { name: 'Hand Tool', description: 'Manual hand tools (hammer, screwdriver, wrench, etc.)', kind: 'object' as const, wealthValue: '15' },
-      { name: 'Power Tool', description: 'Electric or battery-powered tools', kind: 'object' as const, wealthValue: '50' },
-      { name: 'Book', description: 'Books, textbooks, or reading materials', kind: 'object' as const, wealthValue: '8' },
-      { name: 'Bicycle', description: 'Bicycle for transportation or recreation', kind: 'object' as const, wealthValue: '100' },
-      { name: 'Furniture Item', description: 'Household furniture (chair, table, shelf, etc.)', kind: 'object' as const, wealthValue: '50' },
-      { name: 'Bedding/Linens Set', description: 'Bedding, sheets, pillows, or towels', kind: 'object' as const, wealthValue: '25' },
+      {
+        name: 'Fresh Vegetables (kg)',
+        description: 'Fresh vegetables sold by weight',
+        kind: 'object' as const,
+        wealthValue: '5',
+      },
+      {
+        name: 'Canned Food (unit)',
+        description: 'Non-perishable canned food items',
+        kind: 'object' as const,
+        wealthValue: '3',
+      },
+      {
+        name: 'Bread (loaf)',
+        description: 'Fresh baked bread',
+        kind: 'object' as const,
+        wealthValue: '2',
+      },
+      {
+        name: 'Clothing Item',
+        description: 'Clothing items (shirts, pants, jackets, etc.)',
+        kind: 'object' as const,
+        wealthValue: '10',
+      },
+      {
+        name: 'Hand Tool',
+        description: 'Manual hand tools (hammer, screwdriver, wrench, etc.)',
+        kind: 'object' as const,
+        wealthValue: '15',
+      },
+      {
+        name: 'Power Tool',
+        description: 'Electric or battery-powered tools',
+        kind: 'object' as const,
+        wealthValue: '50',
+      },
+      {
+        name: 'Book',
+        description: 'Books, textbooks, or reading materials',
+        kind: 'object' as const,
+        wealthValue: '8',
+      },
+      {
+        name: 'Bicycle',
+        description: 'Bicycle for transportation or recreation',
+        kind: 'object' as const,
+        wealthValue: '100',
+      },
+      {
+        name: 'Furniture Item',
+        description: 'Household furniture (chair, table, shelf, etc.)',
+        kind: 'object' as const,
+        wealthValue: '50',
+      },
+      {
+        name: 'Bedding/Linens Set',
+        description: 'Bedding, sheets, pillows, or towels',
+        kind: 'object' as const,
+        wealthValue: '25',
+      },
 
       // Services (specific services with clear value)
-      { name: 'Home Repair (hour)', description: 'Home repair and maintenance services', kind: 'service' as const, wealthValue: '20' },
-      { name: 'Gardening Help (hour)', description: 'Gardening, landscaping, and yard work', kind: 'service' as const, wealthValue: '15' },
-      { name: 'Childcare (hour)', description: 'Babysitting and child supervision', kind: 'service' as const, wealthValue: '18' },
-      { name: 'Tutoring (hour)', description: 'Educational tutoring and teaching', kind: 'service' as const, wealthValue: '25' },
-      { name: 'Cooking/Meal Prep (meal)', description: 'Meal preparation and cooking services', kind: 'service' as const, wealthValue: '10' },
-      { name: 'Transportation/Ride (trip)', description: 'Transportation and ride sharing', kind: 'service' as const, wealthValue: '8' },
-      { name: 'Pet Care (day)', description: 'Pet sitting, walking, and care', kind: 'service' as const, wealthValue: '12' },
-      { name: 'Tech Support (hour)', description: 'Computer and technology assistance', kind: 'service' as const, wealthValue: '30' },
-      { name: 'Cleaning Service (hour)', description: 'House and office cleaning', kind: 'service' as const, wealthValue: '20' },
-      { name: 'Moving Help (hour)', description: 'Moving and heavy lifting assistance', kind: 'service' as const, wealthValue: '18' },
+      {
+        name: 'Home Repair (hour)',
+        description: 'Home repair and maintenance services',
+        kind: 'service' as const,
+        wealthValue: '20',
+      },
+      {
+        name: 'Gardening Help (hour)',
+        description: 'Gardening, landscaping, and yard work',
+        kind: 'service' as const,
+        wealthValue: '15',
+      },
+      {
+        name: 'Childcare (hour)',
+        description: 'Babysitting and child supervision',
+        kind: 'service' as const,
+        wealthValue: '18',
+      },
+      {
+        name: 'Tutoring (hour)',
+        description: 'Educational tutoring and teaching',
+        kind: 'service' as const,
+        wealthValue: '25',
+      },
+      {
+        name: 'Cooking/Meal Prep (meal)',
+        description: 'Meal preparation and cooking services',
+        kind: 'service' as const,
+        wealthValue: '10',
+      },
+      {
+        name: 'Transportation/Ride (trip)',
+        description: 'Transportation and ride sharing',
+        kind: 'service' as const,
+        wealthValue: '8',
+      },
+      {
+        name: 'Pet Care (day)',
+        description: 'Pet sitting, walking, and care',
+        kind: 'service' as const,
+        wealthValue: '12',
+      },
+      {
+        name: 'Tech Support (hour)',
+        description: 'Computer and technology assistance',
+        kind: 'service' as const,
+        wealthValue: '30',
+      },
+      {
+        name: 'Cleaning Service (hour)',
+        description: 'House and office cleaning',
+        kind: 'service' as const,
+        wealthValue: '20',
+      },
+      {
+        name: 'Moving Help (hour)',
+        description: 'Moving and heavy lifting assistance',
+        kind: 'service' as const,
+        wealthValue: '18',
+      },
     ];
 
     // Create all default items

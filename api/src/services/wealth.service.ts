@@ -3,7 +3,11 @@ import { communityMemberRepository } from '@repositories/communityMember.reposit
 import { appUserRepository } from '@repositories/appUser.repository';
 import { AppError } from '@utils/errors';
 import { openFGAService } from './openfga.service';
-import { WealthRecord, WealthRequestRecord, WealthSearchFilters } from '@repositories/wealth.repository';
+import {
+  WealthRecord,
+  WealthRequestRecord,
+  WealthSearchFilters,
+} from '@repositories/wealth.repository';
 
 export type CreateWealthDto = {
   communityId: string;
@@ -19,7 +23,18 @@ export type CreateWealthDto = {
   automationEnabled?: boolean;
 };
 
-export type UpdateWealthDto = Partial<Pick<CreateWealthDto, 'title' | 'description' | 'image' | 'endDate' | 'unitsAvailable' | 'maxUnitsPerUser' | 'automationEnabled'>> & {
+export type UpdateWealthDto = Partial<
+  Pick<
+    CreateWealthDto,
+    | 'title'
+    | 'description'
+    | 'image'
+    | 'endDate'
+    | 'unitsAvailable'
+    | 'maxUnitsPerUser'
+    | 'automationEnabled'
+  >
+> & {
   status?: 'active' | 'fulfilled' | 'expired' | 'cancelled';
 };
 
@@ -106,7 +121,13 @@ export class WealthService {
 
     // Create parent_community relationship in OpenFGA for hierarchical permissions
     try {
-      await openFGAService.createRelationship('wealth', wealthItem.id, 'parent_community', 'communities', dto.communityId);
+      await openFGAService.createRelationship(
+        'wealth',
+        wealthItem.id,
+        'parent_community',
+        'communities',
+        dto.communityId
+      );
     } catch (error) {
       console.error('Failed to create wealth->community relationship in OpenFGA:', error);
       // non-fatal
@@ -125,12 +146,19 @@ export class WealthService {
     return wealthItem;
   }
 
-  async listCommunityWealth(communityId: string, userId: string, status?: 'active' | 'fulfilled' | 'expired' | 'cancelled'): Promise<WealthRecord[]> {
+  async listCommunityWealth(
+    communityId: string,
+    userId: string,
+    status?: 'active' | 'fulfilled' | 'expired' | 'cancelled'
+  ): Promise<WealthRecord[]> {
     await this.ensureCommunityMemberOrAdmin(communityId, userId);
     return await wealthRepository.listByCommunity(communityId, status);
   }
 
-  async listMyCommunitiesWealth(userId: string, status?: 'active' | 'fulfilled' | 'expired' | 'cancelled'): Promise<WealthRecord[]> {
+  async listMyCommunitiesWealth(
+    userId: string,
+    status?: 'active' | 'fulfilled' | 'expired' | 'cancelled'
+  ): Promise<WealthRecord[]> {
     const memberships = await communityMemberRepository.findByUser(userId);
     const communityIds = memberships.map((m) => m.resourceId);
     if (communityIds.length === 0) return [];
@@ -141,7 +169,10 @@ export class WealthService {
     userId: string,
     params: WealthSearchParams
   ): Promise<{
-    items: (WealthRecord & { highlightedTitle?: string; highlightedDescription?: string })[];
+    items: (WealthRecord & {
+      highlightedTitle?: string;
+      highlightedDescription?: string;
+    })[];
     total: number;
     page: number;
     limit: number;
@@ -156,7 +187,13 @@ export class WealthService {
       const memberships = await communityMemberRepository.findByUser(userId);
       scopedCommunityIds = memberships.map((m) => m.resourceId);
       if (scopedCommunityIds.length === 0) {
-        return { items: [], total: 0, page: params.page ?? 1, limit: params.limit ?? 20, hasMore: false };
+        return {
+          items: [],
+          total: 0,
+          page: params.page ?? 1,
+          limit: params.limit ?? 20,
+          hasMore: false,
+        };
       }
     }
 
@@ -180,13 +217,18 @@ export class WealthService {
     const result = await wealthRepository.search(filters);
 
     // Add markdown highlighting for query terms in title/description
-    let items: (WealthRecord & { highlightedTitle?: string; highlightedDescription?: string })[];
+    let items: (WealthRecord & {
+      highlightedTitle?: string;
+      highlightedDescription?: string;
+    })[];
     if (params.q && params.q.trim()) {
       const q = params.q as string;
       items = result.rows.map((r) => ({
         ...r,
         highlightedTitle: highlightMarkdown(r.title, q) || r.title,
-        highlightedDescription: r.description ? highlightMarkdown(r.description, q) ?? r.description : undefined,
+        highlightedDescription: r.description
+          ? (highlightMarkdown(r.description, q) ?? r.description)
+          : undefined,
       }));
     } else {
       items = result.rows;
@@ -260,7 +302,12 @@ export class WealthService {
   }
 
   // Requests
-  async requestWealth(wealthId: string, userId: string, message?: string | null, unitsRequested?: number | null): Promise<WealthRequestRecord> {
+  async requestWealth(
+    wealthId: string,
+    userId: string,
+    message?: string | null,
+    unitsRequested?: number | null
+  ): Promise<WealthRequestRecord> {
     const wealthItem = await wealthRepository.findById(wealthId);
     if (!wealthItem) throw new AppError('Wealth not found', 404);
 
@@ -288,7 +335,10 @@ export class WealthService {
     });
   }
 
-  async listRequests(wealthId: string, userId: string): Promise<(WealthRequestRecord & { requesterDisplayName?: string })[]> {
+  async listRequests(
+    wealthId: string,
+    userId: string
+  ): Promise<(WealthRequestRecord & { requesterDisplayName?: string })[]> {
     const wealthItem = await wealthRepository.findById(wealthId);
     if (!wealthItem) throw new AppError('Wealth not found', 404);
 
@@ -304,7 +354,7 @@ export class WealthService {
     }
 
     // Fetch requester details for each request
-    const requesterIds = [...new Set(requests.map(r => r.requesterId))];
+    const requesterIds = [...new Set(requests.map((r) => r.requesterId))];
     const userDetailsMap = new Map<string, { displayName?: string }>();
     for (const id of requesterIds) {
       const user = await appUserRepository.findById(id);
@@ -314,14 +364,18 @@ export class WealthService {
       }
     }
 
-    return requests.map(r => ({
+    return requests.map((r) => ({
       ...r,
-      shareId: r.wealthId,  // Map wealthId to shareId for frontend compatibility
+      shareId: r.wealthId, // Map wealthId to shareId for frontend compatibility
       requesterDisplayName: userDetailsMap.get(r.requesterId)?.displayName,
     }));
   }
 
-  async acceptRequest(wealthId: string, requestId: string, userId: string): Promise<{ wealth: WealthRecord; request: WealthRequestRecord }> {
+  async acceptRequest(
+    wealthId: string,
+    requestId: string,
+    userId: string
+  ): Promise<{ wealth: WealthRecord; request: WealthRequestRecord }> {
     const wealthItem = await wealthRepository.findById(wealthId);
     if (!wealthItem) throw new AppError('Wealth not found', 404);
 
@@ -345,11 +399,15 @@ export class WealthService {
       wealth: wealthItem,
       request: {
         ...updatedReq,
-      }
+      },
     };
   }
 
-  async fulfillRequest(wealthId: string, requestId: string, userId: string): Promise<WealthRequestRecord> {
+  async fulfillRequest(
+    wealthId: string,
+    requestId: string,
+    userId: string
+  ): Promise<WealthRequestRecord> {
     const wealthItem = await wealthRepository.findById(wealthId);
     if (!wealthItem) throw new AppError('Wealth not found', 404);
 
@@ -373,7 +431,11 @@ export class WealthService {
     };
   }
 
-  async rejectRequest(wealthId: string, requestId: string, userId: string): Promise<WealthRequestRecord> {
+  async rejectRequest(
+    wealthId: string,
+    requestId: string,
+    userId: string
+  ): Promise<WealthRequestRecord> {
     const wealthItem = await wealthRepository.findById(wealthId);
     if (!wealthItem) throw new AppError('Wealth not found', 404);
 
@@ -401,7 +463,7 @@ export class WealthService {
   ): Promise<WealthRequestRecord[]> {
     // A user can view their own requests across all wealth; no further checks needed
     const requests = await wealthRepository.listRequestsByUser(userId, statuses as any);
-    return requests.map(r => ({
+    return requests.map((r) => ({
       ...r,
     }));
   }
@@ -409,13 +471,18 @@ export class WealthService {
   async listIncomingRequests(
     userId: string,
     statuses?: Array<'pending' | 'accepted' | 'rejected' | 'cancelled' | 'fulfilled'>
-  ): Promise<(WealthRequestRecord & { requesterDisplayName?: string; wealthTitle?: string })[]> {
+  ): Promise<
+    (WealthRequestRecord & {
+      requesterDisplayName?: string;
+      wealthTitle?: string;
+    })[]
+  > {
     // Get all requests for wealth items owned by this user
     const requests = await wealthRepository.listIncomingRequestsByOwner(userId, statuses as any);
 
     // Fetch requester details and wealth details for each request
-    const requesterIds = [...new Set(requests.map(r => r.requesterId))];
-    const wealthIds = [...new Set(requests.map(r => r.wealthId))];
+    const requesterIds = [...new Set(requests.map((r) => r.requesterId))];
+    const wealthIds = [...new Set(requests.map((r) => r.wealthId))];
 
     const userDetailsMap = new Map<string, { displayName?: string }>();
     for (const id of requesterIds) {
@@ -434,14 +501,18 @@ export class WealthService {
       }
     }
 
-    return requests.map(r => ({
+    return requests.map((r) => ({
       ...r,
       requesterDisplayName: userDetailsMap.get(r.requesterId)?.displayName,
       wealthTitle: wealthDetailsMap.get(r.wealthId)?.title,
     }));
   }
 
-  async cancelRequest(wealthId: string, requestId: string, userId: string): Promise<WealthRequestRecord> {
+  async cancelRequest(
+    wealthId: string,
+    requestId: string,
+    userId: string
+  ): Promise<WealthRequestRecord> {
     const wealthItem = await wealthRepository.findById(wealthId);
     if (!wealthItem) throw new AppError('Wealth not found', 404);
 
@@ -464,7 +535,11 @@ export class WealthService {
     };
   }
 
-  async confirmRequest(wealthId: string, requestId: string, userId: string): Promise<{ wealth: WealthRecord; request: WealthRequestRecord }> {
+  async confirmRequest(
+    wealthId: string,
+    requestId: string,
+    userId: string
+  ): Promise<{ wealth: WealthRecord; request: WealthRequestRecord }> {
     const wealthItem = await wealthRepository.findById(wealthId);
     if (!wealthItem) throw new AppError('Wealth not found', 404);
 
@@ -500,11 +575,15 @@ export class WealthService {
       wealth: updatedWealth,
       request: {
         ...updatedReq,
-      }
+      },
     };
   }
 
-  async failRequest(wealthId: string, requestId: string, userId: string): Promise<WealthRequestRecord> {
+  async failRequest(
+    wealthId: string,
+    requestId: string,
+    userId: string
+  ): Promise<WealthRequestRecord> {
     const wealthItem = await wealthRepository.findById(wealthId);
     if (!wealthItem) throw new AppError('Wealth not found', 404);
 

@@ -53,25 +53,21 @@ export class CommunityRepository {
   async delete(id: string) {
     return await db.transaction(async (tx) => {
       // Soft delete community
-      await tx.update(communities)
+      await tx
+        .update(communities)
         .set({ deletedAt: sql`CURRENT_TIMESTAMP` })
         .where(and(eq(communities.id, id), isNull(communities.deletedAt)));
 
       // Delete related invites (resolve invites immediately)
-      await tx.delete(communityLinkInvites)
-        .where(eq(communityLinkInvites.communityId, id));
+      await tx.delete(communityLinkInvites).where(eq(communityLinkInvites.communityId, id));
 
-      await tx.delete(communityUserInvites)
-        .where(eq(communityUserInvites.communityId, id));
+      await tx.delete(communityUserInvites).where(eq(communityUserInvites.communityId, id));
 
       // Note: OpenFGA tuples are managed separately and not automatically cleaned up
       // on soft delete. They will be cleaned up when the community is hard deleted.
 
       // Return the soft-deleted community
-      const [deleted] = await tx
-        .select()
-        .from(communities)
-        .where(eq(communities.id, id));
+      const [deleted] = await tx.select().from(communities).where(eq(communities.id, id));
       return deleted;
     });
   }
@@ -109,12 +105,7 @@ export class CommunityRepository {
     const limit = Math.max(1, Math.min(filters.limit ?? 20, 100));
     const offset = Math.max(0, filters.offset ?? 0);
 
-    const rows = await db
-      .select()
-      .from(communities)
-      .where(where)
-      .limit(limit)
-      .offset(offset);
+    const rows = await db.select().from(communities).where(where).limit(limit).offset(offset);
 
     return { rows: rows as Community[], total: count ?? 0 };
   }
@@ -127,24 +118,21 @@ export class CommunityRepository {
         .from(communities)
         .where(sql`deleted_at IS NOT NULL AND deleted_at < ${ninetyDaysAgo.toISOString()}`);
 
-      const ids = oldCommunityIds.map(c => c.id);
+      const ids = oldCommunityIds.map((c) => c.id);
 
       if (ids.length === 0) return 0;
 
       // Delete any remaining invites (though already deleted on soft delete)
-      await tx.delete(communityLinkInvites)
-        .where(inArray(communityLinkInvites.communityId, ids));
+      await tx.delete(communityLinkInvites).where(inArray(communityLinkInvites.communityId, ids));
 
-      await tx.delete(communityUserInvites)
-        .where(inArray(communityUserInvites.communityId, ids));
+      await tx.delete(communityUserInvites).where(inArray(communityUserInvites.communityId, ids));
 
       // Note: OpenFGA tuples should be cleaned up separately if needed
       // This could be done via a separate cleanup job that queries OpenFGA
       // and removes tuples for deleted communities
 
       // Hard delete old soft-deleted communities
-      const deletedCount = await tx.delete(communities)
-        .where(inArray(communities.id, ids));
+      const deletedCount = await tx.delete(communities).where(inArray(communities.id, ids));
 
       return deletedCount;
     });

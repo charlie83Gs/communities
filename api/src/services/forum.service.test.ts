@@ -70,15 +70,16 @@ describe('ForumService - Permission Checks', () => {
 
   beforeEach(() => {
     // Reset all mocks
-    Object.values(mockForumRepository).forEach(m => m.mockReset());
-    Object.values(mockCommunityMemberRepository).forEach(m => m.mockReset());
-    Object.values(mockCommunityRepository).forEach(m => m.mockReset());
-    Object.values(mockAppUserRepository).forEach(m => m.mockReset());
-    Object.values(mockOpenFGAService).forEach(m => m.mockReset());
+    Object.values(mockForumRepository).forEach((m) => m.mockReset());
+    Object.values(mockCommunityMemberRepository).forEach((m) => m.mockReset());
+    Object.values(mockCommunityRepository).forEach((m) => m.mockReset());
+    Object.values(mockAppUserRepository).forEach((m) => m.mockReset());
+    Object.values(mockOpenFGAService).forEach((m) => m.mockReset());
 
     // Replace dependencies with mocks
     (forumRepository.createCategory as any) = mockForumRepository.createCategory;
-    (forumRepository.findCategoriesByCommunity as any) = mockForumRepository.findCategoriesByCommunity;
+    (forumRepository.findCategoriesByCommunity as any) =
+      mockForumRepository.findCategoriesByCommunity;
     (forumRepository.getCategoryStats as any) = mockForumRepository.getCategoryStats;
     (forumRepository.findCategoryById as any) = mockForumRepository.findCategoryById;
     (forumRepository.updateCategory as any) = mockForumRepository.updateCategory;
@@ -110,7 +111,7 @@ describe('ForumService - Permission Checks', () => {
     mockCommunityRepository.findById.mockResolvedValue({
       id: validCommunityId,
       name: 'Test Community',
-      minTrustForThreadCreation: { value: 10 }
+      minTrustForThreadCreation: { value: 10 },
     });
     mockOpenFGAService.check.mockResolvedValue(false);
     mockOpenFGAService.checkTrustLevel.mockResolvedValue(false);
@@ -118,7 +119,7 @@ describe('ForumService - Permission Checks', () => {
     mockAppUserRepository.findById.mockResolvedValue({
       id: validUserId,
       displayName: 'Test User',
-      username: 'testuser'
+      username: 'testuser',
     });
   });
 
@@ -134,7 +135,11 @@ describe('ForumService - Permission Checks', () => {
       });
 
       const result = await forumService.createCategory(
-        { communityId: validCommunityId, name: 'General', description: 'General discussion' },
+        {
+          communityId: validCommunityId,
+          name: 'General',
+          description: 'General discussion',
+        },
         validUserId
       );
 
@@ -155,9 +160,17 @@ describe('ForumService - Permission Checks', () => {
     it('should allow member to list categories', async () => {
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
       mockForumRepository.findCategoriesByCommunity.mockResolvedValue([
-        { id: validCategoryId, communityId: validCommunityId, name: 'General', createdAt: new Date() },
+        {
+          id: validCategoryId,
+          communityId: validCommunityId,
+          name: 'General',
+          createdAt: new Date(),
+        },
       ]);
-      mockForumRepository.getCategoryStats.mockResolvedValue({ threadCount: 5, lastActivity: new Date() });
+      mockForumRepository.getCategoryStats.mockResolvedValue({
+        threadCount: 5,
+        lastActivity: new Date(),
+      });
 
       const result = await forumService.listCategories(validCommunityId, validUserId);
 
@@ -169,7 +182,9 @@ describe('ForumService - Permission Checks', () => {
     it('should reject non-member from listing categories', async () => {
       mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
 
-      await expect(forumService.listCategories(validCommunityId, validUserId)).rejects.toThrow('Forbidden');
+      await expect(forumService.listCategories(validCommunityId, validUserId)).rejects.toThrow(
+        'Forbidden'
+      );
     });
   });
 
@@ -188,7 +203,11 @@ describe('ForumService - Permission Checks', () => {
         createdAt: new Date(),
       });
 
-      const result = await forumService.updateCategory(validCategoryId, { name: 'Updated General' }, validUserId);
+      const result = await forumService.updateCategory(
+        validCategoryId,
+        { name: 'Updated General' },
+        validUserId
+      );
 
       expect(result).toBeDefined();
       expect(result.name).toBe('Updated General');
@@ -231,7 +250,9 @@ describe('ForumService - Permission Checks', () => {
       });
       mockOpenFGAService.check.mockResolvedValue(false);
 
-      await expect(forumService.deleteCategory(validCategoryId, validUserId)).rejects.toThrow('Forbidden');
+      await expect(forumService.deleteCategory(validCategoryId, validUserId)).rejects.toThrow(
+        'Forbidden'
+      );
     });
   });
 
@@ -337,7 +358,9 @@ describe('ForumService - Permission Checks', () => {
       });
       mockOpenFGAService.check.mockResolvedValue(false);
 
-      await expect(forumService.pinThread(validThreadId, true, validUserId)).rejects.toThrow('Forbidden');
+      await expect(forumService.pinThread(validThreadId, true, validUserId)).rejects.toThrow(
+        'Forbidden'
+      );
     });
   });
 
@@ -385,7 +408,9 @@ describe('ForumService - Permission Checks', () => {
       });
       mockOpenFGAService.check.mockResolvedValue(false);
 
-      await expect(forumService.lockThread(validThreadId, true, validUserId)).rejects.toThrow('Forbidden');
+      await expect(forumService.lockThread(validThreadId, true, validUserId)).rejects.toThrow(
+        'Forbidden'
+      );
     });
   });
 });

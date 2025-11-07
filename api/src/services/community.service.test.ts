@@ -28,20 +28,22 @@ const mockCommunityMemberRepository = {
 };
 
 const mockAppUserRepository = {
-  findById: mock(() => Promise.resolve({
-    id: 'user-123',
-    email: 'test@example.com',
-    username: 'testuser',
-    displayName: 'Test User',
-    country: null,
-    stateProvince: null,
-    city: null,
-    description: null,
-    profileImage: null,
-    lastSeenAt: null,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  })),
+  findById: mock(() =>
+    Promise.resolve({
+      id: 'user-123',
+      email: 'test@example.com',
+      username: 'testuser',
+      displayName: 'Test User',
+      country: null,
+      stateProvince: null,
+      city: null,
+      description: null,
+      profileImage: null,
+      lastSeenAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+  ),
 };
 
 const mockTrustViewRepository = {
@@ -51,10 +53,10 @@ const mockTrustViewRepository = {
 describe('CommunityService', () => {
   beforeEach(() => {
     // Reset all mocks
-    Object.values(mockCommunityRepository).forEach(m => m.mockReset());
-    Object.values(mockCommunityMemberRepository).forEach(m => m.mockReset());
-    Object.values(mockAppUserRepository).forEach(m => m.mockReset());
-    Object.values(mockTrustViewRepository).forEach(m => m.mockReset());
+    Object.values(mockCommunityRepository).forEach((m) => m.mockReset());
+    Object.values(mockCommunityMemberRepository).forEach((m) => m.mockReset());
+    Object.values(mockAppUserRepository).forEach((m) => m.mockReset());
+    Object.values(mockTrustViewRepository).forEach((m) => m.mockReset());
 
     // Replace repository methods with mocks
     (communityRepository.create as any) = mockCommunityRepository.create;
@@ -68,7 +70,8 @@ describe('CommunityService', () => {
     (communityMemberRepository.getUserRoles as any) = mockCommunityMemberRepository.getUserRoles;
     (communityMemberRepository.isAdmin as any) = mockCommunityMemberRepository.isAdmin;
     (communityMemberRepository.findByUser as any) = mockCommunityMemberRepository.findByUser;
-    (communityMemberRepository.findByCommunity as any) = mockCommunityMemberRepository.findByCommunity;
+    (communityMemberRepository.findByCommunity as any) =
+      mockCommunityMemberRepository.findByCommunity;
     (communityMemberRepository.removeMember as any) = mockCommunityMemberRepository.removeMember;
     (communityMemberRepository.updateRole as any) = mockCommunityMemberRepository.updateRole;
 
@@ -108,8 +111,15 @@ describe('CommunityService', () => {
         description: 'Test',
         createdBy: 'user-123',
       });
-      expect(mockCommunityMemberRepository.addMember).toHaveBeenCalledWith('comm-123', 'user-123', 'admin');
-      expect(mockCommunityMemberRepository.getUserRole).toHaveBeenCalledWith('comm-123', 'user-123');
+      expect(mockCommunityMemberRepository.addMember).toHaveBeenCalledWith(
+        'comm-123',
+        'user-123',
+        'admin'
+      );
+      expect(mockCommunityMemberRepository.getUserRole).toHaveBeenCalledWith(
+        'comm-123',
+        'user-123'
+      );
     });
 
     it('should rollback community creation if admin role assignment fails', async () => {
@@ -128,7 +138,9 @@ describe('CommunityService', () => {
         updatedAt: new Date(),
       });
       mockCommunityRepository.create.mockResolvedValue(testData.community);
-      mockCommunityMemberRepository.addMember.mockRejectedValue(new Error('Role assignment failed'));
+      mockCommunityMemberRepository.addMember.mockRejectedValue(
+        new Error('Role assignment failed')
+      );
       mockCommunityRepository.delete.mockResolvedValue(testData.community);
 
       await expect(
@@ -178,32 +190,35 @@ describe('CommunityService', () => {
 
       expect(result).toEqual(testData.community);
       expect(mockCommunityRepository.findById).toHaveBeenCalledWith('comm-123');
-      expect(mockCommunityMemberRepository.getUserRole).toHaveBeenCalledWith('comm-123', 'user-123');
+      expect(mockCommunityMemberRepository.getUserRole).toHaveBeenCalledWith(
+        'comm-123',
+        'user-123'
+      );
     });
 
     it('should throw 404 if community not found', async () => {
       mockCommunityRepository.findById.mockResolvedValue(null);
 
-      await expect(
-        communityService.getCommunity('comm-123', 'user-123')
-      ).rejects.toThrow('Community not found');
+      await expect(communityService.getCommunity('comm-123', 'user-123')).rejects.toThrow(
+        'Community not found'
+      );
     });
 
     it('should throw 401 if no userId provided', async () => {
       mockCommunityRepository.findById.mockResolvedValue(testData.community);
 
-      await expect(
-        communityService.getCommunity('comm-123', undefined)
-      ).rejects.toThrow('Authentication required');
+      await expect(communityService.getCommunity('comm-123', undefined)).rejects.toThrow(
+        'Authentication required'
+      );
     });
 
     it('should throw 403 if user has no role in community', async () => {
       mockCommunityRepository.findById.mockResolvedValue(testData.community);
       mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
 
-      await expect(
-        communityService.getCommunity('comm-123', 'user-123')
-      ).rejects.toThrow('Forbidden: no access to this community');
+      await expect(communityService.getCommunity('comm-123', 'user-123')).rejects.toThrow(
+        'Forbidden: no access to this community'
+      );
     });
   });
 
@@ -285,7 +300,10 @@ describe('CommunityService', () => {
         limit: 10,
         offset: 0,
       });
-      expect(mockTrustViewRepository.getBatchForUser).toHaveBeenCalledWith(['comm-123'], 'user-123');
+      expect(mockTrustViewRepository.getBatchForUser).toHaveBeenCalledWith(
+        ['comm-123'],
+        'user-123'
+      );
     });
 
     it('should set null trust score when user has no trust in community', async () => {
@@ -386,11 +404,7 @@ describe('CommunityService', () => {
       mockCommunityMemberRepository.isAdmin.mockResolvedValue(false);
 
       await expect(
-        communityService.updateCommunity(
-          'comm-123',
-          { name: 'Updated Community' },
-          'user-123'
-        )
+        communityService.updateCommunity('comm-123', { name: 'Updated Community' }, 'user-123')
       ).rejects.toThrow('Forbidden: only community admins can update');
     });
 
@@ -399,11 +413,7 @@ describe('CommunityService', () => {
       mockCommunityRepository.update.mockResolvedValue(null);
 
       await expect(
-        communityService.updateCommunity(
-          'comm-123',
-          { name: 'Updated Community' },
-          'user-123'
-        )
+        communityService.updateCommunity('comm-123', { name: 'Updated Community' }, 'user-123')
       ).rejects.toThrow('Community not found');
     });
   });
@@ -422,9 +432,9 @@ describe('CommunityService', () => {
     it('should throw 403 if user is not admin', async () => {
       mockCommunityMemberRepository.isAdmin.mockResolvedValue(false);
 
-      await expect(
-        communityService.deleteCommunity('comm-123', 'user-123')
-      ).rejects.toThrow('Forbidden: only community admins can delete');
+      await expect(communityService.deleteCommunity('comm-123', 'user-123')).rejects.toThrow(
+        'Forbidden: only community admins can delete'
+      );
     });
   });
 
@@ -465,17 +475,17 @@ describe('CommunityService', () => {
     it('should throw 403 if user is only reader', async () => {
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('reader');
 
-      await expect(
-        communityService.getMembers('comm-123', 'user-123')
-      ).rejects.toThrow('Forbidden: only community admins and members can view members');
+      await expect(communityService.getMembers('comm-123', 'user-123')).rejects.toThrow(
+        'Forbidden: only community admins and members can view members'
+      );
     });
 
     it('should throw 403 if user has no role', async () => {
       mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
 
-      await expect(
-        communityService.getMembers('comm-123', 'user-123')
-      ).rejects.toThrow('Forbidden: only community admins and members can view members');
+      await expect(communityService.getMembers('comm-123', 'user-123')).rejects.toThrow(
+        'Forbidden: only community admins and members can view members'
+      );
     });
   });
 
@@ -490,7 +500,10 @@ describe('CommunityService', () => {
 
       await communityService.removeMember('comm-123', 'user-456', 'user-123');
 
-      expect(mockCommunityMemberRepository.removeMember).toHaveBeenCalledWith('comm-123', 'user-456');
+      expect(mockCommunityMemberRepository.removeMember).toHaveBeenCalledWith(
+        'comm-123',
+        'user-456'
+      );
     });
 
     it('should allow user to remove themselves', async () => {
@@ -503,7 +516,10 @@ describe('CommunityService', () => {
 
       await communityService.removeMember('comm-123', 'user-123', 'user-123');
 
-      expect(mockCommunityMemberRepository.removeMember).toHaveBeenCalledWith('comm-123', 'user-123');
+      expect(mockCommunityMemberRepository.removeMember).toHaveBeenCalledWith(
+        'comm-123',
+        'user-123'
+      );
     });
 
     it('should throw 403 if non-admin tries to remove another member', async () => {
@@ -575,7 +591,11 @@ describe('CommunityService', () => {
       mockCommunityMemberRepository.getUserRoles.mockResolvedValue(['member']);
       mockAppUserRepository.findById.mockResolvedValue(testData.user);
 
-      const result = await communityService.getUserRoleInCommunity('comm-123', 'user-123', 'user-123');
+      const result = await communityService.getUserRoleInCommunity(
+        'comm-123',
+        'user-123',
+        'user-123'
+      );
 
       expect(result).not.toBeNull();
       expect(result?.roles).toContain('member');
@@ -585,9 +605,16 @@ describe('CommunityService', () => {
     it('should allow admin to view another user role', async () => {
       mockCommunityMemberRepository.isAdmin.mockResolvedValue(true);
       mockCommunityMemberRepository.getUserRoles.mockResolvedValue(['member']);
-      mockAppUserRepository.findById.mockResolvedValue({ ...testData.user, id: 'user-456' });
+      mockAppUserRepository.findById.mockResolvedValue({
+        ...testData.user,
+        id: 'user-456',
+      });
 
-      const result = await communityService.getUserRoleInCommunity('comm-123', 'user-456', 'user-123');
+      const result = await communityService.getUserRoleInCommunity(
+        'comm-123',
+        'user-456',
+        'user-123'
+      );
 
       expect(result).not.toBeNull();
       expect(result?.userId).toBe('user-456');
@@ -604,7 +631,11 @@ describe('CommunityService', () => {
     it('should return null if user has no roles', async () => {
       mockCommunityMemberRepository.getUserRoles.mockResolvedValue([]);
 
-      const result = await communityService.getUserRoleInCommunity('comm-123', 'user-123', 'user-123');
+      const result = await communityService.getUserRoleInCommunity(
+        'comm-123',
+        'user-123',
+        'user-123'
+      );
 
       expect(result).toBeNull();
     });

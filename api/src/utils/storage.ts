@@ -56,7 +56,12 @@ export function imageAbsPath(filename: string) {
 export function isSafeFileName(name: string) {
   // allow alphanum, dashes, underscores, dots and must contain a dot with an extension
   // disallow path separators
-  return /^[a-zA-Z0-9._-]+$/.test(name) && !name.includes('..') && !name.includes('/') && !name.includes('\\');
+  return (
+    /^[a-zA-Z0-9._-]+$/.test(name) &&
+    !name.includes('..') &&
+    !name.includes('/') &&
+    !name.includes('\\')
+  );
 }
 
 // Initialize dirs on module import

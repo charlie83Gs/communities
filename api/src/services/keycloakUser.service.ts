@@ -3,10 +3,7 @@ import { keycloakConfig } from '@/config/keycloak.config';
 import { customAlphabet } from 'nanoid';
 
 // Custom ID generator (24 character text-based IDs)
-const generateUserId = customAlphabet(
-  '0123456789abcdefghijklmnopqrstuvwxyz',
-  24
-);
+const generateUserId = customAlphabet('0123456789abcdefghijklmnopqrstuvwxyz', 24);
 
 export interface CreateUserDTO {
   email: string;
@@ -106,7 +103,10 @@ export class KeycloakUserService {
     } as const;
 
     try {
-      console.log('[Keycloak] Creating user:', { username: userData.username, email: userData.email });
+      console.log('[Keycloak] Creating user:', {
+        username: userData.username,
+        email: userData.email,
+      });
       console.log('[Keycloak] Admin URL:', this.adminClient.defaults.baseURL);
       console.log('[Keycloak] Token:', token.substring(0, 20) + '...');
 
@@ -116,11 +116,12 @@ export class KeycloakUserService {
       });
 
       console.log('[Keycloak] Create user response status:', response.status);
-      
+
       // Keycloak returns 201 with Location header
       if (response.status === 201) {
         // Prefer Location header to extract the actual Keycloak user id
-        const location: string | undefined = (response.headers as any)?.location || (response as any)?.headers?.get?.('location');
+        const location: string | undefined =
+          (response.headers as any)?.location || (response as any)?.headers?.get?.('location');
         if (location) {
           // Example: http://localhost:8081/admin/realms/share-app/users/3d6c5f7b-3a07-44f4-8f5e-8a7f0b0d2a63
           const parts = location.split('/');
@@ -129,7 +130,10 @@ export class KeycloakUserService {
             const createdUser = await this.getUserById(kcId);
             return createdUser;
           } catch (e) {
-            console.warn('[Keycloak] Failed to fetch user by Location id, will fallback to username lookup', e);
+            console.warn(
+              '[Keycloak] Failed to fetch user by Location id, will fallback to username lookup',
+              e
+            );
           }
         }
 
@@ -206,10 +210,7 @@ export class KeycloakUserService {
   /**
    * Update user
    */
-  async updateUser(
-    userId: string,
-    updates: Partial<CreateUserDTO>
-  ): Promise<KeycloakUser> {
+  async updateUser(userId: string, updates: Partial<CreateUserDTO>): Promise<KeycloakUser> {
     const token = await this.getAdminToken();
 
     await this.adminClient.put(`/users/${userId}`, updates, {
@@ -249,11 +250,9 @@ export class KeycloakUserService {
   async sendResetPasswordEmail(userId: string): Promise<void> {
     const token = await this.getAdminToken();
 
-    await this.adminClient.put(
-      `/users/${userId}/execute-actions-email`,
-      ['UPDATE_PASSWORD'],
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+    await this.adminClient.put(`/users/${userId}/execute-actions-email`, ['UPDATE_PASSWORD'], {
+      headers: { Authorization: `Bearer ${token}` },
+    });
   }
 }
 

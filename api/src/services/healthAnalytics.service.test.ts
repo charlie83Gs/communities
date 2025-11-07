@@ -23,9 +23,18 @@ const VALID_USER_ID = '550e8400-e29b-41d4-a716-446655440001';
 
 // Mock dependencies
 const mockHealthAnalyticsRepository = {
-  getWealthOverview: mock(() => Promise.resolve({ totalShares: 0, openShares: 0, requestCount: 0, fulfillmentRate: 0 })),
+  getWealthOverview: mock(() =>
+    Promise.resolve({
+      totalShares: 0,
+      openShares: 0,
+      requestCount: 0,
+      fulfillmentRate: 0,
+    })
+  ),
   getWealthItems: mock(() => Promise.resolve([])),
-  getTrustOverview: mock(() => Promise.resolve({ totalTrust: 0, averageTrust: 0, awardsLastPeriod: 0 })),
+  getTrustOverview: mock(() =>
+    Promise.resolve({ totalTrust: 0, averageTrust: 0, awardsLastPeriod: 0 })
+  ),
   getTrustDistribution: mock(() => Promise.resolve([])),
 };
 
@@ -35,18 +44,20 @@ const mockCommunityMemberRepository = {
 };
 
 const mockCommunityRepository = {
-  findById: mock(() => Promise.resolve({
-    id: VALID_COMM_ID,
-    name: 'Test Community',
-    minTrustForHealthAnalytics: { type: 'trust', value: 20 },
-    trustTitles: {
-      titles: [
-        { name: 'New', minScore: 0 },
-        { name: 'Stable', minScore: 10 },
-        { name: 'Trusted', minScore: 50 },
-      ],
-    },
-  })),
+  findById: mock(() =>
+    Promise.resolve({
+      id: VALID_COMM_ID,
+      name: 'Test Community',
+      minTrustForHealthAnalytics: { type: 'trust', value: 20 },
+      trustTitles: {
+        titles: [
+          { name: 'New', minScore: 0 },
+          { name: 'Stable', minScore: 10 },
+          { name: 'Trusted', minScore: 50 },
+        ],
+      },
+    })
+  ),
 };
 
 const mockTrustViewRepository = {
@@ -56,19 +67,23 @@ const mockTrustViewRepository = {
 describe('HealthAnalyticsService', () => {
   beforeEach(() => {
     // Reset all mocks
-    Object.values(mockHealthAnalyticsRepository).forEach(m => m.mockReset());
-    Object.values(mockCommunityMemberRepository).forEach(m => m.mockReset());
-    Object.values(mockCommunityRepository).forEach(m => m.mockReset());
-    Object.values(mockTrustViewRepository).forEach(m => m.mockReset());
+    Object.values(mockHealthAnalyticsRepository).forEach((m) => m.mockReset());
+    Object.values(mockCommunityMemberRepository).forEach((m) => m.mockReset());
+    Object.values(mockCommunityRepository).forEach((m) => m.mockReset());
+    Object.values(mockTrustViewRepository).forEach((m) => m.mockReset());
 
     // Replace dependencies with mocks
     (communityMemberRepository.getUserRole as any) = mockCommunityMemberRepository.getUserRole;
     (communityRepository.findById as any) = mockCommunityRepository.findById;
     (trustViewRepository.get as any) = mockTrustViewRepository.get;
-    (healthAnalyticsRepository.getWealthOverview as any) = mockHealthAnalyticsRepository.getWealthOverview;
-    (healthAnalyticsRepository.getWealthItems as any) = mockHealthAnalyticsRepository.getWealthItems;
-    (healthAnalyticsRepository.getTrustOverview as any) = mockHealthAnalyticsRepository.getTrustOverview;
-    (healthAnalyticsRepository.getTrustDistribution as any) = mockHealthAnalyticsRepository.getTrustDistribution;
+    (healthAnalyticsRepository.getWealthOverview as any) =
+      mockHealthAnalyticsRepository.getWealthOverview;
+    (healthAnalyticsRepository.getWealthItems as any) =
+      mockHealthAnalyticsRepository.getWealthItems;
+    (healthAnalyticsRepository.getTrustOverview as any) =
+      mockHealthAnalyticsRepository.getTrustOverview;
+    (healthAnalyticsRepository.getTrustDistribution as any) =
+      mockHealthAnalyticsRepository.getTrustDistribution;
 
     // Default mock behaviors - admin user with sufficient trust
     mockCommunityMemberRepository.getUserRole.mockResolvedValue('admin');
@@ -96,12 +111,19 @@ describe('HealthAnalyticsService', () => {
         fulfillmentRate: 0.75,
       });
 
-      const result = await healthAnalyticsService.getWealthOverview(VALID_COMM_ID, VALID_USER_ID, '30d');
+      const result = await healthAnalyticsService.getWealthOverview(
+        VALID_COMM_ID,
+        VALID_USER_ID,
+        '30d'
+      );
 
       expect(result).toBeDefined();
       expect(result.totalShares).toBe(100);
       expect(result.fulfillmentRate).toBe(0.75);
-      expect(mockHealthAnalyticsRepository.getWealthOverview).toHaveBeenCalledWith(VALID_COMM_ID, '30d');
+      expect(mockHealthAnalyticsRepository.getWealthOverview).toHaveBeenCalledWith(
+        VALID_COMM_ID,
+        '30d'
+      );
     });
 
     it('should calculate fulfillment rate correctly', async () => {
@@ -112,7 +134,11 @@ describe('HealthAnalyticsService', () => {
         fulfillmentRate: 0.8,
       });
 
-      const result = await healthAnalyticsService.getWealthOverview(VALID_COMM_ID, VALID_USER_ID, '7d');
+      const result = await healthAnalyticsService.getWealthOverview(
+        VALID_COMM_ID,
+        VALID_USER_ID,
+        '7d'
+      );
 
       expect(result.fulfillmentRate).toBeGreaterThan(0);
       expect(result.fulfillmentRate).toBeLessThanOrEqual(1);
@@ -122,34 +148,73 @@ describe('HealthAnalyticsService', () => {
   describe('getWealthItems', () => {
     it('should allow admin to get wealth items', async () => {
       mockHealthAnalyticsRepository.getWealthItems.mockResolvedValue([
-        { id: 'item-123', name: 'Tomatoes', category: 'Food', shareCount: 10, trend: 'up' },
-        { id: 'item-456', name: 'Carrots', category: 'Food', shareCount: 5, trend: 'stable' },
+        {
+          id: 'item-123',
+          name: 'Tomatoes',
+          category: 'Food',
+          shareCount: 10,
+          trend: 'up',
+        },
+        {
+          id: 'item-456',
+          name: 'Carrots',
+          category: 'Food',
+          shareCount: 5,
+          trend: 'stable',
+        },
       ]);
 
-      const result = await healthAnalyticsService.getWealthItems(VALID_COMM_ID, VALID_USER_ID, '30d');
+      const result = await healthAnalyticsService.getWealthItems(
+        VALID_COMM_ID,
+        VALID_USER_ID,
+        '30d'
+      );
 
       expect(result).toBeDefined();
       expect(result).toHaveLength(2);
-      expect(mockHealthAnalyticsRepository.getWealthItems).toHaveBeenCalledWith(VALID_COMM_ID, '30d');
+      expect(mockHealthAnalyticsRepository.getWealthItems).toHaveBeenCalledWith(
+        VALID_COMM_ID,
+        '30d'
+      );
     });
 
     it('should support pagination', async () => {
       mockHealthAnalyticsRepository.getWealthItems.mockResolvedValue([]);
 
-      const result = await healthAnalyticsService.getWealthItems(VALID_COMM_ID, VALID_USER_ID, '7d');
+      const result = await healthAnalyticsService.getWealthItems(
+        VALID_COMM_ID,
+        VALID_USER_ID,
+        '7d'
+      );
 
       expect(result).toEqual([]);
-      expect(mockHealthAnalyticsRepository.getWealthItems).toHaveBeenCalledWith(VALID_COMM_ID, '7d');
+      expect(mockHealthAnalyticsRepository.getWealthItems).toHaveBeenCalledWith(
+        VALID_COMM_ID,
+        '7d'
+      );
     });
 
     it('should filter by category', async () => {
       mockHealthAnalyticsRepository.getWealthItems.mockResolvedValue([
-        { id: 'item-123', name: 'Tomatoes', category: 'Food', shareCount: 10, trend: 'up' }
+        {
+          id: 'item-123',
+          name: 'Tomatoes',
+          category: 'Food',
+          shareCount: 10,
+          trend: 'up',
+        },
       ]);
 
-      const result = await healthAnalyticsService.getWealthItems(VALID_COMM_ID, VALID_USER_ID, '30d');
+      const result = await healthAnalyticsService.getWealthItems(
+        VALID_COMM_ID,
+        VALID_USER_ID,
+        '30d'
+      );
 
-      expect(mockHealthAnalyticsRepository.getWealthItems).toHaveBeenCalledWith(VALID_COMM_ID, '30d');
+      expect(mockHealthAnalyticsRepository.getWealthItems).toHaveBeenCalledWith(
+        VALID_COMM_ID,
+        '30d'
+      );
     });
   });
 
@@ -161,13 +226,20 @@ describe('HealthAnalyticsService', () => {
         awardsLastPeriod: 50,
       });
 
-      const result = await healthAnalyticsService.getTrustOverview(VALID_COMM_ID, VALID_USER_ID, '30d');
+      const result = await healthAnalyticsService.getTrustOverview(
+        VALID_COMM_ID,
+        VALID_USER_ID,
+        '30d'
+      );
 
       expect(result).toBeDefined();
       expect(result.averageTrust).toBe(15.5);
       expect(result.totalTrust).toBe(250);
       expect(result.awardsLastPeriod).toBe(50);
-      expect(mockHealthAnalyticsRepository.getTrustOverview).toHaveBeenCalledWith(VALID_COMM_ID, '30d');
+      expect(mockHealthAnalyticsRepository.getTrustOverview).toHaveBeenCalledWith(
+        VALID_COMM_ID,
+        '30d'
+      );
     });
 
     it('should handle community with no trust awards', async () => {
@@ -177,7 +249,11 @@ describe('HealthAnalyticsService', () => {
         awardsLastPeriod: 0,
       });
 
-      const result = await healthAnalyticsService.getTrustOverview(VALID_COMM_ID, VALID_USER_ID, '7d');
+      const result = await healthAnalyticsService.getTrustOverview(
+        VALID_COMM_ID,
+        VALID_USER_ID,
+        '7d'
+      );
 
       expect(result.averageTrust).toBe(0);
       expect(result.totalTrust).toBe(0);
@@ -192,7 +268,10 @@ describe('HealthAnalyticsService', () => {
         { level: 'Trusted', count: 10 },
       ]);
 
-      const result = await healthAnalyticsService.getTrustDistribution(VALID_COMM_ID, VALID_USER_ID);
+      const result = await healthAnalyticsService.getTrustDistribution(
+        VALID_COMM_ID,
+        VALID_USER_ID
+      );
 
       expect(result).toBeDefined();
       expect(result.distribution).toHaveLength(3);
@@ -206,7 +285,10 @@ describe('HealthAnalyticsService', () => {
         { level: 'Trusted', count: 10 },
       ]);
 
-      const result = await healthAnalyticsService.getTrustDistribution(VALID_COMM_ID, VALID_USER_ID);
+      const result = await healthAnalyticsService.getTrustDistribution(
+        VALID_COMM_ID,
+        VALID_USER_ID
+      );
 
       const totalCount = result.distribution.reduce((sum, item) => sum + item.count, 0);
       expect(totalCount).toBe(50);

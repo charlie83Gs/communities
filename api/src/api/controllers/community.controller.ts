@@ -167,7 +167,7 @@ export class CommunityController {
       next(error);
     }
   }
- 
+
   /**
    * @swagger
    * /api/v1/communities:

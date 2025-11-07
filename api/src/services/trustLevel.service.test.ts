@@ -42,9 +42,9 @@ describe('TrustLevelService', () => {
 
   beforeEach(() => {
     // Reset all mocks
-    Object.values(mockTrustLevelRepository).forEach(m => m.mockReset());
-    Object.values(mockCommunityMemberRepository).forEach(m => m.mockReset());
-    Object.values(mockCommunityRepository).forEach(m => m.mockReset());
+    Object.values(mockTrustLevelRepository).forEach((m) => m.mockReset());
+    Object.values(mockCommunityMemberRepository).forEach((m) => m.mockReset());
+    Object.values(mockCommunityRepository).forEach((m) => m.mockReset());
 
     // Replace dependencies with mocks
     (trustLevelRepository.create as any) = mockTrustLevelRepository.create;
@@ -53,7 +53,8 @@ describe('TrustLevelService', () => {
     (trustLevelRepository.findByName as any) = mockTrustLevelRepository.findByName;
     (trustLevelRepository.update as any) = mockTrustLevelRepository.update;
     (trustLevelRepository.delete as any) = mockTrustLevelRepository.delete;
-    (trustLevelRepository.createDefaultLevels as any) = mockTrustLevelRepository.createDefaultLevels;
+    (trustLevelRepository.createDefaultLevels as any) =
+      mockTrustLevelRepository.createDefaultLevels;
     (communityMemberRepository.getUserRole as any) = mockCommunityMemberRepository.getUserRole;
     (communityMemberRepository.isAdmin as any) = mockCommunityMemberRepository.isAdmin;
     (communityRepository.findById as any) = mockCommunityRepository.findById;
@@ -61,7 +62,10 @@ describe('TrustLevelService', () => {
     // Default mock behaviors
     mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
     mockCommunityMemberRepository.isAdmin.mockResolvedValue(false);
-    mockCommunityRepository.findById.mockResolvedValue({ id: validCommunityId, name: 'Test Community' });
+    mockCommunityRepository.findById.mockResolvedValue({
+      id: validCommunityId,
+      name: 'Test Community',
+    });
   });
 
   describe('createTrustLevel', () => {
@@ -161,13 +165,17 @@ describe('TrustLevelService', () => {
       });
       mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
 
-      await expect(trustLevelService.getTrustLevel(validLevelId, validUserId)).rejects.toThrow('Forbidden');
+      await expect(trustLevelService.getTrustLevel(validLevelId, validUserId)).rejects.toThrow(
+        'Forbidden'
+      );
     });
 
     it('should handle non-existent trust level', async () => {
       mockTrustLevelRepository.findById.mockResolvedValue(undefined);
 
-      await expect(trustLevelService.getTrustLevel(validLevelId, validUserId)).rejects.toThrow('Trust level not found');
+      await expect(trustLevelService.getTrustLevel(validLevelId, validUserId)).rejects.toThrow(
+        'Trust level not found'
+      );
     });
   });
 
@@ -175,7 +183,12 @@ describe('TrustLevelService', () => {
     it('should allow member to list trust levels', async () => {
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
       mockTrustLevelRepository.findByCommunityId.mockResolvedValue([
-        { id: validLevelId, communityId: validCommunityId, name: 'Trusted', threshold: 50 },
+        {
+          id: validLevelId,
+          communityId: validCommunityId,
+          name: 'Trusted',
+          threshold: 50,
+        },
       ]);
 
       const result = await trustLevelService.listTrustLevels(validCommunityId, validUserId);
@@ -188,7 +201,9 @@ describe('TrustLevelService', () => {
     it('should reject non-member from listing trust levels', async () => {
       mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
 
-      await expect(trustLevelService.listTrustLevels(validCommunityId, validUserId)).rejects.toThrow('Forbidden');
+      await expect(
+        trustLevelService.listTrustLevels(validCommunityId, validUserId)
+      ).rejects.toThrow('Forbidden');
     });
   });
 
@@ -275,7 +290,9 @@ describe('TrustLevelService', () => {
       });
       mockCommunityMemberRepository.isAdmin.mockResolvedValue(false);
 
-      await expect(trustLevelService.deleteTrustLevel(validLevelId, validUserId)).rejects.toThrow('Only admins can delete trust levels');
+      await expect(trustLevelService.deleteTrustLevel(validLevelId, validUserId)).rejects.toThrow(
+        'Only admins can delete trust levels'
+      );
     });
   });
 
@@ -284,8 +301,18 @@ describe('TrustLevelService', () => {
       mockTrustLevelRepository.findByCommunityId.mockResolvedValue([]);
       mockTrustLevelRepository.createDefaultLevels.mockResolvedValue([
         { id: '1', communityId: validCommunityId, name: 'New', threshold: 0 },
-        { id: '2', communityId: validCommunityId, name: 'Stable', threshold: 10 },
-        { id: '3', communityId: validCommunityId, name: 'Trusted', threshold: 50 },
+        {
+          id: '2',
+          communityId: validCommunityId,
+          name: 'Stable',
+          threshold: 10,
+        },
+        {
+          id: '3',
+          communityId: validCommunityId,
+          name: 'Trusted',
+          threshold: 50,
+        },
       ]);
 
       const result = await trustLevelService.initializeDefaultLevels(validCommunityId);
@@ -296,7 +323,12 @@ describe('TrustLevelService', () => {
 
     it('should skip initialization if levels already exist', async () => {
       mockTrustLevelRepository.findByCommunityId.mockResolvedValue([
-        { id: validLevelId, communityId: validCommunityId, name: 'Existing', threshold: 0 },
+        {
+          id: validLevelId,
+          communityId: validCommunityId,
+          name: 'Existing',
+          threshold: 0,
+        },
       ]);
 
       const result = await trustLevelService.initializeDefaultLevels(validCommunityId);

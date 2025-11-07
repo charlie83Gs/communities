@@ -1,0 +1,9 @@
+# Bun configuration for testing and coverage
+
+[test]
+# Test coverage configuration
+coverage = true
+coverageThreshold = 70  # Minimum 70% coverage required
+
+# Test settings
+timeout = 10000  # 10 second timeout for tests

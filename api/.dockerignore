@@ -1,6 +1,5 @@
 # Dependencies
 node_modules
-bun.lockb
 
 # Build artifacts
 dist
@@ -55,7 +54,6 @@ uploads
 .husky
 .eslintrc*
 .prettierrc*
-tsconfig.json
 
 # Tests
 tests

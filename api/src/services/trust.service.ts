@@ -62,7 +62,13 @@ export class TrustService {
   }
 
   // Events: for audit
-  async getEventsForUser(communityId: string, requesterId: string, userId: string, page = 1, limit = 50) {
+  async getEventsForUser(
+    communityId: string,
+    requesterId: string,
+    userId: string,
+    page = 1,
+    limit = 50
+  ) {
     // Only members can read; allow reading own or others if member (trust model is not secret)
     const role = await this.getUserRole(communityId, requesterId);
     if (!role) {
@@ -74,7 +80,9 @@ export class TrustService {
       trustEventRepository.listByUserB(communityId, userId, limit, offset),
     ]);
     // merge and sort desc by createdAt
-    const merged = [...a, ...b].sort((x: any, y: any) => new Date(y.createdAt).getTime() - new Date(x.createdAt).getTime());
+    const merged = [...a, ...b].sort(
+      (x: any, y: any) => new Date(y.createdAt).getTime() - new Date(x.createdAt).getTime()
+    );
     return merged.slice(0, limit);
   }
 
@@ -85,7 +93,15 @@ export class TrustService {
       throw new AppError('Forbidden: not a member of this community', 403);
     }
     const view = await trustViewRepository.get(communityId, userId);
-    return view ?? { communityId, userId, points: 0, updatedAt: new Date(), id: undefined as any };
+    return (
+      view ?? {
+        communityId,
+        userId,
+        points: 0,
+        updatedAt: new Date(),
+        id: undefined as any,
+      }
+    );
   }
 
   async listCommunityTrust(communityId: string, requesterId: string, page = 1, limit = 50) {
@@ -113,12 +129,13 @@ export class TrustService {
     const isAdmin = roles.includes('admin');
 
     // Resolve threshold settings from community config using trust resolver
-    const [minTrustToAwardTrust, minTrustForWealth, minTrustForDisputes, minTrustForPolls] = await Promise.all([
-      resolveTrustRequirement(communityId, community.minTrustToAwardTrust),
-      resolveTrustRequirement(communityId, community.minTrustForWealth),
-      resolveTrustRequirement(communityId, community.minTrustForDisputes),
-      resolveTrustRequirement(communityId, community.minTrustForPolls),
-    ]);
+    const [minTrustToAwardTrust, minTrustForWealth, minTrustForDisputes, minTrustForPolls] =
+      await Promise.all([
+        resolveTrustRequirement(communityId, community.minTrustToAwardTrust),
+        resolveTrustRequirement(communityId, community.minTrustForWealth),
+        resolveTrustRequirement(communityId, community.minTrustForDisputes),
+        resolveTrustRequirement(communityId, community.minTrustForPolls),
+      ]);
 
     // Calculate permission booleans
     const canAwardTrust = isAdmin || points >= minTrustToAwardTrust;
@@ -138,7 +155,14 @@ export class TrustService {
   }
 
   // Share redeemed integration: award +1 to both if either participant is trusted (admin or points >= threshold)
-  async recordShareRedeemed(params: { communityId: string; giverUserId: string; receiverUserId: string; actorUserId?: string | null; entityType?: string; entityId?: string; }) {
+  async recordShareRedeemed(params: {
+    communityId: string;
+    giverUserId: string;
+    receiverUserId: string;
+    actorUserId?: string | null;
+    entityType?: string;
+    entityId?: string;
+  }) {
     const { communityId, giverUserId, receiverUserId } = params;
 
     // ensure trust rows exist
@@ -413,7 +437,13 @@ export class TrustService {
   /**
    * Get trust history for a user
    */
-  async getTrustHistory(communityId: string, requesterId: string, userId: string, page = 1, limit = 50) {
+  async getTrustHistory(
+    communityId: string,
+    requesterId: string,
+    userId: string,
+    page = 1,
+    limit = 50
+  ) {
     const role = await this.getUserRole(communityId, requesterId);
     if (!role) {
       throw new AppError('Forbidden: not a member of this community', 403);

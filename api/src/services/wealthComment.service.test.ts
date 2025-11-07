@@ -7,10 +7,26 @@ import { AppError } from '@/utils/errors';
 import { testData } from '../../tests/helpers/testUtils';
 
 const mockWealthCommentRepository = {
-  create: mock(() => Promise.resolve({ id: 'comment-123', wealthId: 'wealth-123', authorId: 'user-123', content: 'Test comment', createdAt: new Date() })),
+  create: mock(() =>
+    Promise.resolve({
+      id: 'comment-123',
+      wealthId: 'wealth-123',
+      authorId: 'user-123',
+      content: 'Test comment',
+      createdAt: new Date(),
+    })
+  ),
   findById: mock(() => Promise.resolve(null)),
   findByWealthId: mock(() => Promise.resolve([])),
-  update: mock(() => Promise.resolve({ id: 'comment-123', wealthId: 'wealth-123', authorId: 'user-123', content: 'Updated comment', createdAt: new Date() })),
+  update: mock(() =>
+    Promise.resolve({
+      id: 'comment-123',
+      wealthId: 'wealth-123',
+      authorId: 'user-123',
+      content: 'Updated comment',
+      createdAt: new Date(),
+    })
+  ),
   delete: mock(() => Promise.resolve({ id: 'comment-123' })),
 };
 
@@ -25,9 +41,9 @@ const mockOpenFGAService = {
 
 describe('WealthCommentService', () => {
   beforeEach(() => {
-    Object.values(mockWealthCommentRepository).forEach(m => m.mockReset());
-    Object.values(mockWealthRepository).forEach(m => m.mockReset());
-    Object.values(mockOpenFGAService).forEach(m => m.mockReset());
+    Object.values(mockWealthCommentRepository).forEach((m) => m.mockReset());
+    Object.values(mockWealthRepository).forEach((m) => m.mockReset());
+    Object.values(mockOpenFGAService).forEach((m) => m.mockReset());
 
     (wealthCommentRepository.create as any) = mockWealthCommentRepository.create;
     (wealthCommentRepository.findById as any) = mockWealthCommentRepository.findById;
@@ -43,7 +59,13 @@ describe('WealthCommentService', () => {
     it('should create comment when user has permission', async () => {
       mockWealthRepository.findById.mockResolvedValue(testData.wealth);
       mockOpenFGAService.can.mockResolvedValue(true);
-      mockWealthCommentRepository.create.mockResolvedValue({ id: 'comment-123', wealthId: 'wealth-123', authorId: 'user-123', content: 'Test comment', createdAt: new Date() });
+      mockWealthCommentRepository.create.mockResolvedValue({
+        id: 'comment-123',
+        wealthId: 'wealth-123',
+        authorId: 'user-123',
+        content: 'Test comment',
+        createdAt: new Date(),
+      });
       mockOpenFGAService.createRelationship.mockResolvedValue(undefined);
 
       const result = await wealthCommentService.createComment(
@@ -116,9 +138,19 @@ describe('WealthCommentService', () => {
         authorId: 'user-123',
         content: 'Original',
       });
-      mockWealthCommentRepository.update.mockResolvedValue({ id: 'comment-123', wealthId: 'wealth-123', authorId: 'user-123', content: 'Updated comment', createdAt: new Date() });
+      mockWealthCommentRepository.update.mockResolvedValue({
+        id: 'comment-123',
+        wealthId: 'wealth-123',
+        authorId: 'user-123',
+        content: 'Updated comment',
+        createdAt: new Date(),
+      });
 
-      const result = await wealthCommentService.updateComment('comment-123', { content: 'Updated' }, 'user-123');
+      const result = await wealthCommentService.updateComment(
+        'comment-123',
+        { content: 'Updated' },
+        'user-123'
+      );
 
       expect(result.content).toBe('Updated comment');
       expect(mockWealthCommentRepository.update).toHaveBeenCalled();
@@ -160,9 +192,9 @@ describe('WealthCommentService', () => {
     it('should throw error if comment not found', async () => {
       mockWealthCommentRepository.findById.mockResolvedValue(null);
 
-      await expect(
-        wealthCommentService.deleteComment('comment-123', 'user-123')
-      ).rejects.toThrow('Comment not found');
+      await expect(wealthCommentService.deleteComment('comment-123', 'user-123')).rejects.toThrow(
+        'Comment not found'
+      );
     });
 
     it('should throw forbidden if user is not author', async () => {
@@ -171,9 +203,9 @@ describe('WealthCommentService', () => {
         authorId: 'user-456',
       });
 
-      await expect(
-        wealthCommentService.deleteComment('comment-123', 'user-123')
-      ).rejects.toThrow('Forbidden: You can only delete your own comments');
+      await expect(wealthCommentService.deleteComment('comment-123', 'user-123')).rejects.toThrow(
+        'Forbidden: You can only delete your own comments'
+      );
     });
   });
 });

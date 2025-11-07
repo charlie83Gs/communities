@@ -16,7 +16,7 @@ describe('OpenFGAService', () => {
 
   beforeEach(() => {
     // Reset all mocks
-    Object.values(mockOpenFgaClient).forEach(m => m.mockReset());
+    Object.values(mockOpenFgaClient).forEach((m) => m.mockReset());
 
     // Set default mock responses
     mockOpenFgaClient.check.mockResolvedValue({ allowed: true });
@@ -34,7 +34,9 @@ describe('OpenFGAService', () => {
       (service as any).initialized = true;
       (service as any).client = mockOpenFgaClient;
 
-      mockOpenFgaClient.check.mockResolvedValueOnce({ allowed: false }).mockResolvedValueOnce({ allowed: true });
+      mockOpenFgaClient.check
+        .mockResolvedValueOnce({ allowed: false })
+        .mockResolvedValueOnce({ allowed: true });
 
       const result = await service.can('user-123', 'communities', 'comm-123', 'read');
 
@@ -74,8 +76,8 @@ describe('OpenFGAService', () => {
       (service as any).client = mockOpenFgaClient;
 
       mockOpenFgaClient.check
-        .mockResolvedValueOnce({ allowed: false })  // admin
-        .mockResolvedValueOnce({ allowed: true });   // member
+        .mockResolvedValueOnce({ allowed: false }) // admin
+        .mockResolvedValueOnce({ allowed: true }); // member
 
       const result = await service.getUserRoleForResource('user-123', 'communities', 'comm-123');
 
@@ -102,8 +104,8 @@ describe('OpenFGAService', () => {
       (service as any).client = mockOpenFgaClient;
 
       mockOpenFgaClient.check
-        .mockResolvedValueOnce({ allowed: true })   // admin
-        .mockResolvedValueOnce({ allowed: true })   // member
+        .mockResolvedValueOnce({ allowed: true }) // admin
+        .mockResolvedValueOnce({ allowed: true }) // member
         .mockResolvedValueOnce({ allowed: false }); // reader
 
       const result = await service.getUserRolesForResource('user-123', 'communities', 'comm-123');
@@ -138,7 +140,7 @@ describe('OpenFGAService', () => {
       mockOpenFgaClient.write.mockResolvedValue({});
       // Mock final verification - getUserRolesForResource checks admin, member, reader in order
       mockOpenFgaClient.check.mockResolvedValueOnce({ allowed: false }); // admin
-      mockOpenFgaClient.check.mockResolvedValueOnce({ allowed: true });  // member
+      mockOpenFgaClient.check.mockResolvedValueOnce({ allowed: true }); // member
       mockOpenFgaClient.check.mockResolvedValueOnce({ allowed: false }); // reader
 
       await service.assignRole('user-123', 'communities', 'comm-123', 'member');
@@ -153,17 +155,19 @@ describe('OpenFGAService', () => {
 
       // Mock existing tuple with the same role
       mockOpenFgaClient.read.mockResolvedValue({
-        tuples: [{
-          key: {
-            user: 'user:user-123',
-            relation: 'member',
-            object: 'community:comm-123',
+        tuples: [
+          {
+            key: {
+              user: 'user:user-123',
+              relation: 'member',
+              object: 'community:comm-123',
+            },
           },
-        }],
+        ],
       });
       // Mock final verification - getUserRolesForResource checks admin, member, reader in order
       mockOpenFgaClient.check.mockResolvedValueOnce({ allowed: false }); // admin
-      mockOpenFgaClient.check.mockResolvedValueOnce({ allowed: true });  // member
+      mockOpenFgaClient.check.mockResolvedValueOnce({ allowed: true }); // member
       mockOpenFgaClient.check.mockResolvedValueOnce({ allowed: false }); // reader
 
       await service.assignRole('user-123', 'communities', 'comm-123', 'member');
@@ -193,24 +197,38 @@ describe('OpenFGAService', () => {
 
       await service.removeRole('user-123', 'communities', 'comm-123');
 
+      // The implementation makes 3 separate calls, one for each role
+      expect(mockOpenFgaClient.write).toHaveBeenCalledTimes(3);
+
+      // Verify each role was deleted
       expect(mockOpenFgaClient.write).toHaveBeenCalledWith({
-        deletes: expect.arrayContaining([
+        deletes: [
           {
             user: 'user:user-123',
             relation: 'admin',
             object: 'community:comm-123',
           },
+        ],
+      });
+
+      expect(mockOpenFgaClient.write).toHaveBeenCalledWith({
+        deletes: [
           {
             user: 'user:user-123',
             relation: 'member',
             object: 'community:comm-123',
           },
+        ],
+      });
+
+      expect(mockOpenFgaClient.write).toHaveBeenCalledWith({
+        deletes: [
           {
             user: 'user:user-123',
             relation: 'reader',
             object: 'community:comm-123',
           },
-        ]),
+        ],
       });
     });
   });
@@ -230,11 +248,13 @@ describe('OpenFGAService', () => {
       );
 
       expect(mockOpenFgaClient.write).toHaveBeenCalledWith({
-        writes: [{
-          user: 'community:comm-123',
-          relation: 'parent_community',
-          object: 'shares:share-123',
-        }],
+        writes: [
+          {
+            user: 'community:comm-123',
+            relation: 'parent_community',
+            object: 'shares:share-123',
+          },
+        ],
       });
     });
   });
@@ -248,11 +268,13 @@ describe('OpenFGAService', () => {
       await service.setInviteRoleMetadata('invite-123', 'member');
 
       expect(mockOpenFgaClient.write).toHaveBeenCalledWith({
-        writes: [{
-          user: 'user:metadata',
-          relation: 'grants_member',
-          object: 'invite:invite-123',
-        }],
+        writes: [
+          {
+            user: 'user:metadata',
+            relation: 'grants_member',
+            object: 'invite:invite-123',
+          },
+        ],
       });
     });
   });
@@ -264,8 +286,8 @@ describe('OpenFGAService', () => {
       (service as any).client = mockOpenFgaClient;
 
       mockOpenFgaClient.check
-        .mockResolvedValueOnce({ allowed: false })  // admin
-        .mockResolvedValueOnce({ allowed: true });  // member
+        .mockResolvedValueOnce({ allowed: false }) // admin
+        .mockResolvedValueOnce({ allowed: true }); // member
 
       const result = await service.getInviteRoleMetadata('invite-123');
 
@@ -292,10 +314,18 @@ describe('OpenFGAService', () => {
       (service as any).client = mockOpenFgaClient;
 
       const writes = [
-        { user: 'user:user-123', relation: 'member', object: 'community:comm-123' },
+        {
+          user: 'user:user-123',
+          relation: 'member',
+          object: 'community:comm-123',
+        },
       ];
       const deletes = [
-        { user: 'user:user-456', relation: 'member', object: 'community:comm-123' },
+        {
+          user: 'user:user-456',
+          relation: 'member',
+          object: 'community:comm-123',
+        },
       ];
 
       await service.batchWrite(writes, deletes);
@@ -323,8 +353,8 @@ describe('OpenFGAService', () => {
       (service as any).client = mockOpenFgaClient;
 
       mockOpenFgaClient.check
-        .mockResolvedValueOnce({ allowed: false })  // admin check
-        .mockResolvedValueOnce({ allowed: true });  // trust_level_50
+        .mockResolvedValueOnce({ allowed: false }) // admin check
+        .mockResolvedValueOnce({ allowed: true }); // trust_level_50
 
       const result = await service.checkTrustLevel('user-123', 'comm-123', 50);
 

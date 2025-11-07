@@ -26,70 +26,88 @@ const REPORT_ID = '550e8400-e29b-41d4-a716-446655440005';
 
 // Mock dependencies
 const mockInitiativeRepository = {
-  create: mock(() => Promise.resolve({
-    id: INITIATIVE_ID,
-    title: 'Community Garden',
-    councilId: COUNCIL_ID,
-    communityId: COMMUNITY_ID,
-    description: 'Build a community garden',
-    createdBy: USER_ID,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  })),
-  findByCouncil: mock(() => Promise.resolve({
-    initiatives: [],
-    total: 0
-  })),
-  findById: mock(() => Promise.resolve({
-    id: INITIATIVE_ID,
-    title: 'Community Garden',
-    councilId: COUNCIL_ID,
-    communityId: COMMUNITY_ID,
-    description: 'Build a community garden',
-    upvotes: 0,
-    downvotes: 0,
-    userVote: null,
-  })),
-  update: mock(() => Promise.resolve({
-    id: INITIATIVE_ID,
-    title: 'Updated Initiative',
-  })),
+  create: mock(() =>
+    Promise.resolve({
+      id: INITIATIVE_ID,
+      title: 'Community Garden',
+      councilId: COUNCIL_ID,
+      communityId: COMMUNITY_ID,
+      description: 'Build a community garden',
+      createdBy: USER_ID,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+  ),
+  findByCouncil: mock(() =>
+    Promise.resolve({
+      initiatives: [],
+      total: 0,
+    })
+  ),
+  findById: mock(() =>
+    Promise.resolve({
+      id: INITIATIVE_ID,
+      title: 'Community Garden',
+      councilId: COUNCIL_ID,
+      communityId: COMMUNITY_ID,
+      description: 'Build a community garden',
+      upvotes: 0,
+      downvotes: 0,
+      userVote: null,
+    })
+  ),
+  update: mock(() =>
+    Promise.resolve({
+      id: INITIATIVE_ID,
+      title: 'Updated Initiative',
+    })
+  ),
   delete: mock(() => Promise.resolve()),
   vote: mock(() => Promise.resolve()),
   removeVote: mock(() => Promise.resolve()),
-  createReport: mock(() => Promise.resolve({
-    id: REPORT_ID,
-    initiativeId: INITIATIVE_ID,
-    title: 'Progress Report',
-    content: 'Great progress!',
-  })),
+  createReport: mock(() =>
+    Promise.resolve({
+      id: REPORT_ID,
+      initiativeId: INITIATIVE_ID,
+      title: 'Progress Report',
+      content: 'Great progress!',
+    })
+  ),
   findReportsByInitiative: mock(() => Promise.resolve({ reports: [], total: 0 })),
-  findReportById: mock(() => Promise.resolve({
-    id: REPORT_ID,
-    initiativeId: INITIATIVE_ID,
-  })),
-  createComment: mock(() => Promise.resolve({
-    id: '550e8400-e29b-41d4-a716-446655440006',
-    initiativeId: INITIATIVE_ID,
-    content: 'Great initiative!',
-    authorId: USER_ID,
-  })),
+  findReportById: mock(() =>
+    Promise.resolve({
+      id: REPORT_ID,
+      initiativeId: INITIATIVE_ID,
+    })
+  ),
+  createComment: mock(() =>
+    Promise.resolve({
+      id: '550e8400-e29b-41d4-a716-446655440006',
+      initiativeId: INITIATIVE_ID,
+      content: 'Great initiative!',
+      authorId: USER_ID,
+    })
+  ),
   findCommentsByInitiative: mock(() => Promise.resolve({ comments: [], total: 0 })),
-  createReportComment: mock(() => Promise.resolve({
-    id: '550e8400-e29b-41d4-a716-446655440007',
-    reportId: REPORT_ID,
-    content: 'Good report!',
-    authorId: USER_ID,
-  })),
+  createReportComment: mock(() =>
+    Promise.resolve({
+      id: '550e8400-e29b-41d4-a716-446655440007',
+      reportId: REPORT_ID,
+      content: 'Good report!',
+      authorId: USER_ID,
+    })
+  ),
   findCommentsByReport: mock(() => Promise.resolve({ comments: [], total: 0 })),
 };
 
 const mockCouncilRepository = {
-  findById: mock(() => Promise.resolve({
-    id: COUNCIL_ID,
-    communityId: COMMUNITY_ID,
-    name: 'Test Council',
-  })),
+  findById: mock(() =>
+    Promise.resolve({
+      id: COUNCIL_ID,
+      communityId: COMMUNITY_ID,
+      name: 'Test Council',
+    })
+  ),
   isManager: mock(() => Promise.resolve(false)),
 };
 
@@ -99,20 +117,22 @@ const mockCommunityMemberRepository = {
 };
 
 const mockAppUserRepository = {
-  findById: mock(() => Promise.resolve({
-    id: USER_ID,
-    email: 'test@example.com',
-    displayName: 'Test User',
-  })),
+  findById: mock(() =>
+    Promise.resolve({
+      id: USER_ID,
+      email: 'test@example.com',
+      displayName: 'Test User',
+    })
+  ),
 };
 
 describe('InitiativeService', () => {
   beforeEach(() => {
     // Reset all mocks
-    Object.values(mockInitiativeRepository).forEach(m => m.mockReset());
-    Object.values(mockCouncilRepository).forEach(m => m.mockReset());
-    Object.values(mockCommunityMemberRepository).forEach(m => m.mockReset());
-    Object.values(mockAppUserRepository).forEach(m => m.mockReset());
+    Object.values(mockInitiativeRepository).forEach((m) => m.mockReset());
+    Object.values(mockCouncilRepository).forEach((m) => m.mockReset());
+    Object.values(mockCommunityMemberRepository).forEach((m) => m.mockReset());
+    Object.values(mockAppUserRepository).forEach((m) => m.mockReset());
 
     // Replace dependencies with mocks
     (initiativeRepository.create as any) = mockInitiativeRepository.create;
@@ -123,12 +143,16 @@ describe('InitiativeService', () => {
     (initiativeRepository.vote as any) = mockInitiativeRepository.vote;
     (initiativeRepository.removeVote as any) = mockInitiativeRepository.removeVote;
     (initiativeRepository.createReport as any) = mockInitiativeRepository.createReport;
-    (initiativeRepository.findReportsByInitiative as any) = mockInitiativeRepository.findReportsByInitiative;
+    (initiativeRepository.findReportsByInitiative as any) =
+      mockInitiativeRepository.findReportsByInitiative;
     (initiativeRepository.findReportById as any) = mockInitiativeRepository.findReportById;
     (initiativeRepository.createComment as any) = mockInitiativeRepository.createComment;
-    (initiativeRepository.findCommentsByInitiative as any) = mockInitiativeRepository.findCommentsByInitiative;
-    (initiativeRepository.createReportComment as any) = mockInitiativeRepository.createReportComment;
-    (initiativeRepository.findCommentsByReport as any) = mockInitiativeRepository.findCommentsByReport;
+    (initiativeRepository.findCommentsByInitiative as any) =
+      mockInitiativeRepository.findCommentsByInitiative;
+    (initiativeRepository.createReportComment as any) =
+      mockInitiativeRepository.createReportComment;
+    (initiativeRepository.findCommentsByReport as any) =
+      mockInitiativeRepository.findCommentsByReport;
 
     (councilRepository.findById as any) = mockCouncilRepository.findById;
     (councilRepository.isManager as any) = mockCouncilRepository.isManager;
@@ -274,21 +298,22 @@ describe('InitiativeService', () => {
     it('should allow member to list initiatives', async () => {
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
       mockInitiativeRepository.findByCouncil.mockResolvedValue({
-        initiatives: [{
-          id: INITIATIVE_ID,
-          title: 'Community Garden',
-          upvotes: 5,
-          downvotes: 1,
-          userVote: null,
-        }],
+        initiatives: [
+          {
+            id: INITIATIVE_ID,
+            title: 'Community Garden',
+            upvotes: 5,
+            downvotes: 1,
+            userVote: null,
+          },
+        ],
         total: 1,
       });
 
-      const result = await initiativeService.listInitiatives(
-        COUNCIL_ID,
-        USER_ID,
-        { page: 1, limit: 20 }
-      );
+      const result = await initiativeService.listInitiatives(COUNCIL_ID, USER_ID, {
+        page: 1,
+        limit: 20,
+      });
 
       expect(result).toBeDefined();
       expect(result.total).toBe(1);
@@ -298,9 +323,9 @@ describe('InitiativeService', () => {
     it('should reject non-member from listing initiatives', async () => {
       mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
 
-      await expect(
-        initiativeService.listInitiatives(COUNCIL_ID, USER_ID)
-      ).rejects.toThrow('Forbidden: not a member of this community');
+      await expect(initiativeService.listInitiatives(COUNCIL_ID, USER_ID)).rejects.toThrow(
+        'Forbidden: not a member of this community'
+      );
     });
 
     it('should support pagination', async () => {
@@ -310,17 +335,15 @@ describe('InitiativeService', () => {
         total: 50,
       });
 
-      const result = await initiativeService.listInitiatives(
-        COUNCIL_ID,
-        USER_ID,
-        { page: 2, limit: 10 }
-      );
+      const result = await initiativeService.listInitiatives(COUNCIL_ID, USER_ID, {
+        page: 2,
+        limit: 10,
+      });
 
-      expect(mockInitiativeRepository.findByCouncil).toHaveBeenCalledWith(
-        COUNCIL_ID,
-        USER_ID,
-        { page: 2, limit: 10 }
-      );
+      expect(mockInitiativeRepository.findByCouncil).toHaveBeenCalledWith(COUNCIL_ID, USER_ID, {
+        page: 2,
+        limit: 10,
+      });
     });
   });
 
@@ -349,17 +372,17 @@ describe('InitiativeService', () => {
       });
       mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
 
-      await expect(
-        initiativeService.getInitiative(INITIATIVE_ID, USER_ID)
-      ).rejects.toThrow('Forbidden: not a member of this community');
+      await expect(initiativeService.getInitiative(INITIATIVE_ID, USER_ID)).rejects.toThrow(
+        'Forbidden: not a member of this community'
+      );
     });
 
     it('should handle non-existent initiative', async () => {
       mockInitiativeRepository.findById.mockResolvedValue(null);
 
-      await expect(
-        initiativeService.getInitiative(INITIATIVE_ID, USER_ID)
-      ).rejects.toThrow('Initiative not found');
+      await expect(initiativeService.getInitiative(INITIATIVE_ID, USER_ID)).rejects.toThrow(
+        'Initiative not found'
+      );
     });
   });
 
@@ -407,11 +430,7 @@ describe('InitiativeService', () => {
       mockCommunityMemberRepository.isAdmin.mockResolvedValue(false);
 
       await expect(
-        initiativeService.updateInitiative(
-          INITIATIVE_ID,
-          { title: 'Updated' },
-          USER_ID
-        )
+        initiativeService.updateInitiative(INITIATIVE_ID, { title: 'Updated' }, USER_ID)
       ).rejects.toThrow('Forbidden: only admins or council managers can update initiatives');
     });
   });
@@ -441,9 +460,9 @@ describe('InitiativeService', () => {
       mockCouncilRepository.isManager.mockResolvedValue(false);
       mockCommunityMemberRepository.isAdmin.mockResolvedValue(false);
 
-      await expect(
-        initiativeService.deleteInitiative(INITIATIVE_ID, USER_ID)
-      ).rejects.toThrow('Forbidden: only admins or council managers can delete initiatives');
+      await expect(initiativeService.deleteInitiative(INITIATIVE_ID, USER_ID)).rejects.toThrow(
+        'Forbidden: only admins or council managers can delete initiatives'
+      );
     });
   });
 
@@ -462,11 +481,7 @@ describe('InitiativeService', () => {
         userVote: 'upvote',
       });
 
-      const result = await initiativeService.voteOnInitiative(
-        INITIATIVE_ID,
-        'upvote',
-        USER_ID
-      );
+      const result = await initiativeService.voteOnInitiative(INITIATIVE_ID, 'upvote', USER_ID);
 
       expect(result).toBeDefined();
       expect(mockInitiativeRepository.vote).toHaveBeenCalledWith(INITIATIVE_ID, USER_ID, 'upvote');
@@ -617,11 +632,13 @@ describe('InitiativeService', () => {
       });
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
       mockInitiativeRepository.findCommentsByInitiative.mockResolvedValue({
-        comments: [{
-          id: '550e8400-e29b-41d4-a716-446655440006',
-          authorId: USER_ID,
-          content: 'Great!',
-        }],
+        comments: [
+          {
+            id: '550e8400-e29b-41d4-a716-446655440006',
+            authorId: USER_ID,
+            content: 'Great!',
+          },
+        ],
         total: 1,
       });
 
@@ -639,9 +656,9 @@ describe('InitiativeService', () => {
       });
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
 
-      await expect(
-        initiativeService.createComment(INITIATIVE_ID, '', USER_ID)
-      ).rejects.toThrow('Comment must be between 1 and 5000 characters');
+      await expect(initiativeService.createComment(INITIATIVE_ID, '', USER_ID)).rejects.toThrow(
+        'Comment must be between 1 and 5000 characters'
+      );
     });
   });
 
@@ -685,11 +702,13 @@ describe('InitiativeService', () => {
       });
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
       mockInitiativeRepository.findCommentsByReport.mockResolvedValue({
-        comments: [{
-          id: '550e8400-e29b-41d4-a716-446655440007',
-          authorId: USER_ID,
-          content: 'Great!',
-        }],
+        comments: [
+          {
+            id: '550e8400-e29b-41d4-a716-446655440007',
+            authorId: USER_ID,
+            content: 'Great!',
+          },
+        ],
         total: 1,
       });
 

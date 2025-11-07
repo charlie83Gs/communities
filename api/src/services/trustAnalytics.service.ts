@@ -1,5 +1,9 @@
 import { AppError } from '../utils/errors';
-import { trustAnalyticsRepository, TrustTimelineEvent, TrustSummary } from '../repositories/trustAnalytics.repository';
+import {
+  trustAnalyticsRepository,
+  TrustTimelineEvent,
+  TrustSummary,
+} from '../repositories/trustAnalytics.repository';
 import { communityMemberRepository } from '../repositories/communityMember.repository';
 
 export interface GetTimelineOptions {
@@ -17,7 +21,10 @@ export class TrustAnalyticsService {
    * Get trust timeline for the authenticated user
    * Returns all trust events with cumulative trust calculation
    */
-  async getMyTrustTimeline(userId: string, options?: GetTimelineOptions): Promise<TrustTimelineEvent[]> {
+  async getMyTrustTimeline(
+    userId: string,
+    options?: GetTimelineOptions
+  ): Promise<TrustTimelineEvent[]> {
     // Parse date strings if provided
     const parsedOptions = {
       communityId: options?.communityId,
@@ -26,7 +33,11 @@ export class TrustAnalyticsService {
     };
 
     // Validate date range
-    if (parsedOptions.startDate && parsedOptions.endDate && parsedOptions.startDate > parsedOptions.endDate) {
+    if (
+      parsedOptions.startDate &&
+      parsedOptions.endDate &&
+      parsedOptions.startDate > parsedOptions.endDate
+    ) {
       throw new AppError('Start date must be before end date', 400);
     }
 

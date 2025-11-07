@@ -15,7 +15,12 @@ export class WealthCommentService {
     }
 
     // Check permission: community members (or admins) can read/comment
-    const canReadCommunity = await openFGAService.can(userId, 'communities', wealthItem.communityId, 'read');
+    const canReadCommunity = await openFGAService.can(
+      userId,
+      'communities',
+      wealthItem.communityId,
+      'read'
+    );
     if (!canReadCommunity) {
       throw new AppError('Forbidden: You do not have permission to comment on this wealth', 403);
     }
@@ -53,9 +58,17 @@ export class WealthCommentService {
     }
 
     // Allow read for any member/admin of the community
-    const canReadCommunity = await openFGAService.can(userId, 'communities', wealthItem.communityId, 'read');
+    const canReadCommunity = await openFGAService.can(
+      userId,
+      'communities',
+      wealthItem.communityId,
+      'read'
+    );
     if (!canReadCommunity) {
-      throw new AppError('Forbidden: You do not have permission to view comments on this wealth', 403);
+      throw new AppError(
+        'Forbidden: You do not have permission to view comments on this wealth',
+        403
+      );
     }
 
     const comments = await wealthCommentRepository.findByWealthId(wealthId, limit, offset);

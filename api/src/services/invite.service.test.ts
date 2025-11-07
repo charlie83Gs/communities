@@ -7,50 +7,58 @@ import { appUserRepository } from '@/repositories/appUser.repository';
 
 // Mock repositories and services
 const mockInviteRepository = {
-  createUserInvite: mock(() => Promise.resolve({
-    id: 'invite-123',
-    communityId: 'comm-123',
-    invitedUserId: 'user-456',
-    createdBy: 'user-123',
-    status: 'pending' as const,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  })),
-  createLinkInvite: mock(() => Promise.resolve({
-    id: 'invite-123',
-    communityId: 'comm-123',
-    title: 'Test Link Invite',
-    secret: 'secret-123',
-    expiresAt: new Date(Date.now() + 86400000),
-    createdBy: 'user-123',
-    status: 'pending' as const,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  })),
+  createUserInvite: mock(() =>
+    Promise.resolve({
+      id: 'invite-123',
+      communityId: 'comm-123',
+      invitedUserId: 'user-456',
+      createdBy: 'user-123',
+      status: 'pending' as const,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+  ),
+  createLinkInvite: mock(() =>
+    Promise.resolve({
+      id: 'invite-123',
+      communityId: 'comm-123',
+      title: 'Test Link Invite',
+      secret: 'secret-123',
+      expiresAt: new Date(Date.now() + 86400000),
+      createdBy: 'user-123',
+      status: 'pending' as const,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+  ),
   findInviteById: mock(() => Promise.resolve(null)),
   findUserInviteById: mock(() => Promise.resolve(null)),
   findBySecret: mock(() => Promise.resolve(null)),
-  cancelInvite: mock(() => Promise.resolve({
-    id: 'invite-123',
-    status: 'cancelled' as const,
-  })),
+  cancelInvite: mock(() =>
+    Promise.resolve({
+      id: 'invite-123',
+      status: 'cancelled' as const,
+    })
+  ),
   findPendingUserInvitesByCommunity: mock(() => Promise.resolve([])),
   findPendingUserInvitesByUser: mock(() => Promise.resolve([])),
   findActiveLinkInvitesByCommunity: mock(() => Promise.resolve([])),
-  markUserInviteRedeemed: mock(() => Promise.resolve({
-    id: 'invite-123',
-    status: 'redeemed' as const,
-  })),
-  markLinkInviteRedeemed: mock(() => Promise.resolve({
-    id: 'invite-123',
-    status: 'redeemed' as const,
-  })),
+  markUserInviteRedeemed: mock(() =>
+    Promise.resolve({
+      id: 'invite-123',
+      status: 'redeemed' as const,
+    })
+  ),
+  markLinkInviteRedeemed: mock(() =>
+    Promise.resolve({
+      id: 'invite-123',
+      status: 'redeemed' as const,
+    })
+  ),
 };
 const mockAppUserRepository = {
   // app_users.id IS the user ID now (no separate internal ID)
-  findById: mock((id: string) =>
-    Promise.resolve(({ id } as any))
-  ),
+  findById: mock((id: string) => Promise.resolve({ id } as any)),
 };
 
 const mockOpenFGAService = {
@@ -65,13 +73,13 @@ const mockOpenFGAService = {
 describe('InviteService', () => {
   beforeEach(() => {
     // Reset all mocks
-    Object.values(mockInviteRepository).forEach(m => m.mockReset());
-    Object.values(mockOpenFGAService).forEach(m => m.mockReset());
+    Object.values(mockInviteRepository).forEach((m) => m.mockReset());
+    Object.values(mockOpenFGAService).forEach((m) => m.mockReset());
 
     // Re-seed app user repo mapper impl after reset
     (mockAppUserRepository.findById as any).mockReset?.();
     (mockAppUserRepository.findById as any).mockImplementation((id: string) =>
-      Promise.resolve(({ id } as any))
+      Promise.resolve({ id } as any)
     );
 
     // Replace repository and service methods with mocks
@@ -81,9 +89,12 @@ describe('InviteService', () => {
     (inviteRepository.findUserInviteById as any) = mockInviteRepository.findUserInviteById;
     (inviteRepository.findBySecret as any) = mockInviteRepository.findBySecret;
     (inviteRepository.cancelInvite as any) = mockInviteRepository.cancelInvite;
-    (inviteRepository.findPendingUserInvitesByCommunity as any) = mockInviteRepository.findPendingUserInvitesByCommunity;
-    (inviteRepository.findPendingUserInvitesByUser as any) = mockInviteRepository.findPendingUserInvitesByUser;
-    (inviteRepository.findActiveLinkInvitesByCommunity as any) = mockInviteRepository.findActiveLinkInvitesByCommunity;
+    (inviteRepository.findPendingUserInvitesByCommunity as any) =
+      mockInviteRepository.findPendingUserInvitesByCommunity;
+    (inviteRepository.findPendingUserInvitesByUser as any) =
+      mockInviteRepository.findPendingUserInvitesByUser;
+    (inviteRepository.findActiveLinkInvitesByCommunity as any) =
+      mockInviteRepository.findActiveLinkInvitesByCommunity;
     (inviteRepository.markUserInviteRedeemed as any) = mockInviteRepository.markUserInviteRedeemed;
     (inviteRepository.markLinkInviteRedeemed as any) = mockInviteRepository.markLinkInviteRedeemed;
 
@@ -127,7 +138,9 @@ describe('InviteService', () => {
 
     it('should create user invite when requester is admin', async () => {
       mockOpenFGAService.getUserRoleForResource.mockResolvedValue('admin');
-      mockOpenFGAService.getUserRoleForResource.mockResolvedValueOnce('admin').mockResolvedValueOnce(undefined as any);
+      mockOpenFGAService.getUserRoleForResource
+        .mockResolvedValueOnce('admin')
+        .mockResolvedValueOnce(undefined as any);
       mockInviteRepository.createUserInvite.mockResolvedValue({
         id: 'invite-123',
         communityId: 'comm-123',
@@ -177,7 +190,9 @@ describe('InviteService', () => {
     });
 
     it('should throw error when user already has the role', async () => {
-      mockOpenFGAService.getUserRoleForResource.mockResolvedValueOnce('admin').mockResolvedValueOnce('member');
+      mockOpenFGAService.getUserRoleForResource
+        .mockResolvedValueOnce('admin')
+        .mockResolvedValueOnce('member');
 
       await expect(
         inviteService.createUserInvite(
@@ -192,7 +207,9 @@ describe('InviteService', () => {
     });
 
     it('should handle OpenFGA metadata failure', async () => {
-      mockOpenFGAService.getUserRoleForResource.mockResolvedValueOnce('admin').mockResolvedValueOnce(undefined as any);
+      mockOpenFGAService.getUserRoleForResource
+        .mockResolvedValueOnce('admin')
+        .mockResolvedValueOnce(undefined as any);
       mockInviteRepository.createUserInvite.mockResolvedValue({
         id: 'invite-123',
         communityId: 'comm-123',
@@ -369,9 +386,9 @@ describe('InviteService', () => {
     it('should throw error if invite not found', async () => {
       mockInviteRepository.findInviteById.mockResolvedValue(null);
 
-      await expect(
-        inviteService.cancelInvite('invite-123', 'user-123')
-      ).rejects.toThrow('Invite not found');
+      await expect(inviteService.cancelInvite('invite-123', 'user-123')).rejects.toThrow(
+        'Invite not found'
+      );
     });
 
     it('should throw error if invite is not pending', async () => {
@@ -382,9 +399,9 @@ describe('InviteService', () => {
         createdBy: 'user-123',
       } as any);
 
-      await expect(
-        inviteService.cancelInvite('invite-123', 'user-123')
-      ).rejects.toThrow('Invite is not pending');
+      await expect(inviteService.cancelInvite('invite-123', 'user-123')).rejects.toThrow(
+        'Invite is not pending'
+      );
     });
 
     it('should throw forbidden if non-creator non-admin tries to cancel', async () => {
@@ -396,9 +413,9 @@ describe('InviteService', () => {
       } as any);
       mockOpenFGAService.getUserRoleForResource.mockResolvedValue('member');
 
-      await expect(
-        inviteService.cancelInvite('invite-123', 'user-123')
-      ).rejects.toThrow('Forbidden: only community admins can perform this action');
+      await expect(inviteService.cancelInvite('invite-123', 'user-123')).rejects.toThrow(
+        'Forbidden: only community admins can perform this action'
+      );
     });
   });
 
@@ -426,9 +443,9 @@ describe('InviteService', () => {
     it('should throw forbidden if not admin', async () => {
       mockOpenFGAService.getUserRoleForResource.mockResolvedValue('member');
 
-      await expect(
-        inviteService.getPendingUserInvites('comm-123', 'user-123')
-      ).rejects.toThrow('Forbidden: only community admins can perform this action');
+      await expect(inviteService.getPendingUserInvites('comm-123', 'user-123')).rejects.toThrow(
+        'Forbidden: only community admins can perform this action'
+      );
     });
   });
 
@@ -451,9 +468,9 @@ describe('InviteService', () => {
     });
 
     it('should throw forbidden if requesting another user invites', async () => {
-      await expect(
-        inviteService.getPendingInvitesForUser('user-456', 'user-123')
-      ).rejects.toThrow('Forbidden: can only view own invites');
+      await expect(inviteService.getPendingInvitesForUser('user-456', 'user-123')).rejects.toThrow(
+        'Forbidden: can only view own invites'
+      );
     });
   });
 
@@ -478,9 +495,9 @@ describe('InviteService', () => {
     it('should throw forbidden if not admin', async () => {
       mockOpenFGAService.getUserRoleForResource.mockResolvedValue('member');
 
-      await expect(
-        inviteService.getActiveLinkInvites('comm-123', 'user-123')
-      ).rejects.toThrow('Forbidden: only community admins can perform this action');
+      await expect(inviteService.getActiveLinkInvites('comm-123', 'user-123')).rejects.toThrow(
+        'Forbidden: only community admins can perform this action'
+      );
     });
   });
 
@@ -504,16 +521,21 @@ describe('InviteService', () => {
       const result = await inviteService.redeemUserInvite('invite-123', 'user-456');
 
       expect(result.status).toBe('redeemed');
-      expect(mockOpenFGAService.assignRole).toHaveBeenCalledWith('user-456', 'communities', 'comm-123', 'member');
+      expect(mockOpenFGAService.assignRole).toHaveBeenCalledWith(
+        'user-456',
+        'communities',
+        'comm-123',
+        'member'
+      );
       expect(mockOpenFGAService.removeInviteRoleMetadata).toHaveBeenCalledWith('invite-123');
     });
 
     it('should throw error if invite not found', async () => {
       mockInviteRepository.findUserInviteById.mockResolvedValue(null);
 
-      await expect(
-        inviteService.redeemUserInvite('invite-123', 'user-456')
-      ).rejects.toThrow('Invite not found');
+      await expect(inviteService.redeemUserInvite('invite-123', 'user-456')).rejects.toThrow(
+        'Invite not found'
+      );
     });
 
     it('should throw error if invite is not pending', async () => {
@@ -524,9 +546,9 @@ describe('InviteService', () => {
         status: 'redeemed' as const,
       } as any);
 
-      await expect(
-        inviteService.redeemUserInvite('invite-123', 'user-456')
-      ).rejects.toThrow('Invite is not pending');
+      await expect(inviteService.redeemUserInvite('invite-123', 'user-456')).rejects.toThrow(
+        'Invite is not pending'
+      );
     });
 
     it('should throw forbidden if invite not for this user', async () => {
@@ -537,9 +559,9 @@ describe('InviteService', () => {
         status: 'pending' as const,
       } as any);
 
-      await expect(
-        inviteService.redeemUserInvite('invite-123', 'user-789')
-      ).rejects.toThrow('Forbidden: invite not meant for this user');
+      await expect(inviteService.redeemUserInvite('invite-123', 'user-789')).rejects.toThrow(
+        'Forbidden: invite not meant for this user'
+      );
     });
 
     it('should throw error if role metadata not found', async () => {
@@ -551,9 +573,9 @@ describe('InviteService', () => {
       } as any);
       mockOpenFGAService.getInviteRoleMetadata.mockResolvedValue(undefined as any);
 
-      await expect(
-        inviteService.redeemUserInvite('invite-123', 'user-456')
-      ).rejects.toThrow('Invite role metadata not found');
+      await expect(inviteService.redeemUserInvite('invite-123', 'user-456')).rejects.toThrow(
+        'Invite role metadata not found'
+      );
     });
   });
 
@@ -578,7 +600,12 @@ describe('InviteService', () => {
       const result = await inviteService.redeemLinkInviteBySecret('secret-123', 'user-456');
 
       expect(result.status).toBe('redeemed');
-      expect(mockOpenFGAService.assignRole).toHaveBeenCalledWith('user-456', 'communities', 'comm-123', 'member');
+      expect(mockOpenFGAService.assignRole).toHaveBeenCalledWith(
+        'user-456',
+        'communities',
+        'comm-123',
+        'member'
+      );
     });
 
     it('should throw error if invite not found', async () => {

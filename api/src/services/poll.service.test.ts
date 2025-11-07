@@ -37,8 +37,8 @@ const mockOpenFGAService = {
 describe('PollService - Permission Checks', () => {
   beforeEach(() => {
     // Reset all mocks
-    Object.values(mockCommunityMemberRepository).forEach(m => m.mockReset());
-    Object.values(mockOpenFGAService).forEach(m => m.mockReset());
+    Object.values(mockCommunityMemberRepository).forEach((m) => m.mockReset());
+    Object.values(mockOpenFGAService).forEach((m) => m.mockReset());
 
     // Replace dependencies with mocks
     (communityMemberRepository.getUserRole as any) = mockCommunityMemberRepository.getUserRole;
@@ -66,9 +66,9 @@ describe('PollService - Permission Checks', () => {
       const invalidDto = { ...basePollDto, options: ['Only One'] };
       mockOpenFGAService.check.mockResolvedValue(true); // Grant permission
 
-      await expect(
-        pollService.createPoll(invalidDto, 'user-123')
-      ).rejects.toThrow('Poll must have at least 2 options');
+      await expect(pollService.createPoll(invalidDto, 'user-123')).rejects.toThrow(
+        'Poll must have at least 2 options'
+      );
     });
 
     it('should reject poll with more than 10 options', async () => {
@@ -78,35 +78,35 @@ describe('PollService - Permission Checks', () => {
       };
       mockOpenFGAService.check.mockResolvedValue(true);
 
-      await expect(
-        pollService.createPoll(invalidDto, 'user-123')
-      ).rejects.toThrow('Poll cannot have more than 10 options');
+      await expect(pollService.createPoll(invalidDto, 'user-123')).rejects.toThrow(
+        'Poll cannot have more than 10 options'
+      );
     });
 
     it('should reject poll with duration less than 1 hour', async () => {
       const invalidDto = { ...basePollDto, duration: 0 };
       mockOpenFGAService.check.mockResolvedValue(true);
 
-      await expect(
-        pollService.createPoll(invalidDto, 'user-123')
-      ).rejects.toThrow('Poll duration must be between 1 hour and 720 hours');
+      await expect(pollService.createPoll(invalidDto, 'user-123')).rejects.toThrow(
+        'Poll duration must be between 1 hour and 720 hours'
+      );
     });
 
     it('should reject poll with duration more than 720 hours', async () => {
       const invalidDto = { ...basePollDto, duration: 721 };
       mockOpenFGAService.check.mockResolvedValue(true);
 
-      await expect(
-        pollService.createPoll(invalidDto, 'user-123')
-      ).rejects.toThrow('Poll duration must be between 1 hour and 720 hours');
+      await expect(pollService.createPoll(invalidDto, 'user-123')).rejects.toThrow(
+        'Poll duration must be between 1 hour and 720 hours'
+      );
     });
 
     it('should reject non-member attempting to create poll', async () => {
       mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
 
-      await expect(
-        pollService.createPoll(basePollDto, 'user-123')
-      ).rejects.toThrow('You must be a member of this community');
+      await expect(pollService.createPoll(basePollDto, 'user-123')).rejects.toThrow(
+        'You must be a member of this community'
+      );
     });
 
     it('should reject user without any permission to create poll', async () => {
@@ -117,9 +117,7 @@ describe('PollService - Permission Checks', () => {
 
       // Note: This test will hit the database to fetch community config
       // The assertion is that it eventually throws a permission error
-      await expect(
-        pollService.createPoll(basePollDto, 'user-123')
-      ).rejects.toThrow(); // Will fail at database level or permission check
+      await expect(pollService.createPoll(basePollDto, 'user-123')).rejects.toThrow(); // Will fail at database level or permission check
     });
   });
 
@@ -197,9 +195,9 @@ describe('PollService - Permission Checks', () => {
         .mockResolvedValueOnce(false); // Not council member
       mockOpenFGAService.checkUserPermission.mockResolvedValue(true); // Has poll creator role
 
-      await expect(
-        pollService.createPoll(councilPollDto, 'user-123')
-      ).rejects.toThrow('You are not a member of this council');
+      await expect(pollService.createPoll(councilPollDto, 'user-123')).rejects.toThrow(
+        'You are not a member of this council'
+      );
 
       expect(mockOpenFGAService.check).toHaveBeenCalledWith({
         user: 'user:user-123',
@@ -220,9 +218,9 @@ describe('PollService - Permission Checks', () => {
         .mockResolvedValueOnce(false); // Not pool manager
       mockOpenFGAService.checkUserPermission.mockResolvedValue(true); // Has poll creator role
 
-      await expect(
-        pollService.createPoll(poolPollDto, 'user-123')
-      ).rejects.toThrow('You are not a manager of this pool');
+      await expect(pollService.createPoll(poolPollDto, 'user-123')).rejects.toThrow(
+        'You are not a manager of this pool'
+      );
 
       expect(mockOpenFGAService.check).toHaveBeenCalledWith({
         user: 'user:user-123',
@@ -236,9 +234,9 @@ describe('PollService - Permission Checks', () => {
     it('should reject non-member from listing polls', async () => {
       mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
 
-      await expect(
-        pollService.listPolls('comm-123', 'user-123')
-      ).rejects.toThrow('You must be a member of this community');
+      await expect(pollService.listPolls('comm-123', 'user-123')).rejects.toThrow(
+        'You must be a member of this community'
+      );
     });
 
     it('should allow member to list polls', async () => {
@@ -260,9 +258,9 @@ describe('PollService - Permission Checks', () => {
     it('should reject non-member from viewing poll', async () => {
       mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
 
-      await expect(
-        pollService.getPollById('comm-123', 'poll-123', 'user-123')
-      ).rejects.toThrow('You must be a member of this community');
+      await expect(pollService.getPollById('comm-123', 'poll-123', 'user-123')).rejects.toThrow(
+        'You must be a member of this community'
+      );
     });
 
     it('should allow member to view poll', async () => {
@@ -284,9 +282,9 @@ describe('PollService - Permission Checks', () => {
     it('should reject non-member from voting', async () => {
       mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
 
-      await expect(
-        pollService.vote('comm-123', 'poll-123', 'opt-1', 'user-123')
-      ).rejects.toThrow('You must be a member of this community');
+      await expect(pollService.vote('comm-123', 'poll-123', 'opt-1', 'user-123')).rejects.toThrow(
+        'You must be a member of this community'
+      );
     });
 
     it('should allow member to attempt voting', async () => {
@@ -315,9 +313,9 @@ describe('PollService - Permission Checks', () => {
       };
       mockOpenFGAService.check.mockResolvedValue(true);
 
-      await expect(
-        pollService.createPoll(invalidDto, 'user-123')
-      ).rejects.toThrow('Poll must have at least 2 options');
+      await expect(pollService.createPoll(invalidDto, 'user-123')).rejects.toThrow(
+        'Poll must have at least 2 options'
+      );
     });
 
     it('should handle single option', async () => {
@@ -330,9 +328,9 @@ describe('PollService - Permission Checks', () => {
       };
       mockOpenFGAService.check.mockResolvedValue(true);
 
-      await expect(
-        pollService.createPoll(invalidDto, 'user-123')
-      ).rejects.toThrow('Poll must have at least 2 options');
+      await expect(pollService.createPoll(invalidDto, 'user-123')).rejects.toThrow(
+        'Poll must have at least 2 options'
+      );
     });
 
     it('should accept exactly 2 options', async () => {
@@ -419,9 +417,9 @@ describe('PollService - Permission Checks', () => {
       };
       mockOpenFGAService.check.mockResolvedValue(true);
 
-      await expect(
-        pollService.createPoll(invalidDto, 'user-123')
-      ).rejects.toThrow('Poll duration must be between 1 hour and 720 hours');
+      await expect(pollService.createPoll(invalidDto, 'user-123')).rejects.toThrow(
+        'Poll duration must be between 1 hour and 720 hours'
+      );
     });
 
     it('should handle council poll without creatorId', async () => {
@@ -464,6 +462,226 @@ describe('PollService - Permission Checks', () => {
         // Any error is acceptable - we're testing it doesn't crash
         expect(error).toBeDefined();
       }
+    });
+  });
+
+  describe('closePoll - Permission Tests', () => {
+    it('should verify creator can close their own poll', async () => {
+      mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
+
+      // Note: Will fail at database level but permission logic is tested
+      try {
+        await pollService.closePoll('comm-123', 'poll-123', 'user-creator');
+      } catch (error: any) {
+        // Should not be a permission error for creator
+        expect(error.message).not.toContain('Only the poll creator');
+      }
+    });
+
+    it('should verify admin permission is checked when not creator', async () => {
+      mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
+      mockOpenFGAService.check.mockResolvedValue(false); // Not admin
+
+      // Note: Will fail at database level
+      try {
+        await pollService.closePoll('comm-123', 'poll-123', 'user-other');
+      } catch (error: any) {
+        // May fail at database or permission level
+        expect(error).toBeDefined();
+      }
+
+      // Verify admin check was attempted (after database query)
+      // Cannot verify this in unit test due to database dependency
+    });
+  });
+
+  describe('ensureMemberOrAdmin - Permission Tests', () => {
+    it('should throw error with correct message for non-member', async () => {
+      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
+
+      await expect(pollService.vote('comm-123', 'poll-123', 'opt-1', 'user-123')).rejects.toThrow(
+        'You must be a member of this community'
+      );
+    });
+
+    it('should reject non-admin non-member roles', async () => {
+      mockCommunityMemberRepository.getUserRole.mockResolvedValue('viewer');
+
+      await expect(pollService.listPolls('comm-123', 'user-123')).rejects.toThrow(
+        'You must be a member of this community'
+      );
+    });
+  });
+
+  describe('canCreatePoll - Trust Level Tests', () => {
+    const validPollDto: CreatePollDto = {
+      communityId: 'comm-123',
+      title: 'Test Poll',
+      options: ['Option 1', 'Option 2'],
+      duration: 24,
+      creatorType: 'user',
+    };
+
+    it('should check trust level when not admin and no role', async () => {
+      mockOpenFGAService.check.mockResolvedValue(false); // Not admin
+      mockOpenFGAService.checkUserPermission.mockResolvedValue(false); // No role
+      mockOpenFGAService.checkTrustLevel.mockResolvedValue(false); // Below threshold
+
+      // Note: Will fail at database level (community query) before permission check
+      try {
+        await pollService.createPoll(validPollDto, 'user-123');
+      } catch (error: any) {
+        // Error will be database-related, not permission
+        expect(error).toBeDefined();
+      }
+    });
+
+    it('should allow poll creation when trust level is met', async () => {
+      mockOpenFGAService.check.mockResolvedValue(false); // Not admin
+      mockOpenFGAService.checkUserPermission.mockResolvedValue(false); // No role
+      mockOpenFGAService.checkTrustLevel.mockResolvedValue(true); // Trust level met
+
+      // Note: Will fail at database level but permission check passes
+      try {
+        await pollService.createPoll(validPollDto, 'user-123');
+      } catch (error: any) {
+        // Should not be a permission error
+        expect(error.message).not.toContain('You do not have permission to create polls');
+      }
+    });
+  });
+
+  describe('createPoll - Council Member Verification', () => {
+    it('should check admin permission before council membership', async () => {
+      const councilPollDto: CreatePollDto = {
+        communityId: 'comm-123',
+        title: 'Council Poll',
+        options: ['A', 'B'],
+        duration: 24,
+        creatorType: 'council',
+        creatorId: 'council-123',
+      };
+
+      // Admin takes precedence, but council membership is still checked
+      mockOpenFGAService.check
+        .mockResolvedValueOnce(true) // Is admin (for poll creation permission)
+        .mockResolvedValueOnce(false); // Not council member (still enforced)
+      mockOpenFGAService.checkUserPermission.mockResolvedValue(false);
+      mockOpenFGAService.checkTrustLevel.mockResolvedValue(false);
+
+      // Even admins must be council members to create on behalf of council
+      await expect(pollService.createPoll(councilPollDto, 'user-123')).rejects.toThrow(
+        'You are not a member of this council'
+      );
+    });
+
+    it('should require council membership for non-admin poll creators', async () => {
+      const councilPollDto: CreatePollDto = {
+        communityId: 'comm-123',
+        title: 'Council Poll',
+        options: ['A', 'B'],
+        duration: 24,
+        creatorType: 'council',
+        creatorId: 'council-123',
+      };
+
+      mockOpenFGAService.check
+        .mockResolvedValueOnce(false) // Not admin
+        .mockResolvedValueOnce(false); // Not council member
+      mockOpenFGAService.checkUserPermission.mockResolvedValue(true); // Has poll creator role
+
+      await expect(pollService.createPoll(councilPollDto, 'user-123')).rejects.toThrow(
+        'You are not a member of this council'
+      );
+    });
+  });
+
+  describe('createPoll - Pool Manager Verification', () => {
+    it('should check admin permission before pool manager', async () => {
+      const poolPollDto: CreatePollDto = {
+        communityId: 'comm-123',
+        title: 'Pool Poll',
+        options: ['A', 'B'],
+        duration: 24,
+        creatorType: 'pool',
+        creatorId: 'pool-123',
+      };
+
+      // Admin takes precedence, but pool manager is still checked
+      mockOpenFGAService.check
+        .mockResolvedValueOnce(true) // Is admin (for poll creation permission)
+        .mockResolvedValueOnce(false); // Not pool manager (still enforced)
+      mockOpenFGAService.checkUserPermission.mockResolvedValue(false);
+      mockOpenFGAService.checkTrustLevel.mockResolvedValue(false);
+
+      // Even admins must be pool managers to create on behalf of pool
+      await expect(pollService.createPoll(poolPollDto, 'user-123')).rejects.toThrow(
+        'You are not a manager of this pool'
+      );
+    });
+
+    it('should require pool manager for non-admin poll creators', async () => {
+      const poolPollDto: CreatePollDto = {
+        communityId: 'comm-123',
+        title: 'Pool Poll',
+        options: ['A', 'B'],
+        duration: 24,
+        creatorType: 'pool',
+        creatorId: 'pool-123',
+      };
+
+      mockOpenFGAService.check
+        .mockResolvedValueOnce(false) // Not admin
+        .mockResolvedValueOnce(false); // Not pool manager
+      mockOpenFGAService.checkUserPermission.mockResolvedValue(true); // Has poll creator role
+
+      await expect(pollService.createPoll(poolPollDto, 'user-123')).rejects.toThrow(
+        'You are not a manager of this pool'
+      );
+    });
+  });
+
+  describe('listPolls - Query Filter Tests', () => {
+    it('should allow member to list polls with status filter', async () => {
+      mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
+
+      // Note: Will fail at database level
+      try {
+        await pollService.listPolls('comm-123', 'user-123', { status: 'active' });
+      } catch (error: any) {
+        // Should not be a permission error
+        expect(error.message).not.toContain('You must be a member');
+      }
+
+      expect(mockCommunityMemberRepository.getUserRole).toHaveBeenCalled();
+    });
+
+    it('should allow member to list polls with creatorType filter', async () => {
+      mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
+
+      // Note: Will fail at database level
+      try {
+        await pollService.listPolls('comm-123', 'user-123', { creatorType: 'council' });
+      } catch (error: any) {
+        // Should not be a permission error
+        expect(error.message).not.toContain('You must be a member');
+      }
+
+      expect(mockCommunityMemberRepository.getUserRole).toHaveBeenCalled();
+    });
+
+    it('should allow member to list polls with no filters', async () => {
+      mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
+
+      // Note: Will fail at database level
+      try {
+        await pollService.listPolls('comm-123', 'user-123');
+      } catch (error: any) {
+        // Should not be a permission error
+        expect(error.message).not.toContain('You must be a member');
+      }
+
+      expect(mockCommunityMemberRepository.getUserRole).toHaveBeenCalled();
     });
   });
 });

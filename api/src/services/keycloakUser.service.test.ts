@@ -26,7 +26,7 @@ const mockKeycloakAPI = {
 describe('KeycloakUserService', () => {
   beforeEach(() => {
     // Reset all mocks
-    Object.values(mockKeycloakAPI).forEach(m => m.mockReset());
+    Object.values(mockKeycloakAPI).forEach((m) => m.mockReset());
 
     // Default mock behaviors
     mockKeycloakAPI.getUserInfo.mockResolvedValue({

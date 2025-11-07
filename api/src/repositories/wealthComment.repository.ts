@@ -5,18 +5,12 @@ import { CreateWealthCommentDto, UpdateWealthCommentDto } from '../types/wealth.
 
 export class WealthCommentRepository {
   async create(data: CreateWealthCommentDto) {
-    const [comment] = await db
-      .insert(wealthComments)
-      .values(data)
-      .returning();
+    const [comment] = await db.insert(wealthComments).values(data).returning();
     return comment;
   }
 
   async findById(id: string) {
-    const [comment] = await db
-      .select()
-      .from(wealthComments)
-      .where(eq(wealthComments.id, id));
+    const [comment] = await db.select().from(wealthComments).where(eq(wealthComments.id, id));
     return comment;
   }
 
@@ -40,10 +34,7 @@ export class WealthCommentRepository {
   }
 
   async delete(id: string) {
-    const [deleted] = await db
-      .delete(wealthComments)
-      .where(eq(wealthComments.id, id))
-      .returning();
+    const [deleted] = await db.delete(wealthComments).where(eq(wealthComments.id, id)).returning();
     return deleted;
   }
 }

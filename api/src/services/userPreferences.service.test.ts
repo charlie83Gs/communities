@@ -6,51 +6,57 @@ import { AppError } from '@/utils/errors';
 import { testData } from '../../tests/helpers/testUtils';
 
 const mockAppUserRepository = {
-  findById: mock(() => Promise.resolve({
-    id: 'user-123',
-    email: 'test@example.com',
-    username: 'testuser',
-    displayName: 'Test User',
-    country: 'USA',
-    stateProvince: 'CA',
-    city: 'San Francisco',
-    description: 'Test description',
-    profileImage: 'image.webp',
-    lastSeenAt: null,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  })),
-  update: mock(() => Promise.resolve({
-    id: 'user-123',
-    email: 'test@example.com',
-    username: 'testuser',
-    displayName: 'Test User',
-    country: 'USA',
-    stateProvince: 'CA',
-    city: 'San Francisco',
-    description: 'Test description',
-    profileImage: 'image.webp',
-    lastSeenAt: null,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  })),
+  findById: mock(() =>
+    Promise.resolve({
+      id: 'user-123',
+      email: 'test@example.com',
+      username: 'testuser',
+      displayName: 'Test User',
+      country: 'USA',
+      stateProvince: 'CA',
+      city: 'San Francisco',
+      description: 'Test description',
+      profileImage: 'image.webp',
+      lastSeenAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+  ),
+  update: mock(() =>
+    Promise.resolve({
+      id: 'user-123',
+      email: 'test@example.com',
+      username: 'testuser',
+      displayName: 'Test User',
+      country: 'USA',
+      stateProvince: 'CA',
+      city: 'San Francisco',
+      description: 'Test description',
+      profileImage: 'image.webp',
+      lastSeenAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+  ),
 };
 
 const mockImagesService = {
-  save: mock(() => Promise.resolve({
-    id: 'img-123',
-    filename: 'new-image.webp',
-    contentType: 'image/webp',
-    bytes: 1024,
-    width: 800,
-    height: 600,
-  })),
+  save: mock(() =>
+    Promise.resolve({
+      id: 'img-123',
+      filename: 'new-image.webp',
+      contentType: 'image/webp',
+      bytes: 1024,
+      width: 800,
+      height: 600,
+    })
+  ),
 };
 
 describe('UserPreferencesService', () => {
   beforeEach(() => {
-    Object.values(mockAppUserRepository).forEach(m => m.mockReset());
-    Object.values(mockImagesService).forEach(m => m.mockReset());
+    Object.values(mockAppUserRepository).forEach((m) => m.mockReset());
+    Object.values(mockImagesService).forEach((m) => m.mockReset());
 
     (appUserRepository.findById as any) = mockAppUserRepository.findById;
     (appUserRepository.update as any) = mockAppUserRepository.update;
@@ -89,9 +95,9 @@ describe('UserPreferencesService', () => {
     it('should throw error if user not found', async () => {
       mockAppUserRepository.findById.mockResolvedValue(undefined);
 
-      await expect(
-        userPreferencesService.getPreferences('user-123')
-      ).rejects.toThrow('User not found');
+      await expect(userPreferencesService.getPreferences('user-123')).rejects.toThrow(
+        'User not found'
+      );
     });
 
     it('should handle null preference fields', async () => {
@@ -152,7 +158,9 @@ describe('UserPreferencesService', () => {
       mockAppUserRepository.update.mockResolvedValue(undefined);
 
       await expect(
-        userPreferencesService.updatePreferences('user-123', { displayName: 'Updated' })
+        userPreferencesService.updatePreferences('user-123', {
+          displayName: 'Updated',
+        })
       ).rejects.toThrow('User not found');
     });
 

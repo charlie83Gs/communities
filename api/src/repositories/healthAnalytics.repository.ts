@@ -70,7 +70,10 @@ export class HealthAnalyticsRepository {
   /**
    * Get wealth overview statistics
    */
-  async getWealthOverview(communityId: string, timeRange: TimeRange = '30d'): Promise<WealthOverviewData> {
+  async getWealthOverview(
+    communityId: string,
+    timeRange: TimeRange = '30d'
+  ): Promise<WealthOverviewData> {
     const dateCutoff = this.getDateCutoff(timeRange);
     const dateCutoffStr = dateCutoff.toISOString();
 
@@ -172,7 +175,10 @@ export class HealthAnalyticsRepository {
   /**
    * Get wealth items with statistics and trends
    */
-  async getWealthItems(communityId: string, timeRange: TimeRange = '30d'): Promise<WealthItemData[]> {
+  async getWealthItems(
+    communityId: string,
+    timeRange: TimeRange = '30d'
+  ): Promise<WealthItemData[]> {
     const dateCutoff = this.getDateCutoff(timeRange);
     const dateCutoffStr = dateCutoff.toISOString();
 
@@ -205,7 +211,7 @@ export class HealthAnalyticsRepository {
     // For each item, get trend data
     const itemsWithTrends: WealthItemData[] = [];
 
-    for (const item of (itemsResult as any[])) {
+    for (const item of itemsResult as any[]) {
       const trendResult = await db.execute<{
         date: string;
         count: string;
@@ -254,7 +260,10 @@ export class HealthAnalyticsRepository {
   /**
    * Get trust overview statistics
    */
-  async getTrustOverview(communityId: string, timeRange: TimeRange = '30d'): Promise<TrustOverviewData> {
+  async getTrustOverview(
+    communityId: string,
+    timeRange: TimeRange = '30d'
+  ): Promise<TrustOverviewData> {
     const dateCutoff = this.getDateCutoff(timeRange);
     const dateCutoffStr = dateCutoff.toISOString();
 
@@ -270,7 +279,10 @@ export class HealthAnalyticsRepository {
     const totalTrust = parseInt((totalTrustResult as any[])[0]?.total || '0', 10);
 
     // Get average trust per user (only considering users with positive trust scores)
-    const averageTrustResult = await db.execute<{ average: string, count: string }>(sql`
+    const averageTrustResult = await db.execute<{
+      average: string;
+      count: string;
+    }>(sql`
       SELECT
         COALESCE(AVG(total_trust), 0)::text AS average,
         COUNT(*)::text AS count
@@ -288,9 +300,7 @@ export class HealthAnalyticsRepository {
     const averageTrust = parseFloat((averageTrustResult as any[])[0]?.average || '0');
 
     // Calculate trust per day
-    const daysInRange = Math.ceil(
-      (Date.now() - dateCutoff.getTime()) / (1000 * 60 * 60 * 24)
-    );
+    const daysInRange = Math.ceil((Date.now() - dateCutoff.getTime()) / (1000 * 60 * 60 * 24));
     const trustPerDay = daysInRange > 0 ? totalTrust / daysInRange : 0;
 
     // Get time series data

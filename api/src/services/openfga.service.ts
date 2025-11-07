@@ -36,7 +36,7 @@ export class OpenFGAService {
   private async sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
- 
+
   /**
    * Update .env file with OpenFGA credentials
    * This ensures the same store and model are used across restarts
@@ -54,10 +54,7 @@ export class OpenFGAService {
 
       // Update or add OPENFGA_STORE_ID
       if (envContent.includes('OPENFGA_STORE_ID=')) {
-        envContent = envContent.replace(
-          /OPENFGA_STORE_ID=.*/g,
-          `OPENFGA_STORE_ID=${storeId}`
-        );
+        envContent = envContent.replace(/OPENFGA_STORE_ID=.*/g, `OPENFGA_STORE_ID=${storeId}`);
       } else {
         envContent += `\nOPENFGA_STORE_ID=${storeId}`;
       }
@@ -85,7 +82,9 @@ export class OpenFGAService {
    */
   private async verifyStoreExists(storeId: string): Promise<boolean> {
     try {
-      const response = await fetch(`${process.env.OPENFGA_API_URL || 'http://localhost:8080'}/stores/${storeId}`);
+      const response = await fetch(
+        `${process.env.OPENFGA_API_URL || 'http://localhost:8080'}/stores/${storeId}`
+      );
       return response.ok;
     } catch (error) {
       console.warn(`[OpenFGA] Failed to verify store ${storeId}:`, error);
@@ -98,7 +97,9 @@ export class OpenFGAService {
    */
   private async verifyAuthorizationModelExists(storeId: string, modelId: string): Promise<boolean> {
     try {
-      const response = await fetch(`${process.env.OPENFGA_API_URL || 'http://localhost:8080'}/stores/${storeId}/authorization-models/${modelId}`);
+      const response = await fetch(
+        `${process.env.OPENFGA_API_URL || 'http://localhost:8080'}/stores/${storeId}/authorization-models/${modelId}`
+      );
       return response.ok;
     } catch (error) {
       console.warn(`[OpenFGA] Failed to verify authorization model ${modelId}:`, error);
@@ -136,7 +137,9 @@ export class OpenFGAService {
           const storeExists = await this.verifyStoreExists(this.storeId);
 
           if (!storeExists) {
-            console.warn(`[OpenFGA] Cached store ID ${this.storeId} does not exist - creating new store`);
+            console.warn(
+              `[OpenFGA] Cached store ID ${this.storeId} does not exist - creating new store`
+            );
             this.storeId = null;
             needsPersistence = true;
           } else {
@@ -169,8 +172,13 @@ export class OpenFGAService {
 
         // Step 3: Verify and create authorization model if needed
         if (this.authorizationModelId) {
-          console.log(`[OpenFGA] Verifying cached authorization model ID: ${this.authorizationModelId}`);
-          const modelExists = await this.verifyAuthorizationModelExists(this.storeId, this.authorizationModelId);
+          console.log(
+            `[OpenFGA] Verifying cached authorization model ID: ${this.authorizationModelId}`
+          );
+          const modelExists = await this.verifyAuthorizationModelExists(
+            this.storeId,
+            this.authorizationModelId
+          );
 
           if (!modelExists) {
             console.warn(
@@ -179,7 +187,9 @@ export class OpenFGAService {
             this.authorizationModelId = null;
             needsPersistence = true;
           } else {
-            console.log(`[OpenFGA] Verified authorization model exists: ${this.authorizationModelId}`);
+            console.log(
+              `[OpenFGA] Verified authorization model exists: ${this.authorizationModelId}`
+            );
           }
         }
 
@@ -261,7 +271,12 @@ export class OpenFGAService {
   /**
    * Check if user can perform action on resource
    */
-  async can(userId: string, resourceType: string, resourceId: string, action: string): Promise<boolean> {
+  async can(
+    userId: string,
+    resourceType: string,
+    resourceId: string,
+    action: string
+  ): Promise<boolean> {
     if (!this.initialized) {
       await this.initialize();
     }
@@ -299,7 +314,11 @@ export class OpenFGAService {
    * Get user's role for a resource (from OpenFGA)
    * Returns the highest privilege role the user has for the resource
    */
-  async getUserRoleForResource(userId: string, resourceType: string, resourceId: string): Promise<string | null> {
+  async getUserRoleForResource(
+    userId: string,
+    resourceType: string,
+    resourceId: string
+  ): Promise<string | null> {
     if (!this.initialized) {
       await this.initialize();
     }
@@ -331,7 +350,11 @@ export class OpenFGAService {
    * Get all roles for a specific user on a resource (from OpenFGA)
    * Returns all roles the user has on the resource as an array
    */
-  async getUserRolesForResource(userId: string, resourceType: string, resourceId: string): Promise<string[]> {
+  async getUserRolesForResource(
+    userId: string,
+    resourceType: string,
+    resourceId: string
+  ): Promise<string[]> {
     if (!this.initialized) {
       await this.initialize();
     }
@@ -364,7 +387,10 @@ export class OpenFGAService {
    * Get all users with their roles for a resource (from OpenFGA)
    * This queries OpenFGA to find all users with any role on the resource
    */
-  async getRolesForResource(resourceType: string, resourceId: string): Promise<{ userId: string; role: string }[]> {
+  async getRolesForResource(
+    resourceType: string,
+    resourceId: string
+  ): Promise<{ userId: string; role: string }[]> {
     if (!this.initialized) {
       await this.initialize();
     }
@@ -411,7 +437,11 @@ export class OpenFGAService {
    * Get all resource IDs user has access to for a given action (from OpenFGA)
    * This uses OpenFGA's listObjects API to efficiently find all accessible resources
    */
-  async getAccessibleResourceIds(userId: string, resourceType: string, action: string): Promise<string[]> {
+  async getAccessibleResourceIds(
+    userId: string,
+    resourceType: string,
+    action: string
+  ): Promise<string[]> {
     if (!this.initialized) {
       await this.initialize();
     }
@@ -427,10 +457,12 @@ export class OpenFGAService {
       });
 
       // Extract IDs from the object references (format: "type:id")
-      return response.objects?.map((obj) => {
-        const parts = obj.split(':');
-        return parts.length > 1 ? parts.slice(1).join(':') : obj;
-      }) || [];
+      return (
+        response.objects?.map((obj) => {
+          const parts = obj.split(':');
+          return parts.length > 1 ? parts.slice(1).join(':') : obj;
+        }) || []
+      );
     } catch (error) {
       console.error('Failed to list accessible resources:', error);
       return [];
@@ -450,7 +482,12 @@ export class OpenFGAService {
    * The delete and write operations are separated to handle cases where tuples
    * might not exist (e.g., due to race conditions or computed vs direct tuples).
    */
-  async assignRole(userId: string, resourceType: string, resourceId: string, role: string): Promise<void> {
+  async assignRole(
+    userId: string,
+    resourceType: string,
+    resourceId: string,
+    role: string
+  ): Promise<void> {
     if (!this.initialized) {
       await this.initialize();
     }
@@ -464,7 +501,9 @@ export class OpenFGAService {
     }
 
     try {
-      console.log(`[OpenFGA] Assigning role "${role}" to user:${userId} on ${fgaType}:${resourceId}`);
+      console.log(
+        `[OpenFGA] Assigning role "${role}" to user:${userId} on ${fgaType}:${resourceId}`
+      );
 
       // Step 1: Read current state - get all existing role tuples for this user on this resource
       const existingTuples = await this.client.read({
@@ -489,7 +528,9 @@ export class OpenFGAService {
 
       // Step 2: Check if the desired role already exists as the only role
       if (existingRoles.has(role) && existingRoles.size === 1) {
-        console.log(`[OpenFGA] User already has exactly role "${role}" - operation is idempotent, no changes needed`);
+        console.log(
+          `[OpenFGA] User already has exactly role "${role}" - operation is idempotent, no changes needed`
+        );
         return; // Idempotent - already in desired state
       }
 
@@ -498,7 +539,9 @@ export class OpenFGAService {
       const rolesToDelete = allRoles.filter((r) => r !== role && existingRoles.has(r));
 
       if (rolesToDelete.length > 0) {
-        console.log(`[OpenFGA] Removing existing roles from user:${userId}: ${rolesToDelete.join(', ')}`);
+        console.log(
+          `[OpenFGA] Removing existing roles from user:${userId}: ${rolesToDelete.join(', ')}`
+        );
 
         // Delete each old role individually with error handling
         for (const oldRole of rolesToDelete) {
@@ -518,7 +561,9 @@ export class OpenFGAService {
             // or if the tuple was computed rather than direct
             const errorMessage = deleteError?.message || String(deleteError);
             if (errorMessage.includes('cannot delete a tuple which does not exist')) {
-              console.log(`[OpenFGA] Tuple for role "${oldRole}" already deleted (race condition or computed tuple) - ignoring`);
+              console.log(
+                `[OpenFGA] Tuple for role "${oldRole}" already deleted (race condition or computed tuple) - ignoring`
+              );
             } else {
               // Re-throw other errors
               throw deleteError;
@@ -531,7 +576,9 @@ export class OpenFGAService {
       // IMPORTANT: Always write the role tuple, even if it appeared to exist in the initial read.
       // This ensures the role is a direct tuple, not a computed one, and handles race conditions
       // where the tuple might have been deleted between our read and this write.
-      console.log(`[OpenFGA] Writing role "${role}" tuple for user:${userId} (${existingRoles.has(role) ? 'refreshing' : 'creating'})`);
+      console.log(
+        `[OpenFGA] Writing role "${role}" tuple for user:${userId} (${existingRoles.has(role) ? 'refreshing' : 'creating'})`
+      );
 
       try {
         await this.client.write({
@@ -544,12 +591,16 @@ export class OpenFGAService {
           ],
         });
 
-        console.log(`[OpenFGA] Successfully wrote role "${role}" to user:${userId} on ${fgaType}:${resourceId}`);
+        console.log(
+          `[OpenFGA] Successfully wrote role "${role}" to user:${userId} on ${fgaType}:${resourceId}`
+        );
       } catch (writeError: any) {
         // If the tuple already exists, that's fine - we've achieved our goal
         const errorMessage = writeError?.message || String(writeError);
         if (errorMessage.includes('cannot write a tuple which already exists')) {
-          console.log(`[OpenFGA] Tuple for role "${role}" already exists (concurrent write) - operation is idempotent`);
+          console.log(
+            `[OpenFGA] Tuple for role "${role}" already exists (concurrent write) - operation is idempotent`
+          );
         } else {
           // Re-throw other errors
           throw writeError;
@@ -560,14 +611,22 @@ export class OpenFGAService {
       const finalRoles = await this.getUserRolesForResource(userId, resourceType, resourceId);
 
       if (finalRoles.length !== 1 || finalRoles[0] !== role) {
-        console.error(`[OpenFGA] WARNING: Unexpected final state for user:${userId} on ${fgaType}:${resourceId}. Expected: ["${role}"], Got: ${JSON.stringify(finalRoles)}`);
-        throw new Error(`Failed to assign role properly. Expected single role "${role}", but found: ${JSON.stringify(finalRoles)}`);
+        console.error(
+          `[OpenFGA] WARNING: Unexpected final state for user:${userId} on ${fgaType}:${resourceId}. Expected: ["${role}"], Got: ${JSON.stringify(finalRoles)}`
+        );
+        throw new Error(
+          `Failed to assign role properly. Expected single role "${role}", but found: ${JSON.stringify(finalRoles)}`
+        );
       }
 
-      console.log(`[OpenFGA] Verified: user:${userId} has exactly role "${role}" on ${fgaType}:${resourceId}`);
-
+      console.log(
+        `[OpenFGA] Verified: user:${userId} has exactly role "${role}" on ${fgaType}:${resourceId}`
+      );
     } catch (error) {
-      console.error(`[OpenFGA] Failed to assign role "${role}" to user:${userId} on ${fgaType}:${resourceId}:`, error);
+      console.error(
+        `[OpenFGA] Failed to assign role "${role}" to user:${userId} on ${fgaType}:${resourceId}:`,
+        error
+      );
       throw error;
     }
   }
@@ -596,19 +655,40 @@ export class OpenFGAService {
    * Remove all role tuples for a user on a resource
    * Helper method to clean up before reassigning roles
    */
-  private async removeRoleTuplesFromOpenFGA(userId: string, fgaType: string, resourceId: string): Promise<void> {
+  private async removeRoleTuplesFromOpenFGA(
+    userId: string,
+    fgaType: string,
+    resourceId: string
+  ): Promise<void> {
     const roles = ['admin', 'member', 'reader'];
-    const deletes = roles.map((role) => ({
-      user: `user:${userId}`,
-      relation: role,
-      object: `${fgaType}:${resourceId}`,
-    }));
 
-    try {
-      await this.client.write({ deletes });
-    } catch (error) {
-      // Ignore errors - tuples might not exist
-      console.debug('No existing tuples to delete:', error);
+    // Delete each role individually with error handling to avoid batch failures
+    for (const role of roles) {
+      try {
+        await this.client.write({
+          deletes: [
+            {
+              user: `user:${userId}`,
+              relation: role,
+              object: `${fgaType}:${resourceId}`,
+            },
+          ],
+        });
+        console.log(
+          `[OpenFGA] Successfully removed role "${role}" from user:${userId} on ${fgaType}:${resourceId}`
+        );
+      } catch (error: any) {
+        // Ignore "tuple doesn't exist" errors - this is expected when removing roles
+        const errorMessage = error?.message || String(error);
+        if (errorMessage.includes('cannot delete a tuple which does not exist')) {
+          console.debug(
+            `[OpenFGA] Tuple for role "${role}" doesn't exist (already deleted or never created) - ignoring`
+          );
+        } else {
+          // Re-throw other errors
+          throw error;
+        }
+      }
     }
   }
 
@@ -864,11 +944,7 @@ export class OpenFGAService {
    *
    * Direct check method for simple permission queries.
    */
-  async check(params: {
-    user: string;
-    relation: string;
-    object: string;
-  }): Promise<boolean> {
+  async check(params: { user: string; relation: string; object: string }): Promise<boolean> {
     if (!this.initialized) {
       await this.initialize();
     }

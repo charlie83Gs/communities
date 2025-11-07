@@ -55,10 +55,7 @@ export class ItemsRepository {
    * Find item by ID
    */
   async findById(id: string) {
-    const [item] = await db
-      .select()
-      .from(items)
-      .where(eq(items.id, id));
+    const [item] = await db.select().from(items).where(eq(items.id, id));
     return item;
   }
 
@@ -121,23 +118,11 @@ export class ItemsRepository {
   /**
    * Search items by name or description
    */
-  async search(
-    communityId: string,
-    query?: string,
-    kind?: 'object' | 'service'
-  ) {
-    const conditions = [
-      eq(items.communityId, communityId),
-      isNull(items.deletedAt),
-    ];
+  async search(communityId: string, query?: string, kind?: 'object' | 'service') {
+    const conditions = [eq(items.communityId, communityId), isNull(items.deletedAt)];
 
     if (query) {
-      conditions.push(
-        or(
-          ilike(items.name, `%${query}%`),
-          ilike(items.description, `%${query}%`)
-        )!
-      );
+      conditions.push(or(ilike(items.name, `%${query}%`), ilike(items.description, `%${query}%`))!);
     }
 
     if (kind) {
@@ -189,12 +174,7 @@ export class ItemsRepository {
     const [result] = await db
       .select({ count: sql<number>`count(*)::int` })
       .from(wealth)
-      .where(
-        and(
-          eq(wealth.itemId, itemId),
-          eq(wealth.status, 'active')
-        )
-      );
+      .where(and(eq(wealth.itemId, itemId), eq(wealth.status, 'active')));
 
     return result.count > 0;
   }

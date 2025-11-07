@@ -304,11 +304,13 @@ export class TrustSyncService {
         user: string;
         relation: string;
         object: string;
-      }> = [{
-        user: `council:${councilId}`,
-        relation: `trust_level_${clampedScore}`,
-        object: `council:${councilId}`,
-      }];
+      }> = [
+        {
+          user: `council:${councilId}`,
+          relation: `trust_level_${clampedScore}`,
+          object: `council:${councilId}`,
+        },
+      ];
 
       await openFGAService.batchWrite([...writes, ...councilWrites], deletes);
 
@@ -316,10 +318,7 @@ export class TrustSyncService {
         `[TrustSync] Synced council trust score for ${councilId} in community ${communityId}: ${clampedScore}`
       );
     } catch (error) {
-      logger.error(
-        `[TrustSync] Failed to sync council trust score for ${councilId}:`,
-        error
-      );
+      logger.error(`[TrustSync] Failed to sync council trust score for ${councilId}:`, error);
       throw error;
     }
   }

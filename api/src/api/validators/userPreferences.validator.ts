@@ -6,6 +6,9 @@ export const updatePreferencesSchema = z.object({
     displayName: z.string().min(1).max(255).optional(),
     description: z.string().optional(),
     profileImage: z.string().optional(),
+    country: z.string().length(2).optional(),
+    stateProvince: z.string().max(100).optional(),
+    city: z.string().max(100).optional(),
   }),
 });
 

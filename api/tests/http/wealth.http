@@ -108,31 +108,31 @@ Content-Type: application/json
   "message": "I'd like 2 units",
   "unitsRequested": 2
 }
- 
+
 ### List requests for share
 GET {{baseUrl}}/wealth/{{shareId}}/requests
 Authorization: {{auth}}
- 
+
 ### List my requests across all communities
 GET {{baseUrl}}/wealth/requests/me
 Authorization: {{auth}}
- 
+
 ### List my requests filtered by statuses (comma-separated)
 GET {{baseUrl}}/wealth/requests/me?statuses=pending,accepted
 Authorization: {{auth}}
- 
+
 ### Accept request (owner only)
 POST {{baseUrl}}/wealth/{{shareId}}/requests/{{requestId}}/accept
 Authorization: {{auth}}
- 
+
 ### Reject request (owner only)
 POST {{baseUrl}}/wealth/{{shareId}}/requests/{{requestId}}/reject
 Authorization: {{auth}}
- 
+
 ### Cancel request (requester or owner)
 POST {{baseUrl}}/wealth/{{shareId}}/requests/{{requestId}}/cancel
 Authorization: {{auth}}
- 
+
 ### Negative - unauthenticated list
 GET {{baseUrl}}/wealth
 

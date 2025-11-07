@@ -22,19 +22,21 @@ export const keycloakConfig: KeycloakConfig = {
   realm: process.env.KEYCLOAK_REALM || 'share-app',
   clientId: process.env.KEYCLOAK_CLIENT_ID || 'share-app-backend',
   clientSecret: process.env.KEYCLOAK_CLIENT_SECRET || '',
-  jwksUri: process.env.KEYCLOAK_JWKS_URI ||
+  jwksUri:
+    process.env.KEYCLOAK_JWKS_URI ||
     'http://localhost:8081/realms/share-app/protocol/openid-connect/certs',
-  issuer: process.env.KEYCLOAK_ISSUER ||
-    'http://localhost:8081/realms/share-app',
+  issuer: process.env.KEYCLOAK_ISSUER || 'http://localhost:8081/realms/share-app',
   adminUrl: `${process.env.KEYCLOAK_URL || 'http://localhost:8081'}/admin/realms/${process.env.KEYCLOAK_REALM || 'share-app'}`,
   // Defaults for Admin API service account: prefer using the application realm
   adminRealm: process.env.KEYCLOAK_ADMIN_REALM || process.env.KEYCLOAK_REALM || 'share-app',
-  adminClientId: process.env.KEYCLOAK_ADMIN_CLIENT_ID || process.env.KEYCLOAK_CLIENT_ID || 'share-app-backend',
-  adminClientSecret: process.env.KEYCLOAK_ADMIN_CLIENT_SECRET || process.env.KEYCLOAK_CLIENT_SECRET || '',
+  adminClientId:
+    process.env.KEYCLOAK_ADMIN_CLIENT_ID || process.env.KEYCLOAK_CLIENT_ID || 'share-app-backend',
+  adminClientSecret:
+    process.env.KEYCLOAK_ADMIN_CLIENT_SECRET || process.env.KEYCLOAK_CLIENT_SECRET || '',
   // Accept tokens issued for any of these audiences (comma-separated)
   allowedAudiences: (process.env.KEYCLOAK_ALLOWED_AUDIENCES || '')
     .split(',')
-    .map(s => s.trim())
+    .map((s) => s.trim())
     .filter(Boolean),
 };
 
@@ -63,4 +65,3 @@ export const getSigningKey = (header: any): Promise<string> => {
     });
   });
 };
-

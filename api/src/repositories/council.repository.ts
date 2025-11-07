@@ -27,10 +27,7 @@ export class CouncilRepository {
    * Create a new council
    */
   async create(data: CreateCouncilDto) {
-    const [council] = await db
-      .insert(councils)
-      .values(data)
-      .returning();
+    const [council] = await db.insert(councils).values(data).returning();
 
     // Initialize trust score for the council
     await db.insert(councilTrustScores).values({
@@ -76,10 +73,7 @@ export class CouncilRepository {
       })
       .from(councils)
       .leftJoin(councilTrustScores, eq(councils.id, councilTrustScores.councilId))
-      .where(and(
-        eq(councils.communityId, communityId),
-        isNull(councils.deletedAt)
-      ))
+      .where(and(eq(councils.communityId, communityId), isNull(councils.deletedAt)))
       .limit(limit)
       .offset(offset);
 
@@ -104,13 +98,10 @@ export class CouncilRepository {
     const [{ count: total }] = await db
       .select({ count: count() })
       .from(councils)
-      .where(and(
-        eq(councils.communityId, communityId),
-        isNull(councils.deletedAt)
-      ));
+      .where(and(eq(councils.communityId, communityId), isNull(councils.deletedAt)));
 
     return {
-      councils: results.map(r => ({
+      councils: results.map((r) => ({
         ...r.council,
         trustScore: r.trustScore ?? 0,
       })),
@@ -148,10 +139,7 @@ export class CouncilRepository {
    * Add a manager to a council
    */
   async addManager(councilId: string, userId: string) {
-    const [manager] = await db
-      .insert(councilManagers)
-      .values({ councilId, userId })
-      .returning();
+    const [manager] = await db.insert(councilManagers).values({ councilId, userId }).returning();
 
     return manager;
   }
@@ -162,10 +150,7 @@ export class CouncilRepository {
   async removeManager(councilId: string, userId: string) {
     const [removed] = await db
       .delete(councilManagers)
-      .where(and(
-        eq(councilManagers.councilId, councilId),
-        eq(councilManagers.userId, userId)
-      ))
+      .where(and(eq(councilManagers.councilId, councilId), eq(councilManagers.userId, userId)))
       .returning();
 
     return removed;
@@ -175,10 +160,7 @@ export class CouncilRepository {
    * Get all managers for a council
    */
   async getManagers(councilId: string) {
-    return await db
-      .select()
-      .from(councilManagers)
-      .where(eq(councilManagers.councilId, councilId));
+    return await db.select().from(councilManagers).where(eq(councilManagers.councilId, councilId));
   }
 
   /**
@@ -188,10 +170,7 @@ export class CouncilRepository {
     const [manager] = await db
       .select()
       .from(councilManagers)
-      .where(and(
-        eq(councilManagers.councilId, councilId),
-        eq(councilManagers.userId, userId)
-      ));
+      .where(and(eq(councilManagers.councilId, councilId), eq(councilManagers.userId, userId)));
 
     return !!manager;
   }
@@ -215,11 +194,13 @@ export class CouncilRepository {
     const [award] = await db
       .select()
       .from(councilTrustAwards)
-      .where(and(
-        eq(councilTrustAwards.councilId, councilId),
-        eq(councilTrustAwards.userId, userId),
-        isNull(councilTrustAwards.removedAt)
-      ));
+      .where(
+        and(
+          eq(councilTrustAwards.councilId, councilId),
+          eq(councilTrustAwards.userId, userId),
+          isNull(councilTrustAwards.removedAt)
+        )
+      );
 
     return !!award;
   }
@@ -232,10 +213,9 @@ export class CouncilRepository {
     const [existing] = await db
       .select()
       .from(councilTrustAwards)
-      .where(and(
-        eq(councilTrustAwards.councilId, councilId),
-        eq(councilTrustAwards.userId, userId)
-      ));
+      .where(
+        and(eq(councilTrustAwards.councilId, councilId), eq(councilTrustAwards.userId, userId))
+      );
 
     let award;
     if (existing) {
@@ -243,10 +223,9 @@ export class CouncilRepository {
       [award] = await db
         .update(councilTrustAwards)
         .set({ removedAt: null, awardedAt: new Date() })
-        .where(and(
-          eq(councilTrustAwards.councilId, councilId),
-          eq(councilTrustAwards.userId, userId)
-        ))
+        .where(
+          and(eq(councilTrustAwards.councilId, councilId), eq(councilTrustAwards.userId, userId))
+        )
         .returning();
     } else {
       // Create new award
@@ -276,11 +255,13 @@ export class CouncilRepository {
     const [removed] = await db
       .update(councilTrustAwards)
       .set({ removedAt: new Date() })
-      .where(and(
-        eq(councilTrustAwards.councilId, councilId),
-        eq(councilTrustAwards.userId, userId),
-        isNull(councilTrustAwards.removedAt)
-      ))
+      .where(
+        and(
+          eq(councilTrustAwards.councilId, councilId),
+          eq(councilTrustAwards.userId, userId),
+          isNull(councilTrustAwards.removedAt)
+        )
+      )
       .returning();
 
     // Recalculate trust score
@@ -303,10 +284,9 @@ export class CouncilRepository {
     const [{ count: trustCount }] = await db
       .select({ count: count() })
       .from(councilTrustAwards)
-      .where(and(
-        eq(councilTrustAwards.councilId, councilId),
-        isNull(councilTrustAwards.removedAt)
-      ));
+      .where(
+        and(eq(councilTrustAwards.councilId, councilId), isNull(councilTrustAwards.removedAt))
+      );
 
     await db
       .update(councilTrustScores)
@@ -329,10 +309,7 @@ export class CouncilRepository {
   /**
    * Get council transactions
    */
-  async getTransactions(
-    councilId: string,
-    options: { page?: number; limit?: number } = {}
-  ) {
+  async getTransactions(councilId: string, options: { page?: number; limit?: number } = {}) {
     const { page = 1, limit = 20 } = options;
     const offset = (page - 1) * limit;
 

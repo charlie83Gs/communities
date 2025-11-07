@@ -16,10 +16,7 @@ export class TrustLevelRepository {
   }
 
   async findById(id: string): Promise<TrustLevel | undefined> {
-    const [trustLevel] = await db
-      .select()
-      .from(trustLevels)
-      .where(eq(trustLevels.id, id));
+    const [trustLevel] = await db.select().from(trustLevels).where(eq(trustLevels.id, id));
     return trustLevel as TrustLevel | undefined;
   }
 
@@ -53,10 +50,7 @@ export class TrustLevelRepository {
   }
 
   async delete(id: string): Promise<TrustLevel | undefined> {
-    const [deleted] = await db
-      .delete(trustLevels)
-      .where(eq(trustLevels.id, id))
-      .returning();
+    const [deleted] = await db.delete(trustLevels).where(eq(trustLevels.id, id)).returning();
     return deleted as TrustLevel | undefined;
   }
 
@@ -81,9 +75,7 @@ export class TrustLevelRepository {
   }
 
   async deleteAllForCommunity(communityId: string): Promise<number> {
-    const result = await db
-      .delete(trustLevels)
-      .where(eq(trustLevels.communityId, communityId));
+    const result = await db.delete(trustLevels).where(eq(trustLevels.communityId, communityId));
     return result.length;
   }
 }

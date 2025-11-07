@@ -311,7 +311,9 @@ export const authorizationModel = {
           trust_level_99: { directly_related_user_types: [{ type: 'user' }] },
           trust_level_100: { directly_related_user_types: [{ type: 'user' }] },
           poll_creator: { directly_related_user_types: [{ type: 'user' }] },
-          dispute_handler: { directly_related_user_types: [{ type: 'user' }, { type: 'council' }] },
+          dispute_handler: {
+            directly_related_user_types: [{ type: 'user' }, { type: 'council' }],
+          },
           forum_manager: { directly_related_user_types: [{ type: 'user' }] },
           item_manager: { directly_related_user_types: [{ type: 'user' }] },
         },
@@ -356,7 +358,9 @@ export const authorizationModel = {
       metadata: {
         relations: {
           owner: { directly_related_user_types: [{ type: 'user' }] },
-          parent_community: { directly_related_user_types: [{ type: 'community' }] },
+          parent_community: {
+            directly_related_user_types: [{ type: 'community' }],
+          },
         },
       },
     },
@@ -412,24 +416,54 @@ export const authorizationModel = {
       },
       metadata: {
         relations: {
-          parent_community: { directly_related_user_types: [{ type: 'community' }] },
+          parent_community: {
+            directly_related_user_types: [{ type: 'community' }],
+          },
           member: { directly_related_user_types: [{ type: 'user' }] },
           trust_level_0: { directly_related_user_types: [{ type: 'council' }] },
           trust_level_5: { directly_related_user_types: [{ type: 'council' }] },
-          trust_level_10: { directly_related_user_types: [{ type: 'council' }] },
-          trust_level_15: { directly_related_user_types: [{ type: 'council' }] },
-          trust_level_20: { directly_related_user_types: [{ type: 'council' }] },
-          trust_level_25: { directly_related_user_types: [{ type: 'council' }] },
-          trust_level_30: { directly_related_user_types: [{ type: 'council' }] },
-          trust_level_35: { directly_related_user_types: [{ type: 'council' }] },
-          trust_level_40: { directly_related_user_types: [{ type: 'council' }] },
-          trust_level_45: { directly_related_user_types: [{ type: 'council' }] },
-          trust_level_50: { directly_related_user_types: [{ type: 'council' }] },
-          trust_level_60: { directly_related_user_types: [{ type: 'council' }] },
-          trust_level_70: { directly_related_user_types: [{ type: 'council' }] },
-          trust_level_80: { directly_related_user_types: [{ type: 'council' }] },
-          trust_level_90: { directly_related_user_types: [{ type: 'council' }] },
-          trust_level_100: { directly_related_user_types: [{ type: 'council' }] },
+          trust_level_10: {
+            directly_related_user_types: [{ type: 'council' }],
+          },
+          trust_level_15: {
+            directly_related_user_types: [{ type: 'council' }],
+          },
+          trust_level_20: {
+            directly_related_user_types: [{ type: 'council' }],
+          },
+          trust_level_25: {
+            directly_related_user_types: [{ type: 'council' }],
+          },
+          trust_level_30: {
+            directly_related_user_types: [{ type: 'council' }],
+          },
+          trust_level_35: {
+            directly_related_user_types: [{ type: 'council' }],
+          },
+          trust_level_40: {
+            directly_related_user_types: [{ type: 'council' }],
+          },
+          trust_level_45: {
+            directly_related_user_types: [{ type: 'council' }],
+          },
+          trust_level_50: {
+            directly_related_user_types: [{ type: 'council' }],
+          },
+          trust_level_60: {
+            directly_related_user_types: [{ type: 'council' }],
+          },
+          trust_level_70: {
+            directly_related_user_types: [{ type: 'council' }],
+          },
+          trust_level_80: {
+            directly_related_user_types: [{ type: 'council' }],
+          },
+          trust_level_90: {
+            directly_related_user_types: [{ type: 'council' }],
+          },
+          trust_level_100: {
+            directly_related_user_types: [{ type: 'council' }],
+          },
         },
       },
     },
@@ -474,8 +508,12 @@ export const authorizationModel = {
       },
       metadata: {
         relations: {
-          parent_community: { directly_related_user_types: [{ type: 'community' }] },
-          parent_council: { directly_related_user_types: [{ type: 'council' }] },
+          parent_community: {
+            directly_related_user_types: [{ type: 'community' }],
+          },
+          parent_council: {
+            directly_related_user_types: [{ type: 'council' }],
+          },
           manager: { directly_related_user_types: [{ type: 'user' }] },
         },
       },
@@ -499,7 +537,9 @@ export const authorizationModel = {
       metadata: {
         relations: {
           parent_wealth: { directly_related_user_types: [{ type: 'wealth' }] },
-          parent_community: { directly_related_user_types: [{ type: 'community' }] },
+          parent_community: {
+            directly_related_user_types: [{ type: 'community' }],
+          },
         },
       },
     },
@@ -529,7 +569,9 @@ export const authorizationModel = {
       },
       metadata: {
         relations: {
-          parent_community: { directly_related_user_types: [{ type: 'community' }] },
+          parent_community: {
+            directly_related_user_types: [{ type: 'community' }],
+          },
           grants_admin: { directly_related_user_types: [{ type: 'user' }] },
           grants_member: { directly_related_user_types: [{ type: 'user' }] },
           grants_reader: { directly_related_user_types: [{ type: 'user' }] },
@@ -559,7 +601,9 @@ export const authorizationModel = {
       },
       metadata: {
         relations: {
-          parent_community: { directly_related_user_types: [{ type: 'community' }] },
+          parent_community: {
+            directly_related_user_types: [{ type: 'community' }],
+          },
         },
       },
     },
@@ -603,7 +647,9 @@ export const authorizationModel = {
       },
       metadata: {
         relations: {
-          parent_community: { directly_related_user_types: [{ type: 'community' }] },
+          parent_community: {
+            directly_related_user_types: [{ type: 'community' }],
+          },
           author: { directly_related_user_types: [{ type: 'user' }] },
         },
       },
@@ -643,8 +689,12 @@ export const authorizationModel = {
       },
       metadata: {
         relations: {
-          parent_community: { directly_related_user_types: [{ type: 'community' }] },
-          parent_thread: { directly_related_user_types: [{ type: 'forum_thread' }] },
+          parent_community: {
+            directly_related_user_types: [{ type: 'community' }],
+          },
+          parent_thread: {
+            directly_related_user_types: [{ type: 'forum_thread' }],
+          },
           author: { directly_related_user_types: [{ type: 'user' }] },
         },
       },

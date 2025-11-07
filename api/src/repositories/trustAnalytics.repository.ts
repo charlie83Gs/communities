@@ -161,12 +161,7 @@ export class TrustAnalyticsRepository {
         count: sql<number>`COUNT(*)`,
       })
       .from(trustAwards)
-      .where(
-        and(
-          eq(trustAwards.communityId, communityId),
-          eq(trustAwards.toUserId, userId)
-        )
-      );
+      .where(and(eq(trustAwards.communityId, communityId), eq(trustAwards.toUserId, userId)));
 
     // Get admin grant (if exists)
     const [adminGrant] = await db
@@ -175,10 +170,7 @@ export class TrustAnalyticsRepository {
       })
       .from(adminTrustGrants)
       .where(
-        and(
-          eq(adminTrustGrants.communityId, communityId),
-          eq(adminTrustGrants.toUserId, userId)
-        )
+        and(eq(adminTrustGrants.communityId, communityId), eq(adminTrustGrants.toUserId, userId))
       );
 
     const peerPoints = Number(peerCount.count) || 0;

@@ -19,6 +19,9 @@ export class UserPreferencesService {
       email: user.email ?? undefined,
       description: user.description ?? undefined,
       profileImage: user.profileImage ?? undefined,
+      country: user.country ?? undefined,
+      stateProvince: user.stateProvince ?? undefined,
+      city: user.city ?? undefined,
     };
   }
 
@@ -37,6 +40,9 @@ export class UserPreferencesService {
       email: updated.email ?? undefined,
       description: updated.description ?? undefined,
       profileImage: updated.profileImage ?? undefined,
+      country: updated.country ?? undefined,
+      stateProvince: updated.stateProvince ?? undefined,
+      city: updated.city ?? undefined,
     };
   }
 

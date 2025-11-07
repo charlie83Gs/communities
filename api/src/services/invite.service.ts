@@ -1,5 +1,10 @@
 import { randomBytes } from 'crypto';
-import { inviteRepository, type InviteRecord, type UserInviteRecord, type LinkInviteRecord } from '@/repositories/invite.repository';
+import {
+  inviteRepository,
+  type InviteRecord,
+  type UserInviteRecord,
+  type LinkInviteRecord,
+} from '@/repositories/invite.repository';
 import { openFGAService } from './openfga.service';
 import { AppError } from '@/utils/errors';
 import { appUserRepository } from '@/repositories/appUser.repository';
@@ -47,7 +52,9 @@ export class InviteService {
   /**
    * Augment invite with role from OpenFGA metadata
    */
-  private async augmentInviteWithRole<T extends InviteRecord>(invite: T): Promise<T & { role?: string }> {
+  private async augmentInviteWithRole<T extends InviteRecord>(
+    invite: T
+  ): Promise<T & { role?: string }> {
     const role = await openFGAService.getInviteRoleMetadata(invite.id);
     return { ...invite, role: role || undefined };
   }
@@ -55,8 +62,10 @@ export class InviteService {
   /**
    * Augment multiple invites with roles from OpenFGA metadata
    */
-  private async augmentInvitesWithRoles<T extends InviteRecord>(invites: T[]): Promise<Array<T & { role?: string }>> {
-    return Promise.all(invites.map(invite => this.augmentInviteWithRole(invite)));
+  private async augmentInvitesWithRoles<T extends InviteRecord>(
+    invites: T[]
+  ): Promise<Array<T & { role?: string }>> {
+    return Promise.all(invites.map((invite) => this.augmentInviteWithRole(invite)));
   }
 
   /**
@@ -65,7 +74,9 @@ export class InviteService {
    */
 
   async createUserInvite(dto: CreateUserInviteDto, requesterId: string) {
-    console.log(`[InviteService] createUserInvite called: communityId=${dto.communityId}, invitedUserId=${dto.invitedUserId}, role=${dto.role}, requesterId=${requesterId}`);
+    console.log(
+      `[InviteService] createUserInvite called: communityId=${dto.communityId}, invitedUserId=${dto.invitedUserId}, role=${dto.role}, requesterId=${requesterId}`
+    );
 
     // Defensive guard: ensure role is provided and valid
     if (!dto.role) {
@@ -79,7 +90,11 @@ export class InviteService {
     await this.assertAdmin(requesterId, dto.communityId);
 
     // Basic guard: prevent self-invite if already has role
-    const existingRole = await openFGAService.getUserRoleForResource(dto.invitedUserId, 'communities', dto.communityId);
+    const existingRole = await openFGAService.getUserRoleForResource(
+      dto.invitedUserId,
+      'communities',
+      dto.communityId
+    );
     if (existingRole === dto.role) {
       throw new AppError('User already has this role in the community', 400);
     }
@@ -98,13 +113,15 @@ export class InviteService {
     const invite = await inviteRepository.createUserInvite({
       communityId: dto.communityId,
       invitedUserId: dto.invitedUserId, // user ID
-      createdBy: requesterId,   // user ID
+      createdBy: requesterId, // user ID
     });
     console.log(`[InviteService] Database invite created with ID: ${invite.id}`);
 
     // Store role metadata in OpenFGA
     try {
-      console.log(`[InviteService] Setting role metadata in OpenFGA for invite ${invite.id}: role=${dto.role}`);
+      console.log(
+        `[InviteService] Setting role metadata in OpenFGA for invite ${invite.id}: role=${dto.role}`
+      );
       await openFGAService.setInviteRoleMetadata(invite.id, dto.role);
     } catch (error) {
       console.error('Failed to set invite role metadata in OpenFGA:', error);
@@ -113,7 +130,13 @@ export class InviteService {
 
     // Create parent_community relationship in OpenFGA for hierarchical permissions
     try {
-      await openFGAService.createRelationship('invites', invite.id, 'parent_community', 'communities', dto.communityId);
+      await openFGAService.createRelationship(
+        'invites',
+        invite.id,
+        'parent_community',
+        'communities',
+        dto.communityId
+      );
     } catch (error) {
       console.error('Failed to create invite->community relationship in OpenFGA:', error);
       // non-fatal
@@ -172,7 +195,13 @@ export class InviteService {
 
     // Create parent_community relationship in OpenFGA for hierarchical permissions
     try {
-      await openFGAService.createRelationship('invites', invite.id, 'parent_community', 'communities', dto.communityId);
+      await openFGAService.createRelationship(
+        'invites',
+        invite.id,
+        'parent_community',
+        'communities',
+        dto.communityId
+      );
     } catch (error) {
       console.error('Failed to create invite->community relationship in OpenFGA:', error);
       // non-fatal

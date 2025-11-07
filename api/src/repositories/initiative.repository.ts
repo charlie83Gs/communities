@@ -17,7 +17,12 @@ export class InitiativeRepository {
   /**
    * Create a new initiative
    */
-  async create(councilId: string, communityId: string, data: CreateInitiativeDto, createdBy: string) {
+  async create(
+    councilId: string,
+    communityId: string,
+    data: CreateInitiativeDto,
+    createdBy: string
+  ) {
     const [initiative] = await db
       .insert(initiatives)
       .values({
@@ -36,10 +41,7 @@ export class InitiativeRepository {
    * Find initiative by ID with vote counts and user's vote
    */
   async findById(id: string, userId?: string) {
-    const [initiative] = await db
-      .select()
-      .from(initiatives)
-      .where(eq(initiatives.id, id));
+    const [initiative] = await db.select().from(initiatives).where(eq(initiatives.id, id));
 
     if (!initiative) {
       return null;
@@ -60,10 +62,7 @@ export class InitiativeRepository {
       const [vote] = await db
         .select()
         .from(initiativeVotes)
-        .where(and(
-          eq(initiativeVotes.initiativeId, id),
-          eq(initiativeVotes.userId, userId)
-        ));
+        .where(and(eq(initiativeVotes.initiativeId, id), eq(initiativeVotes.userId, userId)));
 
       if (vote) {
         userVote = vote.voteType;
@@ -108,7 +107,7 @@ export class InitiativeRepository {
       .offset(offset);
 
     // Get user votes for all initiatives in the list
-    const initiativeIds = initiativesList.map(i => i.initiative.id);
+    const initiativeIds = initiativesList.map((i) => i.initiative.id);
 
     // Only query for user votes if there are initiatives
     let userVoteMap = new Map<string, 'upvote' | 'downvote'>();
@@ -116,14 +115,14 @@ export class InitiativeRepository {
       const userVotes = await db
         .select()
         .from(initiativeVotes)
-        .where(and(
-          sql`${initiativeVotes.initiativeId} = ANY(${initiativeIds})`,
-          eq(initiativeVotes.userId, userId)
-        ));
+        .where(
+          and(
+            sql`${initiativeVotes.initiativeId} = ANY(${initiativeIds})`,
+            eq(initiativeVotes.userId, userId)
+          )
+        );
 
-      userVoteMap = new Map(
-        userVotes.map(v => [v.initiativeId, v.voteType])
-      );
+      userVoteMap = new Map(userVotes.map((v) => [v.initiativeId, v.voteType]));
     }
 
     // Get total count
@@ -133,7 +132,7 @@ export class InitiativeRepository {
       .where(eq(initiatives.councilId, councilId));
 
     return {
-      initiatives: initiativesList.map(i => ({
+      initiatives: initiativesList.map((i) => ({
         ...i.initiative,
         upvotes: Number(i.upvotes ?? 0),
         downvotes: Number(i.downvotes ?? 0),
@@ -160,10 +159,7 @@ export class InitiativeRepository {
    * Delete initiative
    */
   async delete(id: string) {
-    const [deleted] = await db
-      .delete(initiatives)
-      .where(eq(initiatives.id, id))
-      .returning();
+    const [deleted] = await db.delete(initiatives).where(eq(initiatives.id, id)).returning();
 
     return deleted;
   }
@@ -176,20 +172,18 @@ export class InitiativeRepository {
     const [existing] = await db
       .select()
       .from(initiativeVotes)
-      .where(and(
-        eq(initiativeVotes.initiativeId, initiativeId),
-        eq(initiativeVotes.userId, userId)
-      ));
+      .where(
+        and(eq(initiativeVotes.initiativeId, initiativeId), eq(initiativeVotes.userId, userId))
+      );
 
     if (existing) {
       // Update existing vote
       const [updated] = await db
         .update(initiativeVotes)
         .set({ voteType, createdAt: new Date() })
-        .where(and(
-          eq(initiativeVotes.initiativeId, initiativeId),
-          eq(initiativeVotes.userId, userId)
-        ))
+        .where(
+          and(eq(initiativeVotes.initiativeId, initiativeId), eq(initiativeVotes.userId, userId))
+        )
         .returning();
 
       return updated;
@@ -210,10 +204,9 @@ export class InitiativeRepository {
   async removeVote(initiativeId: string, userId: string) {
     const [removed] = await db
       .delete(initiativeVotes)
-      .where(and(
-        eq(initiativeVotes.initiativeId, initiativeId),
-        eq(initiativeVotes.userId, userId)
-      ))
+      .where(
+        and(eq(initiativeVotes.initiativeId, initiativeId), eq(initiativeVotes.userId, userId))
+      )
       .returning();
 
     return removed;
@@ -272,10 +265,7 @@ export class InitiativeRepository {
    * Find report by ID
    */
   async findReportById(id: string) {
-    const [report] = await db
-      .select()
-      .from(initiativeReports)
-      .where(eq(initiativeReports.id, id));
+    const [report] = await db.select().from(initiativeReports).where(eq(initiativeReports.id, id));
 
     return report;
   }
@@ -366,6 +356,52 @@ export class InitiativeRepository {
       comments,
       total: Number(total),
     };
+  }
+
+  /**
+   * Alias methods for backwards compatibility with tests
+   */
+  async getReports(initiativeId: string) {
+    const reports = await db
+      .select()
+      .from(initiativeReports)
+      .where(eq(initiativeReports.initiativeId, initiativeId))
+      .orderBy(desc(initiativeReports.createdAt));
+    return reports;
+  }
+
+  async updateReport(id: string, data: { title?: string; content?: string }) {
+    const [updated] = await db
+      .update(initiativeReports)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(initiativeReports.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteReport(id: string) {
+    const [deleted] = await db
+      .delete(initiativeReports)
+      .where(eq(initiativeReports.id, id))
+      .returning();
+    return deleted;
+  }
+
+  async getComments(initiativeId: string) {
+    const comments = await db
+      .select()
+      .from(initiativeComments)
+      .where(eq(initiativeComments.initiativeId, initiativeId))
+      .orderBy(desc(initiativeComments.createdAt));
+    return comments;
+  }
+
+  async deleteComment(id: string) {
+    const [deleted] = await db
+      .delete(initiativeComments)
+      .where(eq(initiativeComments.id, id))
+      .returning();
+    return deleted;
   }
 }
 

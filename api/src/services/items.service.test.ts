@@ -70,10 +70,10 @@ const mockOpenFGAService = {
 describe('ItemsService', () => {
   beforeEach(() => {
     // Reset all mocks
-    Object.values(mockItemsRepository).forEach(m => m.mockReset());
-    Object.values(mockCommunityMemberRepository).forEach(m => m.mockReset());
-    Object.values(mockCommunityRepository).forEach(m => m.mockReset());
-    Object.values(mockOpenFGAService).forEach(m => m.mockReset());
+    Object.values(mockItemsRepository).forEach((m) => m.mockReset());
+    Object.values(mockCommunityMemberRepository).forEach((m) => m.mockReset());
+    Object.values(mockCommunityRepository).forEach((m) => m.mockReset());
+    Object.values(mockOpenFGAService).forEach((m) => m.mockReset());
 
     // Replace methods with mocks
     (itemsRepository.create as any) = mockItemsRepository.create;
@@ -83,7 +83,8 @@ describe('ItemsService', () => {
     (itemsRepository.search as any) = mockItemsRepository.search;
     (itemsRepository.update as any) = mockItemsRepository.update;
     (itemsRepository.softDelete as any) = mockItemsRepository.softDelete;
-    (itemsRepository.hasActiveWealthReferences as any) = mockItemsRepository.hasActiveWealthReferences;
+    (itemsRepository.hasActiveWealthReferences as any) =
+      mockItemsRepository.hasActiveWealthReferences;
     (itemsRepository.getWealthCount as any) = mockItemsRepository.getWealthCount;
 
     (communityMemberRepository.getUserRole as any) = mockCommunityMemberRepository.getUserRole;
@@ -165,7 +166,10 @@ describe('ItemsService', () => {
 
     it('should list items including deleted when requested', async () => {
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('admin');
-      mockItemsRepository.listByCommunity.mockResolvedValue([mockItem, { ...mockItem, deletedAt: new Date() }]);
+      mockItemsRepository.listByCommunity.mockResolvedValue([
+        mockItem,
+        { ...mockItem, deletedAt: new Date() },
+      ]);
 
       const result = await itemsService.listItems('comm-123', 'user-123', true);
 
@@ -175,17 +179,17 @@ describe('ItemsService', () => {
     it('should throw 403 if user is not a member', async () => {
       mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
 
-      await expect(
-        itemsService.listItems('comm-123', 'user-123', false)
-      ).rejects.toThrow('You must be a member of this community to access items');
+      await expect(itemsService.listItems('comm-123', 'user-123', false)).rejects.toThrow(
+        'You must be a member of this community to access items'
+      );
     });
 
     it('should throw 403 if user is reader only', async () => {
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('reader');
 
-      await expect(
-        itemsService.listItems('comm-123', 'user-123', false)
-      ).rejects.toThrow('You must be a member of this community to access items');
+      await expect(itemsService.listItems('comm-123', 'user-123', false)).rejects.toThrow(
+        'You must be a member of this community to access items'
+      );
     });
   });
 
@@ -203,18 +207,18 @@ describe('ItemsService', () => {
     it('should throw 404 if item not found', async () => {
       mockItemsRepository.findById.mockResolvedValue(null);
 
-      await expect(
-        itemsService.getItemById('item-123', 'user-123')
-      ).rejects.toThrow('Item not found');
+      await expect(itemsService.getItemById('item-123', 'user-123')).rejects.toThrow(
+        'Item not found'
+      );
     });
 
     it('should throw 403 if user is not community member', async () => {
       mockItemsRepository.findById.mockResolvedValue(mockItem);
       mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
 
-      await expect(
-        itemsService.getItemById('item-123', 'user-123')
-      ).rejects.toThrow('You must be a member of this community to access items');
+      await expect(itemsService.getItemById('item-123', 'user-123')).rejects.toThrow(
+        'You must be a member of this community to access items'
+      );
     });
   });
 
@@ -250,18 +254,18 @@ describe('ItemsService', () => {
     it('should throw 404 if community not found', async () => {
       mockCommunityRepository.findById.mockResolvedValue(null);
 
-      await expect(
-        itemsService.createItem(createDto, 'user-123')
-      ).rejects.toThrow('Community not found');
+      await expect(itemsService.createItem(createDto, 'user-123')).rejects.toThrow(
+        'Community not found'
+      );
     });
 
     it('should throw 403 if user is not a member', async () => {
       mockCommunityRepository.findById.mockResolvedValue(mockCommunity);
       mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
 
-      await expect(
-        itemsService.createItem(createDto, 'user-123')
-      ).rejects.toThrow('You must be a member of this community to access items');
+      await expect(itemsService.createItem(createDto, 'user-123')).rejects.toThrow(
+        'You must be a member of this community to access items'
+      );
     });
 
     it('should throw 403 if user lacks permission', async () => {
@@ -270,9 +274,9 @@ describe('ItemsService', () => {
       mockOpenFGAService.check.mockResolvedValue(false);
       mockOpenFGAService.checkTrustLevel.mockResolvedValue(false);
 
-      await expect(
-        itemsService.createItem(createDto, 'user-123')
-      ).rejects.toThrow('You do not have permission to manage items in this community');
+      await expect(itemsService.createItem(createDto, 'user-123')).rejects.toThrow(
+        'You do not have permission to manage items in this community'
+      );
     });
 
     it('should throw 400 if item name already exists (case-insensitive)', async () => {
@@ -281,9 +285,9 @@ describe('ItemsService', () => {
       mockOpenFGAService.check.mockResolvedValue(true);
       mockItemsRepository.findByName.mockResolvedValue(mockItem);
 
-      await expect(
-        itemsService.createItem(createDto, 'user-123')
-      ).rejects.toThrow('An item with the name "Tomatoes" already exists in this community');
+      await expect(itemsService.createItem(createDto, 'user-123')).rejects.toThrow(
+        'An item with the name "Tomatoes" already exists in this community'
+      );
     });
 
     it('should throw 400 if name is empty', async () => {
@@ -315,11 +319,14 @@ describe('ItemsService', () => {
       mockItemsRepository.findByName.mockResolvedValue(null);
       mockItemsRepository.create.mockResolvedValue(mockItem);
 
-      await itemsService.createItem({
-        ...createDto,
-        name: '  Tomatoes  ',
-        description: '  Fresh tomatoes  ',
-      }, 'user-123');
+      await itemsService.createItem(
+        {
+          ...createDto,
+          name: '  Tomatoes  ',
+          description: '  Fresh tomatoes  ',
+        },
+        'user-123'
+      );
 
       expect(mockItemsRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -343,7 +350,10 @@ describe('ItemsService', () => {
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
       mockOpenFGAService.check.mockResolvedValue(true);
       mockItemsRepository.findByName.mockResolvedValue(null);
-      mockItemsRepository.update.mockResolvedValue({ ...mockItem, ...updateDto });
+      mockItemsRepository.update.mockResolvedValue({
+        ...mockItem,
+        ...updateDto,
+      });
 
       const result = await itemsService.updateItem('item-123', updateDto, 'user-123');
 
@@ -359,17 +369,20 @@ describe('ItemsService', () => {
     it('should throw 404 if item not found', async () => {
       mockItemsRepository.findById.mockResolvedValue(null);
 
-      await expect(
-        itemsService.updateItem('item-123', updateDto, 'user-123')
-      ).rejects.toThrow('Item not found');
+      await expect(itemsService.updateItem('item-123', updateDto, 'user-123')).rejects.toThrow(
+        'Item not found'
+      );
     });
 
     it('should throw 400 if item is deleted', async () => {
-      mockItemsRepository.findById.mockResolvedValue({ ...mockItem, deletedAt: new Date() });
+      mockItemsRepository.findById.mockResolvedValue({
+        ...mockItem,
+        deletedAt: new Date(),
+      });
 
-      await expect(
-        itemsService.updateItem('item-123', updateDto, 'user-123')
-      ).rejects.toThrow('Cannot update a deleted item');
+      await expect(itemsService.updateItem('item-123', updateDto, 'user-123')).rejects.toThrow(
+        'Cannot update a deleted item'
+      );
     });
 
     it('should throw 403 if user lacks permission', async () => {
@@ -378,16 +391,19 @@ describe('ItemsService', () => {
       mockOpenFGAService.check.mockResolvedValue(false);
       mockOpenFGAService.checkTrustLevel.mockResolvedValue(false);
 
-      await expect(
-        itemsService.updateItem('item-123', updateDto, 'user-123')
-      ).rejects.toThrow('You do not have permission to manage items in this community');
+      await expect(itemsService.updateItem('item-123', updateDto, 'user-123')).rejects.toThrow(
+        'You do not have permission to manage items in this community'
+      );
     });
 
     it('should check name uniqueness when name is changed', async () => {
       mockItemsRepository.findById.mockResolvedValue(mockItem);
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
       mockOpenFGAService.check.mockResolvedValue(true);
-      mockItemsRepository.findByName.mockResolvedValue({ ...mockItem, id: 'other-item' });
+      mockItemsRepository.findByName.mockResolvedValue({
+        ...mockItem,
+        id: 'other-item',
+      });
 
       await expect(
         itemsService.updateItem('item-123', { name: 'Existing Name' }, 'user-123')
@@ -412,7 +428,11 @@ describe('ItemsService', () => {
       mockOpenFGAService.check.mockResolvedValue(true);
       mockItemsRepository.update.mockResolvedValue(mockItem);
 
-      await itemsService.updateItem('item-123', { description: 'New description only' }, 'user-123');
+      await itemsService.updateItem(
+        'item-123',
+        { description: 'New description only' },
+        'user-123'
+      );
 
       expect(mockItemsRepository.update).toHaveBeenCalledWith('item-123', {
         name: undefined,
@@ -428,9 +448,9 @@ describe('ItemsService', () => {
       mockOpenFGAService.check.mockResolvedValue(true);
       mockItemsRepository.update.mockResolvedValue(null);
 
-      await expect(
-        itemsService.updateItem('item-123', updateDto, 'user-123')
-      ).rejects.toThrow('Failed to update item');
+      await expect(itemsService.updateItem('item-123', updateDto, 'user-123')).rejects.toThrow(
+        'Failed to update item'
+      );
     });
   });
 
@@ -440,7 +460,10 @@ describe('ItemsService', () => {
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
       mockOpenFGAService.check.mockResolvedValue(true);
       mockItemsRepository.hasActiveWealthReferences.mockResolvedValue(false);
-      mockItemsRepository.softDelete.mockResolvedValue({ ...mockItem, deletedAt: new Date() });
+      mockItemsRepository.softDelete.mockResolvedValue({
+        ...mockItem,
+        deletedAt: new Date(),
+      });
 
       await itemsService.deleteItem('item-123', 'user-123');
 
@@ -450,17 +473,20 @@ describe('ItemsService', () => {
     it('should throw 404 if item not found', async () => {
       mockItemsRepository.findById.mockResolvedValue(null);
 
-      await expect(
-        itemsService.deleteItem('item-123', 'user-123')
-      ).rejects.toThrow('Item not found');
+      await expect(itemsService.deleteItem('item-123', 'user-123')).rejects.toThrow(
+        'Item not found'
+      );
     });
 
     it('should throw 400 if item already deleted', async () => {
-      mockItemsRepository.findById.mockResolvedValue({ ...mockItem, deletedAt: new Date() });
+      mockItemsRepository.findById.mockResolvedValue({
+        ...mockItem,
+        deletedAt: new Date(),
+      });
 
-      await expect(
-        itemsService.deleteItem('item-123', 'user-123')
-      ).rejects.toThrow('Item is already deleted');
+      await expect(itemsService.deleteItem('item-123', 'user-123')).rejects.toThrow(
+        'Item is already deleted'
+      );
     });
 
     it('should throw 403 if user lacks permission', async () => {
@@ -469,9 +495,9 @@ describe('ItemsService', () => {
       mockOpenFGAService.check.mockResolvedValue(false);
       mockOpenFGAService.checkTrustLevel.mockResolvedValue(false);
 
-      await expect(
-        itemsService.deleteItem('item-123', 'user-123')
-      ).rejects.toThrow('You do not have permission to manage items in this community');
+      await expect(itemsService.deleteItem('item-123', 'user-123')).rejects.toThrow(
+        'You do not have permission to manage items in this community'
+      );
     });
 
     it('should throw 400 if item is default', async () => {
@@ -479,9 +505,9 @@ describe('ItemsService', () => {
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
       mockOpenFGAService.check.mockResolvedValue(true);
 
-      await expect(
-        itemsService.deleteItem('item-default', 'user-123')
-      ).rejects.toThrow('Cannot delete default items');
+      await expect(itemsService.deleteItem('item-default', 'user-123')).rejects.toThrow(
+        'Cannot delete default items'
+      );
     });
 
     it('should throw 400 if item has active wealth references', async () => {
@@ -490,9 +516,9 @@ describe('ItemsService', () => {
       mockOpenFGAService.check.mockResolvedValue(true);
       mockItemsRepository.hasActiveWealthReferences.mockResolvedValue(true);
 
-      await expect(
-        itemsService.deleteItem('item-123', 'user-123')
-      ).rejects.toThrow('Cannot delete item that has active wealth shares');
+      await expect(itemsService.deleteItem('item-123', 'user-123')).rejects.toThrow(
+        'Cannot delete item that has active wealth shares'
+      );
     });
   });
 
@@ -547,21 +573,46 @@ describe('ItemsService', () => {
 
       // Verify object items created with wealth values
       expect(mockItemsRepository.create).toHaveBeenCalledWith(
-        expect.objectContaining({ name: 'Fresh Vegetables (kg)', kind: 'object', isDefault: true, wealthValue: '5' })
+        expect.objectContaining({
+          name: 'Fresh Vegetables (kg)',
+          kind: 'object',
+          isDefault: true,
+          wealthValue: '5',
+        })
       );
       expect(mockItemsRepository.create).toHaveBeenCalledWith(
-        expect.objectContaining({ name: 'Canned Food (unit)', kind: 'object', isDefault: true, wealthValue: '3' })
+        expect.objectContaining({
+          name: 'Canned Food (unit)',
+          kind: 'object',
+          isDefault: true,
+          wealthValue: '3',
+        })
       );
       expect(mockItemsRepository.create).toHaveBeenCalledWith(
-        expect.objectContaining({ name: 'Hand Tool', kind: 'object', isDefault: true, wealthValue: '15' })
+        expect.objectContaining({
+          name: 'Hand Tool',
+          kind: 'object',
+          isDefault: true,
+          wealthValue: '15',
+        })
       );
 
       // Verify service items created with wealth values
       expect(mockItemsRepository.create).toHaveBeenCalledWith(
-        expect.objectContaining({ name: 'Home Repair (hour)', kind: 'service', isDefault: true, wealthValue: '20' })
+        expect.objectContaining({
+          name: 'Home Repair (hour)',
+          kind: 'service',
+          isDefault: true,
+          wealthValue: '20',
+        })
       );
       expect(mockItemsRepository.create).toHaveBeenCalledWith(
-        expect.objectContaining({ name: 'Childcare (hour)', kind: 'service', isDefault: true, wealthValue: '18' })
+        expect.objectContaining({
+          name: 'Childcare (hour)',
+          kind: 'service',
+          isDefault: true,
+          wealthValue: '18',
+        })
       );
     });
 
@@ -578,7 +629,11 @@ describe('ItemsService', () => {
     });
 
     it('should return first default item', async () => {
-      const firstItem = { ...mockDefaultItem, name: 'Fresh Vegetables (kg)', wealthValue: '5' };
+      const firstItem = {
+        ...mockDefaultItem,
+        name: 'Fresh Vegetables (kg)',
+        wealthValue: '5',
+      };
       mockItemsRepository.findByName.mockResolvedValue(null);
       mockItemsRepository.create
         .mockResolvedValueOnce(firstItem)

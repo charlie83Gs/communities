@@ -1,7 +1,13 @@
 import fs from 'fs';
 import path from 'path';
 import sharp from 'sharp';
-import { imageAbsPath, generateFileName, normalizeExt, IMAGES_DIR, isSafeFileName } from '@utils/storage';
+import {
+  imageAbsPath,
+  generateFileName,
+  normalizeExt,
+  IMAGES_DIR,
+  isSafeFileName,
+} from '@utils/storage';
 import { AppError } from '@utils/errors';
 
 export type SavedImage = {
@@ -42,12 +48,14 @@ export class ImagesService {
     const meta = await input.metadata();
 
     // Resize if needed and convert to webp
-    const processed = input.resize({
-      width: this.maxWidth,
-      height: this.maxHeight,
-      fit: 'inside',
-      withoutEnlargement: true,
-    }).webp({ quality: this.quality });
+    const processed = input
+      .resize({
+        width: this.maxWidth,
+        height: this.maxHeight,
+        fit: 'inside',
+        withoutEnlargement: true,
+      })
+      .webp({ quality: this.quality });
 
     // Allocate filename
     const { id, filename } = generateFileName('.webp');

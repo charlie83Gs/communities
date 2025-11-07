@@ -43,12 +43,10 @@ export class InitiativeService {
   /**
    * Create a new initiative
    */
-  async createInitiative(
-    councilId: string,
-    data: CreateInitiativeDto,
-    userId: string
-  ) {
-    logger.info(`[InitiativeService createInitiative] Creating initiative for councilId: ${councilId}`);
+  async createInitiative(councilId: string, data: CreateInitiativeDto, userId: string) {
+    logger.info(
+      `[InitiativeService createInitiative] Creating initiative for councilId: ${councilId}`
+    );
 
     const council = await councilRepository.findById(councilId);
     if (!council) {
@@ -79,7 +77,9 @@ export class InitiativeService {
       userId
     );
 
-    logger.info(`[InitiativeService createInitiative] Initiative created with id: ${initiative.id}`);
+    logger.info(
+      `[InitiativeService createInitiative] Initiative created with id: ${initiative.id}`
+    );
 
     return {
       ...initiative,
@@ -115,7 +115,9 @@ export class InitiativeService {
     userId: string,
     options: { page?: number; limit?: number } = {}
   ) {
-    logger.info(`[InitiativeService listInitiatives] Listing initiatives for councilId: ${councilId}`);
+    logger.info(
+      `[InitiativeService listInitiatives] Listing initiatives for councilId: ${councilId}`
+    );
 
     const council = await councilRepository.findById(councilId);
     if (!council) {
@@ -130,7 +132,9 @@ export class InitiativeService {
 
     try {
       const result = await initiativeRepository.findByCouncil(councilId, userId, options);
-      logger.info(`[InitiativeService listInitiatives] Found ${result.initiatives.length} initiatives`);
+      logger.info(
+        `[InitiativeService listInitiatives] Found ${result.initiatives.length} initiatives`
+      );
       return result;
     } catch (error) {
       logger.error(`[InitiativeService listInitiatives] Error fetching initiatives:`, error);
@@ -141,11 +145,7 @@ export class InitiativeService {
   /**
    * Update initiative
    */
-  async updateInitiative(
-    initiativeId: string,
-    data: UpdateInitiativeDto,
-    userId: string
-  ) {
+  async updateInitiative(initiativeId: string, data: UpdateInitiativeDto, userId: string) {
     const initiative = await initiativeRepository.findById(initiativeId);
     if (!initiative) {
       throw new AppError('Initiative not found', 404);
@@ -203,11 +203,7 @@ export class InitiativeService {
   /**
    * Vote on initiative
    */
-  async voteOnInitiative(
-    initiativeId: string,
-    voteType: 'upvote' | 'downvote',
-    userId: string
-  ) {
+  async voteOnInitiative(initiativeId: string, voteType: 'upvote' | 'downvote', userId: string) {
     const initiative = await initiativeRepository.findById(initiativeId);
     if (!initiative) {
       throw new AppError('Initiative not found', 404);
@@ -249,12 +245,10 @@ export class InitiativeService {
   /**
    * Create initiative report
    */
-  async createReport(
-    initiativeId: string,
-    data: CreateInitiativeReportDto,
-    userId: string
-  ) {
-    logger.info(`[InitiativeService createReport] Creating report for initiativeId: ${initiativeId}`);
+  async createReport(initiativeId: string, data: CreateInitiativeReportDto, userId: string) {
+    logger.info(
+      `[InitiativeService createReport] Creating report for initiativeId: ${initiativeId}`
+    );
 
     const initiative = await initiativeRepository.findById(initiativeId);
     if (!initiative) {
@@ -309,11 +303,7 @@ export class InitiativeService {
   /**
    * Create comment on initiative
    */
-  async createComment(
-    initiativeId: string,
-    content: string,
-    userId: string
-  ) {
+  async createComment(initiativeId: string, content: string, userId: string) {
     const initiative = await initiativeRepository.findById(initiativeId);
     if (!initiative) {
       throw new AppError('Initiative not found', 404);
@@ -382,11 +372,7 @@ export class InitiativeService {
   /**
    * Create comment on report
    */
-  async createReportComment(
-    reportId: string,
-    content: string,
-    userId: string
-  ) {
+  async createReportComment(reportId: string, content: string, userId: string) {
     const report = await initiativeRepository.findReportById(reportId);
     if (!report) {
       throw new AppError('Report not found', 404);

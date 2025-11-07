@@ -39,7 +39,10 @@ export class HealthAnalyticsService {
     }
 
     // Extract minTrustForHealthAnalytics from jsonb field
-    const minTrustConfig = community.minTrustForHealthAnalytics as { type: string; value: number };
+    const minTrustConfig = community.minTrustForHealthAnalytics as {
+      type: string;
+      value: number;
+    };
     const minTrustRequired = minTrustConfig?.value ?? 20;
 
     const trustScore = await trustViewRepository.get(communityId, userId);

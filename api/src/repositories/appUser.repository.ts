@@ -12,11 +12,7 @@ export class AppUserRepository {
    * Find user by ID
    */
   async findById(id: string): Promise<AppUser | undefined> {
-    const [user] = await db
-      .select()
-      .from(appUsers)
-      .where(eq(appUsers.id, id))
-      .limit(1);
+    const [user] = await db.select().from(appUsers).where(eq(appUsers.id, id)).limit(1);
 
     return user;
   }
@@ -25,11 +21,7 @@ export class AppUserRepository {
    * Find user by email
    */
   async findByEmail(email: string): Promise<AppUser | undefined> {
-    const [user] = await db
-      .select()
-      .from(appUsers)
-      .where(eq(appUsers.email, email))
-      .limit(1);
+    const [user] = await db.select().from(appUsers).where(eq(appUsers.email, email)).limit(1);
 
     return user;
   }
@@ -98,10 +90,7 @@ export class AppUserRepository {
    * Update last seen timestamp
    */
   async updateLastSeen(id: string): Promise<void> {
-    await db
-      .update(appUsers)
-      .set({ lastSeenAt: new Date() })
-      .where(eq(appUsers.id, id));
+    await db.update(appUsers).set({ lastSeenAt: new Date() }).where(eq(appUsers.id, id));
   }
 
   /**
@@ -155,10 +144,7 @@ export class AppUserRepository {
    * Check if email is taken
    */
   async isEmailTaken(email: string, excludeUserId?: string): Promise<boolean> {
-    let query = db
-      .select({ id: appUsers.id })
-      .from(appUsers)
-      .where(eq(appUsers.email, email));
+    let query = db.select({ id: appUsers.id }).from(appUsers).where(eq(appUsers.email, email));
 
     if (excludeUserId) {
       query = query.where(sql`${appUsers.id} != ${excludeUserId}`) as any;
@@ -186,9 +172,7 @@ export class AppUserRepository {
    * Count total users
    */
   async count(): Promise<number> {
-    const [result] = await db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(appUsers);
+    const [result] = await db.select({ count: sql<number>`count(*)::int` }).from(appUsers);
 
     return result?.count ?? 0;
   }

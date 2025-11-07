@@ -27,10 +27,10 @@ export class TrustEventRepository {
         communityId: params.communityId,
         type: params.type,
         entityType: params.entityType ?? null,
-        entityId: params.entityId ?? null as any,
-        actorUserId: params.actorUserId ?? null as any,
-        subjectUserIdA: params.subjectUserIdA ?? null as any,
-        subjectUserIdB: params.subjectUserIdB ?? null as any,
+        entityId: params.entityId ?? (null as any),
+        actorUserId: params.actorUserId ?? (null as any),
+        subjectUserIdA: params.subjectUserIdA ?? (null as any),
+        subjectUserIdB: params.subjectUserIdB ?? (null as any),
         pointsDeltaA: params.pointsDeltaA ?? 0,
         pointsDeltaB: params.pointsDeltaB ?? 0,
       })
@@ -47,10 +47,7 @@ export class TrustEventRepository {
       .where(
         and(
           eq(trustEvents.communityId, communityId),
-          or(
-            eq(trustEvents.subjectUserIdA, userId),
-            eq(trustEvents.subjectUserIdB, userId)
-          )
+          or(eq(trustEvents.subjectUserIdA, userId), eq(trustEvents.subjectUserIdB, userId))
         )
       )
       .orderBy(desc(trustEvents.createdAt))
@@ -62,9 +59,7 @@ export class TrustEventRepository {
     return db
       .select()
       .from(trustEvents)
-      .where(
-        and(eq(trustEvents.communityId, communityId), eq(trustEvents.subjectUserIdB, userId))
-      )
+      .where(and(eq(trustEvents.communityId, communityId), eq(trustEvents.subjectUserIdB, userId)))
       .orderBy(desc(trustEvents.createdAt))
       .limit(limit)
       .offset(offset);
@@ -84,12 +79,7 @@ export class TrustEventRepository {
     return db
       .select()
       .from(trustEvents)
-      .where(
-        or(
-          eq(trustEvents.subjectUserIdA, userId),
-          eq(trustEvents.subjectUserIdB, userId)
-        )
-      )
+      .where(or(eq(trustEvents.subjectUserIdA, userId), eq(trustEvents.subjectUserIdB, userId)))
       .orderBy(desc(trustEvents.createdAt))
       .limit(limit)
       .offset(offset);

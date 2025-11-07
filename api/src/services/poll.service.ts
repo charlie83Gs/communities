@@ -63,7 +63,10 @@ export class PollService {
     }
 
     // Get trust threshold from community config
-    const minTrustForPolls = community.minTrustForPolls as { type: string; value: number };
+    const minTrustForPolls = community.minTrustForPolls as {
+      type: string;
+      value: number;
+    };
     const threshold = minTrustForPolls?.value ?? 15;
 
     return await openFGAService.checkTrustLevel(userId, communityId, threshold);
@@ -197,11 +200,7 @@ export class PollService {
   /**
    * Get poll by ID with details
    */
-  async getPollById(
-    communityId: string,
-    pollId: string,
-    userId: string
-  ): Promise<PollWithDetails> {
+  async getPollById(communityId: string, pollId: string, userId: string): Promise<PollWithDetails> {
     // Verify user is a member of the community
     await this.ensureMemberOrAdmin(communityId, userId);
 
@@ -244,10 +243,7 @@ export class PollService {
   /**
    * Calculate poll results
    */
-  private async calculateResults(
-    pollId: string,
-    options: PollOption[]
-  ): Promise<PollResult[]> {
+  private async calculateResults(pollId: string, options: PollOption[]): Promise<PollResult[]> {
     // Get vote counts for each option
     const voteCounts = await db
       .select({
@@ -278,12 +274,7 @@ export class PollService {
   /**
    * Vote on a poll
    */
-  async vote(
-    communityId: string,
-    pollId: string,
-    optionId: string,
-    userId: string
-  ): Promise<void> {
+  async vote(communityId: string, pollId: string, optionId: string, userId: string): Promise<void> {
     // Verify user is a member of the community
     await this.ensureMemberOrAdmin(communityId, userId);
 

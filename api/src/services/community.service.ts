@@ -10,7 +10,9 @@ import logger from '../utils/logger';
 
 async function isCommunityAdmin(userId: string, communityId: string): Promise<boolean> {
   const isAdmin = await communityMemberRepository.isAdmin(communityId, userId);
-  logger.debug(`[CommunityService isCommunityAdmin] Is admin for userId: ${userId}, communityId: ${communityId}: ${isAdmin}`);
+  logger.debug(
+    `[CommunityService isCommunityAdmin] Is admin for userId: ${userId}, communityId: ${communityId}: ${isAdmin}`
+  );
   return isAdmin;
 }
 
@@ -29,7 +31,9 @@ export class CommunityService {
     // Verify user exists in app_users table
     const user = await appUserRepository.findById(userId);
     if (!user) {
-      logger.error(`[CommunityService createCommunity] User not found in app_users for userId: ${userId}`);
+      logger.error(
+        `[CommunityService createCommunity] User not found in app_users for userId: ${userId}`
+      );
       throw new AppError('User profile not found. Please try logging out and back in.', 404);
     }
 
@@ -42,19 +46,29 @@ export class CommunityService {
 
     // Assign creator as admin - THIS IS CRITICAL and must succeed
     try {
-      logger.info(`[CommunityService createCommunity] Assigning admin role to creator userId: ${userId} for community: ${community.id}`);
+      logger.info(
+        `[CommunityService createCommunity] Assigning admin role to creator userId: ${userId} for community: ${community.id}`
+      );
       await communityMemberRepository.addMember(community.id, userId, 'admin');
       logger.info(`[CommunityService createCommunity] Successfully assigned admin role to creator`);
     } catch (err) {
-      logger.error(`[CommunityService createCommunity] CRITICAL: Failed to assign admin role to creator userId: ${userId} for community: ${community.id}`, err);
+      logger.error(
+        `[CommunityService createCommunity] CRITICAL: Failed to assign admin role to creator userId: ${userId} for community: ${community.id}`,
+        err
+      );
 
       // This is a critical error - if the creator can't be assigned as admin,
       // the community is unusable. We should delete it and throw the error.
       try {
         await communityRepository.delete(community.id);
-        logger.info(`[CommunityService createCommunity] Rolled back community creation due to role assignment failure`);
+        logger.info(
+          `[CommunityService createCommunity] Rolled back community creation due to role assignment failure`
+        );
       } catch (deleteErr) {
-        logger.error(`[CommunityService createCommunity] Failed to rollback community creation:`, deleteErr);
+        logger.error(
+          `[CommunityService createCommunity] Failed to rollback community creation:`,
+          deleteErr
+        );
       }
 
       throw new AppError('Failed to create community: could not assign creator as admin', 500);
@@ -63,7 +77,9 @@ export class CommunityService {
     // Verify the role was actually assigned
     const verifyRole = await communityMemberRepository.getUserRole(community.id, userId);
     if (!verifyRole) {
-      logger.error(`[CommunityService createCommunity] VERIFICATION FAILED: Creator role not found after assignment`);
+      logger.error(
+        `[CommunityService createCommunity] VERIFICATION FAILED: Creator role not found after assignment`
+      );
       throw new AppError('Failed to create community: role assignment verification failed', 500);
     }
 
@@ -71,18 +87,25 @@ export class CommunityService {
 
     // Initialize default trust levels for the community
     try {
-      logger.info(`[CommunityService createCommunity] Initializing default trust levels for community: ${community.id}`);
+      logger.info(
+        `[CommunityService createCommunity] Initializing default trust levels for community: ${community.id}`
+      );
       await trustLevelRepository.createDefaultLevels(community.id);
       logger.info(`[CommunityService createCommunity] Default trust levels initialized`);
     } catch (err) {
-      logger.error(`[CommunityService createCommunity] Failed to initialize default trust levels:`, err);
+      logger.error(
+        `[CommunityService createCommunity] Failed to initialize default trust levels:`,
+        err
+      );
       // Non-critical: community is still functional without trust levels
       // Trust levels can be created manually by admins if needed
     }
 
     // Create default "Other" item for the community
     try {
-      logger.info(`[CommunityService createCommunity] Creating default item for community: ${community.id}`);
+      logger.info(
+        `[CommunityService createCommunity] Creating default item for community: ${community.id}`
+      );
       await itemsService.ensureDefaultItem(community.id, userId);
       logger.info(`[CommunityService createCommunity] Default item created`);
     } catch (err) {
@@ -94,7 +117,9 @@ export class CommunityService {
   }
 
   async getCommunity(id: string, userId?: string): Promise<Community> {
-    logger.debug(`[CommunityService getCommunity] Fetching community ${id} for userId: ${userId || 'guest'}`);
+    logger.debug(
+      `[CommunityService getCommunity] Fetching community ${id} for userId: ${userId || 'guest'}`
+    );
     const community = await communityRepository.findById(id);
 
     if (!community) {
@@ -111,21 +136,29 @@ export class CommunityService {
     // Check if user has any role for this community (implies read access)
     const role = await communityMemberRepository.getUserRole(id, userId);
     if (!role) {
-      logger.warn(`[CommunityService getCommunity] No role for userId: ${userId} in community ${id}`);
+      logger.warn(
+        `[CommunityService getCommunity] No role for userId: ${userId} in community ${id}`
+      );
       throw new AppError('Forbidden: no access to this community', 403);
     }
 
-    logger.debug(`[CommunityService getCommunity] Access granted for userId: ${userId} to community ${id} with role ${role}`);
+    logger.debug(
+      `[CommunityService getCommunity] Access granted for userId: ${userId} to community ${id} with role ${role}`
+    );
     return community;
   }
 
   async listCommunities(page = 1, limit = 10, userId?: string) {
-    logger.debug(`[CommunityService listCommunities] Request - page: ${page}, limit: ${limit}, userId: ${userId || 'guest'}`);
+    logger.debug(
+      `[CommunityService listCommunities] Request - page: ${page}, limit: ${limit}, userId: ${userId || 'guest'}`
+    );
     const offset = Math.max(0, (page - 1) * limit);
 
     // All communities are now private - authentication required
     if (!userId) {
-      logger.debug(`[CommunityService listCommunities] Guest access - no communities available (all private)`);
+      logger.debug(
+        `[CommunityService listCommunities] Guest access - no communities available (all private)`
+      );
       return {
         data: [],
         total: 0,
@@ -134,12 +167,16 @@ export class CommunityService {
       };
     }
 
-    logger.debug(`[CommunityService listCommunities] Authenticated user ${userId} - fetching accessible communities`);
+    logger.debug(
+      `[CommunityService listCommunities] Authenticated user ${userId} - fetching accessible communities`
+    );
 
     // Get communities where user has membership (any role)
     const memberships = await communityMemberRepository.findByUser(userId);
-    const accessibleIds = memberships.map(m => m.resourceId);
-    logger.debug(`[CommunityService listCommunities] Accessible community IDs: ${accessibleIds.length}`);
+    const accessibleIds = memberships.map((m) => m.resourceId);
+    logger.debug(
+      `[CommunityService listCommunities] Accessible community IDs: ${accessibleIds.length}`
+    );
 
     const accessibleCommunities: Community[] = [];
     for (const id of accessibleIds) {
@@ -148,10 +185,14 @@ export class CommunityService {
         accessibleCommunities.push(c);
       }
     }
-    logger.debug(`[CommunityService listCommunities] Communities fetched: ${accessibleCommunities.length}`);
+    logger.debug(
+      `[CommunityService listCommunities] Communities fetched: ${accessibleCommunities.length}`
+    );
 
     const paged = accessibleCommunities.slice(offset, offset + limit);
-    logger.debug(`[CommunityService listCommunities] Total: ${accessibleCommunities.length}, paged: ${paged.length}`);
+    logger.debug(
+      `[CommunityService listCommunities] Total: ${accessibleCommunities.length}, paged: ${paged.length}`
+    );
 
     return {
       data: paged,
@@ -168,7 +209,12 @@ export class CommunityService {
       page?: number;
       limit?: number;
     }
-  ): Promise<{ data: Community[]; total: number; page: number; limit: number }> {
+  ): Promise<{
+    data: Community[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
     const page = Math.max(1, params.page ?? 1);
     const limit = Math.max(1, Math.min(params.limit ?? 20, 100));
     const offset = (page - 1) * limit;
@@ -237,21 +283,31 @@ export class CommunityService {
     return deleted;
   }
 
-  async getMembers(communityId: string, userId: string, search?: string): Promise<CommunityMember[]> {
-    logger.debug(`[CommunityService getMembers] Request for communityId: ${communityId}, userId: ${userId}, search: ${search || 'none'}`);
+  async getMembers(
+    communityId: string,
+    userId: string,
+    search?: string
+  ): Promise<CommunityMember[]> {
+    logger.debug(
+      `[CommunityService getMembers] Request for communityId: ${communityId}, userId: ${userId}, search: ${search || 'none'}`
+    );
     // Verify caller has member or admin role
     const role = await communityMemberRepository.getUserRole(communityId, userId);
     if (!role || (role !== 'admin' && role !== 'member')) {
-      logger.warn(`[CommunityService getMembers] User ${userId} lacks sufficient role (${role}) for community ${communityId}`);
+      logger.warn(
+        `[CommunityService getMembers] User ${userId} lacks sufficient role (${role}) for community ${communityId}`
+      );
       throw new AppError('Forbidden: only community admins and members can view members', 403);
     }
 
-    logger.debug(`[CommunityService getMembers] User ${userId} has role ${role}; fetching memberships`);
+    logger.debug(
+      `[CommunityService getMembers] User ${userId} has role ${role}; fetching memberships`
+    );
     const memberships = await communityMemberRepository.findByCommunity(communityId);
     logger.debug(`[CommunityService getMembers] Memberships count: ${memberships.length}`);
 
     // Get unique member IDs (findByCommunity may return multiple entries per user)
-    const uniqueUserIds = Array.from(new Set(memberships.map(m => m.userId)));
+    const uniqueUserIds = Array.from(new Set(memberships.map((m) => m.userId)));
     logger.debug(`[CommunityService getMembers] Unique member IDs: ${uniqueUserIds.join(', ')}`);
 
     // Fetch actual roles and user details for each unique user
@@ -276,33 +332,41 @@ export class CommunityService {
     let filteredMembers = members;
     if (search && search.trim()) {
       const searchLower = search.toLowerCase().trim();
-      filteredMembers = members.filter(member => {
+      filteredMembers = members.filter((member) => {
         const displayNameMatch = member.displayName?.toLowerCase().includes(searchLower);
         const emailMatch = member.email?.toLowerCase().includes(searchLower);
         return displayNameMatch || emailMatch;
       });
-      logger.debug(`[CommunityService getMembers] Search filtered ${members.length} to ${filteredMembers.length} members`);
+      logger.debug(
+        `[CommunityService getMembers] Search filtered ${members.length} to ${filteredMembers.length} members`
+      );
     }
 
-    logger.debug(`[CommunityService getMembers] Returning ${filteredMembers.length} unique members`);
+    logger.debug(
+      `[CommunityService getMembers] Returning ${filteredMembers.length} unique members`
+    );
     return filteredMembers;
   }
 
-  async removeMember(communityId: string, targetUserId: string, requesterId: string): Promise<void> {
+  async removeMember(
+    communityId: string,
+    targetUserId: string,
+    requesterId: string
+  ): Promise<void> {
     const isAdmin = await isCommunityAdmin(requesterId, communityId);
     if (!isAdmin && requesterId !== targetUserId) {
       throw new AppError('Forbidden: only community admins can remove other members', 403);
     }
-  
+
     // Verify the target is a member (for self-removal, requester should have a role)
     const targetRole = await communityMemberRepository.getUserRole(communityId, targetUserId);
     if (!targetRole) {
       throw new AppError('User is not a member of this community', 404);
     }
-  
+
     // Remove membership
     await communityMemberRepository.removeMember(communityId, targetUserId);
-  
+
     // Check if removed
     const remainingRole = await communityMemberRepository.getUserRole(communityId, targetUserId);
     if (remainingRole) {
@@ -310,7 +374,12 @@ export class CommunityService {
     }
   }
 
-  async updateMemberRole(communityId: string, targetUserId: string, newRole: string, requesterId: string): Promise<void> {
+  async updateMemberRole(
+    communityId: string,
+    targetUserId: string,
+    newRole: string,
+    requesterId: string
+  ): Promise<void> {
     const isAdmin = await isCommunityAdmin(requesterId, communityId);
     if (!isAdmin) {
       throw new AppError('Forbidden: only community admins can update member roles', 403);
@@ -323,10 +392,18 @@ export class CommunityService {
     }
 
     // Update role (overwrites due to unique constraint)
-    await communityMemberRepository.updateRole(communityId, targetUserId, newRole as 'member' | 'admin' | 'reader');
+    await communityMemberRepository.updateRole(
+      communityId,
+      targetUserId,
+      newRole as 'member' | 'admin' | 'reader'
+    );
   }
 
-  async getUserRoleInCommunity(communityId: string, userId: string, requesterId: string): Promise<CommunityMember | null> {
+  async getUserRoleInCommunity(
+    communityId: string,
+    userId: string,
+    requesterId: string
+  ): Promise<CommunityMember | null> {
     // For /members/:userId, require requester is admin
     if (userId !== requesterId) {
       const isAdmin = await isCommunityAdmin(requesterId, communityId);
@@ -353,5 +430,5 @@ export class CommunityService {
     };
   }
 }
- 
+
 export const communityService = new CommunityService();

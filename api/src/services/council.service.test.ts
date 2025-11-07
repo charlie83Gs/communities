@@ -67,12 +67,12 @@ describe('CouncilService', () => {
 
   beforeEach(() => {
     // Reset all mocks
-    Object.values(mockCouncilRepository).forEach(m => m.mockReset());
-    Object.values(mockCommunityMemberRepository).forEach(m => m.mockReset());
-    Object.values(mockCommunityRepository).forEach(m => m.mockReset());
-    Object.values(mockTrustViewRepository).forEach(m => m.mockReset());
-    Object.values(mockAppUserRepository).forEach(m => m.mockReset());
-    Object.values(mockItemsRepository).forEach(m => m.mockReset());
+    Object.values(mockCouncilRepository).forEach((m) => m.mockReset());
+    Object.values(mockCommunityMemberRepository).forEach((m) => m.mockReset());
+    Object.values(mockCommunityRepository).forEach((m) => m.mockReset());
+    Object.values(mockTrustViewRepository).forEach((m) => m.mockReset());
+    Object.values(mockAppUserRepository).forEach((m) => m.mockReset());
+    Object.values(mockItemsRepository).forEach((m) => m.mockReset());
 
     // Replace dependencies with mocks
     (councilRepository.create as any) = mockCouncilRepository.create;
@@ -101,7 +101,10 @@ describe('CouncilService', () => {
     // Default mock behaviors
     mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
     mockCommunityMemberRepository.isAdmin.mockResolvedValue(false);
-    mockCommunityRepository.findById.mockResolvedValue({ id: validCommunityId, name: 'Test Community' });
+    mockCommunityRepository.findById.mockResolvedValue({
+      id: validCommunityId,
+      name: 'Test Community',
+    });
     mockTrustViewRepository.get.mockResolvedValue({ points: 30 });
   });
 
@@ -110,7 +113,10 @@ describe('CouncilService', () => {
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
       mockCommunityMemberRepository.isAdmin.mockResolvedValue(false);
       mockTrustViewRepository.get.mockResolvedValue({ points: 30 }); // Above threshold of 25
-      mockCouncilRepository.findByCommunityId.mockResolvedValue({ councils: [], total: 0 });
+      mockCouncilRepository.findByCommunityId.mockResolvedValue({
+        councils: [],
+        total: 0,
+      });
       mockCouncilRepository.create.mockResolvedValue({
         id: validCouncilId,
         name: 'Food Council',
@@ -197,7 +203,9 @@ describe('CouncilService', () => {
     it('should reject non-member from listing councils', async () => {
       mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
 
-      await expect(councilService.listCouncils(validCommunityId, validUserId)).rejects.toThrow('Forbidden');
+      await expect(councilService.listCouncils(validCommunityId, validUserId)).rejects.toThrow(
+        'Forbidden'
+      );
     });
   });
 
@@ -233,13 +241,17 @@ describe('CouncilService', () => {
       });
       mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
 
-      await expect(councilService.getCouncil(validCouncilId, validUserId)).rejects.toThrow('Forbidden');
+      await expect(councilService.getCouncil(validCouncilId, validUserId)).rejects.toThrow(
+        'Forbidden'
+      );
     });
 
     it('should handle non-existent council', async () => {
       mockCouncilRepository.findById.mockResolvedValue(null);
 
-      await expect(councilService.getCouncil(validCouncilId, validUserId)).rejects.toThrow('Council not found');
+      await expect(councilService.getCouncil(validCouncilId, validUserId)).rejects.toThrow(
+        'Council not found'
+      );
     });
   });
 
@@ -254,7 +266,10 @@ describe('CouncilService', () => {
       });
       mockCommunityMemberRepository.isAdmin.mockResolvedValue(false);
       mockCouncilRepository.isManager.mockResolvedValue(true);
-      mockCouncilRepository.findByCommunityId.mockResolvedValue({ councils: [], total: 0 });
+      mockCouncilRepository.findByCommunityId.mockResolvedValue({
+        councils: [],
+        total: 0,
+      });
       mockCouncilRepository.update.mockResolvedValue({
         id: validCouncilId,
         name: 'Updated Council',
@@ -321,7 +336,9 @@ describe('CouncilService', () => {
       });
       mockCommunityMemberRepository.isAdmin.mockResolvedValue(false);
 
-      await expect(councilService.deleteCouncil(validCouncilId, validUserId)).rejects.toThrow('Forbidden');
+      await expect(councilService.deleteCouncil(validCouncilId, validUserId)).rejects.toThrow(
+        'Forbidden'
+      );
     });
   });
 
@@ -356,7 +373,9 @@ describe('CouncilService', () => {
       });
       mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
 
-      await expect(councilService.awardTrust(validCouncilId, validUserId)).rejects.toThrow('Forbidden');
+      await expect(councilService.awardTrust(validCouncilId, validUserId)).rejects.toThrow(
+        'Forbidden'
+      );
     });
 
     it('should allow member to remove trust from council', async () => {
@@ -433,7 +452,9 @@ describe('CouncilService', () => {
       mockCommunityMemberRepository.isAdmin.mockResolvedValue(false);
       mockCouncilRepository.isManager.mockResolvedValue(false);
 
-      await expect(councilService.addManager(validCouncilId, targetUserId, validUserId)).rejects.toThrow('Forbidden');
+      await expect(
+        councilService.addManager(validCouncilId, targetUserId, validUserId)
+      ).rejects.toThrow('Forbidden');
     });
 
     it('should allow admin to remove manager', async () => {
@@ -464,7 +485,9 @@ describe('CouncilService', () => {
       });
       mockCommunityMemberRepository.isAdmin.mockResolvedValue(false);
 
-      await expect(councilService.removeManager(validCouncilId, targetUserId, validUserId)).rejects.toThrow('Forbidden');
+      await expect(
+        councilService.removeManager(validCouncilId, targetUserId, validUserId)
+      ).rejects.toThrow('Forbidden');
     });
   });
 
@@ -479,9 +502,16 @@ describe('CouncilService', () => {
       });
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
       mockCouncilRepository.getInventory.mockResolvedValue([
-        { itemId: '550e8400-e29b-41d4-a716-446655440005', quantity: 5, unit: 'kg' },
+        {
+          itemId: '550e8400-e29b-41d4-a716-446655440005',
+          quantity: 5,
+          unit: 'kg',
+        },
       ]);
-      mockItemsRepository.findById.mockResolvedValue({ id: '550e8400-e29b-41d4-a716-446655440005', name: 'Carrots' });
+      mockItemsRepository.findById.mockResolvedValue({
+        id: '550e8400-e29b-41d4-a716-446655440005',
+        name: 'Carrots',
+      });
 
       const result = await councilService.getInventory(validCouncilId, validUserId);
 
@@ -499,7 +529,10 @@ describe('CouncilService', () => {
         createdAt: new Date(),
       });
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
-      mockCouncilRepository.getTransactions.mockResolvedValue({ transactions: [], total: 0 });
+      mockCouncilRepository.getTransactions.mockResolvedValue({
+        transactions: [],
+        total: 0,
+      });
 
       const result = await councilService.getTransactions(validCouncilId, validUserId);
 

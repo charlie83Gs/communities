@@ -57,7 +57,10 @@ export class TrustViewRepository {
     await this.upsertZero(communityId, userId);
     const [updated] = await db
       .update(trustViews)
-      .set({ points: (await this.get(communityId, userId))!.points + delta, updatedAt: new Date() })
+      .set({
+        points: (await this.get(communityId, userId))!.points + delta,
+        updatedAt: new Date(),
+      })
       .where(and(eq(trustViews.communityId, communityId), eq(trustViews.userId, userId)))
       .returning();
     return updated;
@@ -126,10 +129,7 @@ export class TrustViewRepository {
    * Get all trust views for a community (for OpenFGA sync)
    */
   async getAllForCommunity(communityId: string) {
-    return db
-      .select()
-      .from(trustViews)
-      .where(eq(trustViews.communityId, communityId));
+    return db.select().from(trustViews).where(eq(trustViews.communityId, communityId));
   }
 
   /**
@@ -149,10 +149,7 @@ export class TrustViewRepository {
         points: trustViews.points,
       })
       .from(trustViews)
-      .where(and(
-        inArray(trustViews.communityId, communityIds),
-        eq(trustViews.userId, userId)
-      ));
+      .where(and(inArray(trustViews.communityId, communityIds), eq(trustViews.userId, userId)));
 
     const map = new Map<string, number>();
     for (const row of rows) {

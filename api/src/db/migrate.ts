@@ -27,7 +27,7 @@ export async function runMigrations(): Promise<void> {
 
     // Run migrations from the migrations folder
     await migrate(db, {
-      migrationsFolder: './src/db/migrations'
+      migrationsFolder: './src/db/migrations',
     });
 
     console.log('[Migrations] Database migrations completed successfully');

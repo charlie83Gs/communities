@@ -18,9 +18,7 @@ export interface UpdateTrustLevelDto {
 }
 
 // Trust requirement can be either a numeric value or a reference to a trust level
-export type TrustRequirement =
-  | { type: 'number'; value: number }
-  | { type: 'level'; value: string };
+export type TrustRequirement = { type: 'number'; value: number } | { type: 'level'; value: string };
 
 export interface TrustRequirementResolution {
   type: 'number' | 'level';

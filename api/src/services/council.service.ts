@@ -1,4 +1,8 @@
-import { councilRepository, CreateCouncilDto, UpdateCouncilDto } from '../repositories/council.repository';
+import {
+  councilRepository,
+  CreateCouncilDto,
+  UpdateCouncilDto,
+} from '../repositories/council.repository';
 import { communityMemberRepository } from '../repositories/communityMember.repository';
 import { communityRepository } from '../repositories/community.repository';
 import { appUserRepository } from '../repositories/appUser.repository';
@@ -90,7 +94,7 @@ export class CouncilService {
     // Check for duplicate council name in community
     const existingCouncils = await councilRepository.findByCommunityId(data.communityId);
     const duplicateName = existingCouncils.councils.some(
-      c => c.name.toLowerCase() === data.name.toLowerCase()
+      (c) => c.name.toLowerCase() === data.name.toLowerCase()
     );
     if (duplicateName) {
       throw new AppError('A council with this name already exists in this community', 400);
@@ -107,7 +111,9 @@ export class CouncilService {
     // Auto-assign creator as council manager
     try {
       await councilRepository.addManager(council.id, userId);
-      logger.info(`[CouncilService createCouncil] Creator auto-assigned as manager for council: ${council.id}`);
+      logger.info(
+        `[CouncilService createCouncil] Creator auto-assigned as manager for council: ${council.id}`
+      );
     } catch (err) {
       logger.error(`[CouncilService createCouncil] Failed to auto-assign creator as manager:`, err);
       // Non-critical: council is still usable, admin can add managers manually
@@ -233,11 +239,7 @@ export class CouncilService {
   /**
    * Update council details
    */
-  async updateCouncil(
-    councilId: string,
-    data: UpdateCouncilDto,
-    userId: string
-  ) {
+  async updateCouncil(councilId: string, data: UpdateCouncilDto, userId: string) {
     const council = await councilRepository.findById(councilId);
     if (!council) {
       throw new AppError('Council not found', 404);
@@ -260,7 +262,7 @@ export class CouncilService {
       // Check for duplicate name
       const existingCouncils = await councilRepository.findByCommunityId(council.communityId);
       const duplicateName = existingCouncils.councils.some(
-        c => c.id !== councilId && c.name.toLowerCase() === data.name!.toLowerCase()
+        (c) => c.id !== councilId && c.name.toLowerCase() === data.name!.toLowerCase()
       );
       if (duplicateName) {
         throw new AppError('A council with this name already exists in this community', 400);
@@ -415,7 +417,10 @@ export class CouncilService {
     }
 
     // Check if target user is a member of the community
-    const targetUserRole = await communityMemberRepository.getUserRole(council.communityId, targetUserId);
+    const targetUserRole = await communityMemberRepository.getUserRole(
+      council.communityId,
+      targetUserId
+    );
     if (!targetUserRole) {
       throw new AppError('User is not a member of this community', 400);
     }

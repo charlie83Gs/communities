@@ -12,7 +12,9 @@ export class TrustLevelService {
     data: CreateTrustLevelDto,
     userId: string
   ): Promise<TrustLevel> {
-    logger.info(`[TrustLevelService createTrustLevel] Creating trust level for community: ${communityId}`);
+    logger.info(
+      `[TrustLevelService createTrustLevel] Creating trust level for community: ${communityId}`
+    );
 
     // Verify community exists
     const community = await communityRepository.findById(communityId);
@@ -38,7 +40,9 @@ export class TrustLevelService {
     }
 
     const trustLevel = await trustLevelRepository.create(communityId, data);
-    logger.info(`[TrustLevelService createTrustLevel] Trust level created with id: ${trustLevel.id}`);
+    logger.info(
+      `[TrustLevelService createTrustLevel] Trust level created with id: ${trustLevel.id}`
+    );
 
     return trustLevel;
   }
@@ -61,7 +65,9 @@ export class TrustLevelService {
   }
 
   async listTrustLevels(communityId: string, userId: string): Promise<TrustLevel[]> {
-    logger.debug(`[TrustLevelService listTrustLevels] Fetching trust levels for community: ${communityId}`);
+    logger.debug(
+      `[TrustLevelService listTrustLevels] Fetching trust levels for community: ${communityId}`
+    );
 
     // Verify community exists
     const community = await communityRepository.findById(communityId);
@@ -146,7 +152,9 @@ export class TrustLevelService {
     reference: string,
     userId: string
   ): Promise<{ name: string; threshold: number }> {
-    logger.debug(`[TrustLevelService resolveTrustReference] Resolving reference: ${reference} for community: ${communityId}`);
+    logger.debug(
+      `[TrustLevelService resolveTrustReference] Resolving reference: ${reference} for community: ${communityId}`
+    );
 
     // Verify community exists
     const community = await communityRepository.findById(communityId);
@@ -173,17 +181,23 @@ export class TrustLevelService {
   }
 
   async initializeDefaultLevels(communityId: string): Promise<TrustLevel[]> {
-    logger.info(`[TrustLevelService initializeDefaultLevels] Initializing default trust levels for community: ${communityId}`);
+    logger.info(
+      `[TrustLevelService initializeDefaultLevels] Initializing default trust levels for community: ${communityId}`
+    );
 
     // Check if levels already exist
     const existing = await trustLevelRepository.findByCommunityId(communityId);
     if (existing.length > 0) {
-      logger.warn(`[TrustLevelService initializeDefaultLevels] Community already has trust levels, skipping initialization`);
+      logger.warn(
+        `[TrustLevelService initializeDefaultLevels] Community already has trust levels, skipping initialization`
+      );
       return existing;
     }
 
     const defaultLevels = await trustLevelRepository.createDefaultLevels(communityId);
-    logger.info(`[TrustLevelService initializeDefaultLevels] Created ${defaultLevels.length} default trust levels`);
+    logger.info(
+      `[TrustLevelService initializeDefaultLevels] Created ${defaultLevels.length} default trust levels`
+    );
 
     return defaultLevels;
   }

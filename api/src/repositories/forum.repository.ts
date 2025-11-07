@@ -1,11 +1,5 @@
 import { db } from '@db/index';
-import {
-  forumCategories,
-  forumThreads,
-  forumPosts,
-  forumVotes,
-  forumThreadTags,
-} from '@db/schema';
+import { forumCategories, forumThreads, forumPosts, forumVotes, forumThreadTags } from '@db/schema';
 import { eq, and, desc, sql, inArray } from 'drizzle-orm';
 
 export type ForumCategoryRecord = typeof forumCategories.$inferSelect;
@@ -21,7 +15,9 @@ export type CreateCategoryDto = {
   displayOrder?: number;
 };
 
-export type UpdateCategoryDto = Partial<Pick<CreateCategoryDto, 'name' | 'description' | 'displayOrder'>>;
+export type UpdateCategoryDto = Partial<
+  Pick<CreateCategoryDto, 'name' | 'description' | 'displayOrder'>
+>;
 
 export type CreateThreadDto = {
   categoryId: string;
@@ -69,10 +65,7 @@ export class ForumRepository {
   }
 
   async findCategoryById(id: string): Promise<ForumCategoryRecord | undefined> {
-    const [category] = await db
-      .select()
-      .from(forumCategories)
-      .where(eq(forumCategories.id, id));
+    const [category] = await db.select().from(forumCategories).where(eq(forumCategories.id, id));
     return category;
   }
 
@@ -84,7 +77,10 @@ export class ForumRepository {
       .orderBy(forumCategories.displayOrder, forumCategories.name);
   }
 
-  async updateCategory(id: string, data: UpdateCategoryDto): Promise<ForumCategoryRecord | undefined> {
+  async updateCategory(
+    id: string,
+    data: UpdateCategoryDto
+  ): Promise<ForumCategoryRecord | undefined> {
     const [updated] = await db
       .update(forumCategories)
       .set({ ...data, updatedAt: new Date() })
@@ -128,10 +124,7 @@ export class ForumRepository {
   }
 
   async findThreadById(id: string): Promise<ForumThreadRecord | undefined> {
-    const [thread] = await db
-      .select()
-      .from(forumThreads)
-      .where(eq(forumThreads.id, id));
+    const [thread] = await db.select().from(forumThreads).where(eq(forumThreads.id, id));
     return thread;
   }
 
@@ -155,8 +148,14 @@ export class ForumRepository {
     let query = db
       .select({
         thread: forumThreads,
-        postCount: sql<number>`(SELECT COUNT(*)::int FROM ${forumPosts} WHERE ${forumPosts.threadId} = ${forumThreads.id})`.as('post_count'),
-        upvotes: sql<number>`(SELECT COUNT(*)::int FROM ${forumVotes} WHERE ${forumVotes.threadId} = ${forumThreads.id} AND ${forumVotes.voteType} = 'up')`.as('upvotes'),
+        postCount:
+          sql<number>`(SELECT COUNT(*)::int FROM ${forumPosts} WHERE ${forumPosts.threadId} = ${forumThreads.id})`.as(
+            'post_count'
+          ),
+        upvotes:
+          sql<number>`(SELECT COUNT(*)::int FROM ${forumVotes} WHERE ${forumVotes.threadId} = ${forumThreads.id} AND ${forumVotes.voteType} = 'up')`.as(
+            'upvotes'
+          ),
       })
       .from(forumThreads)
       .where(eq(forumThreads.categoryId, categoryId))
@@ -188,10 +187,7 @@ export class ForumRepository {
   }
 
   async deleteThread(id: string): Promise<ForumThreadRecord | undefined> {
-    const [deleted] = await db
-      .delete(forumThreads)
-      .where(eq(forumThreads.id, id))
-      .returning();
+    const [deleted] = await db.delete(forumThreads).where(eq(forumThreads.id, id)).returning();
     return deleted;
   }
 
@@ -218,10 +214,7 @@ export class ForumRepository {
   }
 
   async findPostById(id: string): Promise<ForumPostRecord | undefined> {
-    const [post] = await db
-      .select()
-      .from(forumPosts)
-      .where(eq(forumPosts.id, id));
+    const [post] = await db.select().from(forumPosts).where(eq(forumPosts.id, id));
     return post;
   }
 
@@ -250,10 +243,7 @@ export class ForumRepository {
   }
 
   async deletePost(id: string): Promise<ForumPostRecord | undefined> {
-    const [deleted] = await db
-      .delete(forumPosts)
-      .where(eq(forumPosts.id, id))
-      .returning();
+    const [deleted] = await db.delete(forumPosts).where(eq(forumPosts.id, id)).returning();
     return deleted;
   }
 
@@ -312,7 +302,10 @@ export class ForumRepository {
     await db.delete(forumVotes).where(and(...conditions));
   }
 
-  async getVoteCounts(threadId?: string, postId?: string): Promise<{ upvotes: number; downvotes: number }> {
+  async getVoteCounts(
+    threadId?: string,
+    postId?: string
+  ): Promise<{ upvotes: number; downvotes: number }> {
     const conditions = [];
 
     if (threadId) {
@@ -355,7 +348,9 @@ export class ForumRepository {
 
   // ===== STATS & AGGREGATIONS =====
 
-  async getCategoryStats(categoryId: string): Promise<{ threadCount: number; lastActivity: Date | null }> {
+  async getCategoryStats(
+    categoryId: string
+  ): Promise<{ threadCount: number; lastActivity: Date | null }> {
     const [result] = await db
       .select({
         threadCount: sql<number>`COUNT(*)::int`,

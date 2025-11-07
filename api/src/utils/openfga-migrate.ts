@@ -10,7 +10,8 @@ import { Client } from 'pg';
  */
 export async function runOpenFGAMigrations(): Promise<void> {
   // Default to Docker network hostname, but allow override for local dev
-  const datastoreUri = process.env.OPENFGA_DATASTORE_URI ||
+  const datastoreUri =
+    process.env.OPENFGA_DATASTORE_URI ||
     'postgres://openfga_user:openfga_password@postgres_openfga:5432/openfga?sslmode=disable';
 
   // For local connections (when app runs on host), replace postgres_openfga hostname with localhost:5434
@@ -48,7 +49,9 @@ export async function runOpenFGAMigrations(): Promise<void> {
       const requiredVersion = 4;
 
       if (currentVersion < requiredVersion) {
-        console.log(`[OpenFGA Migrations] Database at revision ${currentVersion}, requires ${requiredVersion}`);
+        console.log(
+          `[OpenFGA Migrations] Database at revision ${currentVersion}, requires ${requiredVersion}`
+        );
         needsMigration = true;
       } else {
         console.log(`[OpenFGA Migrations] Database is up to date (version ${currentVersion})`);
@@ -70,11 +73,14 @@ export async function runOpenFGAMigrations(): Promise<void> {
       const migrationProcess = spawn('docker', [
         'run',
         '--rm',
-        '--network', dockerNetwork,
+        '--network',
+        dockerNetwork,
         'openfga/openfga:latest',
         'migrate',
-        '--datastore-engine', 'postgres',
-        '--datastore-uri', datastoreUri
+        '--datastore-engine',
+        'postgres',
+        '--datastore-uri',
+        datastoreUri,
       ]);
 
       let output = '';
@@ -104,7 +110,6 @@ export async function runOpenFGAMigrations(): Promise<void> {
         });
       });
     }
-
   } catch (error) {
     console.error('[OpenFGA Migrations] Failed to run migrations:', error);
     throw error;

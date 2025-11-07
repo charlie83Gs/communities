@@ -1,7 +1,11 @@
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import { AppError, errorHandler } from '@/utils/errors';
 import { ZodError, z } from 'zod';
-import { createMockRequest, createMockResponse, createMockNext } from '../../tests/helpers/testUtils';
+import {
+  createMockRequest,
+  createMockResponse,
+  createMockNext,
+} from '../../tests/helpers/testUtils';
 
 describe('AppError', () => {
   it('should create an error with message and status code', () => {

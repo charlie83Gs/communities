@@ -10,16 +10,18 @@ const mockOpenFGAService = {
 };
 
 const mockTrustViewRepository = {
-  getAllForCommunity: mock(() => Promise.resolve([
-    { communityId: 'comm-123', userId: 'user-123', points: 25 },
-    { communityId: 'comm-123', userId: 'user-456', points: 50 },
-  ])),
+  getAllForCommunity: mock(() =>
+    Promise.resolve([
+      { communityId: 'comm-123', userId: 'user-123', points: 25 },
+      { communityId: 'comm-123', userId: 'user-456', points: 50 },
+    ])
+  ),
 };
 
 describe('TrustSyncService', () => {
   beforeEach(() => {
-    Object.values(mockOpenFGAService).forEach(m => m.mockReset());
-    Object.values(mockTrustViewRepository).forEach(m => m.mockReset());
+    Object.values(mockOpenFGAService).forEach((m) => m.mockReset());
+    Object.values(mockTrustViewRepository).forEach((m) => m.mockReset());
 
     (openFGAService.batchWrite as any) = mockOpenFGAService.batchWrite;
     (openFGAService.check as any) = mockOpenFGAService.check;
@@ -122,7 +124,13 @@ describe('TrustSyncService', () => {
       ]);
       // Mock readTuples to return proper tuple structure
       mockOpenFGAService.readTuples.mockResolvedValue([
-        { key: { user: 'user:user-123', relation: 'trust_level_20', object: 'community:comm-123' } },
+        {
+          key: {
+            user: 'user:user-123',
+            relation: 'trust_level_20',
+            object: 'community:comm-123',
+          },
+        },
       ]);
       mockOpenFGAService.batchWrite.mockResolvedValue(undefined);
 
@@ -157,9 +165,7 @@ describe('TrustSyncService', () => {
 
     it('should return true when user has higher level', async () => {
       // First check at level 15 fails, then at level 16 succeeds
-      mockOpenFGAService.check
-        .mockResolvedValueOnce(false)
-        .mockResolvedValueOnce(true);
+      mockOpenFGAService.check.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
 
       const result = await trustSyncService.hasSufficientTrust('comm-123', 'user-123', 15);
 

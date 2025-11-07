@@ -10,7 +10,11 @@ export class CommunityMemberRepository {
   /**
    * Add a member to a community with a specific role
    */
-  async addMember(communityId: string, userId: string, role: 'member' | 'admin' | 'reader' = 'member') {
+  async addMember(
+    communityId: string,
+    userId: string,
+    role: 'member' | 'admin' | 'reader' = 'member'
+  ) {
     await openFGAService.assignRole(userId, 'communities', communityId, role);
 
     // Return a simple membership object for compatibility
@@ -29,7 +33,7 @@ export class CommunityMemberRepository {
   async findByCommunity(communityId: string) {
     const rolesData = await openFGAService.getRolesForResource('communities', communityId);
 
-    return rolesData.map(item => ({
+    return rolesData.map((item) => ({
       userId: item.userId,
       resourceType: 'communities' as const,
       resourceId: communityId,
@@ -43,9 +47,13 @@ export class CommunityMemberRepository {
    */
   async findByUser(userId: string) {
     // Get all communities where user has read access (covers all roles)
-    const communityIds = await openFGAService.getAccessibleResourceIds(userId, 'communities', 'read');
+    const communityIds = await openFGAService.getAccessibleResourceIds(
+      userId,
+      'communities',
+      'read'
+    );
 
-    return communityIds.map(communityId => ({
+    return communityIds.map((communityId) => ({
       userId,
       resourceType: 'communities' as const,
       resourceId: communityId,
@@ -71,7 +79,11 @@ export class CommunityMemberRepository {
    * Remove a member from a community
    */
   async removeMember(communityId: string, userId: string) {
-    const currentRole = await openFGAService.getUserRoleForResource(userId, 'communities', communityId);
+    const currentRole = await openFGAService.getUserRoleForResource(
+      userId,
+      'communities',
+      communityId
+    );
 
     await openFGAService.removeRole(userId, 'communities', communityId);
 
