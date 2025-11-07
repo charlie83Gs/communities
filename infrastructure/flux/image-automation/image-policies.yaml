@@ -1,0 +1,26 @@
+---
+# ImagePolicy for communities-api - tracks semver tags
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImagePolicy
+metadata:
+  name: communities-api
+  namespace: flux-system
+spec:
+  imageRepositoryRef:
+    name: communities-api
+  policy:
+    semver:
+      range: '>=1.0.0'
+---
+# ImagePolicy for communities-frontend - tracks semver tags
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImagePolicy
+metadata:
+  name: communities-frontend
+  namespace: flux-system
+spec:
+  imageRepositoryRef:
+    name: communities-frontend
+  policy:
+    semver:
+      range: '>=1.0.0'

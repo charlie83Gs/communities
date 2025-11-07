@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: ghcr.io/OWNER/communities-frontend:0.0.0
+          image: ghcr.io/charlie83gs/communities-frontend:1.1.0 # {"$imagepolicy": "flux-system:communities-frontend"}
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

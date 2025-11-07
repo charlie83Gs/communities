@@ -1,0 +1,24 @@
+---
+# ImageRepository for communities-api
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageRepository
+metadata:
+  name: communities-api
+  namespace: flux-system
+spec:
+  image: ghcr.io/charlie83gs/communities-api
+  interval: 5m
+  # For public GHCR, no secret needed
+  # For private, reference imagePullSecrets: ghcr-credentials
+---
+# ImageRepository for communities-frontend
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageRepository
+metadata:
+  name: communities-frontend
+  namespace: flux-system
+spec:
+  image: ghcr.io/charlie83gs/communities-frontend
+  interval: 5m
+  # For public GHCR, no secret needed
+  # For private, reference imagePullSecrets: ghcr-credentials

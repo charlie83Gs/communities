@@ -1,0 +1,41 @@
+---
+# ImageUpdateAutomation - automatically updates manifests and commits to Git
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageUpdateAutomation
+metadata:
+  name: communities-app-images
+  namespace: flux-system
+spec:
+  interval: 10m
+  sourceRef:
+    kind: GitRepository
+    name: communities
+  git:
+    checkout:
+      ref:
+        branch: main
+    commit:
+      author:
+        email: flux-image-bot@users.noreply.github.com
+        name: Flux Image Bot
+      messageTemplate: |
+        chore: update container images
+
+        [ci skip]
+
+        Automated image update by Flux
+
+        Files updated:
+        {{range .Updated.Files}}
+        - {{.}}
+        {{end}}
+
+        Images updated:
+        {{range .Updated.Images}}
+        - {{.}} from {{.Previous}} to {{.Latest}}
+        {{end}}
+    push:
+      branch: main
+  update:
+    path: ./infrastructure/apps/communities-app/base
+    strategy: Setters
