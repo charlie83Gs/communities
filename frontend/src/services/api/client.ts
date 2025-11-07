@@ -92,7 +92,7 @@ export const apiClient = {
     }
     // No body for 204, return void
   },
-  
+
     async postForm(endpoint: string, formData: FormData) {
       const authHeaders = await getAuthHeaders();
       const response = await fetch(`${baseUrl}${endpoint}`, {
@@ -101,7 +101,7 @@ export const apiClient = {
         credentials: 'include',
         body: formData,
       });
-  
+
       if (!response.ok) {
         throw new Error(`API Error: ${response.status}`);
       }

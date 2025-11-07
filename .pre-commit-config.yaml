@@ -1,0 +1,100 @@
+# Pre-commit hooks for linting, testing, and coverage
+# Install: pre-commit install
+# Run manually: pre-commit run --all-files
+
+repos:
+  # General file checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: '\.md$'
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: ['--unsafe']  # Allow custom YAML tags
+      - id: check-json
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: mixed-line-ending
+      - id: detect-private-key
+
+  # API (Express + TypeScript + Bun)
+  - repo: local
+    hooks:
+      # Prettier formatting for API
+      - id: api-prettier
+        name: Format API code with Prettier
+        entry: bash -c 'cd api && bun run format'
+        language: system
+        files: '^api/src/.*\.(ts|js|json)$'
+        pass_filenames: false
+
+      # ESLint for API
+      - id: api-lint
+        name: Lint API code with ESLint
+        entry: bash -c 'cd api && bun run lint'
+        language: system
+        files: '^api/src/.*\.ts$'
+        pass_filenames: false
+
+      # TypeScript type checking for API
+      - id: api-typecheck
+        name: TypeCheck API with TypeScript
+        entry: bash -c 'cd api && bunx tsc --noEmit'
+        language: system
+        files: '^api/src/.*\.ts$'
+        pass_filenames: false
+
+      # Run API tests
+      - id: api-test
+        name: Run API tests
+        entry: bash -c 'cd api && bun test'
+        language: system
+        files: '^api/(src|tests)/.*\.(ts|js)$'
+        pass_filenames: false
+        stages: [pre-commit]
+
+      # API test coverage check
+      - id: api-coverage
+        name: Check API test coverage
+        entry: bash -c 'cd api && bun test --coverage 2>&1 | tail -n 30'
+        language: system
+        files: '^api/(src|tests)/.*\.(ts|js)$'
+        pass_filenames: false
+        stages: [pre-push]  # Only run on push, not every commit
+
+  # Frontend (SolidJS + Vite)
+  - repo: local
+    hooks:
+      # TypeScript type checking for Frontend
+      - id: frontend-typecheck
+        name: TypeCheck Frontend with TypeScript
+        entry: bash -c 'cd frontend && npx tsc --noEmit'
+        language: system
+        files: '^frontend/src/.*\.(ts|tsx)$'
+        pass_filenames: false
+
+      # Build frontend to catch errors
+      - id: frontend-build
+        name: Build Frontend
+        entry: bash -c 'cd frontend && npm run build'
+        language: system
+        files: '^frontend/src/.*\.(ts|tsx|css|html)$'
+        pass_filenames: false
+        stages: [pre-push]  # Only on push to avoid slowing down commits
+
+  # Kubernetes/Infrastructure validation
+  - repo: local
+    hooks:
+      - id: k8s-validate
+        name: Validate Kubernetes manifests
+        entry: bash -c 'for file in "$@"; do kubectl apply --dry-run=client -f "$file"; done'
+        language: system
+        files: '^infrastructure/.*\.yaml$'
+        pass_filenames: true
+
+# Configuration for staged commits
+default_stages: [pre-commit]
+fail_fast: false  # Run all hooks even if one fails

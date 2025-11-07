@@ -85,6 +85,26 @@ export const CommunitySettings: Component<CommunitySettingsProps> = (props) => {
     customValue: 30,
     levelId: undefined,
   });
+  const [minTrustForPoolCreation, setMinTrustForPoolCreation] = createSignal<TrustLevelPickerValue>({
+    customValue: 20,
+    levelId: undefined,
+  });
+  const [minTrustForCouncilCreation, setMinTrustForCouncilCreation] = createSignal<TrustLevelPickerValue>({
+    customValue: 25,
+    levelId: undefined,
+  });
+  const [minTrustForAttachments, setMinTrustForAttachments] = createSignal<TrustLevelPickerValue>({
+    customValue: 15,
+    levelId: undefined,
+  });
+  const [minTrustForFlagging, setMinTrustForFlagging] = createSignal<TrustLevelPickerValue>({
+    customValue: 15,
+    levelId: undefined,
+  });
+  const [minTrustForFlagReview, setMinTrustForFlagReview] = createSignal<TrustLevelPickerValue>({
+    customValue: 30,
+    levelId: undefined,
+  });
 
   createEffect(() => {
     const comm = community();
@@ -110,9 +130,24 @@ export const CommunitySettings: Component<CommunitySettingsProps> = (props) => {
       setMinTrustForForumModeration(
         trustRequirementToPickerValue(comm.minTrustForForumModeration, levels, 30)
       );
+      setMinTrustForPoolCreation(
+        trustRequirementToPickerValue(comm.minTrustForPoolCreation, levels, 20)
+      );
+      setMinTrustForCouncilCreation(
+        trustRequirementToPickerValue(comm.minTrustForCouncilCreation, levels, 25)
+      );
+      setMinTrustForAttachments(
+        trustRequirementToPickerValue(comm.minTrustForAttachments, levels, 15)
+      );
+      setMinTrustForFlagging(
+        trustRequirementToPickerValue(comm.minTrustForFlagging, levels, 15)
+      );
+      setMinTrustForFlagReview(
+        trustRequirementToPickerValue(comm.minTrustForFlagReview, levels, 30)
+      );
     }
   });
-  
+
   const handleUpdate = () => {
     const dto: UpdateCommunityDto = {
       name: name(),
@@ -123,6 +158,11 @@ export const CommunitySettings: Component<CommunitySettingsProps> = (props) => {
       minTrustForPolls: pickerValueToTrustRequirement(minTrustForPolls()),
       minTrustForThreadCreation: pickerValueToTrustRequirement(minTrustForThreadCreation()),
       minTrustForForumModeration: pickerValueToTrustRequirement(minTrustForForumModeration()),
+      minTrustForPoolCreation: pickerValueToTrustRequirement(minTrustForPoolCreation()),
+      minTrustForCouncilCreation: pickerValueToTrustRequirement(minTrustForCouncilCreation()),
+      minTrustForAttachments: pickerValueToTrustRequirement(minTrustForAttachments()),
+      minTrustForFlagging: pickerValueToTrustRequirement(minTrustForFlagging()),
+      minTrustForFlagReview: pickerValueToTrustRequirement(minTrustForFlagReview()),
     };
 
     // Mutation will automatically invalidate queries via onSuccess in the hook
@@ -199,12 +239,63 @@ export const CommunitySettings: Component<CommunitySettingsProps> = (props) => {
                   label={t('minTrustForPolls')}
                   description={t('minTrustForPollsDesc')}
                 />
+              </div>
+            </div>
+
+            <div class="border-t pt-4 mt-4">
+              <h3 class="text-lg font-semibold mb-3">{t('poolCouncilConfigTitle')}</h3>
+              <p class="text-sm text-stone-600 dark:text-stone-400 mb-4">{t('poolCouncilConfigDesc')}</p>
+
+              <div class="space-y-4">
+                <TrustLevelPicker
+                  communityId={props.communityId}
+                  value={minTrustForPoolCreation()}
+                  onChange={setMinTrustForPoolCreation}
+                  label={t('minTrustForPoolCreation')}
+                  description={t('minTrustForPoolCreationDesc')}
+                />
+                <TrustLevelPicker
+                  communityId={props.communityId}
+                  value={minTrustForCouncilCreation()}
+                  onChange={setMinTrustForCouncilCreation}
+                  label={t('minTrustForCouncilCreation')}
+                  description={t('minTrustForCouncilCreationDesc')}
+                />
+              </div>
+            </div>
+
+            <div class="border-t pt-4 mt-4">
+              <h3 class="text-lg font-semibold mb-3">{t('forumConfigTitle')}</h3>
+              <p class="text-sm text-stone-600 dark:text-stone-400 mb-4">{t('forumConfigDesc')}</p>
+
+              <div class="space-y-4">
                 <TrustLevelPicker
                   communityId={props.communityId}
                   value={minTrustForThreadCreation()}
                   onChange={setMinTrustForThreadCreation}
                   label={t('minTrustForThreadCreation')}
                   description={t('minTrustForThreadCreationDesc')}
+                />
+                <TrustLevelPicker
+                  communityId={props.communityId}
+                  value={minTrustForAttachments()}
+                  onChange={setMinTrustForAttachments}
+                  label={t('minTrustForAttachments')}
+                  description={t('minTrustForAttachmentsDesc')}
+                />
+                <TrustLevelPicker
+                  communityId={props.communityId}
+                  value={minTrustForFlagging()}
+                  onChange={setMinTrustForFlagging}
+                  label={t('minTrustForFlagging')}
+                  description={t('minTrustForFlaggingDesc')}
+                />
+                <TrustLevelPicker
+                  communityId={props.communityId}
+                  value={minTrustForFlagReview()}
+                  onChange={setMinTrustForFlagReview}
+                  label={t('minTrustForFlagReview')}
+                  description={t('minTrustForFlagReviewDesc')}
                 />
                 <TrustLevelPicker
                   communityId={props.communityId}

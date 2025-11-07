@@ -8,7 +8,7 @@ export interface ButtonProps extends JSX.ButtonHTMLAttributes<HTMLButtonElement>
 
 export const Button: Component<ButtonProps> = (props) => {
   const [local, rest] = splitProps(props, ['variant', 'size', 'loading', 'children']);
-  
+
   const baseClasses = 'inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors';
   const variants = {
     primary: 'bg-ocean-600 text-white hover:bg-ocean-700 focus:ring-ocean-500',

@@ -1,4 +1,4 @@
-import { Component, For, Show, createSignal } from 'solid-js';
+import { Component, For, Show, createSignal, createMemo } from 'solid-js';
 import { Card } from '@/components/common/Card';
 import { Button } from '@/components/common/Button';
 import { Badge } from '@/components/common/Badge';
@@ -20,6 +20,7 @@ export const WealthRequestsPanel: Component<WealthRequestsPanelProps> = (props) 
   const requests = useWealthRequestsQuery(() => props.wealthId);
   const { accept, reject, cancel } = useManageRequestMutations();
   const [error, setError] = createSignal<string | null>(null);
+  const [statusFilter, setStatusFilter] = createSignal<WealthRequestStatus | 'all'>('all');
 
   const handleAccept = async (req: WealthRequest) => {
     setError(null);
@@ -40,6 +41,17 @@ export const WealthRequestsPanel: Component<WealthRequestsPanelProps> = (props) 
       setError(e?.message ?? 'Failed to reject request');
     }
   };
+
+  // Filter requests based on selected status
+  const filteredRequests = createMemo(() => {
+    const allRequests = requests.data as WealthRequest[] | undefined;
+    if (!allRequests) return [];
+
+    const filter = statusFilter();
+    if (filter === 'all') return allRequests;
+
+    return allRequests.filter(req => req.status === filter);
+  });
 
   const getStatusBadgeVariant = (status: WealthRequestStatus): 'success' | 'warning' | 'danger' | 'secondary' | 'ocean' => {
     switch (status) {
@@ -81,20 +93,42 @@ export const WealthRequestsPanel: Component<WealthRequestsPanelProps> = (props) 
   return (
     <Card class="mt-3">
       <div class="p-4 space-y-3">
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between gap-4 flex-wrap">
           <h5 class="font-semibold">{t('title')}</h5>
-          <Show when={requests.isLoading}><span class="text-sm text-stone-500 dark:text-stone-400">{t('loading')}</span></Show>
+          <div class="flex items-center gap-3 flex-1 justify-end">
+            <div class="flex items-center gap-2">
+              <label class="text-sm text-stone-700 dark:text-stone-300 whitespace-nowrap">
+                {t('filterLabel')}:
+              </label>
+              <select
+                class="border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 rounded px-2 py-1 text-sm"
+                value={statusFilter()}
+                onInput={(e) => setStatusFilter((e.currentTarget as HTMLSelectElement).value as WealthRequestStatus | 'all')}
+              >
+                <option value="all">{t('filterOptions.all')}</option>
+                <option value="pending">{t('filterOptions.pending')}</option>
+                <option value="accepted">{t('filterOptions.accepted')}</option>
+                <option value="fulfilled">{t('filterOptions.fulfilled')}</option>
+                <option value="rejected">{t('filterOptions.rejected')}</option>
+                <option value="cancelled">{t('filterOptions.cancelled')}</option>
+                <option value="failed">{t('filterOptions.failed')}</option>
+              </select>
+            </div>
+            <Show when={requests.isLoading}>
+              <span class="text-sm text-stone-500 dark:text-stone-400">{t('loading')}</span>
+            </Show>
+          </div>
         </div>
 
         <Show when={error()}>
           <div class="text-sm text-red-600">{error()}</div>
         </Show>
 
-        <Show when={requests.data && (requests.data as WealthRequest[]).length > 0} fallback={
+        <Show when={requests.data && filteredRequests().length > 0} fallback={
           <div class="text-sm text-stone-500 dark:text-stone-400">{t('noRequests')}</div>
         }>
           <div class="divide-y">
-            <For each={requests.data as WealthRequest[]}>
+            <For each={filteredRequests()}>
               {(req) => {
                 const userQuery = useUserQuery(() => req.requesterId);
                 const user = () => userQuery.data;

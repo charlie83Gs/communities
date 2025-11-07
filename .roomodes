@@ -1052,7 +1052,7 @@ customModes:
               ]
           }
           });
-          
+
           const cookies = loginResponse.headers()['set-cookie'];
           authToken = extractTokenFromCookies(cookies);
       });
@@ -1612,7 +1612,7 @@ customModes:
           - [ ] If needed, add a small dictionary for shared UI (e.g., buttons) next to the shared component
           - [ ] Manually test language switching via the navbar LanguageSwitcher
           - [ ] Confirm persistence across refresh
-          
+
       7) Keys and formatting conventions
           - Use kebab- or snake-free lowerCamelCase keys (e.g., `ctaLogin`, `featuresTitle`, `philosophy.noMoney.title`)
           - Keep messages plain strings; where structured content is needed, split into separate keys
@@ -1929,7 +1929,7 @@ customModes:
       it('handles click events', async () => {
           const handleClick = vi.fn();
           const { getByRole } = render(() => <Button onClick={handleClick}>Click</Button>);
-          
+
           fireEvent.click(getByRole('button'));
           expect(handleClick).toHaveBeenCalledTimes(1);
       });
@@ -2026,7 +2026,7 @@ customModes:
           <>
           <Title>Dashboard - YourApp</Title>
           <Meta name="description" content="Your dashboard overview" />
-          
+
           <DashboardLayout>
               <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
               <For each={stats.data?.items}>
@@ -2093,7 +2093,7 @@ customModes:
           enabled: !!userId(),
       }));
       };
-      
+
       ### TanStack Query and UI Consistency Rules (Critical)
 
       To prevent UI from getting "stuck" or showing stale data, follow these rules across all pages/features:
@@ -2162,13 +2162,13 @@ customModes:
       - Switch tabs within a feature: secondary data loads independently; primary content stays rendered.
       - Switch between communities: data updates immediately, no stale content
       - After logout: all cached data is cleared
-      
+
       Code snippets:
-      
+
       - Mutation with onSuccess invalidations
       ```ts
       import { createMutation, useQueryClient } from '@tanstack/solid-query';
-      
+
       const queryClient = useQueryClient();
       const updateCommunity = createMutation(() => ({
         mutationFn: (vars: { id: string; dto: UpdateCommunityDto }) =>
@@ -2179,7 +2179,7 @@ customModes:
         },
       }));
       ```
-      
+
       - Navigation gate using a single primary query
       ```tsx
       // In context/provider:
@@ -2353,7 +2353,7 @@ customModes:
           () => <UserCard userId="123" />,
           { wrapper: createWrapper() }
           );
-          
+
           await waitFor(() => {
           expect(getByText('John Doe')).toBeInTheDocument();
           });
@@ -2376,10 +2376,10 @@ customModes:
           const debouncedValue = useDebounce(value, 300);
           return { setValue, debouncedValue };
           });
-          
+
           result.setValue('test');
           expect(result.debouncedValue()).toBe('');
-          
+
           await new Promise(resolve => setTimeout(resolve, 350));
           expect(result.debouncedValue()).toBe('test');
       });
@@ -2400,7 +2400,7 @@ customModes:
           wrapper: Router,
           initialEntries: ['/dashboard']
           });
-          
+
           await waitFor(() => {
           expect(history.location.pathname).toBe('/login');
           });
@@ -2408,7 +2408,7 @@ customModes:
 
       it('allows access after successful login', async () => {
           const { getByLabelText, getByRole, history } = render(() => <App />);
-          
+
           fireEvent.change(getByLabelText('Email'), {
           target: { value: 'test@example.com' }
           });
@@ -2416,7 +2416,7 @@ customModes:
           target: { value: 'password123' }
           });
           fireEvent.click(getByRole('button', { name: 'Login' }));
-          
+
           await waitFor(() => {
           expect(history.location.pathname).toBe('/dashboard');
           });
@@ -2439,18 +2439,18 @@ customModes:
       test('complete signup and login flow', async ({ page }) => {
           // Navigate to signup
           await page.goto('/signup');
-          
+
           // Fill signup form
           await page.fill('[name="email"]', 'newuser@example.com');
           await page.fill('[name="password"]', 'SecurePass123!');
           await page.fill('[name="confirmPassword"]', 'SecurePass123!');
-          
+
           // Submit
           await page.click('button[type="submit"]');
-          
+
           // Verify redirect to dashboard
           await expect(page).toHaveURL('/dashboard');
-          
+
           // Verify user is logged in
           await expect(page.locator('[data-testid="user-menu"]')).toBeVisible();
       });
@@ -2518,7 +2518,7 @@ customModes:
       {isLoading() ? <Spinner /> : <Content />}
 
       // ✅ DO: Memoize expensive computations
-      const filteredItems = createMemo(() => 
+      const filteredItems = createMemo(() =>
       items().filter(item => item.active)
       );
 
