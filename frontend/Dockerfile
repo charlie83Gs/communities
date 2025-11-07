@@ -1,36 +1,19 @@
 # Multi-stage build for communities-frontend
-FROM node:20-alpine AS base
+FROM oven/bun:1 AS builder
 
 WORKDIR /app
 
 # Copy package files
-COPY package.json pnpm-lock.yaml* ./
-
-# Install pnpm
-RUN npm install -g pnpm
+COPY package.json bun.lock ./
 
 # Install dependencies
-RUN pnpm install --frozen-lockfile
+RUN bun install --frozen-lockfile
 
-# Builder stage
-FROM node:20-alpine AS builder
-
-WORKDIR /app
-
-# Install pnpm
-RUN npm install -g pnpm
-
-# Copy package files
-COPY package.json pnpm-lock.yaml* ./
-
-# Install dependencies
-RUN pnpm install --frozen-lockfile
-
-# Copy source code
+# Copy source code and configuration
 COPY . .
 
 # Build the application
-RUN pnpm run build
+RUN bun run build
 
 # Production stage - using nginx to serve static files
 FROM nginx:alpine AS production

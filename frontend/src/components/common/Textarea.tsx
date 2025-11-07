@@ -8,7 +8,7 @@ export interface TextareaProps extends JSX.TextareaHTMLAttributes<HTMLTextAreaEl
 
 export const Textarea: Component<TextareaProps> = (props) => {
   const [local, rest] = splitProps(props, ['label', 'error', 'rows']);
-  
+
   return (
     <div class="mb-4">
       <Show when={local.label}>

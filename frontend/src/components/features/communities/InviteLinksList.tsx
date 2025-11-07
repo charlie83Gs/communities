@@ -20,7 +20,7 @@ const InviteLinksList: Component<InviteLinksListProps> = (props) => {
   const invitesQuery = useCommunityLinkInvitesQuery(() => props.communityId);
   const cancelMutation = useCancelInviteMutation();
 
-  const activeInvites = createMemo(() => 
+  const activeInvites = createMemo(() =>
     invitesQuery.data?.filter(invite => invite.status === 'pending') || []
   );
 

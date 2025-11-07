@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/charlie83Gs/communities/compare/communities-api-v1.2.0...communities-api-v1.3.0) (2025-11-07)
+
+
+### Features
+
+* increment, multiple features, ci, testing improvements ([aeb15ea](https://github.com/charlie83Gs/communities/commit/aeb15eaec5b9f9068bf9cb82638b2051167e276f))
+
 ## [1.2.0](https://github.com/charlie83Gs/communities/compare/communities-api-v1.1.0...communities-api-v1.2.0) (2025-11-06)
 
 

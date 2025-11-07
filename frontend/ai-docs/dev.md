@@ -741,4 +741,3 @@ VITE_WEBSITE_DOMAIN="http://localhost:3000"
 VITE_API_BASE_PATH="/auth"
 VITE_WEBSITE_BASE_PATH="/auth"
 ```
-

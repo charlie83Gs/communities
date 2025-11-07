@@ -13,7 +13,7 @@ export interface CommunityPermissions {
 
 export const useCommunityPermissions = (communityId: Accessor<string | undefined>): CommunityPermissions => {
   const { user, isAuthenticated } = useAuth();
-  
+
   const [role] = createResource(
     () => ({
       userId: user()?.id,
