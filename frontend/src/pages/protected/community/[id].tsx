@@ -1,4 +1,4 @@
-import { Component, Show, createSignal, Switch, Match, createMemo } from 'solid-js';
+import { Component, Show, createSignal, Switch, Match, createMemo, createEffect } from 'solid-js';
 import { Button } from '@/components/common/Button';
 import { Title } from '@solidjs/meta';
 import { useParams } from '@solidjs/router';
@@ -31,7 +31,32 @@ import { useMyTrustSummaryQuery } from '@/hooks/queries/useMyTrustSummaryQuery';
 import { resolveTrustRequirement } from '@/utils/trustLevels';
 const CommunityDetailsContent: Component = () => {
   const t = makeTranslator(communityDetailsDict, 'communityDetails');
-  const { community, isLoading, error, isAdmin, canInviteMembers, canRemoveMembers, canUpdateMemberRoles, canManageItems, role } = useCommunity();
+  const {
+    community,
+    isLoading,
+    error,
+    isAdmin,
+    canInviteMembers,
+    canRemoveMembers,
+    canUpdateMemberRoles,
+    canManageItems,
+    role,
+    // Permission flags from trustMe
+    canViewTrust,
+    canViewWealth,
+    canCreateWealth,
+    canViewItems,
+    canViewPolls,
+    canCreatePolls,
+    canViewPools,
+    canCreatePools,
+    canViewCouncils,
+    canCreateCouncils,
+    canViewForum,
+    canManageForum,
+    canCreateThreads,
+    canViewAnalytics,
+  } = useCommunity();
 
   // Fetch user's trust score
   const trustSummaryQuery = useMyTrustSummaryQuery(() => community()?.id);
@@ -98,49 +123,49 @@ const CommunityDetailsContent: Component = () => {
       id: 'wealth' as SidebarTab,
       label: t('tabWealth'),
       icon: 'wealth' as const,
-      visible: true,
+      visible: canViewWealth(),
     },
     {
       id: 'members' as SidebarTab,
       label: t('tabMembers'),
       icon: 'members' as const,
-      visible: true,
+      visible: canViewTrust(), // Members tab shows trust/awards functionality
     },
     {
       id: 'forum' as SidebarTab,
       label: t('tabForum'),
       icon: 'forum' as const,
-      visible: true,
+      visible: canViewForum(),
     },
     {
       id: 'polls' as SidebarTab,
       label: t('tabPolls'),
       icon: 'polls' as const,
-      visible: true,
+      visible: canViewPolls(),
     },
     {
       id: 'councils' as SidebarTab,
       label: t('tabCouncils'),
       icon: 'members' as const,
-      visible: true,
+      visible: canViewCouncils(),
     },
     {
       id: 'trust-timeline' as SidebarTab,
       label: t('tabTrustTimeline'),
       icon: 'trust' as const,
-      visible: !!role(), // Visible to all members
+      visible: canViewTrust(),
     },
     {
       id: 'health' as SidebarTab,
       label: t('tabHealth'),
       icon: 'health' as const,
-      visible: true,
+      visible: canViewAnalytics(),
     },
     {
       id: 'items' as SidebarTab,
       label: t('tabItems'),
       icon: 'items' as const,
-      visible: isAdmin() || canManageItems(),
+      visible: canViewItems(),
     },
     {
       id: 'invites' as SidebarTab,
@@ -161,6 +186,28 @@ const CommunityDetailsContent: Component = () => {
       visible: isAdmin(),
     },
   ]);
+
+  // Compute first available tab (must be after sidebarItems definition)
+  const firstAvailableTab = createMemo(() => {
+    const items = sidebarItems();
+    const visibleItem = items.find(item => item.visible);
+    return visibleItem?.id || null;
+  });
+
+  // Auto-redirect if current tab is not visible
+  createEffect(() => {
+    const currentTab = activeTab();
+    const items = sidebarItems();
+    const currentTabItem = items.find(item => item.id === currentTab);
+
+    // If current tab is not visible, switch to first available
+    if (currentTabItem && !currentTabItem.visible) {
+      const firstTab = firstAvailableTab();
+      if (firstTab) {
+        setActiveTab(firstTab);
+      }
+    }
+  });
 
   return (
     <div class="min-h-screen bg-gradient-to-br from-ocean-50 via-stone-50 to-sky-100 dark:from-stone-900 dark:via-stone-800 dark:to-ocean-950">
@@ -237,16 +284,32 @@ const CommunityDetailsContent: Component = () => {
 
                   {/* Main Content Area */}
                   <div class="flex-1 min-w-0 bg-white dark:bg-stone-800 rounded-lg p-6 shadow-sm border border-stone-200 dark:border-stone-700">
-                    <Switch fallback={undefined}>
+                    <Show
+                      when={firstAvailableTab()}
+                      fallback={
+                        <div class="text-center py-12">
+                          <div class="text-6xl mb-4">🔒</div>
+                          <h3 class="text-xl font-semibold text-stone-900 dark:text-stone-100 mb-2">
+                            {t('noAccessTitle') || 'No Access'}
+                          </h3>
+                          <p class="text-stone-600 dark:text-stone-400 max-w-md mx-auto">
+                            {t('noAccessMessage') || 'You do not have permission to access any sections of this community yet. Build trust with other members to unlock features.'}
+                          </p>
+                        </div>
+                      }
+                    >
+                      <Switch fallback={undefined}>
                       <Match when={activeTab() === 'wealth'}>
-                        <Show when={role()} fallback={<div class="p-4 text-stone-500 dark:text-stone-400">{t('mustBeMember')}</div>}>
+                        <Show when={canViewWealth()} fallback={<div class="p-4 text-stone-500 dark:text-stone-400">{t('mustBeMember')}</div>}>
                           <div class="space-y-6">
                             <SectionDisclaimer>
                               {disclaimerWealth()}
                             </SectionDisclaimer>
-                            <Button onClick={() => setShowShareForm(true)}>
-                              {t('createShare')}
-                            </Button>
+                            <Show when={canCreateWealth()}>
+                              <Button onClick={() => setShowShareForm(true)}>
+                                {t('createShare')}
+                              </Button>
+                            </Show>
                             <WealthList communityId={communityData().id} />
                           </div>
                         </Show>
@@ -265,7 +328,7 @@ const CommunityDetailsContent: Component = () => {
                         </Show>
                       </Match>
                       <Match when={activeTab() === 'polls'}>
-                        <Show when={role()} fallback={<div class="p-4 text-stone-500 dark:text-stone-400">{t('mustBeMember')}</div>}>
+                        <Show when={canViewPolls()} fallback={<div class="p-4 text-stone-500 dark:text-stone-400">{t('mustBeMember')}</div>}>
                           <div class="space-y-6">
                             <SectionDisclaimer>
                               {disclaimerPolls()}
@@ -273,13 +336,13 @@ const CommunityDetailsContent: Component = () => {
                             <PollsList
                               communityId={communityData().id}
                               onCreateClick={() => setShowPollForm(true)}
-                              canCreatePoll={true}
+                              canCreatePoll={canCreatePolls()}
                             />
                           </div>
                         </Show>
                       </Match>
                       <Match when={activeTab() === 'councils'}>
-                        <Show when={role()} fallback={<div class="p-4 text-stone-500 dark:text-stone-400">{t('mustBeMember')}</div>}>
+                        <Show when={canViewCouncils()} fallback={<div class="p-4 text-stone-500 dark:text-stone-400">{t('mustBeMember')}</div>}>
                           <div class="space-y-6">
                             <SectionDisclaimer>
                               {disclaimerCouncils()}
@@ -288,25 +351,29 @@ const CommunityDetailsContent: Component = () => {
                               communityId={communityData().id}
                               onCreateClick={() => setShowCouncilForm(true)}
                               onViewDetails={(councilId) => setSelectedCouncilId(councilId)}
-                              canCreateCouncil={isAdmin()}
+                              canCreateCouncil={canCreateCouncils()}
                             />
                           </div>
                         </Show>
                       </Match>
                       <Match when={activeTab() === 'forum'}>
-                        <ForumContent communityId={communityData().id} />
+                        <Show when={canViewForum()} fallback={<div class="p-4 text-stone-500 dark:text-stone-400">{t('mustBeMember')}</div>}>
+                          <ForumContent communityId={communityData().id} />
+                        </Show>
                       </Match>
                       <Match when={activeTab() === 'trust-timeline'}>
-                        <Show when={role()} fallback={<div class="p-4 text-stone-500 dark:text-stone-400">{t('mustBeMember')}</div>}>
+                        <Show when={canViewTrust()} fallback={<div class="p-4 text-stone-500 dark:text-stone-400">{t('mustBeMember')}</div>}>
                           <TrustTimeline communityId={communityData().id} />
                         </Show>
                       </Match>
                       <Match when={activeTab() === 'health'}>
-                        <HealthAnalyticsPanel communityId={communityData().id} />
+                        <Show when={canViewAnalytics()} fallback={<div class="p-4 text-stone-500 dark:text-stone-400">{t('mustBeMember')}</div>}>
+                          <HealthAnalyticsPanel communityId={communityData().id} />
+                        </Show>
                       </Match>
                       <Match when={activeTab() === 'items'}>
                         <Show
-                          when={canManageItems() || isAdmin()}
+                          when={canViewItems()}
                           fallback={
                             <div class="p-4 text-stone-500 dark:text-stone-400">
                               {t('noPermissionItems')}
@@ -315,7 +382,7 @@ const CommunityDetailsContent: Component = () => {
                         >
                           <ItemsManagementPanel
                             communityId={communityData().id}
-                            canManageItems={canManageItems() || isAdmin()}
+                            canManageItems={canManageItems()}
                           />
                         </Show>
                       </Match>
@@ -347,6 +414,7 @@ const CommunityDetailsContent: Component = () => {
                         <CommunitySettings communityId={communityData().id} />
                       </Match>
                     </Switch>
+                    </Show>
                   </div>
                 </div>
               </div>

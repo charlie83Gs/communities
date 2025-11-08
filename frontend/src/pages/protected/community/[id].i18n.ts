@@ -39,6 +39,8 @@ export const communityDetailsDict = {
       invalidId: 'Invalid community ID',
       yourTrustScore: 'Your Trust Score',
       trustPoints: 'Trust Points',
+      noAccessTitle: 'No Access Available',
+      noAccessMessage: 'You do not have permission to access any sections of this community yet. Build trust with other members to unlock features.',
     },
   },
   es: {
@@ -79,6 +81,8 @@ export const communityDetailsDict = {
       invalidId: 'ID de comunidad inválido',
       yourTrustScore: 'Tu Puntuación de Confianza',
       trustPoints: 'Puntos de Confianza',
+      noAccessTitle: 'No hay acceso disponible',
+      noAccessMessage: 'Aún no tienes permiso para acceder a ninguna sección de esta comunidad. Construye confianza con otros miembros para desbloquear funciones.',
     },
   },
   hi: {
@@ -119,6 +123,8 @@ export const communityDetailsDict = {
       invalidId: 'अमान्य समुदाय आईडी',
       yourTrustScore: 'आपका विश्वास स्कोर',
       trustPoints: 'विश्वास अंक',
+      noAccessTitle: 'कोई पहुंच उपलब्ध नहीं',
+      noAccessMessage: 'आपके पास अभी तक इस समुदाय के किसी भी अनुभाग तक पहुंचने की अनुमति नहीं है। सुविधाओं को अनलॉक करने के लिए अन्य सदस्यों के साथ विश्वास बनाएं।',
     },
   },
 } as const satisfies Dict;

@@ -17,15 +17,13 @@ interface ForumThreadListProps {
 
 export const ForumThreadList: Component<ForumThreadListProps> = (props) => {
   const t = makeTranslator(forumDict, 'forum');
-  const { community, isAdmin, role } = useCommunity();
+  const { community, isAdmin, role, canCreateThreads } = useCommunity();
   const [showCreateModal, setShowCreateModal] = createSignal(false);
   const [threadTitle, setThreadTitle] = createSignal('');
   const [threadContent, setThreadContent] = createSignal('');
   const [threadTags, setThreadTags] = createSignal('');
   const [currentPage, setCurrentPage] = createSignal(1);
   const [sortBy, setSortBy] = createSignal<'newest' | 'popular' | 'mostUpvoted'>('newest');
-
-  const trustSummaryQuery = useMyTrustSummaryQuery(() => props.communityId);
 
   const params = createMemo<ThreadListParams>(() => ({
     page: currentPage(),
@@ -36,13 +34,7 @@ export const ForumThreadList: Component<ForumThreadListProps> = (props) => {
   const threadsQuery = useForumThreadsQuery(() => props.communityId, () => props.categoryId, params);
   const createThreadMutation = useCreateThreadMutation();
 
-  const canCreateThread = createMemo(() => {
-    if (isAdmin()) return true;
-    const comm = community();
-    const trust = trustSummaryQuery.data;
-    if (!comm || !trust) return false;
-    return trust.points >= (comm.minTrustForThreadCreation || 10);
-  });
+  const canCreateThread = createMemo(() => canCreateThreads());
 
   const handleCreateThread = async (e: Event) => {
     e.preventDefault();

@@ -12,10 +12,48 @@ export interface TrustSummary {
   trustThreshold?: number; // Legacy field, may not be returned by backend
   points: number;
   roles: string[];
+
+  // Trust permissions
+  canViewTrust: boolean;
   canAwardTrust: boolean;
-  canAccessWealth: boolean;
+
+  // Wealth permissions
+  canViewWealth: boolean;
+  canCreateWealth: boolean;
+
+  // Items permissions
+  canViewItems: boolean;
+  canManageItems: boolean;
+
+  // Disputes permissions
+  canViewDisputes: boolean;
   canHandleDisputes: boolean;
+
+  // Polls permissions
+  canViewPolls: boolean;
   canCreatePolls: boolean;
+
+  // Pools permissions
+  canViewPools: boolean;
+  canCreatePools: boolean;
+
+  // Councils permissions
+  canViewCouncils: boolean;
+  canCreateCouncils: boolean;
+
+  // Forum permissions
+  canViewForum: boolean;
+  canManageForum: boolean;
+  canCreateThreads: boolean;
+  canUploadAttachments: boolean;
+  canFlagContent: boolean;
+  canReviewFlags: boolean;
+
+  // Analytics permissions
+  canViewAnalytics: boolean;
+
+  // Legacy field for backward compatibility
+  canAccessWealth?: boolean;
 }
 
 export interface TrustAward {

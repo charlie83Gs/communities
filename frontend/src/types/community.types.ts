@@ -14,6 +14,14 @@ export interface Community {
   minTrustForFlagging: TrustRequirement | null;
   minTrustForFlagReview: TrustRequirement | null;
   minTrustForHealthAnalytics: TrustRequirement | null;
+  minTrustToViewTrust: TrustRequirement | null;
+  minTrustToViewWealth: TrustRequirement | null;
+  minTrustToViewItems: TrustRequirement | null;
+  minTrustToViewDisputes: TrustRequirement | null;
+  minTrustToViewPolls: TrustRequirement | null;
+  minTrustToViewPools: TrustRequirement | null;
+  minTrustToViewCouncils: TrustRequirement | null;
+  minTrustToViewForum: TrustRequirement | null;
   createdBy: string | null;
   createdAt: Date | null;
   userTrustScore?: number | null;
@@ -34,6 +42,14 @@ export interface CreateCommunityDto {
   minTrustForFlagging?: TrustRequirement;
   minTrustForFlagReview?: TrustRequirement;
   minTrustForHealthAnalytics?: TrustRequirement;
+  minTrustToViewTrust?: TrustRequirement;
+  minTrustToViewWealth?: TrustRequirement;
+  minTrustToViewItems?: TrustRequirement;
+  minTrustToViewDisputes?: TrustRequirement;
+  minTrustToViewPolls?: TrustRequirement;
+  minTrustToViewPools?: TrustRequirement;
+  minTrustToViewCouncils?: TrustRequirement;
+  minTrustToViewForum?: TrustRequirement;
 }
 
 export interface UpdateCommunityDto {
@@ -51,6 +67,14 @@ export interface UpdateCommunityDto {
   minTrustForFlagging?: TrustRequirement;
   minTrustForFlagReview?: TrustRequirement;
   minTrustForHealthAnalytics?: TrustRequirement;
+  minTrustToViewTrust?: TrustRequirement;
+  minTrustToViewWealth?: TrustRequirement;
+  minTrustToViewItems?: TrustRequirement;
+  minTrustToViewDisputes?: TrustRequirement;
+  minTrustToViewPolls?: TrustRequirement;
+  minTrustToViewPools?: TrustRequirement;
+  minTrustToViewCouncils?: TrustRequirement;
+  minTrustToViewForum?: TrustRequirement;
 }
 
 export interface PaginatedCommunities {
