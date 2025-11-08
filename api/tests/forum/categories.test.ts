@@ -45,9 +45,7 @@ describe('Forum Categories', () => {
   describe('createCategory', () => {
     it('should create category as admin', async () => {
       // Setup: Make user admin
-      mockOpenFGA.check.mockImplementation(async (params: any) => {
-        return params.relation === 'admin';
-      });
+      mockOpenFGA.checkAccess.mockResolvedValue(true);
       mockForumRepo.createCategory.mockResolvedValue(forumTestData.category());
 
       const dto = forumTestData.createCategoryDto();
@@ -60,11 +58,7 @@ describe('Forum Categories', () => {
 
     it('should create category as forum manager', async () => {
       // Setup: Make user forum manager (not admin)
-      mockOpenFGA.check.mockImplementation(async (params: any) => {
-        if (params.relation === 'admin') return false;
-        if (params.relation === 'forum_manager') return true;
-        return false;
-      });
+      mockOpenFGA.checkAccess.mockResolvedValue(true);
       mockForumRepo.createCategory.mockResolvedValue(forumTestData.category());
 
       const dto = forumTestData.createCategoryDto();
@@ -76,7 +70,7 @@ describe('Forum Categories', () => {
 
     it('should fail without admin or forum manager permissions', async () => {
       // Setup: Regular member (no admin, no forum_manager)
-      mockOpenFGA.check.mockResolvedValue(false);
+      mockOpenFGA.checkAccess.mockResolvedValue(false);
 
       const dto = forumTestData.createCategoryDto();
 
@@ -86,7 +80,7 @@ describe('Forum Categories', () => {
     });
 
     it('should validate category name length', async () => {
-      mockOpenFGA.check.mockResolvedValue(true); // Admin
+      mockOpenFGA.checkAccess.mockResolvedValue(true); // Admin
 
       const dto = forumTestData.createCategoryDto({ name: '' });
 
@@ -181,9 +175,7 @@ describe('Forum Categories', () => {
 
   describe('updateCategory', () => {
     it('should update category as admin', async () => {
-      mockOpenFGA.check.mockImplementation(async (params: any) => {
-        return params.relation === 'admin';
-      });
+      mockOpenFGA.checkAccess.mockResolvedValue(true);
       mockForumRepo.findCategoryById.mockResolvedValue(forumTestData.category());
       mockForumRepo.updateCategory.mockResolvedValue(
         forumTestData.category({ name: 'Updated Category' })
@@ -220,7 +212,7 @@ describe('Forum Categories', () => {
     });
 
     it('should fail without admin or forum manager permissions', async () => {
-      mockOpenFGA.check.mockResolvedValue(false);
+      mockOpenFGA.checkAccess.mockResolvedValue(false);
       mockForumRepo.findCategoryById.mockResolvedValue(forumTestData.category());
 
       await expect(
@@ -229,7 +221,7 @@ describe('Forum Categories', () => {
     });
 
     it('should throw 404 if category not found', async () => {
-      mockOpenFGA.check.mockResolvedValue(true); // Admin
+      mockOpenFGA.checkAccess.mockResolvedValue(true); // Admin
       mockForumRepo.findCategoryById.mockResolvedValue(forumTestData.category());
       mockForumRepo.updateCategory.mockResolvedValue(null);
 
@@ -241,7 +233,7 @@ describe('Forum Categories', () => {
 
   describe('deleteCategory', () => {
     it('should delete category as admin', async () => {
-      mockOpenFGA.check.mockResolvedValue(true); // Admin
+      mockOpenFGA.checkAccess.mockResolvedValue(true); // Admin
       mockForumRepo.findCategoryById.mockResolvedValue(forumTestData.category());
       mockForumRepo.deleteCategory.mockResolvedValue(forumTestData.category());
 
@@ -265,7 +257,7 @@ describe('Forum Categories', () => {
     });
 
     it('should fail without admin or forum manager permissions', async () => {
-      mockOpenFGA.check.mockResolvedValue(false);
+      mockOpenFGA.checkAccess.mockResolvedValue(false);
       mockForumRepo.findCategoryById.mockResolvedValue(forumTestData.category());
 
       await expect(forumService.deleteCategory('category-123', 'user-123')).rejects.toThrow(
@@ -274,7 +266,7 @@ describe('Forum Categories', () => {
     });
 
     it('should throw 404 if category not found', async () => {
-      mockOpenFGA.check.mockResolvedValue(true); // Admin
+      mockOpenFGA.checkAccess.mockResolvedValue(true); // Admin
       mockForumRepo.findCategoryById.mockResolvedValue(forumTestData.category());
       mockForumRepo.deleteCategory.mockResolvedValue(null);
 
@@ -284,7 +276,7 @@ describe('Forum Categories', () => {
     });
 
     it('should fail if category has threads', async () => {
-      mockOpenFGA.check.mockResolvedValue(true); // Admin
+      mockOpenFGA.checkAccess.mockResolvedValue(true); // Admin
       mockForumRepo.findCategoryById.mockResolvedValue(forumTestData.category());
       // Simulate foreign key constraint error
       mockForumRepo.deleteCategory.mockRejectedValue(

@@ -1,69 +1,39 @@
 import { healthAnalyticsRepository, TimeRange } from '../repositories/healthAnalytics.repository';
 import { communityRepository } from '../repositories/community.repository';
-import { communityMemberRepository } from '../repositories/communityMember.repository';
-import { trustViewRepository } from '../repositories/trustView.repository';
+import { openFGAService } from './openfga.service';
 import { AppError } from '../utils/errors';
 import logger from '../utils/logger';
 
 export class HealthAnalyticsService {
   /**
    * Check if user has access to health analytics
-   * User must be admin OR have trust score >= community.minTrustForHealthAnalytics
+   * Uses OpenFGA to check can_view_analytics permission
+   * (admin OR analytics_viewer OR trust_analytics_viewer)
    */
   private async checkHealthAnalyticsAccess(communityId: string, userId: string): Promise<void> {
     logger.debug(
       `[HealthAnalyticsService checkHealthAnalyticsAccess] Checking access for userId: ${userId}, communityId: ${communityId}`
     );
 
-    // Check if user is member
-    const role = await communityMemberRepository.getUserRole(communityId, userId);
-    if (!role) {
-      logger.warn(
-        `[HealthAnalyticsService checkHealthAnalyticsAccess] User ${userId} is not a member of community ${communityId}`
-      );
-      throw new AppError('Forbidden: must be a member of this community', 403);
-    }
-
-    // Check if user is admin
-    if (role === 'admin') {
-      logger.debug(
-        `[HealthAnalyticsService checkHealthAnalyticsAccess] User ${userId} is admin, access granted`
-      );
-      return;
-    }
-
-    // Check trust score
-    const community = await communityRepository.findById(communityId);
-    if (!community) {
-      throw new AppError('Community not found', 404);
-    }
-
-    // Extract minTrustForHealthAnalytics from jsonb field
-    const minTrustConfig = community.minTrustForHealthAnalytics as {
-      type: string;
-      value: number;
-    };
-    const minTrustRequired = minTrustConfig?.value ?? 20;
-
-    const trustScore = await trustViewRepository.get(communityId, userId);
-    const userTrustScore = trustScore?.points ?? 0;
-
-    logger.debug(
-      `[HealthAnalyticsService checkHealthAnalyticsAccess] User trust: ${userTrustScore}, required: ${minTrustRequired}`
+    const hasAccess = await openFGAService.checkAccess(
+      userId,
+      'community',
+      communityId,
+      'can_view_analytics'
     );
 
-    if (userTrustScore < minTrustRequired) {
+    if (!hasAccess) {
       logger.warn(
-        `[HealthAnalyticsService checkHealthAnalyticsAccess] User ${userId} lacks sufficient trust (${userTrustScore} < ${minTrustRequired})`
+        `[HealthAnalyticsService checkHealthAnalyticsAccess] User ${userId} lacks can_view_analytics permission for community ${communityId}`
       );
       throw new AppError(
-        `Forbidden: requires trust score of ${minTrustRequired} or admin role`,
+        'Forbidden: requires admin role, analytics_viewer role, or sufficient trust score',
         403
       );
     }
 
     logger.debug(
-      `[HealthAnalyticsService checkHealthAnalyticsAccess] User ${userId} has sufficient trust, access granted`
+      `[HealthAnalyticsService checkHealthAnalyticsAccess] User ${userId} has can_view_analytics permission, access granted`
     );
   }
 

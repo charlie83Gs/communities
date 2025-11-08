@@ -2,7 +2,7 @@
  * HealthAnalytics Service Unit Tests
  *
  * Test Coverage:
- * - Permission checks for analytics access
+ * - Permission checks for analytics access (via OpenFGA)
  * - Wealth overview metrics
  * - Wealth items retrieval
  * - Trust overview metrics
@@ -13,9 +13,8 @@
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import { healthAnalyticsService } from './healthAnalytics.service';
 import { healthAnalyticsRepository } from '@/repositories/healthAnalytics.repository';
-import { communityMemberRepository } from '@/repositories/communityMember.repository';
 import { communityRepository } from '@/repositories/community.repository';
-import { trustViewRepository } from '@/repositories/trustView.repository';
+import { openFGAService } from './openfga.service';
 
 // Valid UUIDs for testing
 const VALID_COMM_ID = '550e8400-e29b-41d4-a716-446655440000';
@@ -38,11 +37,6 @@ const mockHealthAnalyticsRepository = {
   getTrustDistribution: mock(() => Promise.resolve([])),
 };
 
-const mockCommunityMemberRepository = {
-  exists: mock(() => Promise.resolve(true)),
-  getUserRole: mock(() => Promise.resolve('member')),
-};
-
 const mockCommunityRepository = {
   findById: mock(() =>
     Promise.resolve({
@@ -60,22 +54,20 @@ const mockCommunityRepository = {
   ),
 };
 
-const mockTrustViewRepository = {
-  get: mock(() => Promise.resolve({ points: 25 })),
+const mockOpenFGAService = {
+  checkAccess: mock(() => Promise.resolve(true)),
 };
 
 describe('HealthAnalyticsService', () => {
   beforeEach(() => {
     // Reset all mocks
     Object.values(mockHealthAnalyticsRepository).forEach((m) => m.mockReset());
-    Object.values(mockCommunityMemberRepository).forEach((m) => m.mockReset());
     Object.values(mockCommunityRepository).forEach((m) => m.mockReset());
-    Object.values(mockTrustViewRepository).forEach((m) => m.mockReset());
+    Object.values(mockOpenFGAService).forEach((m) => m.mockReset());
 
     // Replace dependencies with mocks
-    (communityMemberRepository.getUserRole as any) = mockCommunityMemberRepository.getUserRole;
+    (openFGAService.checkAccess as any) = mockOpenFGAService.checkAccess;
     (communityRepository.findById as any) = mockCommunityRepository.findById;
-    (trustViewRepository.get as any) = mockTrustViewRepository.get;
     (healthAnalyticsRepository.getWealthOverview as any) =
       mockHealthAnalyticsRepository.getWealthOverview;
     (healthAnalyticsRepository.getWealthItems as any) =
@@ -85,8 +77,8 @@ describe('HealthAnalyticsService', () => {
     (healthAnalyticsRepository.getTrustDistribution as any) =
       mockHealthAnalyticsRepository.getTrustDistribution;
 
-    // Default mock behaviors - admin user with sufficient trust
-    mockCommunityMemberRepository.getUserRole.mockResolvedValue('admin');
+    // Default mock behaviors - user has analytics access
+    mockOpenFGAService.checkAccess.mockResolvedValue(true);
     mockCommunityRepository.findById.mockResolvedValue({
       id: VALID_COMM_ID,
       name: 'Test Community',
@@ -99,11 +91,51 @@ describe('HealthAnalyticsService', () => {
         ],
       },
     });
-    mockTrustViewRepository.get.mockResolvedValue({ points: 25 });
+  });
+
+  describe('Permission Checks', () => {
+    it('should allow user with can_view_analytics permission', async () => {
+      mockOpenFGAService.checkAccess.mockResolvedValue(true);
+      mockHealthAnalyticsRepository.getWealthOverview.mockResolvedValue({
+        totalShares: 100,
+        openShares: 25,
+        requestCount: 75,
+        fulfillmentRate: 0.75,
+      });
+
+      const result = await healthAnalyticsService.getWealthOverview(
+        VALID_COMM_ID,
+        VALID_USER_ID,
+        '30d'
+      );
+
+      expect(result).toBeDefined();
+      expect(mockOpenFGAService.checkAccess).toHaveBeenCalledWith(
+        VALID_USER_ID,
+        'community',
+        VALID_COMM_ID,
+        'can_view_analytics'
+      );
+    });
+
+    it('should deny user without can_view_analytics permission', async () => {
+      mockOpenFGAService.checkAccess.mockResolvedValue(false);
+
+      await expect(
+        healthAnalyticsService.getWealthOverview(VALID_COMM_ID, VALID_USER_ID, '30d')
+      ).rejects.toThrow('Forbidden: requires admin role, analytics_viewer role, or sufficient trust score');
+
+      expect(mockOpenFGAService.checkAccess).toHaveBeenCalledWith(
+        VALID_USER_ID,
+        'community',
+        VALID_COMM_ID,
+        'can_view_analytics'
+      );
+    });
   });
 
   describe('getWealthOverview', () => {
-    it('should allow admin to get wealth overview', async () => {
+    it('should return wealth overview with correct metrics', async () => {
       mockHealthAnalyticsRepository.getWealthOverview.mockResolvedValue({
         totalShares: 100,
         openShares: 25,
@@ -146,7 +178,7 @@ describe('HealthAnalyticsService', () => {
   });
 
   describe('getWealthItems', () => {
-    it('should allow admin to get wealth items', async () => {
+    it('should return wealth items with trends', async () => {
       mockHealthAnalyticsRepository.getWealthItems.mockResolvedValue([
         {
           id: 'item-123',
@@ -219,7 +251,7 @@ describe('HealthAnalyticsService', () => {
   });
 
   describe('getTrustOverview', () => {
-    it('should allow admin to get trust overview', async () => {
+    it('should return trust overview with correct metrics', async () => {
       mockHealthAnalyticsRepository.getTrustOverview.mockResolvedValue({
         totalTrust: 250,
         averageTrust: 15.5,
@@ -261,7 +293,7 @@ describe('HealthAnalyticsService', () => {
   });
 
   describe('getTrustDistribution', () => {
-    it('should allow admin to get trust distribution', async () => {
+    it('should return trust distribution by levels', async () => {
       mockHealthAnalyticsRepository.getTrustDistribution.mockResolvedValue([
         { level: 'New', count: 20 },
         { level: 'Stable', count: 15 },

@@ -15,11 +15,11 @@ export class WealthCommentService {
     }
 
     // Check permission: community members (or admins) can read/comment
-    const canReadCommunity = await openFGAService.can(
+    const canReadCommunity = await openFGAService.checkAccess(
       userId,
-      'communities',
+      'community',
       wealthItem.communityId,
-      'read'
+      'can_read'
     );
     if (!canReadCommunity) {
       throw new AppError('Forbidden: You do not have permission to comment on this wealth', 403);
@@ -35,12 +35,12 @@ export class WealthCommentService {
 
     // Create parent_community relationship in OpenFGA for hierarchical permissions
     try {
-      await openFGAService.createRelationship(
-        'wealthComments',
-        comment.id,
+      await openFGAService.assignRelation(
+        wealthItem.communityId,
+        'community',
         'parent_community',
-        'communities',
-        wealthItem.communityId
+        'wealthComment',
+        comment.id
       );
     } catch (error) {
       console.error('Failed to create wealthComment->community relationship in OpenFGA:', error);
@@ -58,11 +58,11 @@ export class WealthCommentService {
     }
 
     // Allow read for any member/admin of the community
-    const canReadCommunity = await openFGAService.can(
+    const canReadCommunity = await openFGAService.checkAccess(
       userId,
-      'communities',
+      'community',
       wealthItem.communityId,
-      'read'
+      'can_read'
     );
     if (!canReadCommunity) {
       throw new AppError(

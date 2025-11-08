@@ -56,9 +56,8 @@ const mockAppUserRepository = {
 };
 
 const mockOpenFGAService = {
-  check: mock(),
+  checkAccess: mock(),
   createRelationship: mock(),
-  checkTrustLevel: mock(),
 };
 
 describe('ForumService - Permission Checks', () => {
@@ -102,9 +101,8 @@ describe('ForumService - Permission Checks', () => {
     (communityMemberRepository.getUserRole as any) = mockCommunityMemberRepository.getUserRole;
     (communityRepository.findById as any) = mockCommunityRepository.findById;
     (appUserRepository.findById as any) = mockAppUserRepository.findById;
-    (openFGAService.check as any) = mockOpenFGAService.check;
+    (openFGAService.checkAccess as any) = mockOpenFGAService.checkAccess;
     (openFGAService.createRelationship as any) = mockOpenFGAService.createRelationship;
-    (openFGAService.checkTrustLevel as any) = mockOpenFGAService.checkTrustLevel;
 
     // Default mock behaviors
     mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
@@ -113,8 +111,7 @@ describe('ForumService - Permission Checks', () => {
       name: 'Test Community',
       minTrustForThreadCreation: { value: 10 },
     });
-    mockOpenFGAService.check.mockResolvedValue(false);
-    mockOpenFGAService.checkTrustLevel.mockResolvedValue(false);
+    mockOpenFGAService.checkAccess.mockResolvedValue(false);
     mockOpenFGAService.createRelationship.mockResolvedValue(undefined);
     mockAppUserRepository.findById.mockResolvedValue({
       id: validUserId,
@@ -125,7 +122,7 @@ describe('ForumService - Permission Checks', () => {
 
   describe('createCategory', () => {
     it('should allow forum manager to create category', async () => {
-      mockOpenFGAService.check.mockResolvedValue(true); // isForumManager returns true
+      mockOpenFGAService.checkAccess.mockResolvedValue(true); // has can_manage_forum
       mockForumRepository.createCategory.mockResolvedValue({
         id: validCategoryId,
         communityId: validCommunityId,
@@ -145,10 +142,16 @@ describe('ForumService - Permission Checks', () => {
 
       expect(result).toBeDefined();
       expect(result.id).toBe(validCategoryId);
+      expect(mockOpenFGAService.checkAccess).toHaveBeenCalledWith(
+        validUserId,
+        'community',
+        validCommunityId,
+        'can_manage_forum'
+      );
     });
 
     it('should reject non-manager from creating category', async () => {
-      mockOpenFGAService.check.mockResolvedValue(false);
+      mockOpenFGAService.checkAccess.mockResolvedValue(false);
 
       await expect(
         forumService.createCategory({ communityId: validCommunityId, name: 'General' }, validUserId)
@@ -195,7 +198,7 @@ describe('ForumService - Permission Checks', () => {
         communityId: validCommunityId,
         name: 'General',
       });
-      mockOpenFGAService.check.mockResolvedValue(true);
+      mockOpenFGAService.checkAccess.mockResolvedValue(true);
       mockForumRepository.updateCategory.mockResolvedValue({
         id: validCategoryId,
         communityId: validCommunityId,
@@ -211,6 +214,12 @@ describe('ForumService - Permission Checks', () => {
 
       expect(result).toBeDefined();
       expect(result.name).toBe('Updated General');
+      expect(mockOpenFGAService.checkAccess).toHaveBeenCalledWith(
+        validUserId,
+        'community',
+        validCommunityId,
+        'can_manage_forum'
+      );
     });
 
     it('should reject non-manager from updating category', async () => {
@@ -219,7 +228,7 @@ describe('ForumService - Permission Checks', () => {
         communityId: validCommunityId,
         name: 'General',
       });
-      mockOpenFGAService.check.mockResolvedValue(false);
+      mockOpenFGAService.checkAccess.mockResolvedValue(false);
 
       await expect(
         forumService.updateCategory(validCategoryId, { name: 'Updated' }, validUserId)
@@ -234,12 +243,18 @@ describe('ForumService - Permission Checks', () => {
         communityId: validCommunityId,
         name: 'General',
       });
-      mockOpenFGAService.check.mockResolvedValue(true);
+      mockOpenFGAService.checkAccess.mockResolvedValue(true);
       mockForumRepository.deleteCategory.mockResolvedValue(true);
 
       await forumService.deleteCategory(validCategoryId, validUserId);
 
       expect(mockForumRepository.deleteCategory).toHaveBeenCalledWith(validCategoryId);
+      expect(mockOpenFGAService.checkAccess).toHaveBeenCalledWith(
+        validUserId,
+        'community',
+        validCommunityId,
+        'can_manage_forum'
+      );
     });
 
     it('should reject non-manager from deleting category', async () => {
@@ -248,7 +263,7 @@ describe('ForumService - Permission Checks', () => {
         communityId: validCommunityId,
         name: 'General',
       });
-      mockOpenFGAService.check.mockResolvedValue(false);
+      mockOpenFGAService.checkAccess.mockResolvedValue(false);
 
       await expect(forumService.deleteCategory(validCategoryId, validUserId)).rejects.toThrow(
         'Forbidden'
@@ -257,13 +272,13 @@ describe('ForumService - Permission Checks', () => {
   });
 
   describe('createThread', () => {
-    it('should allow user with sufficient trust to create thread', async () => {
+    it('should allow user with permission to create thread', async () => {
       mockForumRepository.findCategoryById.mockResolvedValue({
         id: validCategoryId,
         communityId: validCommunityId,
         name: 'General',
       });
-      mockOpenFGAService.checkTrustLevel.mockResolvedValue(true);
+      mockOpenFGAService.checkAccess.mockResolvedValue(true);
       mockForumRepository.createThread.mockResolvedValue({
         id: validThreadId,
         categoryId: validCategoryId,
@@ -291,15 +306,21 @@ describe('ForumService - Permission Checks', () => {
 
       expect(result).toBeDefined();
       expect(result.id).toBe(validThreadId);
+      expect(mockOpenFGAService.checkAccess).toHaveBeenCalledWith(
+        validUserId,
+        'community',
+        validCommunityId,
+        'can_create_thread'
+      );
     });
 
-    it('should reject user with insufficient trust from creating thread', async () => {
+    it('should reject user without permission from creating thread', async () => {
       mockForumRepository.findCategoryById.mockResolvedValue({
         id: validCategoryId,
         communityId: validCommunityId,
         name: 'General',
       });
-      mockOpenFGAService.checkTrustLevel.mockResolvedValue(false);
+      mockOpenFGAService.checkAccess.mockResolvedValue(false);
 
       await expect(
         forumService.createThread(
@@ -328,7 +349,7 @@ describe('ForumService - Permission Checks', () => {
         communityId: validCommunityId,
         name: 'General',
       });
-      mockOpenFGAService.check.mockResolvedValue(true);
+      mockOpenFGAService.checkAccess.mockResolvedValue(true);
       mockForumRepository.updateThread.mockResolvedValue({
         id: validThreadId,
         categoryId: validCategoryId,
@@ -342,6 +363,12 @@ describe('ForumService - Permission Checks', () => {
 
       expect(result).toBeDefined();
       expect(result.isPinned).toBe(true);
+      expect(mockOpenFGAService.checkAccess).toHaveBeenCalledWith(
+        validUserId,
+        'community',
+        validCommunityId,
+        'can_manage_forum'
+      );
     });
 
     it('should reject non-manager from pinning thread', async () => {
@@ -356,7 +383,7 @@ describe('ForumService - Permission Checks', () => {
         communityId: validCommunityId,
         name: 'General',
       });
-      mockOpenFGAService.check.mockResolvedValue(false);
+      mockOpenFGAService.checkAccess.mockResolvedValue(false);
 
       await expect(forumService.pinThread(validThreadId, true, validUserId)).rejects.toThrow(
         'Forbidden'
@@ -378,7 +405,7 @@ describe('ForumService - Permission Checks', () => {
         communityId: validCommunityId,
         name: 'General',
       });
-      mockOpenFGAService.check.mockResolvedValue(true);
+      mockOpenFGAService.checkAccess.mockResolvedValue(true);
       mockForumRepository.updateThread.mockResolvedValue({
         id: validThreadId,
         categoryId: validCategoryId,
@@ -392,6 +419,12 @@ describe('ForumService - Permission Checks', () => {
 
       expect(result).toBeDefined();
       expect(result.isLocked).toBe(true);
+      expect(mockOpenFGAService.checkAccess).toHaveBeenCalledWith(
+        validUserId,
+        'community',
+        validCommunityId,
+        'can_manage_forum'
+      );
     });
 
     it('should reject non-manager from locking thread', async () => {
@@ -406,7 +439,7 @@ describe('ForumService - Permission Checks', () => {
         communityId: validCommunityId,
         name: 'General',
       });
-      mockOpenFGAService.check.mockResolvedValue(false);
+      mockOpenFGAService.checkAccess.mockResolvedValue(false);
 
       await expect(forumService.lockThread(validThreadId, true, validUserId)).rejects.toThrow(
         'Forbidden'

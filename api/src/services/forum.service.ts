@@ -41,46 +41,14 @@ export type ForumPostWithDetails = ForumPostRecord & {
 export class ForumService {
   // ===== AUTHORIZATION HELPERS =====
 
+  /**
+   * Ensure user is a member of the community
+   */
   private async ensureMemberOrAdmin(communityId: string, userId: string): Promise<void> {
     const role = await communityMemberRepository.getUserRole(communityId, userId);
     if (!role || (role !== 'admin' && role !== 'member')) {
       throw new AppError('Forbidden: only community members can access the forum', 403);
     }
-  }
-
-  private async checkIsAdmin(communityId: string, userId: string): Promise<boolean> {
-    return await openFGAService.check({
-      user: `user:${userId}`,
-      relation: 'admin',
-      object: `community:${communityId}`,
-    });
-  }
-
-  private async checkIsForumManager(communityId: string, userId: string): Promise<boolean> {
-    // Check if user has forum_manager role OR admin (admins have all permissions)
-    const isAdmin = await this.checkIsAdmin(communityId, userId);
-    if (isAdmin) return true;
-
-    return await openFGAService.check({
-      user: `user:${userId}`,
-      relation: 'forum_manager',
-      object: `community:${communityId}`,
-    });
-  }
-
-  private async checkCanCreateThreads(communityId: string, userId: string): Promise<boolean> {
-    // Check if user is admin first
-    const isAdmin = await this.checkIsAdmin(communityId, userId);
-    if (isAdmin) return true;
-
-    // Get community configuration
-    const community = await communityRepository.findById(communityId);
-    if (!community) throw new AppError('Community not found', 404);
-
-    const minTrust = (community.minTrustForThreadCreation as any)?.value ?? 10;
-
-    // Check trust level
-    return await openFGAService.checkTrustLevel(userId, communityId, minTrust);
   }
 
   private async getCommunityIdFromCategory(categoryId: string): Promise<string> {
@@ -104,8 +72,13 @@ export class ForumService {
   // ===== CATEGORIES =====
 
   async createCategory(data: CreateCategoryDto, userId: string): Promise<ForumCategoryRecord> {
-    // Only admins or forum managers can create categories
-    const canManage = await this.checkIsForumManager(data.communityId, userId);
+    // Check if user has forum management permission
+    const canManage = await openFGAService.checkAccess(
+      userId,
+      'community',
+      data.communityId,
+      'can_manage_forum'
+    );
     if (!canManage) {
       throw new AppError('Forbidden: only admins or forum managers can create categories', 403);
     }
@@ -172,7 +145,12 @@ export class ForumService {
   ): Promise<ForumCategoryRecord> {
     const communityId = await this.getCommunityIdFromCategory(categoryId);
 
-    const canManage = await this.checkIsForumManager(communityId, userId);
+    const canManage = await openFGAService.checkAccess(
+      userId,
+      'community',
+      communityId,
+      'can_manage_forum'
+    );
     if (!canManage) {
       throw new AppError('Forbidden: only admins or forum managers can update categories', 403);
     }
@@ -186,7 +164,12 @@ export class ForumService {
   async deleteCategory(categoryId: string, userId: string): Promise<void> {
     const communityId = await this.getCommunityIdFromCategory(categoryId);
 
-    const canManage = await this.checkIsForumManager(communityId, userId);
+    const canManage = await openFGAService.checkAccess(
+      userId,
+      'community',
+      communityId,
+      'can_manage_forum'
+    );
     if (!canManage) {
       throw new AppError('Forbidden: only admins or forum managers can delete categories', 403);
     }
@@ -201,9 +184,14 @@ export class ForumService {
     const communityId = await this.getCommunityIdFromCategory(data.categoryId);
 
     // Check if user can create threads
-    const canCreate = await this.checkCanCreateThreads(communityId, userId);
+    const canCreate = await openFGAService.checkAccess(
+      userId,
+      'community',
+      communityId,
+      'can_create_thread'
+    );
     if (!canCreate) {
-      throw new AppError('Forbidden: insufficient trust to create threads', 403);
+      throw new AppError('Forbidden: insufficient permission to create threads', 403);
     }
 
     const thread = await forumRepository.createThread({
@@ -351,9 +339,14 @@ export class ForumService {
     const thread = await forumRepository.findThreadById(threadId);
     if (!thread) throw new AppError('Thread not found', 404);
 
-    // Check if user is author or admin/forum manager
+    // Check if user is author or has forum management permission
     const isAuthor = thread.authorId === userId;
-    const canManage = await this.checkIsForumManager(communityId, userId);
+    const canManage = await openFGAService.checkAccess(
+      userId,
+      'community',
+      communityId,
+      'can_manage_forum'
+    );
 
     if (!isAuthor && !canManage) {
       throw new AppError(
@@ -362,7 +355,7 @@ export class ForumService {
       );
     }
 
-    // Only admins/forum managers can update isPinned, isLocked, bestAnswerPostId
+    // Only forum managers can update isPinned, isLocked
     if ((data.isPinned !== undefined || data.isLocked !== undefined) && !canManage) {
       throw new AppError('Forbidden: only forum managers can pin/lock threads', 403);
     }
@@ -383,9 +376,14 @@ export class ForumService {
     const thread = await forumRepository.findThreadById(threadId);
     if (!thread) throw new AppError('Thread not found', 404);
 
-    // Check if user is author or admin/forum manager
+    // Check if user is author or has forum management permission
     const isAuthor = thread.authorId === userId;
-    const canManage = await this.checkIsForumManager(communityId, userId);
+    const canManage = await openFGAService.checkAccess(
+      userId,
+      'community',
+      communityId,
+      'can_manage_forum'
+    );
 
     if (!isAuthor && !canManage) {
       throw new AppError(
@@ -473,9 +471,14 @@ export class ForumService {
     const post = await forumRepository.findPostById(postId);
     if (!post) throw new AppError('Post not found', 404);
 
-    // Check if user is author or admin/forum manager
+    // Check if user is author or has forum management permission
     const isAuthor = post.authorId === userId;
-    const canManage = await this.checkIsForumManager(communityId, userId);
+    const canManage = await openFGAService.checkAccess(
+      userId,
+      'community',
+      communityId,
+      'can_manage_forum'
+    );
 
     if (!isAuthor && !canManage) {
       throw new AppError(
@@ -495,9 +498,14 @@ export class ForumService {
     const post = await forumRepository.findPostById(postId);
     if (!post) throw new AppError('Post not found', 404);
 
-    // Check if user is author or admin/forum manager
+    // Check if user is author or has forum management permission
     const isAuthor = post.authorId === userId;
-    const canManage = await this.checkIsForumManager(communityId, userId);
+    const canManage = await openFGAService.checkAccess(
+      userId,
+      'community',
+      communityId,
+      'can_manage_forum'
+    );
 
     if (!isAuthor && !canManage) {
       throw new AppError(

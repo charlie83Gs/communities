@@ -9,15 +9,42 @@ import { adminTrustGrantRepository } from '../repositories/adminTrustGrant.repos
 import { trustHistoryRepository } from '../repositories/trustHistory.repository';
 import { trustLevelRepository } from '../repositories/trustLevel.repository';
 import { resolveTrustRequirement } from '../utils/trustResolver';
+import { openFGAService } from './openfga.service';
 
 export type TrustMeResult = {
   trusted: boolean;
   points: number;
   roles: string[];
+  // Trust permissions
+  canViewTrust: boolean;
   canAwardTrust: boolean;
-  canAccessWealth: boolean;
+  // Wealth permissions
+  canViewWealth: boolean;
+  canCreateWealth: boolean;
+  // Item permissions
+  canViewItems: boolean;
+  canManageItems: boolean;
+  // Dispute permissions
+  canViewDisputes: boolean;
   canHandleDisputes: boolean;
+  // Poll permissions
+  canViewPolls: boolean;
   canCreatePolls: boolean;
+  // Pool permissions
+  canViewPools: boolean;
+  canCreatePools: boolean;
+  // Council permissions
+  canViewCouncils: boolean;
+  canCreateCouncils: boolean;
+  // Forum permissions
+  canViewForum: boolean;
+  canManageForum: boolean;
+  canCreateThreads: boolean;
+  canUploadAttachments: boolean;
+  canFlagContent: boolean;
+  canReviewFlags: boolean;
+  // Analytics permissions
+  canViewAnalytics: boolean;
 };
 
 export type TrustTimelineItem = {
@@ -33,6 +60,54 @@ export type TrustTimelineResult = {
 };
 
 export class TrustService {
+  /**
+   * Sync trust roles for a user in OpenFGA based on their trust score
+   * This should be called whenever a user's trust score changes
+   */
+  private async syncTrustRoles(userId: string, communityId: string): Promise<void> {
+    try {
+      // Get user's current trust score
+      const trustScore = await this.getUserPoints(communityId, userId);
+
+      // Get community configuration
+      const community = await communityRepository.findById(communityId);
+      if (!community) {
+        throw new AppError('Community not found', 404);
+      }
+
+      // Build thresholds map - extract .value from each config
+      const thresholds = {
+        trust_trust_viewer: community.minTrustToViewTrust?.value ?? 0,
+        trust_trust_granter: community.minTrustToAwardTrust?.value ?? 15,
+        trust_wealth_viewer: community.minTrustToViewWealth?.value ?? 0,
+        trust_wealth_creator: community.minTrustForWealth?.value ?? 10,
+        trust_poll_viewer: community.minTrustToViewPolls?.value ?? 0,
+        trust_poll_creator: community.minTrustForPolls?.value ?? 15,
+        trust_dispute_viewer: community.minTrustToViewDisputes?.value ?? 0,
+        trust_dispute_handler: community.minTrustForDisputes?.value ?? 20,
+        trust_pool_viewer: community.minTrustToViewPools?.value ?? 0,
+        trust_pool_creator: community.minTrustForPoolCreation?.value ?? 20,
+        trust_council_viewer: community.minTrustToViewCouncils?.value ?? 0,
+        trust_council_creator: community.minTrustForCouncilCreation?.value ?? 25,
+        trust_forum_viewer: community.minTrustToViewForum?.value ?? 0,
+        trust_forum_manager: community.minTrustForForumModeration?.value ?? 30,
+        trust_thread_creator: community.minTrustForThreadCreation?.value ?? 10,
+        trust_attachment_uploader: community.minTrustForAttachments?.value ?? 15,
+        trust_content_flagger: community.minTrustForFlagging?.value ?? 15,
+        trust_flag_reviewer: community.minTrustForFlagReview?.value ?? 30,
+        trust_item_viewer: community.minTrustToViewItems?.value ?? 0,
+        trust_item_manager: community.minTrustForItemManagement?.value ?? 20,
+        trust_analytics_viewer: community.minTrustForHealthAnalytics?.value ?? 20,
+      };
+
+      // Sync trust roles in OpenFGA
+      await openFGAService.syncTrustRoles(userId, communityId, trustScore, thresholds);
+    } catch (error) {
+      logger.error('[TrustService] Failed to sync trust roles:', error);
+      throw error;
+    }
+  }
+
   private async getUserPoints(communityId: string, userId: string): Promise<number> {
     const row = await trustViewRepository.get(communityId, userId);
     return row?.points ?? 0;
@@ -114,43 +189,86 @@ export class TrustService {
   }
 
   async getTrustMe(communityId: string, userId: string): Promise<TrustMeResult> {
-    const [roles, points, community] = await Promise.all([
+    const [roles, points] = await Promise.all([
       this.getUserRoles(communityId, userId),
       this.getUserPoints(communityId, userId),
-      communityRepository.findById(communityId),
     ]);
-
-    if (!community) {
-      throw new AppError('Community not found', 404);
-    }
 
     // User is trusted if they are an admin OR have any trust points
     const trusted = roles.includes('admin') || points > 0;
-    const isAdmin = roles.includes('admin');
 
-    // Resolve threshold settings from community config using trust resolver
-    const [minTrustToAwardTrust, minTrustForWealth, minTrustForDisputes, minTrustForPolls] =
-      await Promise.all([
-        resolveTrustRequirement(communityId, community.minTrustToAwardTrust),
-        resolveTrustRequirement(communityId, community.minTrustForWealth),
-        resolveTrustRequirement(communityId, community.minTrustForDisputes),
-        resolveTrustRequirement(communityId, community.minTrustForPolls),
-      ]);
-
-    // Calculate permission booleans
-    const canAwardTrust = isAdmin || points >= minTrustToAwardTrust;
-    const canAccessWealth = isAdmin || points >= minTrustForWealth;
-    const canHandleDisputes = isAdmin || points >= minTrustForDisputes;
-    const canCreatePolls = isAdmin || points >= minTrustForPolls;
+    // Check all permissions using OpenFGA
+    const [
+      canViewTrust,
+      canAwardTrust,
+      canViewWealth,
+      canCreateWealth,
+      canViewItems,
+      canManageItems,
+      canViewDisputes,
+      canHandleDisputes,
+      canViewPolls,
+      canCreatePolls,
+      canViewPools,
+      canCreatePools,
+      canViewCouncils,
+      canCreateCouncils,
+      canViewForum,
+      canManageForum,
+      canCreateThreads,
+      canUploadAttachments,
+      canFlagContent,
+      canReviewFlags,
+      canViewAnalytics,
+    ] = await Promise.all([
+      openFGAService.checkAccess(userId, 'community', communityId, 'can_view_trust'),
+      openFGAService.checkAccess(userId, 'community', communityId, 'can_award_trust'),
+      openFGAService.checkAccess(userId, 'community', communityId, 'can_view_wealth'),
+      openFGAService.checkAccess(userId, 'community', communityId, 'can_create_wealth'),
+      openFGAService.checkAccess(userId, 'community', communityId, 'can_view_item'),
+      openFGAService.checkAccess(userId, 'community', communityId, 'can_manage_item'),
+      openFGAService.checkAccess(userId, 'community', communityId, 'can_view_dispute'),
+      openFGAService.checkAccess(userId, 'community', communityId, 'can_handle_dispute'),
+      openFGAService.checkAccess(userId, 'community', communityId, 'can_view_poll'),
+      openFGAService.checkAccess(userId, 'community', communityId, 'can_create_poll'),
+      openFGAService.checkAccess(userId, 'community', communityId, 'can_view_pool'),
+      openFGAService.checkAccess(userId, 'community', communityId, 'can_create_pool'),
+      openFGAService.checkAccess(userId, 'community', communityId, 'can_view_council'),
+      openFGAService.checkAccess(userId, 'community', communityId, 'can_create_council'),
+      openFGAService.checkAccess(userId, 'community', communityId, 'can_view_forum'),
+      openFGAService.checkAccess(userId, 'community', communityId, 'can_manage_forum'),
+      openFGAService.checkAccess(userId, 'community', communityId, 'can_create_thread'),
+      openFGAService.checkAccess(userId, 'community', communityId, 'can_upload_attachment'),
+      openFGAService.checkAccess(userId, 'community', communityId, 'can_flag_content'),
+      openFGAService.checkAccess(userId, 'community', communityId, 'can_review_flag'),
+      openFGAService.checkAccess(userId, 'community', communityId, 'can_view_analytics'),
+    ]);
 
     return {
       trusted,
       points,
       roles,
+      canViewTrust,
       canAwardTrust,
-      canAccessWealth,
+      canViewWealth,
+      canCreateWealth,
+      canViewItems,
+      canManageItems,
+      canViewDisputes,
       canHandleDisputes,
+      canViewPolls,
       canCreatePolls,
+      canViewPools,
+      canCreatePools,
+      canViewCouncils,
+      canCreateCouncils,
+      canViewForum,
+      canManageForum,
+      canCreateThreads,
+      canUploadAttachments,
+      canFlagContent,
+      canReviewFlags,
+      canViewAnalytics,
     };
   }
 
@@ -220,7 +338,7 @@ export class TrustService {
    * Requirements:
    * - User must be a member
    * - User must not have already awarded trust to this user
-   * - User must meet trust threshold (15) OR be admin
+   * - User must have can_award_trust permission (admin OR trust_granter OR trust_trust_granter)
    */
   async awardTrust(communityId: string, fromUserId: string, toUserId: string) {
     if (fromUserId === toUserId) {
@@ -239,23 +357,17 @@ export class TrustService {
       throw new AppError('You have already awarded trust to this user', 400);
     }
 
-    // Check threshold OR admin
-    const [isAdmin, fromUserPoints, community] = await Promise.all([
-      this.isAdmin(communityId, fromUserId),
-      this.getUserPoints(communityId, fromUserId),
-      communityRepository.findById(communityId),
-    ]);
+    // Check permission via OpenFGA (automatically handles admin OR trust_granter OR trust_trust_granter)
+    const canAwardTrust = await openFGAService.checkAccess(
+      fromUserId,
+      'community',
+      communityId,
+      'can_award_trust'
+    );
 
-    if (!community) {
-      throw new AppError('Community not found', 404);
-    }
-
-    // Resolve trust requirement (supports both numeric and level references)
-    const threshold = await resolveTrustRequirement(communityId, community.minTrustToAwardTrust);
-
-    if (!isAdmin && fromUserPoints < threshold) {
+    if (!canAwardTrust) {
       throw new AppError(
-        `Unauthorized: You need ${threshold} trust points to award trust (you have ${fromUserPoints})`,
+        'Unauthorized: You do not have permission to award trust',
         401
       );
     }
@@ -265,6 +377,9 @@ export class TrustService {
 
     // Recalculate trust view for recipient
     await trustViewRepository.recalculatePoints(communityId, toUserId);
+
+    // Sync trust roles in OpenFGA for recipient
+    await this.syncTrustRoles(toUserId, communityId);
 
     // Log to history
     await trustHistoryRepository.logAction({
@@ -299,6 +414,9 @@ export class TrustService {
 
     // Recalculate trust view for recipient
     await trustViewRepository.recalculatePoints(communityId, toUserId);
+
+    // Sync trust roles in OpenFGA for recipient
+    await this.syncTrustRoles(toUserId, communityId);
 
     // Log to history
     await trustHistoryRepository.logAction({
@@ -377,6 +495,9 @@ export class TrustService {
     // Recalculate trust view
     await trustViewRepository.recalculatePoints(communityId, toUserId);
 
+    // Sync trust roles in OpenFGA for recipient
+    await this.syncTrustRoles(toUserId, communityId);
+
     // Log to history
     await trustHistoryRepository.logAction({
       communityId,
@@ -421,6 +542,9 @@ export class TrustService {
 
     // Recalculate trust view
     await trustViewRepository.recalculatePoints(communityId, toUserId);
+
+    // Sync trust roles in OpenFGA for recipient
+    await this.syncTrustRoles(toUserId, communityId);
 
     // Log to history
     await trustHistoryRepository.logAction({
@@ -624,27 +748,67 @@ export class TrustService {
 
     // Resolve all trust thresholds
     const [
+      // Trust permissions
+      minTrustToViewTrust,
       minTrustToAwardTrust,
+      // Wealth permissions
+      minTrustToViewWealth,
       minTrustForWealth,
+      // Item permissions
+      minTrustToViewItems,
       minTrustForItemManagement,
+      // Dispute permissions
+      minTrustToViewDisputes,
       minTrustForDisputes,
+      // Poll permissions
+      minTrustToViewPolls,
       minTrustForPolls,
+      // Pool permissions
+      minTrustToViewPools,
+      minTrustForPoolCreation,
+      // Council permissions
+      minTrustToViewCouncils,
+      minTrustForCouncilCreation,
+      // Forum permissions
+      minTrustToViewForum,
       minTrustForThreadCreation,
       minTrustForAttachments,
       minTrustForFlagging,
       minTrustForFlagReview,
       minTrustForForumModeration,
+      // Analytics permissions
+      minTrustForHealthAnalytics,
     ] = await Promise.all([
+      // Trust permissions
+      resolveTrustRequirement(communityId, community.minTrustToViewTrust),
       resolveTrustRequirement(communityId, community.minTrustToAwardTrust),
+      // Wealth permissions
+      resolveTrustRequirement(communityId, community.minTrustToViewWealth),
       resolveTrustRequirement(communityId, community.minTrustForWealth),
+      // Item permissions
+      resolveTrustRequirement(communityId, community.minTrustToViewItems),
       resolveTrustRequirement(communityId, community.minTrustForItemManagement),
+      // Dispute permissions
+      resolveTrustRequirement(communityId, community.minTrustToViewDisputes),
       resolveTrustRequirement(communityId, community.minTrustForDisputes),
+      // Poll permissions
+      resolveTrustRequirement(communityId, community.minTrustToViewPolls),
       resolveTrustRequirement(communityId, community.minTrustForPolls),
+      // Pool permissions
+      resolveTrustRequirement(communityId, community.minTrustToViewPools),
+      resolveTrustRequirement(communityId, community.minTrustForPoolCreation),
+      // Council permissions
+      resolveTrustRequirement(communityId, community.minTrustToViewCouncils),
+      resolveTrustRequirement(communityId, community.minTrustForCouncilCreation),
+      // Forum permissions
+      resolveTrustRequirement(communityId, community.minTrustToViewForum),
       resolveTrustRequirement(communityId, community.minTrustForThreadCreation),
       resolveTrustRequirement(communityId, community.minTrustForAttachments),
       resolveTrustRequirement(communityId, community.minTrustForFlagging),
       resolveTrustRequirement(communityId, community.minTrustForFlagReview),
       resolveTrustRequirement(communityId, community.minTrustForForumModeration),
+      // Analytics permissions
+      resolveTrustRequirement(communityId, community.minTrustForHealthAnalytics),
     ]);
 
     // Build threshold map: threshold -> permissions[]
@@ -659,16 +823,44 @@ export class TrustService {
     };
 
     // Map permissions to their thresholds
+    // Trust permissions
+    addPermission(minTrustToViewTrust, 'View trust scores');
     addPermission(minTrustToAwardTrust, 'Award trust to others');
-    addPermission(minTrustForWealth, 'Publish wealth');
+
+    // Wealth permissions
+    addPermission(minTrustToViewWealth, 'View wealth items');
+    addPermission(minTrustForWealth, 'Create and publish wealth');
+
+    // Item permissions
+    addPermission(minTrustToViewItems, 'View community items');
     addPermission(minTrustForItemManagement, 'Manage items');
+
+    // Dispute permissions
+    addPermission(minTrustToViewDisputes, 'View disputes');
     addPermission(minTrustForDisputes, 'Handle disputes');
+
+    // Poll permissions
+    addPermission(minTrustToViewPolls, 'View polls');
     addPermission(minTrustForPolls, 'Create polls');
+
+    // Pool permissions
+    addPermission(minTrustToViewPools, 'View pools');
+    addPermission(minTrustForPoolCreation, 'Create pools');
+
+    // Council permissions
+    addPermission(minTrustToViewCouncils, 'View councils');
+    addPermission(minTrustForCouncilCreation, 'Create councils');
+
+    // Forum permissions
+    addPermission(minTrustToViewForum, 'View forum');
     addPermission(minTrustForThreadCreation, 'Create forum threads');
     addPermission(minTrustForAttachments, 'Upload attachments');
     addPermission(minTrustForFlagging, 'Flag content');
     addPermission(minTrustForFlagReview, 'Review flagged content');
     addPermission(minTrustForForumModeration, 'Moderate forum');
+
+    // Analytics permissions
+    addPermission(minTrustForHealthAnalytics, 'View health analytics');
 
     // Get all unique thresholds (from levels and permissions)
     const allThresholds = new Set<number>();

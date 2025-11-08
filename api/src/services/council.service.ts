@@ -4,12 +4,10 @@ import {
   UpdateCouncilDto,
 } from '../repositories/council.repository';
 import { communityMemberRepository } from '../repositories/communityMember.repository';
-import { communityRepository } from '../repositories/community.repository';
 import { appUserRepository } from '../repositories/appUser.repository';
 import { itemsRepository } from '../repositories/items.repository';
 import { AppError } from '../utils/errors';
-import { resolveTrustRequirement } from '../utils/trustResolver';
-import { trustViewRepository } from '../repositories/trustView.repository';
+import { openFGAService } from './openfga.service';
 import logger from '../utils/logger';
 
 export type CouncilWithDetails = {
@@ -35,35 +33,6 @@ export type CouncilWithDetails = {
 
 export class CouncilService {
   /**
-   * Check if user is admin of the community
-   */
-  private async isAdmin(communityId: string, userId: string): Promise<boolean> {
-    return await communityMemberRepository.isAdmin(communityId, userId);
-  }
-
-  /**
-   * Check if user can create councils (admin OR trust threshold)
-   */
-  private async canCreateCouncil(communityId: string, userId: string): Promise<boolean> {
-    const isAdmin = await this.isAdmin(communityId, userId);
-    if (isAdmin) return true;
-
-    // Check trust threshold (default: 25)
-    const community = await communityRepository.findById(communityId);
-    if (!community) {
-      throw new AppError('Community not found', 404);
-    }
-
-    // Get minTrustForCouncilCreation from community config (not in schema yet, using default)
-    const minTrustForCouncilCreation = 25; // TODO: Add to community schema
-
-    const userTrust = await trustViewRepository.get(communityId, userId);
-    const userTrustScore = userTrust?.points ?? 0;
-
-    return userTrustScore >= minTrustForCouncilCreation;
-  }
-
-  /**
    * Create a new council
    */
   async createCouncil(data: CreateCouncilDto, userId: string): Promise<CouncilWithDetails> {
@@ -75,10 +44,16 @@ export class CouncilService {
       throw new AppError('Forbidden: not a member of this community', 403);
     }
 
-    // Check permission
-    const canCreate = await this.canCreateCouncil(data.communityId, userId);
+    // Check permission using OpenFGA
+    // This checks: admin OR council_creator OR trust_council_creator
+    const canCreate = await openFGAService.checkAccess(
+      userId,
+      'community',
+      data.communityId,
+      'can_create_council'
+    );
     if (!canCreate) {
-      throw new AppError('Forbidden: insufficient trust to create councils', 403);
+      throw new AppError('Forbidden: insufficient permissions to create councils', 403);
     }
 
     // Validate name length (3-100 characters)
@@ -245,12 +220,11 @@ export class CouncilService {
       throw new AppError('Council not found', 404);
     }
 
-    // Check if user is admin OR council manager
-    const isAdmin = await this.isAdmin(council.communityId, userId);
-    const isManager = await councilRepository.isManager(councilId, userId);
-
-    if (!isAdmin && !isManager) {
-      throw new AppError('Forbidden: only admins or council managers can update', 403);
+    // Check permission using OpenFGA
+    // This checks: admin OR council manager
+    const canUpdate = await openFGAService.checkAccess(userId, 'council', councilId, 'can_update');
+    if (!canUpdate) {
+      throw new AppError('Forbidden: insufficient permissions to update this council', 403);
     }
 
     // Validate name if provided
@@ -296,7 +270,7 @@ export class CouncilService {
   }
 
   /**
-   * Delete a council (admin only)
+   * Delete a council
    */
   async deleteCouncil(councilId: string, userId: string) {
     const council = await councilRepository.findById(councilId);
@@ -304,10 +278,10 @@ export class CouncilService {
       throw new AppError('Council not found', 404);
     }
 
-    // Only admins can delete councils
-    const isAdmin = await this.isAdmin(council.communityId, userId);
-    if (!isAdmin) {
-      throw new AppError('Forbidden: only admins can delete councils', 403);
+    // Check permission using OpenFGA (admin only)
+    const canDelete = await openFGAService.checkAccess(userId, 'council', councilId, 'can_delete');
+    if (!canDelete) {
+      throw new AppError('Forbidden: insufficient permissions to delete this council', 403);
     }
 
     await councilRepository.delete(councilId);
@@ -400,7 +374,7 @@ export class CouncilService {
   }
 
   /**
-   * Add a manager to a council (admin OR existing council manager)
+   * Add a manager to a council
    */
   async addManager(councilId: string, targetUserId: string, requesterId: string) {
     const council = await councilRepository.findById(councilId);
@@ -408,12 +382,15 @@ export class CouncilService {
       throw new AppError('Council not found', 404);
     }
 
-    // Check if requester is admin OR existing council manager
-    const isAdmin = await this.isAdmin(council.communityId, requesterId);
-    const isManager = await councilRepository.isManager(councilId, requesterId);
-
-    if (!isAdmin && !isManager) {
-      throw new AppError('Forbidden: only admins or council managers can add managers', 403);
+    // Check permission using OpenFGA (admin OR council manager)
+    const canUpdate = await openFGAService.checkAccess(
+      requesterId,
+      'council',
+      councilId,
+      'can_update'
+    );
+    if (!canUpdate) {
+      throw new AppError('Forbidden: insufficient permissions to manage council managers', 403);
     }
 
     // Check if target user is a member of the community
@@ -454,7 +431,7 @@ export class CouncilService {
   }
 
   /**
-   * Remove a manager from a council (admin only)
+   * Remove a manager from a council
    */
   async removeManager(councilId: string, targetUserId: string, requesterId: string) {
     const council = await councilRepository.findById(councilId);
@@ -462,10 +439,15 @@ export class CouncilService {
       throw new AppError('Council not found', 404);
     }
 
-    // Only admins can remove managers
-    const isAdmin = await this.isAdmin(council.communityId, requesterId);
-    if (!isAdmin) {
-      throw new AppError('Forbidden: only admins can remove council managers', 403);
+    // Check permission using OpenFGA (admin only)
+    const canDelete = await openFGAService.checkAccess(
+      requesterId,
+      'council',
+      councilId,
+      'can_delete'
+    );
+    if (!canDelete) {
+      throw new AppError('Forbidden: insufficient permissions to remove council managers', 403);
     }
 
     // Check if actually a manager

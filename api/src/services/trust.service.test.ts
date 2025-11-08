@@ -8,6 +8,7 @@ import { trustAwardRepository } from '@/repositories/trustAward.repository';
 import { adminTrustGrantRepository } from '@/repositories/adminTrustGrant.repository';
 import { trustHistoryRepository } from '@/repositories/trustHistory.repository';
 import { trustLevelRepository } from '@/repositories/trustLevel.repository';
+import { openFGAService } from '@/services/openfga.service';
 import { AppError } from '@/utils/errors';
 
 // Mock repositories
@@ -76,6 +77,11 @@ const mockTrustLevelRepository = {
   findByCommunityId: mock(() => Promise.resolve([])),
 };
 
+const mockOpenFGAService = {
+  checkAccess: mock(() => Promise.resolve(true)),
+  syncTrustRoles: mock(() => Promise.resolve()),
+};
+
 describe('TrustService', () => {
   beforeEach(() => {
     // Reset all mocks
@@ -87,6 +93,7 @@ describe('TrustService', () => {
     Object.values(mockAdminTrustGrantRepository).forEach((m) => m.mockReset());
     Object.values(mockTrustHistoryRepository).forEach((m) => m.mockReset());
     Object.values(mockTrustLevelRepository).forEach((m) => m.mockReset());
+    Object.values(mockOpenFGAService).forEach((m) => m.mockReset());
 
     // Replace repository methods with mocks
     (communityRepository.findById as any) = mockCommunityRepository.findById;
@@ -117,6 +124,8 @@ describe('TrustService', () => {
     (trustHistoryRepository.getHistoryForUser as any) =
       mockTrustHistoryRepository.getHistoryForUser;
     (trustLevelRepository.findByCommunityId as any) = mockTrustLevelRepository.findByCommunityId;
+    (openFGAService.checkAccess as any) = mockOpenFGAService.checkAccess;
+    (openFGAService.syncTrustRoles as any) = mockOpenFGAService.syncTrustRoles;
   });
 
   describe('isTrusted', () => {
@@ -237,13 +246,14 @@ describe('TrustService', () => {
         minTrustForDisputes: { type: 'number', value: 20 },
         minTrustForPolls: { type: 'number', value: 15 },
       });
+      mockOpenFGAService.checkAccess.mockResolvedValue(true);
 
       const result = await trustService.getTrustMe('comm-123', 'user-123');
 
       expect(result.trusted).toBe(true);
       expect(result.points).toBe(20);
       expect(result.canAwardTrust).toBe(true);
-      expect(result.canAccessWealth).toBe(true);
+      expect(result.canCreateWealth).toBe(true);
       expect(result.canHandleDisputes).toBe(true);
       expect(result.canCreatePolls).toBe(true);
     });
@@ -255,21 +265,12 @@ describe('TrustService', () => {
         id: 'comm-123',
         minTrustToAwardTrust: { type: 'number', value: 15 },
       });
+      mockOpenFGAService.checkAccess.mockResolvedValue(true);
 
       const result = await trustService.getTrustMe('comm-123', 'user-123');
 
       expect(result.trusted).toBe(true);
       expect(result.canAwardTrust).toBe(true);
-    });
-
-    it('should throw error if community not found', async () => {
-      mockCommunityMemberRepository.getUserRoles.mockResolvedValue(['member']);
-      mockTrustViewRepository.get.mockResolvedValue({ points: 10 });
-      mockCommunityRepository.findById.mockResolvedValue(null);
-
-      await expect(trustService.getTrustMe('comm-123', 'user-123')).rejects.toThrow(
-        'Community not found'
-      );
     });
   });
 
@@ -321,20 +322,33 @@ describe('TrustService', () => {
   });
 
   describe('awardTrust', () => {
-    it('should award trust when user meets threshold', async () => {
+    it('should award trust when user has permission', async () => {
       // Reconfigure mocks for this test
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
       mockTrustAwardRepository.hasAward.mockResolvedValue(false);
-      mockCommunityMemberRepository.isAdmin.mockResolvedValue(false);
-      mockTrustViewRepository.get.mockResolvedValue({ points: 20 });
-      mockCommunityRepository.findById.mockResolvedValue({
-        id: 'comm-123',
-        minTrustToAwardTrust: { type: 'number', value: 15 },
-      });
+      mockOpenFGAService.checkAccess.mockResolvedValue(true);
       mockTrustAwardRepository.createAward.mockResolvedValue({
         id: 'award-123',
       });
       mockTrustViewRepository.recalculatePoints.mockResolvedValue(undefined);
+      mockTrustViewRepository.get.mockResolvedValue({ points: 20 });
+      mockCommunityRepository.findById.mockResolvedValue({
+        id: 'comm-123',
+        minTrustToAwardTrust: { type: 'number', value: 15 },
+        minTrustForWealth: { type: 'number', value: 10 },
+        minTrustForPolls: { type: 'number', value: 15 },
+        minTrustForDisputes: { type: 'number', value: 20 },
+        minTrustForPoolCreation: { type: 'number', value: 20 },
+        minTrustForCouncilCreation: { type: 'number', value: 25 },
+        minTrustForForumModeration: { type: 'number', value: 30 },
+        minTrustForThreadCreation: { type: 'number', value: 10 },
+        minTrustForAttachments: { type: 'number', value: 15 },
+        minTrustForFlagging: { type: 'number', value: 15 },
+        minTrustForFlagReview: { type: 'number', value: 30 },
+        minTrustForItemManagement: { type: 'number', value: 20 },
+        minTrustForHealthAnalytics: { type: 'number', value: 20 },
+      });
+      mockOpenFGAService.syncTrustRoles.mockResolvedValue(undefined);
       mockTrustHistoryRepository.logAction.mockResolvedValue({
         id: 'history-123',
       });
@@ -344,30 +358,30 @@ describe('TrustService', () => {
       expect(result.id).toBe('award-123');
       expect(mockTrustAwardRepository.createAward).toHaveBeenCalled();
       expect(mockTrustViewRepository.recalculatePoints).toHaveBeenCalled();
+      expect(mockOpenFGAService.syncTrustRoles).toHaveBeenCalledWith('user-456', 'comm-123', 20, {
+        trust_trust_viewer: 0,
+        trust_trust_granter: 15,
+        trust_wealth_viewer: 0,
+        trust_wealth_creator: 10,
+        trust_poll_viewer: 0,
+        trust_poll_creator: 15,
+        trust_dispute_viewer: 0,
+        trust_dispute_handler: 20,
+        trust_pool_viewer: 0,
+        trust_pool_creator: 20,
+        trust_council_viewer: 0,
+        trust_council_creator: 25,
+        trust_forum_viewer: 0,
+        trust_forum_manager: 30,
+        trust_thread_creator: 10,
+        trust_attachment_uploader: 15,
+        trust_content_flagger: 15,
+        trust_flag_reviewer: 30,
+        trust_item_viewer: 0,
+        trust_item_manager: 20,
+        trust_analytics_viewer: 20,
+      });
       expect(mockTrustHistoryRepository.logAction).toHaveBeenCalled();
-    });
-
-    it('should award trust when user is admin', async () => {
-      // Reconfigure mocks for this test
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue('admin');
-      mockTrustAwardRepository.hasAward.mockResolvedValue(false);
-      mockCommunityMemberRepository.isAdmin.mockResolvedValue(true);
-      mockTrustViewRepository.get.mockResolvedValue({ points: 0 });
-      mockCommunityRepository.findById.mockResolvedValue({
-        id: 'comm-123',
-        minTrustToAwardTrust: { type: 'number', value: 15 },
-      });
-      mockTrustAwardRepository.createAward.mockResolvedValue({
-        id: 'award-123',
-      });
-      mockTrustViewRepository.recalculatePoints.mockResolvedValue(undefined);
-      mockTrustHistoryRepository.logAction.mockResolvedValue({
-        id: 'history-123',
-      });
-
-      const result = await trustService.awardTrust('comm-123', 'user-123', 'user-456');
-
-      expect(result.id).toBe('award-123');
     });
 
     it('should throw error when awarding to self', async () => {
@@ -393,30 +407,13 @@ describe('TrustService', () => {
       );
     });
 
-    it('should throw error when below threshold', async () => {
+    it('should throw error when user lacks permission', async () => {
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
       mockTrustAwardRepository.hasAward.mockResolvedValue(false);
-      mockCommunityMemberRepository.isAdmin.mockResolvedValue(false);
-      mockTrustViewRepository.get.mockResolvedValue({ points: 5 });
-      mockCommunityRepository.findById.mockResolvedValue({
-        id: 'comm-123',
-        minTrustToAwardTrust: { type: 'number', value: 15 },
-      });
+      mockOpenFGAService.checkAccess.mockResolvedValue(false);
 
       await expect(trustService.awardTrust('comm-123', 'user-123', 'user-456')).rejects.toThrow(
-        'Unauthorized: You need 15 trust points to award trust (you have 5)'
-      );
-    });
-
-    it('should throw error if community not found', async () => {
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
-      mockTrustAwardRepository.hasAward.mockResolvedValue(false);
-      mockCommunityMemberRepository.isAdmin.mockResolvedValue(false);
-      mockTrustViewRepository.get.mockResolvedValue({ points: 20 });
-      mockCommunityRepository.findById.mockResolvedValue(null);
-
-      await expect(trustService.awardTrust('comm-123', 'user-123', 'user-456')).rejects.toThrow(
-        'Community not found'
+        'Unauthorized: You do not have permission to award trust'
       );
     });
   });
@@ -430,6 +427,24 @@ describe('TrustService', () => {
         id: 'award-123',
       });
       mockTrustViewRepository.recalculatePoints.mockResolvedValue(undefined);
+      mockTrustViewRepository.get.mockResolvedValue({ points: 15 });
+      mockCommunityRepository.findById.mockResolvedValue({
+        id: 'comm-123',
+        minTrustToAwardTrust: { type: 'number', value: 15 },
+        minTrustForWealth: { type: 'number', value: 10 },
+        minTrustForPolls: { type: 'number', value: 15 },
+        minTrustForDisputes: { type: 'number', value: 20 },
+        minTrustForPoolCreation: { type: 'number', value: 20 },
+        minTrustForCouncilCreation: { type: 'number', value: 25 },
+        minTrustForForumModeration: { type: 'number', value: 30 },
+        minTrustForThreadCreation: { type: 'number', value: 10 },
+        minTrustForAttachments: { type: 'number', value: 15 },
+        minTrustForFlagging: { type: 'number', value: 15 },
+        minTrustForFlagReview: { type: 'number', value: 30 },
+        minTrustForItemManagement: { type: 'number', value: 20 },
+        minTrustForHealthAnalytics: { type: 'number', value: 20 },
+      });
+      mockOpenFGAService.syncTrustRoles.mockResolvedValue(undefined);
       mockTrustHistoryRepository.logAction.mockResolvedValue({
         id: 'history-123',
       });
@@ -439,6 +454,29 @@ describe('TrustService', () => {
       expect(result.id).toBe('award-123');
       expect(mockTrustAwardRepository.deleteAward).toHaveBeenCalled();
       expect(mockTrustViewRepository.recalculatePoints).toHaveBeenCalled();
+      expect(mockOpenFGAService.syncTrustRoles).toHaveBeenCalledWith('user-456', 'comm-123', 15, {
+        trust_trust_viewer: 0,
+        trust_trust_granter: 15,
+        trust_wealth_viewer: 0,
+        trust_wealth_creator: 10,
+        trust_poll_viewer: 0,
+        trust_poll_creator: 15,
+        trust_dispute_viewer: 0,
+        trust_dispute_handler: 20,
+        trust_pool_viewer: 0,
+        trust_pool_creator: 20,
+        trust_council_viewer: 0,
+        trust_council_creator: 25,
+        trust_forum_viewer: 0,
+        trust_forum_manager: 30,
+        trust_thread_creator: 10,
+        trust_attachment_uploader: 15,
+        trust_content_flagger: 15,
+        trust_flag_reviewer: 30,
+        trust_item_viewer: 0,
+        trust_item_manager: 20,
+        trust_analytics_viewer: 20,
+      });
       expect(mockTrustHistoryRepository.logAction).toHaveBeenCalled();
     });
 
@@ -529,6 +567,24 @@ describe('TrustService', () => {
         id: 'grant-123',
       });
       mockTrustViewRepository.recalculatePoints.mockResolvedValue(undefined);
+      mockTrustViewRepository.get.mockResolvedValue({ points: 50 });
+      mockCommunityRepository.findById.mockResolvedValue({
+        id: 'comm-123',
+        minTrustToAwardTrust: { type: 'number', value: 15 },
+        minTrustForWealth: { type: 'number', value: 10 },
+        minTrustForPolls: { type: 'number', value: 15 },
+        minTrustForDisputes: { type: 'number', value: 20 },
+        minTrustForPoolCreation: { type: 'number', value: 20 },
+        minTrustForCouncilCreation: { type: 'number', value: 25 },
+        minTrustForForumModeration: { type: 'number', value: 30 },
+        minTrustForThreadCreation: { type: 'number', value: 10 },
+        minTrustForAttachments: { type: 'number', value: 15 },
+        minTrustForFlagging: { type: 'number', value: 15 },
+        minTrustForFlagReview: { type: 'number', value: 30 },
+        minTrustForItemManagement: { type: 'number', value: 20 },
+        minTrustForHealthAnalytics: { type: 'number', value: 20 },
+      });
+      mockOpenFGAService.syncTrustRoles.mockResolvedValue(undefined);
       mockTrustHistoryRepository.logAction.mockResolvedValue({
         id: 'history-123',
       });
@@ -543,6 +599,29 @@ describe('TrustService', () => {
         50
       );
       expect(mockTrustViewRepository.recalculatePoints).toHaveBeenCalled();
+      expect(mockOpenFGAService.syncTrustRoles).toHaveBeenCalledWith('user-456', 'comm-123', 50, {
+        trust_trust_viewer: 0,
+        trust_trust_granter: 15,
+        trust_wealth_viewer: 0,
+        trust_wealth_creator: 10,
+        trust_poll_viewer: 0,
+        trust_poll_creator: 15,
+        trust_dispute_viewer: 0,
+        trust_dispute_handler: 20,
+        trust_pool_viewer: 0,
+        trust_pool_creator: 20,
+        trust_council_viewer: 0,
+        trust_council_creator: 25,
+        trust_forum_viewer: 0,
+        trust_forum_manager: 30,
+        trust_thread_creator: 10,
+        trust_attachment_uploader: 15,
+        trust_content_flagger: 15,
+        trust_flag_reviewer: 30,
+        trust_item_viewer: 0,
+        trust_item_manager: 20,
+        trust_analytics_viewer: 20,
+      });
       expect(mockTrustHistoryRepository.logAction).toHaveBeenCalled();
     });
 
@@ -556,6 +635,24 @@ describe('TrustService', () => {
         id: 'grant-123',
       });
       mockTrustViewRepository.recalculatePoints.mockResolvedValue(undefined);
+      mockTrustViewRepository.get.mockResolvedValue({ points: 50 });
+      mockCommunityRepository.findById.mockResolvedValue({
+        id: 'comm-123',
+        minTrustToAwardTrust: { type: 'number', value: 15 },
+        minTrustForWealth: { type: 'number', value: 10 },
+        minTrustForPolls: { type: 'number', value: 15 },
+        minTrustForDisputes: { type: 'number', value: 20 },
+        minTrustForPoolCreation: { type: 'number', value: 20 },
+        minTrustForCouncilCreation: { type: 'number', value: 25 },
+        minTrustForForumModeration: { type: 'number', value: 30 },
+        minTrustForThreadCreation: { type: 'number', value: 10 },
+        minTrustForAttachments: { type: 'number', value: 15 },
+        minTrustForFlagging: { type: 'number', value: 15 },
+        minTrustForFlagReview: { type: 'number', value: 30 },
+        minTrustForItemManagement: { type: 'number', value: 20 },
+        minTrustForHealthAnalytics: { type: 'number', value: 20 },
+      });
+      mockOpenFGAService.syncTrustRoles.mockResolvedValue(undefined);
       mockTrustHistoryRepository.logAction.mockResolvedValue({
         id: 'history-123',
       });
@@ -563,6 +660,7 @@ describe('TrustService', () => {
       const result = await trustService.setAdminGrant('comm-123', 'user-123', 'user-456', 50);
 
       expect(result.id).toBe('grant-123');
+      expect(mockOpenFGAService.syncTrustRoles).toHaveBeenCalled();
     });
 
     it('should throw forbidden for non-admin', async () => {
@@ -615,6 +713,24 @@ describe('TrustService', () => {
         id: 'grant-123',
       });
       mockTrustViewRepository.recalculatePoints.mockResolvedValue(undefined);
+      mockTrustViewRepository.get.mockResolvedValue({ points: 0 });
+      mockCommunityRepository.findById.mockResolvedValue({
+        id: 'comm-123',
+        minTrustToAwardTrust: { type: 'number', value: 15 },
+        minTrustForWealth: { type: 'number', value: 10 },
+        minTrustForPolls: { type: 'number', value: 15 },
+        minTrustForDisputes: { type: 'number', value: 20 },
+        minTrustForPoolCreation: { type: 'number', value: 20 },
+        minTrustForCouncilCreation: { type: 'number', value: 25 },
+        minTrustForForumModeration: { type: 'number', value: 30 },
+        minTrustForThreadCreation: { type: 'number', value: 10 },
+        minTrustForAttachments: { type: 'number', value: 15 },
+        minTrustForFlagging: { type: 'number', value: 15 },
+        minTrustForFlagReview: { type: 'number', value: 30 },
+        minTrustForItemManagement: { type: 'number', value: 20 },
+        minTrustForHealthAnalytics: { type: 'number', value: 20 },
+      });
+      mockOpenFGAService.syncTrustRoles.mockResolvedValue(undefined);
       mockTrustHistoryRepository.logAction.mockResolvedValue({
         id: 'history-123',
       });
@@ -624,6 +740,29 @@ describe('TrustService', () => {
       expect(result.id).toBe('grant-123');
       expect(mockAdminTrustGrantRepository.deleteGrant).toHaveBeenCalled();
       expect(mockTrustViewRepository.recalculatePoints).toHaveBeenCalled();
+      expect(mockOpenFGAService.syncTrustRoles).toHaveBeenCalledWith('user-456', 'comm-123', 0, {
+        trust_trust_viewer: 0,
+        trust_trust_granter: 15,
+        trust_wealth_viewer: 0,
+        trust_wealth_creator: 10,
+        trust_poll_viewer: 0,
+        trust_poll_creator: 15,
+        trust_dispute_viewer: 0,
+        trust_dispute_handler: 20,
+        trust_pool_viewer: 0,
+        trust_pool_creator: 20,
+        trust_council_viewer: 0,
+        trust_council_creator: 25,
+        trust_forum_viewer: 0,
+        trust_forum_manager: 30,
+        trust_thread_creator: 10,
+        trust_attachment_uploader: 15,
+        trust_content_flagger: 15,
+        trust_flag_reviewer: 30,
+        trust_item_viewer: 0,
+        trust_item_manager: 20,
+        trust_analytics_viewer: 20,
+      });
       expect(mockTrustHistoryRepository.logAction).toHaveBeenCalled();
     });
 
@@ -955,7 +1094,7 @@ describe('TrustService', () => {
       expect(threshold10).toBeDefined();
       expect(threshold10?.unlocked).toBe(true);
       expect(threshold10?.permissions).toContain('Create forum threads');
-      expect(threshold10?.permissions).toContain('Publish wealth');
+      expect(threshold10?.permissions).toContain('Create and publish wealth');
 
       // Check threshold at 15
       const threshold15 = result.timeline.find((t) => t.threshold === 15);

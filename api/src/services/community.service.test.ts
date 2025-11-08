@@ -4,6 +4,7 @@ import { communityRepository } from '@/repositories/community.repository';
 import { communityMemberRepository } from '@/repositories/communityMember.repository';
 import { appUserRepository } from '@repositories/appUser.repository';
 import { trustViewRepository } from '@/repositories/trustView.repository';
+import { openFGAService } from '@/services/openfga.service';
 import { AppError } from '@/utils/errors';
 import { testData } from '../../tests/helpers/testUtils';
 
@@ -48,6 +49,11 @@ const mockAppUserRepository = {
 
 const mockTrustViewRepository = {
   getBatchForUser: mock(() => Promise.resolve(new Map([['comm-123', 25]]))),
+  get: mock(() => Promise.resolve({ points: 25 })),
+};
+
+const mockOpenFGAService = {
+  syncTrustRoles: mock(() => Promise.resolve()),
 };
 
 describe('CommunityService', () => {
@@ -57,6 +63,7 @@ describe('CommunityService', () => {
     Object.values(mockCommunityMemberRepository).forEach((m) => m.mockReset());
     Object.values(mockAppUserRepository).forEach((m) => m.mockReset());
     Object.values(mockTrustViewRepository).forEach((m) => m.mockReset());
+    Object.values(mockOpenFGAService).forEach((m) => m.mockReset());
 
     // Replace repository methods with mocks
     (communityRepository.create as any) = mockCommunityRepository.create;
@@ -78,6 +85,9 @@ describe('CommunityService', () => {
     (appUserRepository.findById as any) = mockAppUserRepository.findById;
 
     (trustViewRepository.getBatchForUser as any) = mockTrustViewRepository.getBatchForUser;
+    (trustViewRepository.get as any) = mockTrustViewRepository.get;
+
+    (openFGAService.syncTrustRoles as any) = mockOpenFGAService.syncTrustRoles;
   });
 
   describe('createCommunity', () => {
@@ -383,6 +393,7 @@ describe('CommunityService', () => {
   describe('updateCommunity', () => {
     it('should update community if user is admin', async () => {
       mockCommunityMemberRepository.isAdmin.mockResolvedValue(true);
+      mockCommunityRepository.findById.mockResolvedValue(testData.community);
       mockCommunityRepository.update.mockResolvedValue({
         ...testData.community,
         name: 'Updated Community',
@@ -408,13 +419,161 @@ describe('CommunityService', () => {
       ).rejects.toThrow('Forbidden: only community admins can update');
     });
 
-    it('should throw 404 if community not found', async () => {
+    it('should throw 404 if community not found before update', async () => {
       mockCommunityMemberRepository.isAdmin.mockResolvedValue(true);
+      mockCommunityRepository.findById.mockResolvedValue(null);
+
+      await expect(
+        communityService.updateCommunity('comm-123', { name: 'Updated Community' }, 'user-123')
+      ).rejects.toThrow('Community not found');
+    });
+
+    it('should throw 404 if community not found after update', async () => {
+      mockCommunityMemberRepository.isAdmin.mockResolvedValue(true);
+      mockCommunityRepository.findById.mockResolvedValue(testData.community);
       mockCommunityRepository.update.mockResolvedValue(null);
 
       await expect(
         communityService.updateCommunity('comm-123', { name: 'Updated Community' }, 'user-123')
       ).rejects.toThrow('Community not found');
+    });
+
+    it('should recalculate trust roles when trust thresholds change', async () => {
+      const currentCommunity = {
+        ...testData.community,
+        minTrustForWealth: { type: 'number', value: 10 },
+      };
+      const updatedCommunity = {
+        ...testData.community,
+        minTrustForWealth: { type: 'number', value: 15 },
+      };
+
+      mockCommunityMemberRepository.isAdmin.mockResolvedValue(true);
+      mockCommunityRepository.findById
+        .mockResolvedValueOnce(currentCommunity) // Before update
+        .mockResolvedValueOnce(updatedCommunity); // For recalculation
+      mockCommunityRepository.update.mockResolvedValue(updatedCommunity);
+      mockCommunityMemberRepository.findByCommunity.mockResolvedValue([
+        { userId: 'user-1', role: 'member' },
+        { userId: 'user-2', role: 'member' },
+      ]);
+      mockTrustViewRepository.get
+        .mockResolvedValueOnce({ points: 12 })
+        .mockResolvedValueOnce({ points: 18 });
+      mockOpenFGAService.syncTrustRoles.mockResolvedValue(undefined);
+
+      const result = await communityService.updateCommunity(
+        'comm-123',
+        { minTrustForWealth: { type: 'number', value: 15 } },
+        'user-123'
+      );
+
+      expect(result.minTrustForWealth).toEqual({ type: 'number', value: 15 });
+      expect(mockCommunityMemberRepository.findByCommunity).toHaveBeenCalledWith('comm-123');
+      expect(mockTrustViewRepository.get).toHaveBeenCalledTimes(2);
+      expect(mockOpenFGAService.syncTrustRoles).toHaveBeenCalledTimes(2);
+      expect(mockOpenFGAService.syncTrustRoles).toHaveBeenCalledWith(
+        'user-1',
+        'comm-123',
+        12,
+        expect.any(Object)
+      );
+      expect(mockOpenFGAService.syncTrustRoles).toHaveBeenCalledWith(
+        'user-2',
+        'comm-123',
+        18,
+        expect.any(Object)
+      );
+    });
+
+    it('should not recalculate trust roles when non-trust fields change', async () => {
+      mockCommunityMemberRepository.isAdmin.mockResolvedValue(true);
+      mockCommunityRepository.findById.mockResolvedValue(testData.community);
+      mockCommunityRepository.update.mockResolvedValue({
+        ...testData.community,
+        name: 'Updated Community',
+      });
+
+      await communityService.updateCommunity(
+        'comm-123',
+        { name: 'Updated Community' },
+        'user-123'
+      );
+
+      expect(mockCommunityMemberRepository.findByCommunity).not.toHaveBeenCalled();
+      expect(mockOpenFGAService.syncTrustRoles).not.toHaveBeenCalled();
+    });
+
+    it('should handle errors during trust role recalculation gracefully', async () => {
+      const currentCommunity = {
+        ...testData.community,
+        minTrustForWealth: { type: 'number', value: 10 },
+      };
+      const updatedCommunity = {
+        ...testData.community,
+        minTrustForWealth: { type: 'number', value: 15 },
+      };
+
+      mockCommunityMemberRepository.isAdmin.mockResolvedValue(true);
+      mockCommunityRepository.findById
+        .mockResolvedValueOnce(currentCommunity)
+        .mockResolvedValueOnce(updatedCommunity);
+      mockCommunityRepository.update.mockResolvedValue(updatedCommunity);
+      mockCommunityMemberRepository.findByCommunity.mockResolvedValue([
+        { userId: 'user-1', role: 'member' },
+      ]);
+      mockTrustViewRepository.get.mockResolvedValue({ points: 12 });
+      mockOpenFGAService.syncTrustRoles.mockRejectedValue(new Error('OpenFGA error'));
+
+      // Should not throw - error should be caught and logged
+      const result = await communityService.updateCommunity(
+        'comm-123',
+        { minTrustForWealth: { type: 'number', value: 15 } },
+        'user-123'
+      );
+
+      expect(result).toBeDefined();
+      expect(result.minTrustForWealth).toEqual({ type: 'number', value: 15 });
+    });
+
+    it('should recalculate for multiple trust threshold changes', async () => {
+      const currentCommunity = {
+        ...testData.community,
+        minTrustForWealth: { type: 'number', value: 10 },
+        minTrustForPolls: { type: 'number', value: 15 },
+      };
+      const updatedCommunity = {
+        ...testData.community,
+        minTrustForWealth: { type: 'number', value: 12 },
+        minTrustForPolls: { type: 'number', value: 18 },
+      };
+
+      mockCommunityMemberRepository.isAdmin.mockResolvedValue(true);
+      mockCommunityRepository.findById
+        .mockResolvedValueOnce(currentCommunity)
+        .mockResolvedValueOnce(updatedCommunity);
+      mockCommunityRepository.update.mockResolvedValue(updatedCommunity);
+      mockCommunityMemberRepository.findByCommunity.mockResolvedValue([
+        { userId: 'user-1', role: 'member' },
+      ]);
+      mockTrustViewRepository.get.mockResolvedValue({ points: 14 });
+      mockOpenFGAService.syncTrustRoles.mockResolvedValue(undefined);
+
+      await communityService.updateCommunity(
+        'comm-123',
+        {
+          minTrustForWealth: { type: 'number', value: 12 },
+          minTrustForPolls: { type: 'number', value: 18 },
+        },
+        'user-123'
+      );
+
+      expect(mockOpenFGAService.syncTrustRoles).toHaveBeenCalledWith(
+        'user-1',
+        'comm-123',
+        14,
+        expect.any(Object)
+      );
     });
   });
 

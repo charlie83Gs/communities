@@ -4,6 +4,8 @@ import { communityMemberRepository } from '../repositories/communityMember.repos
 import { trustLevelRepository } from '../repositories/trustLevel.repository';
 import { trustViewRepository } from '../repositories/trustView.repository';
 import { itemsService } from './items.service';
+import { openFGAService } from './openfga.service';
+import { resolveTrustRequirement } from '../utils/trustResolver';
 import { AppError } from '../utils/errors';
 import { CreateCommunityDto, UpdateCommunityDto, Community } from '../types/community.types';
 import logger from '../utils/logger';
@@ -261,12 +263,225 @@ export class CommunityService {
       throw new AppError('Forbidden: only community admins can update', 403);
     }
 
+    // Get current community config before update
+    const currentCommunity = await communityRepository.findById(id);
+    if (!currentCommunity) {
+      throw new AppError('Community not found', 404);
+    }
+
+    // Update community
     const community = await communityRepository.update(id, data);
     if (!community) {
       throw new AppError('Community not found', 404);
     }
 
+    // Check if any trust thresholds changed
+    const trustThresholdsChanged = this.haveTrustThresholdsChanged(currentCommunity, data);
+
+    if (trustThresholdsChanged) {
+      logger.info(
+        `[CommunityService updateCommunity] Trust thresholds changed for community ${id}, recalculating member trust roles`
+      );
+
+      // Recalculate trust roles for all members
+      try {
+        await this.recalculateAllMemberTrustRoles(id);
+        logger.info(
+          `[CommunityService updateCommunity] Successfully recalculated trust roles for all members in community ${id}`
+        );
+      } catch (error) {
+        logger.error(
+          `[CommunityService updateCommunity] Failed to recalculate trust roles for community ${id}:`,
+          error
+        );
+        // Non-critical: community update succeeded, but trust role sync failed
+        // Trust roles will be out of sync until next trust change or manual sync
+      }
+    }
+
     return community;
+  }
+
+  /**
+   * Check if any trust threshold configuration changed
+   */
+  private haveTrustThresholdsChanged(
+    currentCommunity: Community,
+    updates: UpdateCommunityDto
+  ): boolean {
+    const trustFields = [
+      'minTrustToAwardTrust',
+      'minTrustToViewTrust',
+      'minTrustForWealth',
+      'minTrustToViewWealth',
+      'minTrustForItemManagement',
+      'minTrustToViewItems',
+      'minTrustForDisputes',
+      'minTrustToViewDisputes',
+      'minTrustForPolls',
+      'minTrustToViewPolls',
+      'minTrustForPoolCreation',
+      'minTrustToViewPools',
+      'minTrustForCouncilCreation',
+      'minTrustToViewCouncils',
+      'minTrustForHealthAnalytics',
+      'minTrustForThreadCreation',
+      'minTrustForAttachments',
+      'minTrustForFlagging',
+      'minTrustForFlagReview',
+      'minTrustForForumModeration',
+      'minTrustToViewForum',
+    ] as const;
+
+    return trustFields.some((field) => {
+      if (updates[field] !== undefined) {
+        const currentValue = JSON.stringify(currentCommunity[field]);
+        const newValue = JSON.stringify(updates[field]);
+        return currentValue !== newValue;
+      }
+      return false;
+    });
+  }
+
+  /**
+   * Recalculate trust roles for all members when trust thresholds change
+   */
+  private async recalculateAllMemberTrustRoles(communityId: string): Promise<void> {
+    logger.info(
+      `[CommunityService recalculateAllMemberTrustRoles] Starting trust role recalculation for community ${communityId}`
+    );
+
+    // Get updated community configuration
+    const community = await communityRepository.findById(communityId);
+    if (!community) {
+      throw new AppError('Community not found', 404);
+    }
+
+    // Build thresholds map from community configuration
+    const thresholds = await this.buildTrustThresholdsMap(communityId, community);
+
+    // Get all community members
+    const memberships = await communityMemberRepository.findByCommunity(communityId);
+    const uniqueUserIds = Array.from(new Set(memberships.map((m) => m.userId)));
+
+    logger.info(
+      `[CommunityService recalculateAllMemberTrustRoles] Found ${uniqueUserIds.length} unique members in community ${communityId}`
+    );
+
+    // Recalculate trust roles for each member
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const userId of uniqueUserIds) {
+      try {
+        // Get user's current trust score
+        const trustView = await trustViewRepository.get(communityId, userId);
+        const trustScore = trustView?.points ?? 0;
+
+        // Sync trust roles to OpenFGA
+        await openFGAService.syncTrustRoles(userId, communityId, trustScore, thresholds);
+
+        successCount++;
+        logger.debug(
+          `[CommunityService recalculateAllMemberTrustRoles] Synced trust roles for user ${userId} (trust: ${trustScore})`
+        );
+      } catch (error) {
+        errorCount++;
+        logger.error(
+          `[CommunityService recalculateAllMemberTrustRoles] Failed to sync trust roles for user ${userId}:`,
+          error
+        );
+        // Continue with other members even if one fails
+      }
+    }
+
+    logger.info(
+      `[CommunityService recalculateAllMemberTrustRoles] Completed trust role recalculation: ${successCount} succeeded, ${errorCount} failed`
+    );
+
+    if (errorCount > 0 && successCount === 0) {
+      throw new AppError('Failed to recalculate trust roles for all members', 500);
+    }
+  }
+
+  /**
+   * Build trust thresholds map for OpenFGA sync
+   */
+  private async buildTrustThresholdsMap(
+    communityId: string,
+    community: Community
+  ): Promise<Record<string, number>> {
+    // Resolve all trust thresholds using the trust resolver
+    const [
+      minTrustToAwardTrust,
+      minTrustToViewTrust,
+      minTrustForWealth,
+      minTrustToViewWealth,
+      minTrustForItemManagement,
+      minTrustToViewItems,
+      minTrustForDisputes,
+      minTrustToViewDisputes,
+      minTrustForPolls,
+      minTrustToViewPolls,
+      minTrustForPoolCreation,
+      minTrustToViewPools,
+      minTrustForCouncilCreation,
+      minTrustToViewCouncils,
+      minTrustForHealthAnalytics,
+      minTrustForThreadCreation,
+      minTrustForAttachments,
+      minTrustForFlagging,
+      minTrustForFlagReview,
+      minTrustForForumModeration,
+      minTrustToViewForum,
+    ] = await Promise.all([
+      resolveTrustRequirement(communityId, community.minTrustToAwardTrust),
+      resolveTrustRequirement(communityId, community.minTrustToViewTrust),
+      resolveTrustRequirement(communityId, community.minTrustForWealth),
+      resolveTrustRequirement(communityId, community.minTrustToViewWealth),
+      resolveTrustRequirement(communityId, community.minTrustForItemManagement),
+      resolveTrustRequirement(communityId, community.minTrustToViewItems),
+      resolveTrustRequirement(communityId, community.minTrustForDisputes),
+      resolveTrustRequirement(communityId, community.minTrustToViewDisputes),
+      resolveTrustRequirement(communityId, community.minTrustForPolls),
+      resolveTrustRequirement(communityId, community.minTrustToViewPolls),
+      resolveTrustRequirement(communityId, community.minTrustForPoolCreation),
+      resolveTrustRequirement(communityId, community.minTrustToViewPools),
+      resolveTrustRequirement(communityId, community.minTrustForCouncilCreation),
+      resolveTrustRequirement(communityId, community.minTrustToViewCouncils),
+      resolveTrustRequirement(communityId, community.minTrustForHealthAnalytics),
+      resolveTrustRequirement(communityId, community.minTrustForThreadCreation),
+      resolveTrustRequirement(communityId, community.minTrustForAttachments),
+      resolveTrustRequirement(communityId, community.minTrustForFlagging),
+      resolveTrustRequirement(communityId, community.minTrustForFlagReview),
+      resolveTrustRequirement(communityId, community.minTrustForForumModeration),
+      resolveTrustRequirement(communityId, community.minTrustToViewForum),
+    ]);
+
+    // Map thresholds to trust role names (matching OpenFGA constants)
+    return {
+      trust_trust_viewer: minTrustToViewTrust,
+      trust_trust_granter: minTrustToAwardTrust,
+      trust_wealth_viewer: minTrustToViewWealth,
+      trust_wealth_creator: minTrustForWealth,
+      trust_poll_viewer: minTrustToViewPolls,
+      trust_poll_creator: minTrustForPolls,
+      trust_dispute_viewer: minTrustToViewDisputes,
+      trust_dispute_handler: minTrustForDisputes,
+      trust_pool_viewer: minTrustToViewPools,
+      trust_pool_creator: minTrustForPoolCreation,
+      trust_council_viewer: minTrustToViewCouncils,
+      trust_council_creator: minTrustForCouncilCreation,
+      trust_forum_viewer: minTrustToViewForum,
+      trust_forum_manager: minTrustForForumModeration,
+      trust_thread_creator: minTrustForThreadCreation,
+      trust_attachment_uploader: minTrustForAttachments,
+      trust_content_flagger: minTrustForFlagging,
+      trust_flag_reviewer: minTrustForFlagReview,
+      trust_item_viewer: minTrustToViewItems,
+      trust_item_manager: minTrustForItemManagement,
+      trust_analytics_viewer: minTrustForHealthAnalytics,
+    };
   }
 
   async deleteCommunity(id: string, userId: string): Promise<Community> {

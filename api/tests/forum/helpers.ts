@@ -177,6 +177,22 @@ export function createMockOpenFGAService(config: {
       }
       return false;
     }),
+    checkAccess: mock(async (userId: string, resourceType: string, resourceId: string, permission: string) => {
+      // Map permissions to config
+      if (permission === 'can_manage_forum') {
+        return config.isAdmin || config.isForumManager || false;
+      }
+      if (permission === 'can_create_thread') {
+        return config.canCreateThreads ?? true;
+      }
+      if (permission === 'admin') {
+        return config.isAdmin ?? false;
+      }
+      if (permission === 'can_read') {
+        return true; // Members can always read
+      }
+      return false;
+    }),
     checkTrustLevel: mock(async () => config.canCreateThreads ?? true),
     createRelationship: mock(() => Promise.resolve()),
     deleteRelationship: mock(() => Promise.resolve()),

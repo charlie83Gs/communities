@@ -1,8 +1,7 @@
 import { db } from '@db/index';
-import { polls, pollOptions, pollVotes, communities } from '@db/schema';
+import { polls, pollOptions, pollVotes } from '@db/schema';
 import { eq, and, sql, desc } from 'drizzle-orm';
 import { openFGAService } from './openfga.service';
-import { communityMemberRepository } from '@repositories/communityMember.repository';
 import { AppError } from '@utils/errors';
 import type {
   CreatePollDto,
@@ -16,60 +15,21 @@ import type {
 export class PollService {
   /**
    * Ensure user is a member or admin of the community
+   * Uses OpenFGA to check can_read permission (requires member or admin role)
    */
   private async ensureMemberOrAdmin(communityId: string, userId: string): Promise<void> {
-    const role = await communityMemberRepository.getUserRole(communityId, userId);
-    if (!role || (role !== 'admin' && role !== 'member')) {
+    const canRead = await openFGAService.checkAccess(userId, 'community', communityId, 'can_read');
+    if (!canRead) {
       throw new AppError('You must be a member of this community to access polls', 403);
     }
   }
 
   /**
    * Check if user can create polls in a community
-   * User must have poll_creator role OR meet trust threshold
+   * Uses OpenFGA unified permission check: admin OR poll_creator OR trust_poll_creator
    */
   private async canCreatePoll(userId: string, communityId: string): Promise<boolean> {
-    // Check admin first (admins can always create polls)
-    const isAdmin = await openFGAService.check({
-      user: `user:${userId}`,
-      relation: 'admin',
-      object: `community:${communityId}`,
-    });
-
-    if (isAdmin) {
-      return true;
-    }
-
-    // Check explicit poll_creator permission
-    const hasPollCreatorRole = await openFGAService.checkUserPermission(
-      userId,
-      communityId,
-      'poll_creator'
-    );
-
-    if (hasPollCreatorRole) {
-      return true;
-    }
-
-    // Check trust threshold
-    const [community] = await db
-      .select()
-      .from(communities)
-      .where(eq(communities.id, communityId))
-      .limit(1);
-
-    if (!community) {
-      return false;
-    }
-
-    // Get trust threshold from community config
-    const minTrustForPolls = community.minTrustForPolls as {
-      type: string;
-      value: number;
-    };
-    const threshold = minTrustForPolls?.value ?? 15;
-
-    return await openFGAService.checkTrustLevel(userId, communityId, threshold);
+    return await openFGAService.checkAccess(userId, 'community', communityId, 'can_create_poll');
   }
 
   /**

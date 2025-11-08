@@ -4,7 +4,7 @@ import {
   TrustTimelineEvent,
   TrustSummary,
 } from '../repositories/trustAnalytics.repository';
-import { communityMemberRepository } from '../repositories/communityMember.repository';
+import { openFGAService } from './openfga.service';
 
 export interface GetTimelineOptions {
   communityId?: string;
@@ -43,8 +43,13 @@ export class TrustAnalyticsService {
 
     // Validate community membership if communityId is provided
     if (options?.communityId) {
-      const role = await communityMemberRepository.getUserRole(options.communityId, userId);
-      if (!role) {
+      const hasAccess = await openFGAService.checkAccess(
+        userId,
+        'community',
+        options.communityId,
+        'can_read'
+      );
+      if (!hasAccess) {
         throw new AppError('You are not a member of this community', 403);
       }
     }
@@ -62,8 +67,13 @@ export class TrustAnalyticsService {
   async getMyTrustSummary(userId: string, options?: GetSummaryOptions): Promise<TrustSummary> {
     // Validate community membership if communityId is provided
     if (options?.communityId) {
-      const role = await communityMemberRepository.getUserRole(options.communityId, userId);
-      if (!role) {
+      const hasAccess = await openFGAService.checkAccess(
+        userId,
+        'community',
+        options.communityId,
+        'can_read'
+      );
+      if (!hasAccess) {
         throw new AppError('You are not a member of this community', 403);
       }
     }
@@ -81,8 +91,13 @@ export class TrustAnalyticsService {
    */
   async getUserTrustScore(userId: string, communityId: string): Promise<number> {
     // Validate community membership
-    const role = await communityMemberRepository.getUserRole(communityId, userId);
-    if (!role) {
+    const hasAccess = await openFGAService.checkAccess(
+      userId,
+      'community',
+      communityId,
+      'can_read'
+    );
+    if (!hasAccess) {
       throw new AppError('User is not a member of this community', 403);
     }
 

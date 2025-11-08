@@ -14,10 +14,9 @@ import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import { councilService } from './council.service';
 import { councilRepository } from '@/repositories/council.repository';
 import { communityMemberRepository } from '@/repositories/communityMember.repository';
-import { communityRepository } from '@/repositories/community.repository';
 import { appUserRepository } from '@/repositories/appUser.repository';
 import { itemsRepository } from '@/repositories/items.repository';
-import { trustViewRepository } from '@/repositories/trustView.repository';
+import { openFGAService } from './openfga.service';
 
 // Mock repositories
 const mockCouncilRepository = {
@@ -44,12 +43,8 @@ const mockCommunityMemberRepository = {
   isAdmin: mock(),
 };
 
-const mockCommunityRepository = {
-  findById: mock(),
-};
-
-const mockTrustViewRepository = {
-  get: mock(),
+const mockOpenFGAService = {
+  checkAccess: mock(),
 };
 
 const mockAppUserRepository = {
@@ -69,8 +64,7 @@ describe('CouncilService', () => {
     // Reset all mocks
     Object.values(mockCouncilRepository).forEach((m) => m.mockReset());
     Object.values(mockCommunityMemberRepository).forEach((m) => m.mockReset());
-    Object.values(mockCommunityRepository).forEach((m) => m.mockReset());
-    Object.values(mockTrustViewRepository).forEach((m) => m.mockReset());
+    Object.values(mockOpenFGAService).forEach((m) => m.mockReset());
     Object.values(mockAppUserRepository).forEach((m) => m.mockReset());
     Object.values(mockItemsRepository).forEach((m) => m.mockReset());
 
@@ -93,26 +87,19 @@ describe('CouncilService', () => {
     (councilRepository.removeTrust as any) = mockCouncilRepository.removeTrust;
     (communityMemberRepository.getUserRole as any) = mockCommunityMemberRepository.getUserRole;
     (communityMemberRepository.isAdmin as any) = mockCommunityMemberRepository.isAdmin;
-    (communityRepository.findById as any) = mockCommunityRepository.findById;
-    (trustViewRepository.get as any) = mockTrustViewRepository.get;
+    (openFGAService.checkAccess as any) = mockOpenFGAService.checkAccess;
     (appUserRepository.findById as any) = mockAppUserRepository.findById;
     (itemsRepository.findById as any) = mockItemsRepository.findById;
 
     // Default mock behaviors
     mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
-    mockCommunityMemberRepository.isAdmin.mockResolvedValue(false);
-    mockCommunityRepository.findById.mockResolvedValue({
-      id: validCommunityId,
-      name: 'Test Community',
-    });
-    mockTrustViewRepository.get.mockResolvedValue({ points: 30 });
+    mockOpenFGAService.checkAccess.mockResolvedValue(false);
   });
 
   describe('createCouncil', () => {
-    it('should allow user with sufficient trust to create council', async () => {
+    it('should allow user with can_create_council permission', async () => {
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
-      mockCommunityMemberRepository.isAdmin.mockResolvedValue(false);
-      mockTrustViewRepository.get.mockResolvedValue({ points: 30 }); // Above threshold of 25
+      mockOpenFGAService.checkAccess.mockResolvedValue(true); // Has permission
       mockCouncilRepository.findByCommunityId.mockResolvedValue({
         councils: [],
         total: 0,
@@ -139,12 +126,17 @@ describe('CouncilService', () => {
       expect(result).toBeDefined();
       expect(result.id).toBe(validCouncilId);
       expect(mockCouncilRepository.create).toHaveBeenCalled();
+      expect(mockOpenFGAService.checkAccess).toHaveBeenCalledWith(
+        validUserId,
+        'community',
+        validCommunityId,
+        'can_create_council'
+      );
     });
 
-    it('should reject user with insufficient trust from creating council', async () => {
+    it('should reject user without can_create_council permission', async () => {
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
-      mockCommunityMemberRepository.isAdmin.mockResolvedValue(false);
-      mockTrustViewRepository.get.mockResolvedValue({ points: 10 }); // Below threshold of 25
+      mockOpenFGAService.checkAccess.mockResolvedValue(false); // No permission
 
       await expect(
         councilService.createCouncil(
@@ -156,11 +148,18 @@ describe('CouncilService', () => {
           validUserId
         )
       ).rejects.toThrow('Forbidden');
+
+      expect(mockOpenFGAService.checkAccess).toHaveBeenCalledWith(
+        validUserId,
+        'community',
+        validCommunityId,
+        'can_create_council'
+      );
     });
 
     it('should validate name length', async () => {
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue('admin');
-      mockCommunityMemberRepository.isAdmin.mockResolvedValue(true);
+      mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
+      mockOpenFGAService.checkAccess.mockResolvedValue(true);
 
       await expect(
         councilService.createCouncil(
@@ -256,7 +255,7 @@ describe('CouncilService', () => {
   });
 
   describe('updateCouncil', () => {
-    it('should allow council manager to update council', async () => {
+    it('should allow user with can_update permission to update council', async () => {
       mockCouncilRepository.findById.mockResolvedValue({
         id: validCouncilId,
         name: 'Food Council',
@@ -264,8 +263,7 @@ describe('CouncilService', () => {
         createdBy: validUserId,
         createdAt: new Date(),
       });
-      mockCommunityMemberRepository.isAdmin.mockResolvedValue(false);
-      mockCouncilRepository.isManager.mockResolvedValue(true);
+      mockOpenFGAService.checkAccess.mockResolvedValue(true); // Has permission
       mockCouncilRepository.findByCommunityId.mockResolvedValue({
         councils: [],
         total: 0,
@@ -289,9 +287,15 @@ describe('CouncilService', () => {
 
       expect(result).toBeDefined();
       expect(result.name).toBe('Updated Council');
+      expect(mockOpenFGAService.checkAccess).toHaveBeenCalledWith(
+        validUserId,
+        'council',
+        validCouncilId,
+        'can_update'
+      );
     });
 
-    it('should reject non-manager from updating council', async () => {
+    it('should reject user without can_update permission from updating council', async () => {
       mockCouncilRepository.findById.mockResolvedValue({
         id: validCouncilId,
         name: 'Food Council',
@@ -299,17 +303,23 @@ describe('CouncilService', () => {
         createdBy: validUserId,
         createdAt: new Date(),
       });
-      mockCommunityMemberRepository.isAdmin.mockResolvedValue(false);
-      mockCouncilRepository.isManager.mockResolvedValue(false);
+      mockOpenFGAService.checkAccess.mockResolvedValue(false); // No permission
 
       await expect(
         councilService.updateCouncil(validCouncilId, { name: 'Updated' }, validUserId)
       ).rejects.toThrow('Forbidden');
+
+      expect(mockOpenFGAService.checkAccess).toHaveBeenCalledWith(
+        validUserId,
+        'council',
+        validCouncilId,
+        'can_update'
+      );
     });
   });
 
   describe('deleteCouncil', () => {
-    it('should allow admin to delete council', async () => {
+    it('should allow user with can_delete permission to delete council', async () => {
       mockCouncilRepository.findById.mockResolvedValue({
         id: validCouncilId,
         name: 'Food Council',
@@ -317,16 +327,22 @@ describe('CouncilService', () => {
         createdBy: validUserId,
         createdAt: new Date(),
       });
-      mockCommunityMemberRepository.isAdmin.mockResolvedValue(true);
+      mockOpenFGAService.checkAccess.mockResolvedValue(true); // Has permission
       mockCouncilRepository.delete.mockResolvedValue(undefined);
 
       const result = await councilService.deleteCouncil(validCouncilId, validUserId);
 
       expect(result.success).toBe(true);
       expect(mockCouncilRepository.delete).toHaveBeenCalledWith(validCouncilId);
+      expect(mockOpenFGAService.checkAccess).toHaveBeenCalledWith(
+        validUserId,
+        'council',
+        validCouncilId,
+        'can_delete'
+      );
     });
 
-    it('should reject non-admin from deleting council', async () => {
+    it('should reject user without can_delete permission from deleting council', async () => {
       mockCouncilRepository.findById.mockResolvedValue({
         id: validCouncilId,
         name: 'Food Council',
@@ -334,10 +350,17 @@ describe('CouncilService', () => {
         createdBy: validUserId,
         createdAt: new Date(),
       });
-      mockCommunityMemberRepository.isAdmin.mockResolvedValue(false);
+      mockOpenFGAService.checkAccess.mockResolvedValue(false); // No permission
 
       await expect(councilService.deleteCouncil(validCouncilId, validUserId)).rejects.toThrow(
         'Forbidden'
+      );
+
+      expect(mockOpenFGAService.checkAccess).toHaveBeenCalledWith(
+        validUserId,
+        'council',
+        validCouncilId,
+        'can_delete'
       );
     });
   });
@@ -421,7 +444,7 @@ describe('CouncilService', () => {
   describe('Manager Management', () => {
     const targetUserId = '550e8400-e29b-41d4-a716-446655440004';
 
-    it('should allow admin to add manager', async () => {
+    it('should allow user with can_update permission to add manager', async () => {
       mockCouncilRepository.findById.mockResolvedValue({
         id: validCouncilId,
         name: 'Food Council',
@@ -429,7 +452,7 @@ describe('CouncilService', () => {
         createdBy: validUserId,
         createdAt: new Date(),
       });
-      mockCommunityMemberRepository.isAdmin.mockResolvedValue(true);
+      mockOpenFGAService.checkAccess.mockResolvedValue(true); // Has permission
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
       mockCouncilRepository.isManager.mockResolvedValue(false);
       mockCouncilRepository.addManager.mockResolvedValue(undefined);
@@ -439,9 +462,15 @@ describe('CouncilService', () => {
 
       expect(result).toBeDefined();
       expect(result.success).toBe(true);
+      expect(mockOpenFGAService.checkAccess).toHaveBeenCalledWith(
+        validUserId,
+        'council',
+        validCouncilId,
+        'can_update'
+      );
     });
 
-    it('should reject non-admin from adding manager', async () => {
+    it('should reject user without can_update permission from adding manager', async () => {
       mockCouncilRepository.findById.mockResolvedValue({
         id: validCouncilId,
         name: 'Food Council',
@@ -449,15 +478,21 @@ describe('CouncilService', () => {
         createdBy: validUserId,
         createdAt: new Date(),
       });
-      mockCommunityMemberRepository.isAdmin.mockResolvedValue(false);
-      mockCouncilRepository.isManager.mockResolvedValue(false);
+      mockOpenFGAService.checkAccess.mockResolvedValue(false); // No permission
 
       await expect(
         councilService.addManager(validCouncilId, targetUserId, validUserId)
       ).rejects.toThrow('Forbidden');
+
+      expect(mockOpenFGAService.checkAccess).toHaveBeenCalledWith(
+        validUserId,
+        'council',
+        validCouncilId,
+        'can_update'
+      );
     });
 
-    it('should allow admin to remove manager', async () => {
+    it('should allow user with can_delete permission to remove manager', async () => {
       mockCouncilRepository.findById.mockResolvedValue({
         id: validCouncilId,
         name: 'Food Council',
@@ -465,7 +500,7 @@ describe('CouncilService', () => {
         createdBy: validUserId,
         createdAt: new Date(),
       });
-      mockCommunityMemberRepository.isAdmin.mockResolvedValue(true);
+      mockOpenFGAService.checkAccess.mockResolvedValue(true); // Has permission
       mockCouncilRepository.isManager.mockResolvedValue(true);
       mockCouncilRepository.removeManager.mockResolvedValue(undefined);
 
@@ -473,9 +508,15 @@ describe('CouncilService', () => {
 
       expect(result.success).toBe(true);
       expect(mockCouncilRepository.removeManager).toHaveBeenCalled();
+      expect(mockOpenFGAService.checkAccess).toHaveBeenCalledWith(
+        validUserId,
+        'council',
+        validCouncilId,
+        'can_delete'
+      );
     });
 
-    it('should reject non-admin from removing manager', async () => {
+    it('should reject user without can_delete permission from removing manager', async () => {
       mockCouncilRepository.findById.mockResolvedValue({
         id: validCouncilId,
         name: 'Food Council',
@@ -483,11 +524,18 @@ describe('CouncilService', () => {
         createdBy: validUserId,
         createdAt: new Date(),
       });
-      mockCommunityMemberRepository.isAdmin.mockResolvedValue(false);
+      mockOpenFGAService.checkAccess.mockResolvedValue(false); // No permission
 
       await expect(
         councilService.removeManager(validCouncilId, targetUserId, validUserId)
       ).rejects.toThrow('Forbidden');
+
+      expect(mockOpenFGAService.checkAccess).toHaveBeenCalledWith(
+        validUserId,
+        'council',
+        validCouncilId,
+        'can_delete'
+      );
     });
   });
 

@@ -10,7 +10,7 @@
 
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import { trustAnalyticsService } from './trustAnalytics.service';
-import { communityMemberRepository } from '@/repositories/communityMember.repository';
+import { openFGAService } from './openfga.service';
 import { trustAnalyticsRepository } from '@/repositories/trustAnalytics.repository';
 
 // Valid UUIDs for testing
@@ -18,9 +18,8 @@ const VALID_COMM_ID = '550e8400-e29b-41d4-a716-446655440000';
 const VALID_USER_ID = '550e8400-e29b-41d4-a716-446655440001';
 
 // Mock dependencies
-const mockCommunityMemberRepository = {
-  exists: mock(() => Promise.resolve(true)),
-  getUserRole: mock(() => Promise.resolve('member')),
+const mockOpenFGAService = {
+  checkAccess: mock(() => Promise.resolve(true)),
 };
 
 const mockTrustAnalyticsRepository = {
@@ -34,11 +33,11 @@ const mockTrustAnalyticsRepository = {
 describe('TrustAnalyticsService', () => {
   beforeEach(() => {
     // Reset all mocks
-    Object.values(mockCommunityMemberRepository).forEach((m) => m.mockReset());
+    Object.values(mockOpenFGAService).forEach((m) => m.mockReset());
     Object.values(mockTrustAnalyticsRepository).forEach((m) => m.mockReset());
 
     // Replace dependencies with mocks
-    (communityMemberRepository.getUserRole as any) = mockCommunityMemberRepository.getUserRole;
+    (openFGAService.checkAccess as any) = mockOpenFGAService.checkAccess;
     (trustAnalyticsRepository.getTrustTimeline as any) =
       mockTrustAnalyticsRepository.getTrustTimeline;
     (trustAnalyticsRepository.getTrustSummary as any) =
@@ -47,7 +46,7 @@ describe('TrustAnalyticsService', () => {
       mockTrustAnalyticsRepository.getCurrentTrustScore;
 
     // Default mock behaviors
-    mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
+    mockOpenFGAService.checkAccess.mockResolvedValue(true);
   });
 
   describe('getMyTrustTimeline', () => {
@@ -82,13 +81,20 @@ describe('TrustAnalyticsService', () => {
     });
 
     it('should reject non-member from getting trust timeline', async () => {
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
+      mockOpenFGAService.checkAccess.mockResolvedValue(false);
 
       await expect(
         trustAnalyticsService.getMyTrustTimeline(VALID_USER_ID, {
           communityId: VALID_COMM_ID,
         })
       ).rejects.toThrow('You are not a member of this community');
+
+      expect(mockOpenFGAService.checkAccess).toHaveBeenCalledWith(
+        VALID_USER_ID,
+        'community',
+        VALID_COMM_ID,
+        'can_read'
+      );
     });
 
     it('should use default pagination values', async () => {
@@ -126,13 +132,20 @@ describe('TrustAnalyticsService', () => {
     });
 
     it('should reject non-member from getting trust summary', async () => {
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
+      mockOpenFGAService.checkAccess.mockResolvedValue(false);
 
       await expect(
         trustAnalyticsService.getMyTrustSummary(VALID_USER_ID, {
           communityId: VALID_COMM_ID,
         })
       ).rejects.toThrow('You are not a member of this community');
+
+      expect(mockOpenFGAService.checkAccess).toHaveBeenCalledWith(
+        VALID_USER_ID,
+        'community',
+        VALID_COMM_ID,
+        'can_read'
+      );
     });
   });
 });

@@ -62,8 +62,11 @@ class CommunityService {
 export const communityService = new CommunityService();
 ```
 
-### 2. Authorization Checks
+### 2. Authorization Checks (Using Permissions)
 ```typescript
+// IMPORTANT: Always check PERMISSIONS, not roles
+// The permission system automatically includes admin + feature roles + trust roles
+
 async updateCommunity(id: string, data: UpdateCommunityDto, userId: string): Promise<Community> {
   // 1. Verify resource exists
   const community = await communityRepository.findById(id);
@@ -71,12 +74,14 @@ async updateCommunity(id: string, data: UpdateCommunityDto, userId: string): Pro
     throw new AppError("Community not found", 404);
   }
 
-  // 2. Check permissions via OpenFGA
-  const canUpdate = await openfgaService.check({
-    user: `user:${userId}`,
-    relation: 'can_update',
-    object: `community:${id}`
-  });
+  // 2. Check permissions via OpenFGA - Use checkAccess()
+  // This checks: admin OR has explicit update permission OR has trust-based update access
+  const canUpdate = await openFGAService.checkAccess(
+    userId,
+    'community',  // Resource type
+    id,           // Resource ID
+    'update'      // Action (maps to 'can_update')
+  );
 
   if (!canUpdate) {
     throw new AppError("You do not have permission to update this community", 403);
@@ -87,7 +92,44 @@ async updateCommunity(id: string, data: UpdateCommunityDto, userId: string): Pro
 }
 ```
 
-### 3. Transaction Management with Multiple Repositories
+**Why this pattern?**
+- `checkAccess()` automatically checks all permission sources (admin + roles + trust)
+- Action names map to permissions ('update' → 'can_update')
+- Trust-based access is automatic (no manual trust checks needed)
+- Cleaner, more maintainable code
+
+### 3. Feature-Specific Permission Checks
+```typescript
+async manageForumCategory(
+  categoryId: string,
+  userId: string,
+  action: 'update' | 'delete'
+): Promise<void> {
+  // 1. Get category and verify it exists
+  const category = await forumRepository.findById(categoryId);
+  if (!category) throw new AppError("Category not found", 404);
+
+  // 2. Check feature-specific permission
+  // This checks: admin OR forum_manager OR trust_forum_manager
+  const canManage = await openFGAService.checkAccess(
+    userId,
+    'community',
+    category.communityId,
+    'can_manage_forum'  // Feature permission
+  );
+
+  if (!canManage) {
+    throw new AppError("You do not have permission to manage forum categories", 403);
+  }
+
+  // 3. Perform action
+  if (action === 'delete') {
+    await forumRepository.delete(categoryId);
+  }
+}
+```
+
+### 4. Transaction Management with Multiple Repositories
 ```typescript
 async shareWealthToCouncil(
   wealthId: string,
@@ -101,14 +143,16 @@ async shareWealthToCouncil(
   const council = await councilRepository.findById(councilId);
   if (!council) throw new AppError("Council not found", 404);
 
-  // 2. Check authorization
-  const canShare = await openfgaService.check({
-    user: `user:${userId}`,
-    relation: 'can_share_wealth',
-    object: `community:${wealth.communityId}`
-  });
+  // 2. Check authorization - Use permission, not manual trust check
+  const canShare = await openFGAService.checkAccess(
+    userId,
+    'community',
+    wealth.communityId,
+    'can_create_wealth'  // Permission includes trust check automatically
+  );
+
   if (!canShare) {
-    throw new AppError("Insufficient trust to share wealth", 403);
+    throw new AppError("You do not have permission to share wealth", 403);
   }
 
   // 3. Create wealth share (auto-fulfilled for councils)
@@ -138,9 +182,9 @@ async shareWealthToCouncil(
 }
 ```
 
-### 4. Batch Operations
+### 5. Batch Operations
 ```typescript
-async getUserCommunitiesWithTrust(userId: string): Promise<CommunityWithTrust[]> {
+async getUserCommunitiesWithRoles(userId: string): Promise<CommunityWithRole[]> {
   // 1. Get user memberships
   const memberships = await communityMemberRepository.findByUser(userId);
   const communityIds = memberships.map(m => m.resourceId);
@@ -150,19 +194,21 @@ async getUserCommunitiesWithTrust(userId: string): Promise<CommunityWithTrust[]>
   // 2. Batch fetch communities
   const communities = await communityRepository.findByIds(communityIds);
 
-  // 3. Batch fetch trust scores
-  const trustScores = await trustViewRepository.getBatchForUser(userId, communityIds);
+  // 3. Fetch base roles from OpenFGA (parallel for performance)
+  const rolePromises = communityIds.map(id =>
+    openFGAService.getUserBaseRole(userId, 'community', id)
+  );
+  const roles = await Promise.all(rolePromises);
 
   // 4. Combine data
-  return communities.map(community => ({
+  return communities.map((community, index) => ({
     ...community,
-    trustScore: trustScores.get(community.id) ?? 0,
-    role: memberships.find(m => m.resourceId === community.id)?.role
+    role: roles[index] // 'admin' | 'member' | null
   }));
 }
 ```
 
-### 5. Error Handling Best Practices
+### 6. Error Handling Best Practices
 ```typescript
 async deleteCommunity(id: string, userId: string): Promise<void> {
   try {
@@ -244,16 +290,106 @@ describe("CommunityService", () => {
 });
 ```
 
+## OpenFGA Permission Guidelines
+
+### ✅ DO: Check Permissions (Not Roles)
+
+```typescript
+// ✅ CORRECT: Check the permission
+const canManage = await openFGAService.checkAccess(
+  userId,
+  'community',
+  communityId,
+  'can_manage_forum'
+);
+
+// ❌ WRONG: Don't check roles directly
+const hasRole = await openFGAService.check({
+  user: `user:${userId}`,
+  relation: 'forum_manager',  // Don't check roles
+  object: `community:${communityId}`
+});
+```
+
+### Available Permissions by Feature
+
+```typescript
+// Trust Feature
+'can_view_trust', 'can_award_trust'
+
+// Wealth Feature
+'can_view_wealth', 'can_create_wealth'
+
+// Poll Feature
+'can_view_poll', 'can_create_poll'
+
+// Dispute Feature
+'can_view_dispute', 'can_handle_dispute'
+
+// Pool Feature
+'can_view_pool', 'can_create_pool'
+
+// Council Feature
+'can_view_council', 'can_create_council'
+
+// Forum Feature
+'can_view_forum', 'can_manage_forum', 'can_create_thread',
+'can_upload_attachment', 'can_flag_content', 'can_review_flag'
+
+// Items Feature
+'can_view_item', 'can_manage_item'
+
+// Analytics Feature
+'can_view_analytics'
+
+// Generic CRUD (can be used with any resource)
+'can_read', 'can_update', 'can_delete'
+```
+
+### How Permissions Work
+
+Each permission is a **union** of multiple sources:
+```
+can_manage_forum = admin OR forum_manager OR trust_forum_manager
+```
+
+Where:
+- `admin` = Base role (always has all permissions)
+- `forum_manager` = Feature role assigned by admin
+- `trust_forum_manager` = Trust role (auto-granted at threshold)
+
+**You only check the permission** - OpenFGA evaluates all sources automatically.
+
+### When to Use Each Method
+
+```typescript
+// Permission checks (most common)
+checkAccess(userId, resourceType, resourceId, permission)
+
+// Get user's base role (admin/member)
+getUserBaseRole(userId, resourceType, resourceId)
+
+// Assign base role (admin/member) - Only for membership
+assignBaseRole(userId, resourceType, resourceId, 'admin' | 'member')
+
+// Assign feature role - Only for admins granting specific permissions
+assignFeatureRole(userId, communityId, featureRole)
+
+// Low-level checks - Only when you need exact tuple control
+check({ user, relation, object })
+```
+
 ## Key Principles
 
-1. **Single Responsibility**: Each service method handles one business operation
-2. **Repository Orchestration**: Services coordinate multiple repositories
-3. **Authorization**: Always check OpenFGA permissions before operations
-4. **Rollback on Failure**: Critical operations must rollback on error
-5. **Comprehensive Logging**: Log all operations for debugging and audit
-6. **Error Handling**: Use AppError for all business logic errors
-7. **Type Safety**: Use DTOs and types from `@/types/` directory
-8. **Testability**: Design for easy mocking of dependencies
+1. **Check Permissions, Not Roles**: Always use `checkAccess()` with permissions (`can_*`)
+2. **Single Responsibility**: Each service method handles one business operation
+3. **Repository Orchestration**: Services coordinate multiple repositories
+4. **Trust is Automatic**: Never manually check trust - it's included in permissions
+5. **Rollback on Failure**: Critical operations must rollback on error
+6. **Comprehensive Logging**: Log all operations for debugging and audit
+7. **Error Handling**: Use AppError for all business logic errors
+8. **Type Safety**: Use DTOs and types from `@/types/` directory
+9. **Testability**: Design for easy mocking of dependencies
 
 ## Related Skills
 - `api-repository` - Data access layer

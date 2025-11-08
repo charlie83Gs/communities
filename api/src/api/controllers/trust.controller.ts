@@ -179,18 +179,69 @@ export class TrustController {
    *                         type: string
    *                       description: All roles the user has in this community
    *                       example: ["admin", "member"]
+   *                     canViewTrust:
+   *                       type: boolean
+   *                       description: Whether user can view trust information
    *                     canAwardTrust:
    *                       type: boolean
-   *                       description: Whether user can award trust (admin or points >= minTrustToAwardTrust)
-   *                     canAccessWealth:
+   *                       description: Whether user can award trust
+   *                     canViewWealth:
    *                       type: boolean
-   *                       description: Whether user can access wealth features (admin or points >= minTrustForWealth)
+   *                       description: Whether user can view wealth
+   *                     canCreateWealth:
+   *                       type: boolean
+   *                       description: Whether user can create wealth
+   *                     canViewItems:
+   *                       type: boolean
+   *                       description: Whether user can view items
+   *                     canManageItems:
+   *                       type: boolean
+   *                       description: Whether user can manage items
+   *                     canViewDisputes:
+   *                       type: boolean
+   *                       description: Whether user can view disputes
    *                     canHandleDisputes:
    *                       type: boolean
-   *                       description: Whether user can handle disputes (admin or points >= minTrustForDisputes)
+   *                       description: Whether user can handle disputes
+   *                     canViewPolls:
+   *                       type: boolean
+   *                       description: Whether user can view polls
    *                     canCreatePolls:
    *                       type: boolean
-   *                       description: Whether user can create polls (admin or points >= minTrustForPolls)
+   *                       description: Whether user can create polls
+   *                     canViewPools:
+   *                       type: boolean
+   *                       description: Whether user can view pools
+   *                     canCreatePools:
+   *                       type: boolean
+   *                       description: Whether user can create pools
+   *                     canViewCouncils:
+   *                       type: boolean
+   *                       description: Whether user can view councils
+   *                     canCreateCouncils:
+   *                       type: boolean
+   *                       description: Whether user can create councils
+   *                     canViewForum:
+   *                       type: boolean
+   *                       description: Whether user can view forum
+   *                     canManageForum:
+   *                       type: boolean
+   *                       description: Whether user can manage forum
+   *                     canCreateThreads:
+   *                       type: boolean
+   *                       description: Whether user can create threads
+   *                     canUploadAttachments:
+   *                       type: boolean
+   *                       description: Whether user can upload attachments
+   *                     canFlagContent:
+   *                       type: boolean
+   *                       description: Whether user can flag content
+   *                     canReviewFlags:
+   *                       type: boolean
+   *                       description: Whether user can review flags
+   *                     canViewAnalytics:
+   *                       type: boolean
+   *                       description: Whether user can view analytics
    *       404:
    *         description: Community not found
    */

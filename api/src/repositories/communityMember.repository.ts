@@ -14,14 +14,15 @@ export class CommunityMemberRepository {
   }
 
   /**
-   * Add a member to a community with a specific role
+   * Add a member to a community with a specific role (admin or member)
    */
   async addMember(
     communityId: string,
     userId: string,
-    role: 'member' | 'admin' | 'reader' = 'member'
+    role: 'member' | 'admin' = 'member'
   ) {
-    await this.openFGAService.assignRole(userId, 'communities', communityId, role);
+    // Use the new assignBaseRole method
+    await this.openFGAService.assignBaseRole(userId, 'community', communityId, role);
 
     // Return a simple membership object for compatibility
     return {
@@ -37,9 +38,9 @@ export class CommunityMemberRepository {
    * Returns user IDs and their roles from OpenFGA
    */
   async findByCommunity(communityId: string) {
-    const rolesData = await this.openFGAService.getRolesForResource('communities', communityId);
+    const rolesData = await this.openFGAService.getBaseRolesForResource('community', communityId);
 
-    return rolesData.map((item) => ({
+    return rolesData.map((item: { userId: string; role: string }) => ({
       userId: item.userId,
       resourceType: 'communities' as const,
       resourceId: communityId,
@@ -55,11 +56,11 @@ export class CommunityMemberRepository {
     // Get all communities where user has read access (covers all roles)
     const communityIds = await this.openFGAService.getAccessibleResourceIds(
       userId,
-      'communities',
+      'community',
       'read'
     );
 
-    return communityIds.map((communityId) => ({
+    return communityIds.map((communityId: string) => ({
       userId,
       resourceType: 'communities' as const,
       resourceId: communityId,
@@ -70,8 +71,8 @@ export class CommunityMemberRepository {
   /**
    * Update a user's role in a community
    */
-  async updateRole(communityId: string, userId: string, role: 'member' | 'admin' | 'reader') {
-    await this.openFGAService.assignRole(userId, 'communities', communityId, role);
+  async updateRole(communityId: string, userId: string, role: 'member' | 'admin') {
+    await this.openFGAService.assignBaseRole(userId, 'community', communityId, role);
 
     return {
       userId,
@@ -85,13 +86,9 @@ export class CommunityMemberRepository {
    * Remove a member from a community
    */
   async removeMember(communityId: string, userId: string) {
-    const currentRole = await this.openFGAService.getUserRoleForResource(
-      userId,
-      'communities',
-      communityId
-    );
+    const currentRole = await this.getUserRole(communityId, userId);
 
-    await this.openFGAService.removeRole(userId, 'communities', communityId);
+    await this.openFGAService.removeBaseRole(userId, 'community', communityId);
 
     return {
       userId,
@@ -105,11 +102,7 @@ export class CommunityMemberRepository {
    * Check if a user is a member of a community (has any role)
    */
   async isMember(communityId: string, userId: string) {
-    const role = await this.openFGAService.getUserRoleForResource(
-      userId,
-      'communities',
-      communityId
-    );
+    const role = await this.getUserRole(communityId, userId);
     return !!role;
   }
 
@@ -117,25 +110,25 @@ export class CommunityMemberRepository {
    * Get a user's role in a community
    */
   async getUserRole(communityId: string, userId: string) {
-    return await this.openFGAService.getUserRoleForResource(userId, 'communities', communityId);
+    return await this.openFGAService.getUserBaseRole(userId, 'community', communityId);
   }
 
   /**
    * Get all roles for a user in a community
+   * Note: In the new model, users have ONE base role (admin or member)
    */
   async getUserRoles(communityId: string, userId: string): Promise<string[]> {
-    return await this.openFGAService.getUserRolesForResource(userId, 'communities', communityId);
+    const role = await this.openFGAService.getUserBaseRole(userId, 'community', communityId, {
+      returnAll: true,
+    });
+    return Array.isArray(role) ? role : role ? [role] : [];
   }
 
   /**
    * Check if a user is an admin of a community
    */
   async isAdmin(communityId: string, userId: string) {
-    const role = await this.openFGAService.getUserRoleForResource(
-      userId,
-      'communities',
-      communityId
-    );
+    const role = await this.getUserRole(communityId, userId);
     return role === 'admin';
   }
 }

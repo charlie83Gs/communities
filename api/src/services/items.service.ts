@@ -43,44 +43,11 @@ export class ItemsService {
 
   /**
    * Check if user can manage items in a community
-   * User must have item_manager role OR meet trust threshold OR be admin
+   * Uses OpenFGA permission: can_manage_item
+   * Permission automatically handles: admin OR item_manager OR trust_item_manager
    */
   async canManageItems(userId: string, communityId: string): Promise<boolean> {
-    // Check admin first (admins can always manage items)
-    const isAdmin = await openFGAService.check({
-      user: `user:${userId}`,
-      relation: 'admin',
-      object: `community:${communityId}`,
-    });
-
-    if (isAdmin) {
-      return true;
-    }
-
-    // Check explicit item_manager role
-    const hasItemManagerRole = await openFGAService.check({
-      user: `user:${userId}`,
-      relation: 'item_manager',
-      object: `community:${communityId}`,
-    });
-
-    if (hasItemManagerRole) {
-      return true;
-    }
-
-    // Check trust threshold
-    const community = await communityRepository.findById(communityId);
-    if (!community) {
-      return false;
-    }
-
-    const minTrustForItemManagement = community.minTrustForItemManagement as {
-      type: string;
-      value: number;
-    };
-    const threshold = minTrustForItemManagement?.value ?? 20;
-
-    return await openFGAService.checkTrustLevel(userId, communityId, threshold);
+    return await openFGAService.checkAccess(userId, 'community', communityId, 'can_manage_item');
   }
 
   /**

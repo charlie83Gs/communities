@@ -1,7 +1,7 @@
 import { initiativeRepository } from '../repositories/initiative.repository';
 import { councilRepository } from '../repositories/council.repository';
-import { communityMemberRepository } from '../repositories/communityMember.repository';
 import { appUserRepository } from '../repositories/appUser.repository';
+import { openFGAService } from './openfga.service';
 import { AppError } from '../utils/errors';
 import {
   CreateInitiativeDto,
@@ -12,21 +12,7 @@ import logger from '../utils/logger';
 
 export class InitiativeService {
   /**
-   * Check if user is admin of the community
-   */
-  private async isAdmin(communityId: string, userId: string): Promise<boolean> {
-    return await communityMemberRepository.isAdmin(communityId, userId);
-  }
-
-  /**
-   * Check if user is a council manager
-   */
-  private async isCouncilManager(councilId: string, userId: string): Promise<boolean> {
-    return await councilRepository.isManager(councilId, userId);
-  }
-
-  /**
-   * Check if user can manage council (admin OR council manager)
+   * Check if user can manage council (community admin OR council member)
    */
   private async canManageCouncil(councilId: string, userId: string): Promise<boolean> {
     const council = await councilRepository.findById(councilId);
@@ -34,10 +20,13 @@ export class InitiativeService {
       throw new AppError('Council not found', 404);
     }
 
-    const isAdmin = await this.isAdmin(council.communityId, userId);
-    const isManager = await this.isCouncilManager(councilId, userId);
+    // Check if user is community admin
+    const isAdmin = await openFGAService.checkAccess(userId, 'community', council.communityId, 'admin');
 
-    return isAdmin || isManager;
+    // Check if user is council member (has can_manage permission on council)
+    const canManageCouncil = await openFGAService.checkAccess(userId, 'council', councilId, 'can_manage');
+
+    return isAdmin || canManageCouncil;
   }
 
   /**
@@ -98,9 +87,9 @@ export class InitiativeService {
       throw new AppError('Initiative not found', 404);
     }
 
-    // Check user is member of the community
-    const userRole = await communityMemberRepository.getUserRole(initiative.communityId, userId);
-    if (!userRole) {
+    // Check user can read the community
+    const canRead = await openFGAService.checkAccess(userId, 'community', initiative.communityId, 'can_read');
+    if (!canRead) {
       throw new AppError('Forbidden: not a member of this community', 403);
     }
 
@@ -124,9 +113,9 @@ export class InitiativeService {
       throw new AppError('Council not found', 404);
     }
 
-    // Check user is member of the community
-    const userRole = await communityMemberRepository.getUserRole(council.communityId, userId);
-    if (!userRole) {
+    // Check user can read the community
+    const canRead = await openFGAService.checkAccess(userId, 'community', council.communityId, 'can_read');
+    if (!canRead) {
       throw new AppError('Forbidden: not a member of this community', 403);
     }
 
@@ -209,9 +198,9 @@ export class InitiativeService {
       throw new AppError('Initiative not found', 404);
     }
 
-    // Check user is member of the community
-    const userRole = await communityMemberRepository.getUserRole(initiative.communityId, userId);
-    if (!userRole) {
+    // Check user can read the community
+    const canRead = await openFGAService.checkAccess(userId, 'community', initiative.communityId, 'can_read');
+    if (!canRead) {
       throw new AppError('Forbidden: not a member of this community', 403);
     }
 
@@ -230,9 +219,9 @@ export class InitiativeService {
       throw new AppError('Initiative not found', 404);
     }
 
-    // Check user is member of the community
-    const userRole = await communityMemberRepository.getUserRole(initiative.communityId, userId);
-    if (!userRole) {
+    // Check user can read the community
+    const canRead = await openFGAService.checkAccess(userId, 'community', initiative.communityId, 'can_read');
+    if (!canRead) {
       throw new AppError('Forbidden: not a member of this community', 403);
     }
 
@@ -291,9 +280,9 @@ export class InitiativeService {
       throw new AppError('Initiative not found', 404);
     }
 
-    // Check user is member of the community
-    const userRole = await communityMemberRepository.getUserRole(initiative.communityId, userId);
-    if (!userRole) {
+    // Check user can read the community
+    const canRead = await openFGAService.checkAccess(userId, 'community', initiative.communityId, 'can_read');
+    if (!canRead) {
       throw new AppError('Forbidden: not a member of this community', 403);
     }
 
@@ -309,9 +298,9 @@ export class InitiativeService {
       throw new AppError('Initiative not found', 404);
     }
 
-    // Check user is member of the community
-    const userRole = await communityMemberRepository.getUserRole(initiative.communityId, userId);
-    if (!userRole) {
+    // Check user can read the community
+    const canRead = await openFGAService.checkAccess(userId, 'community', initiative.communityId, 'can_read');
+    if (!canRead) {
       throw new AppError('Forbidden: not a member of this community', 403);
     }
 
@@ -344,9 +333,9 @@ export class InitiativeService {
       throw new AppError('Initiative not found', 404);
     }
 
-    // Check user is member of the community
-    const userRole = await communityMemberRepository.getUserRole(initiative.communityId, userId);
-    if (!userRole) {
+    // Check user can read the community
+    const canRead = await openFGAService.checkAccess(userId, 'community', initiative.communityId, 'can_read');
+    if (!canRead) {
       throw new AppError('Forbidden: not a member of this community', 403);
     }
 
@@ -383,9 +372,9 @@ export class InitiativeService {
       throw new AppError('Initiative not found', 404);
     }
 
-    // Check user is member of the community
-    const userRole = await communityMemberRepository.getUserRole(initiative.communityId, userId);
-    if (!userRole) {
+    // Check user can read the community
+    const canRead = await openFGAService.checkAccess(userId, 'community', initiative.communityId, 'can_read');
+    if (!canRead) {
       throw new AppError('Forbidden: not a member of this community', 403);
     }
 
@@ -423,9 +412,9 @@ export class InitiativeService {
       throw new AppError('Initiative not found', 404);
     }
 
-    // Check user is member of the community
-    const userRole = await communityMemberRepository.getUserRole(initiative.communityId, userId);
-    if (!userRole) {
+    // Check user can read the community
+    const canRead = await openFGAService.checkAccess(userId, 'community', initiative.communityId, 'can_read');
+    if (!canRead) {
       throw new AppError('Forbidden: not a member of this community', 403);
     }
 

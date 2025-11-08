@@ -2,23 +2,50 @@
 id: FT-02
 title: Members & Permissions
 status: implemented
-version: 1.0
-last_updated: 2025-01-06
+version: 2.0
+last_updated: 2025-01-08
 related_features: [FT-01, FT-03, FT-04, FT-05, FT-06, FT-07, FT-10, FT-13]
 ---
 
 # Members & Permissions
 
 ## Permission System Overview
-This system uses a **dual permission model**: members can gain access to features either through **explicit role assignment** OR by reaching a **trust threshold**. This provides flexibility while maintaining security and transparency.
+This system uses a **role-based permission model** with **dual access paths**: members can gain roles either through **admin assignment** OR by **earning trust**. Roles grant permissions to perform actions.
 
-**Two Paths to Permission:**
-1. **Role-Based**: Admin explicitly grants a role to a member
-2. **Trust-Based**: Member automatically gains access by reaching a configured trust score
+**Role → Permission Architecture:**
+- **Roles** define HOW you got access (admin-assigned or trust-earned)
+- **Permissions** define WHAT you can do (check permissions, not roles)
 
-**Example**: To create a poll, a member can either:
-- Be explicitly granted the "Poll Creator" role by an admin, OR
-- Reach the configured trust threshold (default: 15)
+**Two Paths to Roles:**
+1. **Regular Roles**: Admin explicitly assigns role to a member (e.g., `forum_manager`)
+2. **Trust Roles**: Member automatically earns role by reaching trust threshold (e.g., `trust_forum_manager`)
+
+**Example**: To manage the forum, a member can either:
+- Be explicitly granted the "Forum Manager" role by an admin, OR
+- Earn the "Trust Forum Manager" role by reaching the trust threshold (default: 30)
+
+Both paths grant the same permission: `can_manage_forum`
+
+## Role Categories
+
+### Viewer Roles
+Viewer roles provide **read-only access** to features. Useful for:
+- Gating access to sensitive content
+- Allowing observation before participation
+- Transparency controls (public vs. member-only content)
+
+**All features have viewer variants:**
+- Trust Viewer, Poll Viewer, Dispute Viewer, Pool Viewer, Council Viewer
+- Forum Viewer, Item Viewer, Analytics Viewer
+
+### Action Roles
+Action roles allow **performing operations** within features:
+- Trust Granter, Wealth Creator, Poll Creator, Dispute Handler
+- Pool Creator, Council Creator, Thread Creator, Content Flagger
+
+### Manager Roles
+Manager roles provide **full control** over specific features:
+- Forum Manager, Item Manager
 
 ## Member Roles
 
@@ -122,46 +149,110 @@ This system uses a **dual permission model**: members can gain access to feature
   - Accept/reject wealth requests
   - Mark wealth requests as fulfilled
 
-## Trust Threshold Configuration Summary
+## Complete Role & Permission Matrix
 
-Communities can configure the following trust thresholds to control feature access:
+Communities can configure trust thresholds to automatically grant roles. Each role grants specific permissions.
 
-| Feature | Config Field | Default | Access Via Role | Access Via Trust |
-|---------|-------------|---------|-----------------|------------------|
-| Award Trust to Others | `minTrustToAwardTrust` | 15 | Admin | Trust >= threshold |
-| Publish/Share Wealth | `minTrustForWealth` | 10 | N/A | Trust >= threshold |
-| Create Polls | `minTrustForPolls` | 15 | Poll Creator role | Trust >= threshold |
-| Handle Disputes | `minTrustForDisputes` | 20 | Dispute Resolver role | Trust >= threshold |
-| Create Pools | `minTrustForPoolCreation` | 20 | Pool Manager role | Trust >= threshold |
-| Create Councils | `minTrustForCouncilCreation` | 25 | Admin | Trust >= threshold |
-| Forum Moderation | `minTrustForForumModeration` | 30 | Forum Manager role | Trust >= threshold |
-| Create Forum Threads | `minTrustForThreadCreation` | 10 | N/A | Trust >= threshold |
-| Upload Forum Attachments | `minTrustForAttachments` | 15 | N/A | Trust >= threshold |
-| Flag Forum Content | `minTrustForFlagging` | 15 | N/A | Trust >= threshold |
-| Review Flagged Content | `minTrustForFlagReview` | 30 | Forum Manager role | Trust >= threshold |
+### Trust Feature
+| Role (Regular) | Role (Trust) | Permission | Default Threshold |
+|----------------|--------------|------------|-------------------|
+| `trust_viewer` | `trust_trust_viewer` | `can_view_trust` | TBD |
+| `trust_granter` | `trust_trust_granter` | `can_award_trust` | 15 |
 
-**Key Points:**
-- **Admins bypass all trust requirements** for all features
-- **Council Managers** are assigned per council (not community-wide)
-- **Pool Managers and Council Managers** automatically inherit poll creation access
-- **All thresholds are configurable** per community
-- **Trust-based access is automatic** - no manual grant needed when threshold is reached
+### Wealth Feature
+| Role (Regular) | Role (Trust) | Permission | Default Threshold |
+|----------------|--------------|------------|-------------------|
+| `wealth_viewer` | `trust_wealth_viewer` | `can_view_wealth` | 10 |
+| `wealth_creator` | `trust_wealth_creator` | `can_create_wealth` | 10 |
 
-## Role Hierarchy
-1. **Admin** - Highest level, can manage all roles and features, bypasses all trust requirements
-2. **Feature-Specific Managers** - Forum Manager, Pool Manager, Council Manager, Dispute Resolver
-3. **Trust-Based Automatic Access** - Wealth Publisher, Poll Creator, Thread Creator (when trust threshold met)
-4. **Basic Member** - Can post in forums, request wealth, vote on initiatives, comment
+### Polls Feature
+| Role (Regular) | Role (Trust) | Permission | Default Threshold |
+|----------------|--------------|------------|-------------------|
+| `poll_viewer` | `trust_poll_viewer` | `can_view_poll` | TBD |
+| `poll_creator` | `trust_poll_creator` | `can_create_poll` | 15 |
+
+### Disputes Feature
+| Role (Regular) | Role (Trust) | Permission | Default Threshold |
+|----------------|--------------|------------|-------------------|
+| `dispute_viewer` | `trust_dispute_viewer` | `can_view_dispute` | TBD |
+| `dispute_handler` | `trust_dispute_handler` | `can_handle_dispute` | 20 |
+
+### Pools Feature
+| Role (Regular) | Role (Trust) | Permission | Default Threshold |
+|----------------|--------------|------------|-------------------|
+| `pool_viewer` | `trust_pool_viewer` | `can_view_pool` | TBD |
+| `pool_creator` | `trust_pool_creator` | `can_create_pool` | 20 |
+
+### Councils Feature
+| Role (Regular) | Role (Trust) | Permission | Default Threshold |
+|----------------|--------------|------------|-------------------|
+| `council_viewer` | `trust_council_viewer` | `can_view_council` | TBD |
+| `council_creator` | `trust_council_creator` | `can_create_council` | 25 |
+
+### Forum Feature
+| Role (Regular) | Role (Trust) | Permission | Default Threshold |
+|----------------|--------------|------------|-------------------|
+| `forum_viewer` | `trust_forum_viewer` | `can_view_forum` | TBD |
+| `forum_manager` | `trust_forum_manager` | `can_manage_forum` | 30 |
+| `thread_creator` | `trust_thread_creator` | `can_create_thread` | 10 |
+| `attachment_uploader` | `trust_attachment_uploader` | `can_upload_attachment` | 15 |
+| `content_flagger` | `trust_content_flagger` | `can_flag_content` | 15 |
+| `flag_reviewer` | `trust_flag_reviewer` | `can_review_flag` | 30 |
+
+### Items Feature
+| Role (Regular) | Role (Trust) | Permission | Default Threshold |
+|----------------|--------------|------------|-------------------|
+| `item_viewer` | `trust_item_viewer` | `can_view_item` | TBD |
+| `item_manager` | `trust_item_manager` | `can_manage_item` | 20 |
+
+### Analytics Feature
+| Role (Regular) | Role (Trust) | Permission | Default Threshold |
+|----------------|--------------|------------|-------------------|
+| `analytics_viewer` | `trust_analytics_viewer` | `can_view_analytics` | 20 |
+
+**Note**: Viewer role thresholds (marked TBD) are not yet configured as they're new in v2.0. Communities can set these based on their privacy needs.
 
 ## Role Assignment Methods
-- **Direct Assignment**: Admin explicitly grants role to member (stored in OpenFGA)
-- **Trust-Based**: Automatic access when member reaches trust threshold (evaluated via trust_level_X relations)
-- **Council-Based**: Access granted through council membership (council#member relation)
-- **Hybrid**: Community can use both methods simultaneously (e.g., Poll Creator via role OR trust >= 15)
+
+### Regular Role Assignment
+- **How**: Admin explicitly grants role via UI
+- **Storage**: Stored as OpenFGA relation (e.g., `user:alice → forum_manager → community:xyz`)
+- **Use Case**: Grant special permissions to specific trusted members
+- **Revocable**: Admin can remove the role at any time
+
+### Trust Role Assignment
+- **How**: Automatically granted when user's trust >= threshold
+- **Storage**: Managed by TrustSyncService, synced to OpenFGA
+- **Use Case**: Democratic access based on peer validation
+- **Dynamic**: Automatically updated when trust changes or thresholds change
+
+### Hybrid Access
+- Communities can use **both methods simultaneously**
+- Example: Forum management via `forum_manager` (admin-assigned) **OR** `trust_forum_manager` (trust >= 30)
+- Both paths grant the same permission: `can_manage_forum`
 
 ## Permission Principles
-- **Roles are additive** - Members can have multiple roles simultaneously
-- **Trust-based access is automatic** - No manual grant needed when threshold is reached
+
+### Roles Are Additive
+- Members can have multiple roles simultaneously
+- Example: Alice can be both `forum_manager` (admin-assigned) AND `trust_poll_creator` (trust-earned)
+- Roles from different sources (regular + trust) stack
+
+### Permissions Are Inclusive
+- Permission granted if user has **ANY** qualifying role
+- Formula: `permission = admin OR regular_role OR trust_role`
+- Example: `can_manage_forum = admin OR forum_manager OR trust_forum_manager`
+
+### Trust-Based Roles Are Automatic
+- No manual grant needed when threshold is reached
+- Immediately granted when trust increases above threshold
+- Immediately revoked when trust drops below threshold
+- Recalculated when community changes threshold configuration
+
+### Application Code Checks Permissions Only
+- **Never check roles directly** in application code
+- Always check the final permission (e.g., `can_manage_forum`)
+- OpenFGA evaluates the role unions automatically
 - **All role assignments are logged** - Stored in OpenFGA and auditable
 - **Admins can revoke roles** - But cannot revoke trust-based access (must adjust trust score)
 - **Role actions are tracked** - In relevant logs (moderation log, transaction history, trust history, etc.)

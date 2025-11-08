@@ -59,6 +59,8 @@ const mockAppUserRepository = {
 const mockOpenFGAService = {
   assignRole: mock(() => Promise.resolve()),
   createRelationship: mock(() => Promise.resolve()),
+  checkAccess: mock(() => Promise.resolve(true)),
+  getAccessibleResourceIds: mock(() => Promise.resolve(['comm-123'])),
 };
 
 describe('WealthService', () => {
@@ -96,12 +98,14 @@ describe('WealthService', () => {
     (appUserRepository.findById as any) = mockAppUserRepository.findById;
     (openFGAService.assignRole as any) = mockOpenFGAService.assignRole;
     (openFGAService.createRelationship as any) = mockOpenFGAService.createRelationship;
+    (openFGAService.checkAccess as any) = mockOpenFGAService.checkAccess;
+    (openFGAService.getAccessibleResourceIds as any) = mockOpenFGAService.getAccessibleResourceIds;
   });
 
   describe('createWealth', () => {
-    it('should create wealth for community member', async () => {
+    it('should create wealth for user with can_create_wealth permission', async () => {
       // Reconfigure mocks for this test
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
+      mockOpenFGAService.checkAccess.mockResolvedValue(true);
       mockWealthRepository.createWealth.mockResolvedValue(testData.wealth);
       mockOpenFGAService.assignRole.mockResolvedValue(undefined);
 
@@ -117,12 +121,18 @@ describe('WealthService', () => {
       );
 
       expect(result.id).toBe('wealth-123');
+      expect(mockOpenFGAService.checkAccess).toHaveBeenCalledWith(
+        'user-123',
+        'community',
+        'comm-123',
+        'can_create_wealth'
+      );
       expect(mockWealthRepository.createWealth).toHaveBeenCalled();
       expect(mockOpenFGAService.assignRole).toHaveBeenCalled();
     });
 
-    it('should throw error for non-member', async () => {
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
+    it('should throw error for user without can_create_wealth permission', async () => {
+      mockOpenFGAService.checkAccess.mockResolvedValue(false);
 
       await expect(
         wealthService.createWealth(
@@ -135,11 +145,11 @@ describe('WealthService', () => {
           },
           'user-123'
         )
-      ).rejects.toThrow('Forbidden');
+      ).rejects.toThrow('Forbidden: you do not have permission to create wealth');
     });
 
     it('should throw error for timebound without endDate', async () => {
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
+      mockOpenFGAService.checkAccess.mockResolvedValue(true);
 
       await expect(
         wealthService.createWealth(
@@ -156,7 +166,7 @@ describe('WealthService', () => {
     });
 
     it('should throw error for unit_based without units', async () => {
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
+      mockOpenFGAService.checkAccess.mockResolvedValue(true);
 
       await expect(
         wealthService.createWealth(
@@ -174,14 +184,20 @@ describe('WealthService', () => {
   });
 
   describe('getWealth', () => {
-    it('should return wealth for community member', async () => {
+    it('should return wealth for user with can_view_wealth permission', async () => {
       // Reconfigure mocks for this test
       mockWealthRepository.findById.mockResolvedValue(testData.wealth);
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
+      mockOpenFGAService.checkAccess.mockResolvedValue(true);
 
       const result = await wealthService.getWealth('wealth-123', 'user-123');
 
       expect(result.id).toBe('wealth-123');
+      expect(mockOpenFGAService.checkAccess).toHaveBeenCalledWith(
+        'user-123',
+        'community',
+        'comm-123',
+        'can_view_wealth'
+      );
     });
 
     it('should throw not found if wealth does not exist', async () => {
@@ -192,24 +208,32 @@ describe('WealthService', () => {
       );
     });
 
-    it('should throw forbidden for non-member', async () => {
+    it('should throw forbidden for user without can_view_wealth permission', async () => {
       // Reconfigure mocks for this test
       mockWealthRepository.findById.mockResolvedValue(testData.wealth);
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
+      mockOpenFGAService.checkAccess.mockResolvedValue(false);
 
-      await expect(wealthService.getWealth('wealth-123', 'user-123')).rejects.toThrow('Forbidden');
+      await expect(wealthService.getWealth('wealth-123', 'user-123')).rejects.toThrow(
+        'Forbidden: you do not have permission to view wealth'
+      );
     });
   });
 
   describe('listCommunityWealth', () => {
-    it('should return wealth list for member', async () => {
+    it('should return wealth list for user with can_view_wealth permission', async () => {
       // Reconfigure mocks for this test
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
+      mockOpenFGAService.checkAccess.mockResolvedValue(true);
       mockWealthRepository.listByCommunity.mockResolvedValue([testData.wealth]);
 
       const result = await wealthService.listCommunityWealth('comm-123', 'user-123');
 
       expect(result).toHaveLength(1);
+      expect(mockOpenFGAService.checkAccess).toHaveBeenCalledWith(
+        'user-123',
+        'community',
+        'comm-123',
+        'can_view_wealth'
+      );
     });
   });
 
@@ -255,7 +279,7 @@ describe('WealthService', () => {
         status: 'active' as const,
         distributionType: 'request_based',
       });
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
+      mockOpenFGAService.checkAccess.mockResolvedValue(true);
       mockWealthRepository.createWealthRequest.mockResolvedValue({
         id: 'req-123',
         wealthId: 'wealth-123',
@@ -266,10 +290,16 @@ describe('WealthService', () => {
       const result = await wealthService.requestWealth('wealth-123', 'user-456');
 
       expect(result.id).toBe('req-123');
+      expect(mockOpenFGAService.checkAccess).toHaveBeenCalledWith(
+        'user-456',
+        'community',
+        'comm-123',
+        'can_view_wealth'
+      );
     });
 
     it('should throw error if wealth not active', async () => {
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
+      mockOpenFGAService.checkAccess.mockResolvedValue(true);
       mockWealthRepository.findById.mockResolvedValue({
         ...testData.wealth,
         status: 'fulfilled' as const,
@@ -459,7 +489,7 @@ describe('WealthService', () => {
 
   describe('searchWealth', () => {
     it('should search wealth in specific community', async () => {
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
+      mockOpenFGAService.checkAccess.mockResolvedValue(true);
       mockWealthRepository.search.mockResolvedValue({
         rows: [testData.wealth],
         total: 1,
@@ -477,10 +507,16 @@ describe('WealthService', () => {
       expect(result.page).toBe(1);
       expect(result.limit).toBe(20);
       expect(result.hasMore).toBe(false);
+      expect(mockOpenFGAService.checkAccess).toHaveBeenCalledWith(
+        'user-123',
+        'community',
+        'comm-123',
+        'can_view_wealth'
+      );
     });
 
-    it('should return empty results for user with no communities', async () => {
-      mockCommunityMemberRepository.findByUser.mockResolvedValue([]);
+    it('should return empty results for user with no accessible communities', async () => {
+      mockOpenFGAService.getAccessibleResourceIds.mockResolvedValue([]);
 
       const result = await wealthService.searchWealth('user-123', {});
 
@@ -490,7 +526,7 @@ describe('WealthService', () => {
     });
 
     it('should add highlighted text when query is provided', async () => {
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
+      mockOpenFGAService.checkAccess.mockResolvedValue(true);
       mockWealthRepository.search.mockResolvedValue({
         rows: [
           {
@@ -512,7 +548,7 @@ describe('WealthService', () => {
     });
 
     it('should handle pagination correctly', async () => {
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
+      mockOpenFGAService.checkAccess.mockResolvedValue(true);
       mockWealthRepository.search.mockResolvedValue({
         rows: Array(20).fill(testData.wealth),
         total: 50,
@@ -530,7 +566,7 @@ describe('WealthService', () => {
     });
 
     it('should clamp page to minimum 1', async () => {
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
+      mockOpenFGAService.checkAccess.mockResolvedValue(true);
       mockWealthRepository.search.mockResolvedValue({
         rows: [testData.wealth],
         total: 1,
@@ -545,7 +581,7 @@ describe('WealthService', () => {
     });
 
     it('should clamp limit to maximum 100', async () => {
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
+      mockOpenFGAService.checkAccess.mockResolvedValue(true);
       mockWealthRepository.search.mockResolvedValue({
         rows: [testData.wealth],
         total: 1,
@@ -559,11 +595,8 @@ describe('WealthService', () => {
       expect(result.limit).toBe(100);
     });
 
-    it('should search across all user communities when no communityId', async () => {
-      mockCommunityMemberRepository.findByUser.mockResolvedValue([
-        { resourceId: 'comm-1', role: 'member' },
-        { resourceId: 'comm-2', role: 'member' },
-      ]);
+    it('should search across all user accessible communities when no communityId', async () => {
+      mockOpenFGAService.getAccessibleResourceIds.mockResolvedValue(['comm-1', 'comm-2']);
       mockWealthRepository.search.mockResolvedValue({
         rows: [testData.wealth],
         total: 1,
@@ -571,12 +604,16 @@ describe('WealthService', () => {
 
       const result = await wealthService.searchWealth('user-123', {});
 
-      expect(mockCommunityMemberRepository.findByUser).toHaveBeenCalledWith('user-123');
+      expect(mockOpenFGAService.getAccessibleResourceIds).toHaveBeenCalledWith(
+        'user-123',
+        'community',
+        'can_view_wealth'
+      );
       expect(result.items).toHaveLength(1);
     });
 
     it('should handle search with filters', async () => {
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
+      mockOpenFGAService.checkAccess.mockResolvedValue(true);
       mockWealthRepository.search.mockResolvedValue({
         rows: [testData.wealth],
         total: 1,
@@ -601,24 +638,26 @@ describe('WealthService', () => {
   });
 
   describe('listMyCommunitiesWealth', () => {
-    it('should list wealth from all user communities', async () => {
-      mockCommunityMemberRepository.findByUser.mockResolvedValue([
-        { resourceId: 'comm-1', role: 'member' },
-        { resourceId: 'comm-2', role: 'member' },
-      ]);
+    it('should list wealth from all user accessible communities', async () => {
+      mockOpenFGAService.getAccessibleResourceIds.mockResolvedValue(['comm-1', 'comm-2']);
       mockWealthRepository.listByCommunities.mockResolvedValue([testData.wealth]);
 
       const result = await wealthService.listMyCommunitiesWealth('user-123');
 
       expect(result).toHaveLength(1);
+      expect(mockOpenFGAService.getAccessibleResourceIds).toHaveBeenCalledWith(
+        'user-123',
+        'community',
+        'can_view_wealth'
+      );
       expect(mockWealthRepository.listByCommunities).toHaveBeenCalledWith(
         ['comm-1', 'comm-2'],
         undefined
       );
     });
 
-    it('should return empty array if user has no communities', async () => {
-      mockCommunityMemberRepository.findByUser.mockResolvedValue([]);
+    it('should return empty array if user has no accessible communities', async () => {
+      mockOpenFGAService.getAccessibleResourceIds.mockResolvedValue([]);
 
       const result = await wealthService.listMyCommunitiesWealth('user-123');
 
@@ -626,9 +665,7 @@ describe('WealthService', () => {
     });
 
     it('should filter by status', async () => {
-      mockCommunityMemberRepository.findByUser.mockResolvedValue([
-        { resourceId: 'comm-1', role: 'member' },
-      ]);
+      mockOpenFGAService.getAccessibleResourceIds.mockResolvedValue(['comm-1']);
       mockWealthRepository.listByCommunities.mockResolvedValue([testData.wealth]);
 
       await wealthService.listMyCommunitiesWealth('user-123', 'active');
@@ -747,7 +784,7 @@ describe('WealthService', () => {
         ...testData.wealth,
         createdBy: 'user-123',
       });
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
+      mockOpenFGAService.checkAccess.mockResolvedValue(true);
       mockWealthRepository.listRequestsForWealth.mockResolvedValue([
         {
           id: 'req-1',
@@ -768,7 +805,7 @@ describe('WealthService', () => {
         ...testData.wealth,
         createdBy: 'user-owner',
       });
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
+      mockOpenFGAService.checkAccess.mockResolvedValue(true);
       mockWealthRepository.listRequestsForWealthByRequester.mockResolvedValue([
         {
           id: 'req-1',
@@ -1187,7 +1224,7 @@ describe('WealthService', () => {
         distributionType: 'unit_based',
         unitsAvailable: 10,
       });
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
+      mockOpenFGAService.checkAccess.mockResolvedValue(true);
 
       await expect(wealthService.requestWealth('wealth-123', 'user-456')).rejects.toThrow(
         'unitsRequested must be a positive integer for unit_based wealth'
@@ -1201,7 +1238,7 @@ describe('WealthService', () => {
         distributionType: 'unit_based',
         unitsAvailable: 5,
       });
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
+      mockOpenFGAService.checkAccess.mockResolvedValue(true);
 
       await expect(wealthService.requestWealth('wealth-123', 'user-456', null, 10)).rejects.toThrow(
         'Not enough units available'

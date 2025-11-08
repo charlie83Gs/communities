@@ -8,6 +8,9 @@ import {
 import { openFGAService } from './openfga.service';
 import { AppError } from '@/utils/errors';
 import { appUserRepository } from '@/repositories/appUser.repository';
+import { trustViewRepository } from '@/repositories/trustView.repository';
+import { communityRepository } from '@/repositories/community.repository';
+import logger from '@/utils/logger';
 
 // Valid community roles as defined in OpenFGA authorization model
 export type CommunityRole = 'admin' | 'member' | 'reader';
@@ -43,7 +46,7 @@ export class InviteService {
    * Ensure the caller is community admin using OpenFGA
    */
   private async assertAdmin(userId: string, communityId: string): Promise<void> {
-    const role = await openFGAService.getUserRoleForResource(userId, 'communities', communityId);
+    const role = await openFGAService.getUserBaseRole(userId, 'community', communityId);
     if (role !== 'admin') {
       throw new AppError('Forbidden: only community admins can perform this action', 403);
     }
@@ -90,9 +93,9 @@ export class InviteService {
     await this.assertAdmin(requesterId, dto.communityId);
 
     // Basic guard: prevent self-invite if already has role
-    const existingRole = await openFGAService.getUserRoleForResource(
+    const existingRole = await openFGAService.getUserBaseRole(
       dto.invitedUserId,
-      'communities',
+      'community',
       dto.communityId
     );
     if (existingRole === dto.role) {
@@ -276,7 +279,59 @@ export class InviteService {
     }
 
     // Assign role via OpenFGA
-    await openFGAService.assignRole(userId, 'communities', invite.communityId, role);
+    await openFGAService.assignBaseRole(userId, 'community', invite.communityId, role as any);
+
+    // Initialize trust to 0 for new member
+    try {
+      await trustViewRepository.upsertZero(invite.communityId, userId);
+      logger.info('[InviteService] Initialized trust to 0 for new member', {
+        userId,
+        communityId: invite.communityId
+      });
+    } catch (error) {
+      logger.error('[InviteService] Failed to initialize trust for new member:', error);
+      // Continue - trust can be initialized later
+    }
+
+    // Sync trust-based permissions in OpenFGA (so user gets 0-threshold permissions)
+    try {
+      const community = await communityRepository.findById(invite.communityId);
+      if (community) {
+        const thresholds = {
+          trust_trust_viewer: community.minTrustToViewTrust?.value ?? 0,
+          trust_trust_granter: community.minTrustToAwardTrust?.value ?? 15,
+          trust_wealth_viewer: community.minTrustToViewWealth?.value ?? 0,
+          trust_wealth_creator: community.minTrustForWealth?.value ?? 10,
+          trust_poll_viewer: community.minTrustToViewPolls?.value ?? 0,
+          trust_poll_creator: community.minTrustForPolls?.value ?? 15,
+          trust_dispute_viewer: community.minTrustToViewDisputes?.value ?? 0,
+          trust_dispute_handler: community.minTrustForDisputes?.value ?? 20,
+          trust_pool_viewer: community.minTrustToViewPools?.value ?? 0,
+          trust_pool_creator: community.minTrustForPoolCreation?.value ?? 20,
+          trust_council_viewer: community.minTrustToViewCouncils?.value ?? 0,
+          trust_council_creator: community.minTrustForCouncilCreation?.value ?? 25,
+          trust_forum_viewer: community.minTrustToViewForum?.value ?? 0,
+          trust_forum_manager: community.minTrustForForumModeration?.value ?? 30,
+          trust_thread_creator: community.minTrustForThreadCreation?.value ?? 10,
+          trust_attachment_uploader: community.minTrustForAttachments?.value ?? 15,
+          trust_content_flagger: community.minTrustForFlagging?.value ?? 15,
+          trust_flag_reviewer: community.minTrustForFlagReview?.value ?? 30,
+          trust_item_viewer: community.minTrustToViewItems?.value ?? 0,
+          trust_item_manager: community.minTrustForItemManagement?.value ?? 20,
+          trust_analytics_viewer: community.minTrustForHealthAnalytics?.value ?? 20,
+        };
+
+        await openFGAService.syncTrustRoles(userId, invite.communityId, 0, thresholds);
+        logger.info('[InviteService] Synced trust-based permissions for new member', {
+          userId,
+          communityId: invite.communityId,
+          trustScore: 0
+        });
+      }
+    } catch (error) {
+      logger.error('[InviteService] Failed to sync trust permissions for new member:', error);
+      // Continue - permissions can be synced later
+    }
 
     // Clean up role metadata after redemption
     try {
@@ -313,7 +368,59 @@ export class InviteService {
     }
 
     // Assign role via OpenFGA
-    await openFGAService.assignRole(userId, 'communities', invite.communityId, role);
+    await openFGAService.assignBaseRole(userId, 'community', invite.communityId, role as any);
+
+    // Initialize trust to 0 for new member
+    try {
+      await trustViewRepository.upsertZero(invite.communityId, userId);
+      logger.info('[InviteService] Initialized trust to 0 for new member', {
+        userId,
+        communityId: invite.communityId
+      });
+    } catch (error) {
+      logger.error('[InviteService] Failed to initialize trust for new member:', error);
+      // Continue - trust can be initialized later
+    }
+
+    // Sync trust-based permissions in OpenFGA (so user gets 0-threshold permissions)
+    try {
+      const community = await communityRepository.findById(invite.communityId);
+      if (community) {
+        const thresholds = {
+          trust_trust_viewer: community.minTrustToViewTrust?.value ?? 0,
+          trust_trust_granter: community.minTrustToAwardTrust?.value ?? 15,
+          trust_wealth_viewer: community.minTrustToViewWealth?.value ?? 0,
+          trust_wealth_creator: community.minTrustForWealth?.value ?? 10,
+          trust_poll_viewer: community.minTrustToViewPolls?.value ?? 0,
+          trust_poll_creator: community.minTrustForPolls?.value ?? 15,
+          trust_dispute_viewer: community.minTrustToViewDisputes?.value ?? 0,
+          trust_dispute_handler: community.minTrustForDisputes?.value ?? 20,
+          trust_pool_viewer: community.minTrustToViewPools?.value ?? 0,
+          trust_pool_creator: community.minTrustForPoolCreation?.value ?? 20,
+          trust_council_viewer: community.minTrustToViewCouncils?.value ?? 0,
+          trust_council_creator: community.minTrustForCouncilCreation?.value ?? 25,
+          trust_forum_viewer: community.minTrustToViewForum?.value ?? 0,
+          trust_forum_manager: community.minTrustForForumModeration?.value ?? 30,
+          trust_thread_creator: community.minTrustForThreadCreation?.value ?? 10,
+          trust_attachment_uploader: community.minTrustForAttachments?.value ?? 15,
+          trust_content_flagger: community.minTrustForFlagging?.value ?? 15,
+          trust_flag_reviewer: community.minTrustForFlagReview?.value ?? 30,
+          trust_item_viewer: community.minTrustToViewItems?.value ?? 0,
+          trust_item_manager: community.minTrustForItemManagement?.value ?? 20,
+          trust_analytics_viewer: community.minTrustForHealthAnalytics?.value ?? 20,
+        };
+
+        await openFGAService.syncTrustRoles(userId, invite.communityId, 0, thresholds);
+        logger.info('[InviteService] Synced trust-based permissions for new member', {
+          userId,
+          communityId: invite.communityId,
+          trustScore: 0
+        });
+      }
+    } catch (error) {
+      logger.error('[InviteService] Failed to sync trust permissions for new member:', error);
+      // Continue - permissions can be synced later
+    }
 
     // Clean up role metadata after redemption
     try {

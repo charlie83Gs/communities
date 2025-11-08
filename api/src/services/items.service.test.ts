@@ -63,8 +63,7 @@ const mockCommunityRepository = {
 };
 
 const mockOpenFGAService = {
-  check: mock(() => Promise.resolve(false)),
-  checkTrustLevel: mock(() => Promise.resolve(false)),
+  checkAccess: mock(() => Promise.resolve(false)),
 };
 
 describe('ItemsService', () => {
@@ -92,64 +91,36 @@ describe('ItemsService', () => {
 
     (communityRepository.findById as any) = mockCommunityRepository.findById;
 
-    (openFGAService.check as any) = mockOpenFGAService.check;
-    (openFGAService.checkTrustLevel as any) = mockOpenFGAService.checkTrustLevel;
+    (openFGAService.checkAccess as any) = mockOpenFGAService.checkAccess;
   });
 
   describe('canManageItems', () => {
-    it('should return true for admin', async () => {
-      mockOpenFGAService.check.mockResolvedValue(true);
+    it('should return true when user has can_manage_item permission', async () => {
+      mockOpenFGAService.checkAccess.mockResolvedValue(true);
 
       const result = await itemsService.canManageItems('user-123', 'comm-123');
 
       expect(result).toBe(true);
-      expect(mockOpenFGAService.check).toHaveBeenCalledWith({
-        user: 'user:user-123',
-        relation: 'admin',
-        object: 'community:comm-123',
-      });
+      expect(mockOpenFGAService.checkAccess).toHaveBeenCalledWith(
+        'user-123',
+        'community',
+        'comm-123',
+        'can_manage_item'
+      );
     });
 
-    it('should return true for item_manager role', async () => {
-      mockOpenFGAService.check
-        .mockResolvedValueOnce(false) // Not admin
-        .mockResolvedValueOnce(true); // Has item_manager role
-
-      const result = await itemsService.canManageItems('user-123', 'comm-123');
-
-      expect(result).toBe(true);
-    });
-
-    it('should return true when trust threshold is met', async () => {
-      mockOpenFGAService.check
-        .mockResolvedValueOnce(false) // Not admin
-        .mockResolvedValueOnce(false); // No item_manager role
-      mockCommunityRepository.findById.mockResolvedValue(mockCommunity);
-      mockOpenFGAService.checkTrustLevel.mockResolvedValue(true);
-
-      const result = await itemsService.canManageItems('user-123', 'comm-123');
-
-      expect(result).toBe(true);
-      expect(mockOpenFGAService.checkTrustLevel).toHaveBeenCalledWith('user-123', 'comm-123', 20);
-    });
-
-    it('should return false when no permissions', async () => {
-      mockOpenFGAService.check.mockResolvedValue(false);
-      mockCommunityRepository.findById.mockResolvedValue(mockCommunity);
-      mockOpenFGAService.checkTrustLevel.mockResolvedValue(false);
+    it('should return false when user lacks permission', async () => {
+      mockOpenFGAService.checkAccess.mockResolvedValue(false);
 
       const result = await itemsService.canManageItems('user-123', 'comm-123');
 
       expect(result).toBe(false);
-    });
-
-    it('should return false when community not found', async () => {
-      mockOpenFGAService.check.mockResolvedValue(false);
-      mockCommunityRepository.findById.mockResolvedValue(null);
-
-      const result = await itemsService.canManageItems('user-123', 'comm-123');
-
-      expect(result).toBe(false);
+      expect(mockOpenFGAService.checkAccess).toHaveBeenCalledWith(
+        'user-123',
+        'community',
+        'comm-123',
+        'can_manage_item'
+      );
     });
   });
 
@@ -234,7 +205,7 @@ describe('ItemsService', () => {
     it('should create item when user has permission', async () => {
       mockCommunityRepository.findById.mockResolvedValue(mockCommunity);
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
-      mockOpenFGAService.check.mockResolvedValue(true); // Admin permission
+      mockOpenFGAService.checkAccess.mockResolvedValue(true);
       mockItemsRepository.findByName.mockResolvedValue(null);
       mockItemsRepository.create.mockResolvedValue(mockItem);
 
@@ -271,8 +242,7 @@ describe('ItemsService', () => {
     it('should throw 403 if user lacks permission', async () => {
       mockCommunityRepository.findById.mockResolvedValue(mockCommunity);
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
-      mockOpenFGAService.check.mockResolvedValue(false);
-      mockOpenFGAService.checkTrustLevel.mockResolvedValue(false);
+      mockOpenFGAService.checkAccess.mockResolvedValue(false);
 
       await expect(itemsService.createItem(createDto, 'user-123')).rejects.toThrow(
         'You do not have permission to manage items in this community'
@@ -282,7 +252,7 @@ describe('ItemsService', () => {
     it('should throw 400 if item name already exists (case-insensitive)', async () => {
       mockCommunityRepository.findById.mockResolvedValue(mockCommunity);
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
-      mockOpenFGAService.check.mockResolvedValue(true);
+      mockOpenFGAService.checkAccess.mockResolvedValue(true);
       mockItemsRepository.findByName.mockResolvedValue(mockItem);
 
       await expect(itemsService.createItem(createDto, 'user-123')).rejects.toThrow(
@@ -293,7 +263,7 @@ describe('ItemsService', () => {
     it('should throw 400 if name is empty', async () => {
       mockCommunityRepository.findById.mockResolvedValue(mockCommunity);
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
-      mockOpenFGAService.check.mockResolvedValue(true);
+      mockOpenFGAService.checkAccess.mockResolvedValue(true);
       mockItemsRepository.findByName.mockResolvedValue(null);
 
       await expect(
@@ -304,7 +274,7 @@ describe('ItemsService', () => {
     it('should throw 400 if name exceeds 200 characters', async () => {
       mockCommunityRepository.findById.mockResolvedValue(mockCommunity);
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
-      mockOpenFGAService.check.mockResolvedValue(true);
+      mockOpenFGAService.checkAccess.mockResolvedValue(true);
       mockItemsRepository.findByName.mockResolvedValue(null);
 
       await expect(
@@ -315,7 +285,7 @@ describe('ItemsService', () => {
     it('should trim whitespace from name and description', async () => {
       mockCommunityRepository.findById.mockResolvedValue(mockCommunity);
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
-      mockOpenFGAService.check.mockResolvedValue(true);
+      mockOpenFGAService.checkAccess.mockResolvedValue(true);
       mockItemsRepository.findByName.mockResolvedValue(null);
       mockItemsRepository.create.mockResolvedValue(mockItem);
 
@@ -348,7 +318,7 @@ describe('ItemsService', () => {
     it('should update item when user has permission', async () => {
       mockItemsRepository.findById.mockResolvedValue(mockItem);
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
-      mockOpenFGAService.check.mockResolvedValue(true);
+      mockOpenFGAService.checkAccess.mockResolvedValue(true);
       mockItemsRepository.findByName.mockResolvedValue(null);
       mockItemsRepository.update.mockResolvedValue({
         ...mockItem,
@@ -388,8 +358,7 @@ describe('ItemsService', () => {
     it('should throw 403 if user lacks permission', async () => {
       mockItemsRepository.findById.mockResolvedValue(mockItem);
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
-      mockOpenFGAService.check.mockResolvedValue(false);
-      mockOpenFGAService.checkTrustLevel.mockResolvedValue(false);
+      mockOpenFGAService.checkAccess.mockResolvedValue(false);
 
       await expect(itemsService.updateItem('item-123', updateDto, 'user-123')).rejects.toThrow(
         'You do not have permission to manage items in this community'
@@ -399,7 +368,7 @@ describe('ItemsService', () => {
     it('should check name uniqueness when name is changed', async () => {
       mockItemsRepository.findById.mockResolvedValue(mockItem);
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
-      mockOpenFGAService.check.mockResolvedValue(true);
+      mockOpenFGAService.checkAccess.mockResolvedValue(true);
       mockItemsRepository.findByName.mockResolvedValue({
         ...mockItem,
         id: 'other-item',
@@ -413,7 +382,7 @@ describe('ItemsService', () => {
     it('should not check uniqueness if name is unchanged (case-insensitive)', async () => {
       mockItemsRepository.findById.mockResolvedValue(mockItem);
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
-      mockOpenFGAService.check.mockResolvedValue(true);
+      mockOpenFGAService.checkAccess.mockResolvedValue(true);
       mockItemsRepository.update.mockResolvedValue(mockItem);
 
       await itemsService.updateItem('item-123', { name: 'CARROTS' }, 'user-123');
@@ -425,7 +394,7 @@ describe('ItemsService', () => {
     it('should allow partial updates', async () => {
       mockItemsRepository.findById.mockResolvedValue(mockItem);
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
-      mockOpenFGAService.check.mockResolvedValue(true);
+      mockOpenFGAService.checkAccess.mockResolvedValue(true);
       mockItemsRepository.update.mockResolvedValue(mockItem);
 
       await itemsService.updateItem(
@@ -445,7 +414,7 @@ describe('ItemsService', () => {
     it('should throw 500 if update fails', async () => {
       mockItemsRepository.findById.mockResolvedValue(mockItem);
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
-      mockOpenFGAService.check.mockResolvedValue(true);
+      mockOpenFGAService.checkAccess.mockResolvedValue(true);
       mockItemsRepository.update.mockResolvedValue(null);
 
       await expect(itemsService.updateItem('item-123', updateDto, 'user-123')).rejects.toThrow(
@@ -458,7 +427,7 @@ describe('ItemsService', () => {
     it('should soft delete item when user has permission', async () => {
       mockItemsRepository.findById.mockResolvedValue(mockItem);
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
-      mockOpenFGAService.check.mockResolvedValue(true);
+      mockOpenFGAService.checkAccess.mockResolvedValue(true);
       mockItemsRepository.hasActiveWealthReferences.mockResolvedValue(false);
       mockItemsRepository.softDelete.mockResolvedValue({
         ...mockItem,
@@ -492,8 +461,7 @@ describe('ItemsService', () => {
     it('should throw 403 if user lacks permission', async () => {
       mockItemsRepository.findById.mockResolvedValue(mockItem);
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
-      mockOpenFGAService.check.mockResolvedValue(false);
-      mockOpenFGAService.checkTrustLevel.mockResolvedValue(false);
+      mockOpenFGAService.checkAccess.mockResolvedValue(false);
 
       await expect(itemsService.deleteItem('item-123', 'user-123')).rejects.toThrow(
         'You do not have permission to manage items in this community'
@@ -503,7 +471,7 @@ describe('ItemsService', () => {
     it('should throw 400 if item is default', async () => {
       mockItemsRepository.findById.mockResolvedValue(mockDefaultItem);
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
-      mockOpenFGAService.check.mockResolvedValue(true);
+      mockOpenFGAService.checkAccess.mockResolvedValue(true);
 
       await expect(itemsService.deleteItem('item-default', 'user-123')).rejects.toThrow(
         'Cannot delete default items'
@@ -513,7 +481,7 @@ describe('ItemsService', () => {
     it('should throw 400 if item has active wealth references', async () => {
       mockItemsRepository.findById.mockResolvedValue(mockItem);
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
-      mockOpenFGAService.check.mockResolvedValue(true);
+      mockOpenFGAService.checkAccess.mockResolvedValue(true);
       mockItemsRepository.hasActiveWealthReferences.mockResolvedValue(true);
 
       await expect(itemsService.deleteItem('item-123', 'user-123')).rejects.toThrow(

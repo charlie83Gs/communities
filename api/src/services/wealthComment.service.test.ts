@@ -35,8 +35,8 @@ const mockWealthRepository = {
 };
 
 const mockOpenFGAService = {
-  can: mock(() => Promise.resolve(true)),
-  createRelationship: mock(() => Promise.resolve()),
+  checkAccess: mock(() => Promise.resolve(true)),
+  assignRelation: mock(() => Promise.resolve()),
 };
 
 describe('WealthCommentService', () => {
@@ -51,14 +51,14 @@ describe('WealthCommentService', () => {
     (wealthCommentRepository.update as any) = mockWealthCommentRepository.update;
     (wealthCommentRepository.delete as any) = mockWealthCommentRepository.delete;
     (wealthRepository.findById as any) = mockWealthRepository.findById;
-    (openFGAService.can as any) = mockOpenFGAService.can;
-    (openFGAService.createRelationship as any) = mockOpenFGAService.createRelationship;
+    (openFGAService.checkAccess as any) = mockOpenFGAService.checkAccess;
+    (openFGAService.assignRelation as any) = mockOpenFGAService.assignRelation;
   });
 
   describe('createComment', () => {
     it('should create comment when user has permission', async () => {
       mockWealthRepository.findById.mockResolvedValue(testData.wealth);
-      mockOpenFGAService.can.mockResolvedValue(true);
+      mockOpenFGAService.checkAccess.mockResolvedValue(true);
       mockWealthCommentRepository.create.mockResolvedValue({
         id: 'comment-123',
         wealthId: 'wealth-123',
@@ -66,7 +66,7 @@ describe('WealthCommentService', () => {
         content: 'Test comment',
         createdAt: new Date(),
       });
-      mockOpenFGAService.createRelationship.mockResolvedValue(undefined);
+      mockOpenFGAService.assignRelation.mockResolvedValue(undefined);
 
       const result = await wealthCommentService.createComment(
         { wealthId: 'wealth-123', content: 'Test comment' },
@@ -79,7 +79,7 @@ describe('WealthCommentService', () => {
         content: 'Test comment',
         authorId: 'user-123',
       });
-      expect(mockOpenFGAService.createRelationship).toHaveBeenCalled();
+      expect(mockOpenFGAService.assignRelation).toHaveBeenCalled();
     });
 
     it('should throw error if wealth not found', async () => {
@@ -92,7 +92,7 @@ describe('WealthCommentService', () => {
 
     it('should throw forbidden if user lacks permission', async () => {
       mockWealthRepository.findById.mockResolvedValue(testData.wealth);
-      mockOpenFGAService.can.mockResolvedValue(false);
+      mockOpenFGAService.checkAccess.mockResolvedValue(false);
 
       await expect(
         wealthCommentService.createComment({ wealthId: 'wealth-123', content: 'Test' }, 'user-123')
@@ -103,7 +103,7 @@ describe('WealthCommentService', () => {
   describe('getCommentsByWealthId', () => {
     it('should return comments when user has permission', async () => {
       mockWealthRepository.findById.mockResolvedValue(testData.wealth);
-      mockOpenFGAService.can.mockResolvedValue(true);
+      mockOpenFGAService.checkAccess.mockResolvedValue(true);
       mockWealthCommentRepository.findByWealthId.mockResolvedValue([
         { id: 'comment-123', content: 'Test comment' },
       ]);
@@ -123,7 +123,7 @@ describe('WealthCommentService', () => {
 
     it('should throw forbidden if user lacks permission', async () => {
       mockWealthRepository.findById.mockResolvedValue(testData.wealth);
-      mockOpenFGAService.can.mockResolvedValue(false);
+      mockOpenFGAService.checkAccess.mockResolvedValue(false);
 
       await expect(
         wealthCommentService.getCommentsByWealthId('wealth-123', 'user-123')

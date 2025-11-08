@@ -1,5 +1,4 @@
 import { wealthRepository } from '@repositories/wealth.repository';
-import { communityMemberRepository } from '@repositories/communityMember.repository';
 import { appUserRepository } from '@repositories/appUser.repository';
 import { AppError } from '@utils/errors';
 import { openFGAService } from './openfga.service';
@@ -68,14 +67,6 @@ function highlightMarkdown(text: string | null | undefined, query: string): stri
 }
 
 export class WealthService {
-  private async ensureCommunityMemberOrAdmin(communityId: string, userId: string) {
-    const role = await communityMemberRepository.getUserRole(communityId, userId);
-    if (!role || (role !== 'admin' && role !== 'member')) {
-      throw new AppError('Forbidden: only community members/admins can perform this action', 403);
-    }
-    return role;
-  }
-
   private ensureOwner(wealth: WealthRecord, userId: string) {
     if (wealth.createdBy !== userId) {
       throw new AppError('Forbidden: only the wealth owner can perform this action', 403);
@@ -83,8 +74,16 @@ export class WealthService {
   }
 
   async createWealth(dto: CreateWealthDto, userId: string): Promise<WealthRecord> {
-    // Members/Admins of the community can create a wealth
-    await this.ensureCommunityMemberOrAdmin(dto.communityId, userId);
+    // Check if user has permission to create wealth
+    const canCreate = await openFGAService.checkAccess(
+      userId,
+      'community',
+      dto.communityId,
+      'can_create_wealth'
+    );
+    if (!canCreate) {
+      throw new AppError('Forbidden: you do not have permission to create wealth', 403);
+    }
 
     // Validation
     if (dto.durationType === 'timebound' && !dto.endDate) {
@@ -140,8 +139,16 @@ export class WealthService {
     const wealthItem = await wealthRepository.findById(id);
     if (!wealthItem) throw new AppError('Wealth not found', 404);
 
-    // Only community members/admins can view wealth
-    await this.ensureCommunityMemberOrAdmin(wealthItem.communityId, userId);
+    // Check if user has permission to view wealth
+    const canView = await openFGAService.checkAccess(
+      userId,
+      'community',
+      wealthItem.communityId,
+      'can_view_wealth'
+    );
+    if (!canView) {
+      throw new AppError('Forbidden: you do not have permission to view wealth', 403);
+    }
 
     return wealthItem;
   }
@@ -151,7 +158,17 @@ export class WealthService {
     userId: string,
     status?: 'active' | 'fulfilled' | 'expired' | 'cancelled'
   ): Promise<WealthRecord[]> {
-    await this.ensureCommunityMemberOrAdmin(communityId, userId);
+    // Check if user has permission to view wealth
+    const canView = await openFGAService.checkAccess(
+      userId,
+      'community',
+      communityId,
+      'can_view_wealth'
+    );
+    if (!canView) {
+      throw new AppError('Forbidden: you do not have permission to view wealth', 403);
+    }
+
     return await wealthRepository.listByCommunity(communityId, status);
   }
 
@@ -159,8 +176,12 @@ export class WealthService {
     userId: string,
     status?: 'active' | 'fulfilled' | 'expired' | 'cancelled'
   ): Promise<WealthRecord[]> {
-    const memberships = await communityMemberRepository.findByUser(userId);
-    const communityIds = memberships.map((m) => m.resourceId);
+    // Get all communities where user has can_view_wealth permission
+    const communityIds = await openFGAService.getAccessibleResourceIds(
+      userId,
+      'community',
+      'can_view_wealth'
+    );
     if (communityIds.length === 0) return [];
     return await wealthRepository.listByCommunities(communityIds, status);
   }
@@ -178,14 +199,27 @@ export class WealthService {
     limit: number;
     hasMore: boolean;
   }> {
-    // Determine scope: either a specific community (require membership) or all my communities
+    // Determine scope: either a specific community (require permission) or all accessible communities
     let scopedCommunityIds: string[] = [];
     if (params.communityId) {
-      await this.ensureCommunityMemberOrAdmin(params.communityId, userId);
+      // Check if user has permission to view wealth in this community
+      const canView = await openFGAService.checkAccess(
+        userId,
+        'community',
+        params.communityId,
+        'can_view_wealth'
+      );
+      if (!canView) {
+        throw new AppError('Forbidden: you do not have permission to view wealth', 403);
+      }
       scopedCommunityIds = [params.communityId];
     } else {
-      const memberships = await communityMemberRepository.findByUser(userId);
-      scopedCommunityIds = memberships.map((m) => m.resourceId);
+      // Get all communities where user has can_view_wealth permission
+      scopedCommunityIds = await openFGAService.getAccessibleResourceIds(
+        userId,
+        'community',
+        'can_view_wealth'
+      );
       if (scopedCommunityIds.length === 0) {
         return {
           items: [],
@@ -311,8 +345,16 @@ export class WealthService {
     const wealthItem = await wealthRepository.findById(wealthId);
     if (!wealthItem) throw new AppError('Wealth not found', 404);
 
-    // Only members/admins can request
-    await this.ensureCommunityMemberOrAdmin(wealthItem.communityId, userId);
+    // Check if user has permission to view wealth (required to request)
+    const canView = await openFGAService.checkAccess(
+      userId,
+      'community',
+      wealthItem.communityId,
+      'can_view_wealth'
+    );
+    if (!canView) {
+      throw new AppError('Forbidden: you do not have permission to request wealth', 403);
+    }
 
     if (wealthItem.status !== 'active') {
       throw new AppError('Wealth is not active', 400);
@@ -342,8 +384,16 @@ export class WealthService {
     const wealthItem = await wealthRepository.findById(wealthId);
     if (!wealthItem) throw new AppError('Wealth not found', 404);
 
-    // Only members/admins can view requests list
-    await this.ensureCommunityMemberOrAdmin(wealthItem.communityId, userId);
+    // Check if user has permission to view wealth
+    const canView = await openFGAService.checkAccess(
+      userId,
+      'community',
+      wealthItem.communityId,
+      'can_view_wealth'
+    );
+    if (!canView) {
+      throw new AppError('Forbidden: you do not have permission to view wealth requests', 403);
+    }
 
     let requests: WealthRequestRecord[];
     // If owner, return all requests. Otherwise, return only the requests created by the requester.
