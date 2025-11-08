@@ -1,16 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
 import { WealthRepository } from '@/repositories/wealth.repository';
 import type { WealthRecord, WealthRequestRecord } from '@/repositories/wealth.repository';
-import { db } from '@/db/index';
 import { createThenableMockDb, setupMockDbChains } from '../../tests/helpers/mockDb';
 
-// Store original db methods to restore after each test
-const originalDbMethods = {
-  insert: db.insert,
-  select: db.select,
-  update: db.update,
-  delete: (db as any).delete,
-};
+let wealthRepository: WealthRepository;
 
 // Create mock database
 const mockDb = createThenableMockDb();
@@ -65,26 +58,16 @@ const testRequest: WealthRequestRecord = {
   updatedAt: new Date('2024-01-01'),
 };
 
-const repository = new WealthRepository();
-
 describe('WealthRepository', () => {
   beforeEach(() => {
     // Reset all mocks and setup default chains
     setupMockDbChains(mockDb);
-
-    // Replace db methods with mocks
-    (db.insert as any) = mockDb.insert;
-    (db.select as any) = mockDb.select;
-    (db.update as any) = mockDb.update;
-    (db as any).delete = mockDb.delete;
+    // Instantiate repository with the per-test mock DB
+    wealthRepository = new WealthRepository(mockDb as any);
   });
 
   afterEach(() => {
-    // Restore original db methods to prevent pollution of other tests
-    (db.insert as any) = originalDbMethods.insert;
-    (db.select as any) = originalDbMethods.select;
-    (db.update as any) = originalDbMethods.update;
-    (db as any).delete = originalDbMethods.delete;
+    // Nothing to clean up; a fresh WealthRepository is created per test
   });
 
   describe('Wealth Operations', () => {
@@ -92,7 +75,7 @@ describe('WealthRepository', () => {
       it('should create a wealth item', async () => {
         mockDb.returning.mockResolvedValue([testWealth]);
 
-        const result = await repository.createWealth({
+        const result = await wealthRepository.createWealth({
           createdBy: 'user-123',
           communityId: 'comm-123',
           itemId: 'item-123',
@@ -116,7 +99,7 @@ describe('WealthRepository', () => {
         };
         mockDb.returning.mockResolvedValue([timeboundWealth]);
 
-        const result = await repository.createWealth({
+        const result = await wealthRepository.createWealth({
           createdBy: 'user-123',
           communityId: 'comm-123',
           itemId: 'item-123',
@@ -134,7 +117,7 @@ describe('WealthRepository', () => {
       it('should create unit-based wealth', async () => {
         mockDb.returning.mockResolvedValue([testWealthUnitBased]);
 
-        const result = await repository.createWealth({
+        const result = await wealthRepository.createWealth({
           createdBy: 'user-123',
           communityId: 'comm-123',
           itemId: 'item-456',
@@ -156,7 +139,7 @@ describe('WealthRepository', () => {
       it('should find wealth by id', async () => {
         mockDb.where.mockResolvedValue([testWealth]);
 
-        const result = await repository.findById('wealth-123');
+        const result = await wealthRepository.findById('wealth-123');
 
         expect(result).toEqual(testWealth);
         expect(mockDb.select).toHaveBeenCalled();
@@ -166,7 +149,7 @@ describe('WealthRepository', () => {
       it('should return undefined if not found', async () => {
         mockDb.where.mockResolvedValue([]);
 
-        const result = await repository.findById('nonexistent');
+        const result = await wealthRepository.findById('nonexistent');
 
         expect(result).toBeUndefined();
       });
@@ -174,14 +157,14 @@ describe('WealthRepository', () => {
 
     describe('listByCommunities', () => {
       it('should return empty array for empty community list', async () => {
-        const result = await repository.listByCommunities([]);
+        const result = await wealthRepository.listByCommunities([]);
         expect(result).toEqual([]);
       });
 
       it('should list wealth items by communities', async () => {
         mockDb.orderBy.mockResolvedValue([testWealth]);
 
-        const result = await repository.listByCommunities(['comm-123']);
+        const result = await wealthRepository.listByCommunities(['comm-123']);
 
         expect(result).toHaveLength(1);
         expect(result[0]).toEqual(testWealth);
@@ -192,7 +175,7 @@ describe('WealthRepository', () => {
       it('should filter by status', async () => {
         mockDb.orderBy.mockResolvedValue([testWealth]);
 
-        const result = await repository.listByCommunities(['comm-123'], 'active');
+        const result = await wealthRepository.listByCommunities(['comm-123'], 'active');
 
         expect(result).toHaveLength(1);
         expect(mockDb.where).toHaveBeenCalled();
@@ -203,7 +186,7 @@ describe('WealthRepository', () => {
       it('should list wealth items by community', async () => {
         mockDb.orderBy.mockResolvedValue([testWealth]);
 
-        const result = await repository.listByCommunity('comm-123');
+        const result = await wealthRepository.listByCommunity('comm-123');
 
         expect(result).toHaveLength(1);
         expect(result[0]).toEqual(testWealth);
@@ -212,7 +195,7 @@ describe('WealthRepository', () => {
       it('should filter by status', async () => {
         mockDb.orderBy.mockResolvedValue([testWealth]);
 
-        const result = await repository.listByCommunity('comm-123', 'active');
+        const result = await wealthRepository.listByCommunity('comm-123', 'active');
 
         expect(result).toHaveLength(1);
       });
@@ -227,7 +210,7 @@ describe('WealthRepository', () => {
         };
         mockDb.returning.mockResolvedValue([updatedWealth]);
 
-        const result = await repository.updateWealth('wealth-123', {
+        const result = await wealthRepository.updateWealth('wealth-123', {
           title: 'Updated Title',
         });
 
@@ -240,7 +223,7 @@ describe('WealthRepository', () => {
       it('should return undefined if wealth not found', async () => {
         mockDb.returning.mockResolvedValue([]);
 
-        const result = await repository.updateWealth('nonexistent', {
+        const result = await wealthRepository.updateWealth('nonexistent', {
           title: 'Updated',
         });
 
@@ -257,7 +240,7 @@ describe('WealthRepository', () => {
         };
         mockDb.returning.mockResolvedValue([cancelledWealth]);
 
-        const result = await repository.cancelWealth('wealth-123');
+        const result = await wealthRepository.cancelWealth('wealth-123');
 
         expect(result?.status).toBe('cancelled');
         expect(mockDb.update).toHaveBeenCalled();
@@ -273,7 +256,7 @@ describe('WealthRepository', () => {
         };
         mockDb.returning.mockResolvedValue([fulfilledWealth]);
 
-        const result = await repository.markFulfilled('wealth-123');
+        const result = await wealthRepository.markFulfilled('wealth-123');
 
         expect(result?.status).toBe('fulfilled');
         expect(mockDb.update).toHaveBeenCalled();
@@ -291,7 +274,7 @@ describe('WealthRepository', () => {
         };
         mockDb.returning.mockResolvedValue([decrementedWealth]);
 
-        const result = await repository.decrementUnits('wealth-456', 5);
+        const result = await wealthRepository.decrementUnits('wealth-456', 5);
 
         expect(result?.unitsAvailable).toBe(5);
         expect(mockDb.update).toHaveBeenCalled();
@@ -308,7 +291,7 @@ describe('WealthRepository', () => {
         };
         mockDb.returning.mockResolvedValue([fulfilledWealth]);
 
-        const result = await repository.decrementUnits('wealth-456', 10);
+        const result = await wealthRepository.decrementUnits('wealth-456', 10);
 
         expect(result?.unitsAvailable).toBe(0);
         expect(result?.status).toBe('fulfilled');
@@ -317,7 +300,7 @@ describe('WealthRepository', () => {
       it('should return undefined for nonexistent wealth', async () => {
         mockDb.where.mockResolvedValue([]);
 
-        const result = await repository.decrementUnits('nonexistent', 5);
+        const result = await wealthRepository.decrementUnits('nonexistent', 5);
 
         expect(result).toBeUndefined();
       });
@@ -325,7 +308,7 @@ describe('WealthRepository', () => {
 
     describe('search', () => {
       it('should return empty results for empty community list', async () => {
-        const result = await repository.search({
+        const result = await wealthRepository.search({
           communityIds: [],
         });
 
@@ -339,7 +322,7 @@ describe('WealthRepository', () => {
         // Second query for rows
         mockDb.offset.mockResolvedValue([testWealth]);
 
-        const result = await repository.search({
+        const result = await wealthRepository.search({
           communityIds: ['comm-123'],
         });
 
@@ -351,7 +334,7 @@ describe('WealthRepository', () => {
         mockDb.where.mockResolvedValueOnce([{ count: 1 }]);
         mockDb.offset.mockResolvedValue([testWealth]);
 
-        const result = await repository.search({
+        const result = await wealthRepository.search({
           communityIds: ['comm-123'],
           q: 'test',
         });
@@ -363,7 +346,7 @@ describe('WealthRepository', () => {
         mockDb.where.mockResolvedValueOnce([{ count: 1 }]);
         mockDb.offset.mockResolvedValue([testWealth]);
 
-        const result = await repository.search({
+        const result = await wealthRepository.search({
           communityIds: ['comm-123'],
           status: 'active',
         });
@@ -375,7 +358,7 @@ describe('WealthRepository', () => {
         mockDb.where.mockResolvedValueOnce([{ count: 1 }]);
         mockDb.offset.mockResolvedValue([testWealth]);
 
-        const result = await repository.search({
+        const result = await wealthRepository.search({
           communityIds: ['comm-123'],
           durationType: 'unlimited',
         });
@@ -387,7 +370,7 @@ describe('WealthRepository', () => {
         mockDb.where.mockResolvedValueOnce([{ count: 1 }]);
         mockDb.offset.mockResolvedValue([testWealth]);
 
-        const result = await repository.search({
+        const result = await wealthRepository.search({
           communityIds: ['comm-123'],
           distributionType: 'request_based',
         });
@@ -399,7 +382,7 @@ describe('WealthRepository', () => {
         mockDb.where.mockResolvedValueOnce([{ count: 1 }]);
         mockDb.offset.mockResolvedValue([testWealth]);
 
-        const result = await repository.search({
+        const result = await wealthRepository.search({
           communityIds: ['comm-123'],
           endDateAfter: new Date('2024-01-01'),
           endDateBefore: new Date('2024-12-31'),
@@ -412,7 +395,7 @@ describe('WealthRepository', () => {
         mockDb.where.mockResolvedValueOnce([{ count: 10 }]);
         mockDb.offset.mockResolvedValue([testWealth]);
 
-        const result = await repository.search({
+        const result = await wealthRepository.search({
           communityIds: ['comm-123'],
           limit: 5,
           offset: 5,
@@ -430,7 +413,7 @@ describe('WealthRepository', () => {
       it('should create a wealth request', async () => {
         mockDb.returning.mockResolvedValue([testRequest]);
 
-        const result = await repository.createWealthRequest({
+        const result = await wealthRepository.createWealthRequest({
           wealthId: 'wealth-123',
           requesterId: 'user-456',
           message: 'I need this',
@@ -447,7 +430,7 @@ describe('WealthRepository', () => {
       it('should list requests for a wealth item', async () => {
         mockDb.orderBy.mockResolvedValue([testRequest]);
 
-        const result = await repository.listRequestsForWealth('wealth-123');
+        const result = await wealthRepository.listRequestsForWealth('wealth-123');
 
         expect(result).toHaveLength(1);
         expect(result[0]).toEqual(testRequest);
@@ -458,7 +441,10 @@ describe('WealthRepository', () => {
       it('should list requests for a wealth item by requester', async () => {
         mockDb.orderBy.mockResolvedValue([testRequest]);
 
-        const result = await repository.listRequestsForWealthByRequester('wealth-123', 'user-456');
+        const result = await wealthRepository.listRequestsForWealthByRequester(
+          'wealth-123',
+          'user-456'
+        );
 
         expect(result).toHaveLength(1);
         expect(result[0]).toEqual(testRequest);
@@ -469,7 +455,7 @@ describe('WealthRepository', () => {
       it('should list requests by user without status filter', async () => {
         mockDb.orderBy.mockResolvedValue([testRequest]);
 
-        const result = await repository.listRequestsByUser('user-456');
+        const result = await wealthRepository.listRequestsByUser('user-456');
 
         expect(result).toHaveLength(1);
         expect(result[0]).toEqual(testRequest);
@@ -478,7 +464,10 @@ describe('WealthRepository', () => {
       it('should list requests by user with status filter', async () => {
         mockDb.orderBy.mockResolvedValue([testRequest]);
 
-        const result = await repository.listRequestsByUser('user-456', ['pending', 'accepted']);
+        const result = await wealthRepository.listRequestsByUser('user-456', [
+          'pending',
+          'accepted',
+        ]);
 
         expect(result).toHaveLength(1);
       });
@@ -486,7 +475,7 @@ describe('WealthRepository', () => {
       it('should handle empty status array', async () => {
         mockDb.orderBy.mockResolvedValue([testRequest]);
 
-        const result = await repository.listRequestsByUser('user-456', []);
+        const result = await wealthRepository.listRequestsByUser('user-456', []);
 
         expect(result).toHaveLength(1);
       });
@@ -496,7 +485,7 @@ describe('WealthRepository', () => {
       it('should list incoming requests for owner without status filter', async () => {
         mockDb.orderBy.mockResolvedValue([testRequest]);
 
-        const result = await repository.listIncomingRequestsByOwner('user-123');
+        const result = await wealthRepository.listIncomingRequestsByOwner('user-123');
 
         expect(result).toHaveLength(1);
         expect(mockDb.innerJoin).toHaveBeenCalled();
@@ -505,7 +494,7 @@ describe('WealthRepository', () => {
       it('should list incoming requests with status filter', async () => {
         mockDb.orderBy.mockResolvedValue([testRequest]);
 
-        const result = await repository.listIncomingRequestsByOwner('user-123', ['pending']);
+        const result = await wealthRepository.listIncomingRequestsByOwner('user-123', ['pending']);
 
         expect(result).toHaveLength(1);
       });
@@ -515,7 +504,7 @@ describe('WealthRepository', () => {
       it('should find request by id', async () => {
         mockDb.where.mockResolvedValue([testRequest]);
 
-        const result = await repository.findRequestById('request-123');
+        const result = await wealthRepository.findRequestById('request-123');
 
         expect(result).toEqual(testRequest);
       });
@@ -523,7 +512,7 @@ describe('WealthRepository', () => {
       it('should return undefined if not found', async () => {
         mockDb.where.mockResolvedValue([]);
 
-        const result = await repository.findRequestById('nonexistent');
+        const result = await wealthRepository.findRequestById('nonexistent');
 
         expect(result).toBeUndefined();
       });
@@ -537,7 +526,7 @@ describe('WealthRepository', () => {
         };
         mockDb.returning.mockResolvedValue([acceptedRequest]);
 
-        const result = await repository.acceptRequest('request-123');
+        const result = await wealthRepository.acceptRequest('request-123');
 
         expect(result?.status).toBe('accepted');
         expect(mockDb.update).toHaveBeenCalled();
@@ -552,7 +541,7 @@ describe('WealthRepository', () => {
         };
         mockDb.returning.mockResolvedValue([rejectedRequest]);
 
-        const result = await repository.rejectRequest('request-123');
+        const result = await wealthRepository.rejectRequest('request-123');
 
         expect(result?.status).toBe('rejected');
       });
@@ -566,7 +555,7 @@ describe('WealthRepository', () => {
         };
         mockDb.returning.mockResolvedValue([cancelledRequest]);
 
-        const result = await repository.cancelRequest('request-123');
+        const result = await wealthRepository.cancelRequest('request-123');
 
         expect(result?.status).toBe('cancelled');
       });
@@ -580,7 +569,7 @@ describe('WealthRepository', () => {
         };
         mockDb.returning.mockResolvedValue([fulfilledRequest]);
 
-        const result = await repository.markRequestFulfilled('request-123');
+        const result = await wealthRepository.markRequestFulfilled('request-123');
 
         expect(result?.status).toBe('fulfilled');
       });
@@ -594,7 +583,7 @@ describe('WealthRepository', () => {
         };
         mockDb.returning.mockResolvedValue([confirmedRequest]);
 
-        const result = await repository.confirmRequest('request-123');
+        const result = await wealthRepository.confirmRequest('request-123');
 
         expect(result?.status).toBe('fulfilled');
       });
@@ -608,7 +597,7 @@ describe('WealthRepository', () => {
         };
         mockDb.returning.mockResolvedValue([failedRequest]);
 
-        const result = await repository.failRequest('request-123');
+        const result = await wealthRepository.failRequest('request-123');
 
         expect(result?.status).toBe('failed');
       });

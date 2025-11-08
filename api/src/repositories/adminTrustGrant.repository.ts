@@ -1,8 +1,14 @@
-import { db } from '../db/index';
+import { db as realDb } from '../db/index';
 import { and, eq } from 'drizzle-orm';
 import { adminTrustGrants } from '../db/schema/adminTrustGrant.schema';
 
 export class AdminTrustGrantRepository {
+  private db: any;
+
+  constructor(db: any) {
+    this.db = db;
+  }
+
   /**
    * Upsert (create or update) an admin trust grant
    */
@@ -12,7 +18,7 @@ export class AdminTrustGrantRepository {
 
     if (existing) {
       // Update existing grant
-      const [updated] = await db
+      const [updated] = await this.db
         .update(adminTrustGrants)
         .set({
           adminUserId,
@@ -30,7 +36,7 @@ export class AdminTrustGrantRepository {
     }
 
     // Create new grant
-    const [created] = await db
+    const [created] = await this.db
       .insert(adminTrustGrants)
       .values({
         communityId,
@@ -46,7 +52,7 @@ export class AdminTrustGrantRepository {
    * Get admin trust grant for a user in a community
    */
   async getGrant(communityId: string, toUserId: string) {
-    const [grant] = await db
+    const [grant] = await this.db
       .select()
       .from(adminTrustGrants)
       .where(
@@ -59,14 +65,17 @@ export class AdminTrustGrantRepository {
    * List all admin grants in a community
    */
   async listAllGrants(communityId: string) {
-    return db.select().from(adminTrustGrants).where(eq(adminTrustGrants.communityId, communityId));
+    return this.db
+      .select()
+      .from(adminTrustGrants)
+      .where(eq(adminTrustGrants.communityId, communityId));
   }
 
   /**
    * Delete an admin trust grant
    */
   async deleteGrant(communityId: string, toUserId: string) {
-    const [deleted] = await db
+    const [deleted] = await this.db
       .delete(adminTrustGrants)
       .where(
         and(eq(adminTrustGrants.communityId, communityId), eq(adminTrustGrants.toUserId, toUserId))
@@ -84,4 +93,4 @@ export class AdminTrustGrantRepository {
   }
 }
 
-export const adminTrustGrantRepository = new AdminTrustGrantRepository();
+export const adminTrustGrantRepository = new AdminTrustGrantRepository(realDb);

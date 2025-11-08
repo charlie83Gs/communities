@@ -1,4 +1,4 @@
-import { db } from '../db';
+import { db as realDb } from '../db';
 import {
   initiatives,
   initiativeReports,
@@ -14,6 +14,12 @@ import {
 } from '../types/initiative.types';
 
 export class InitiativeRepository {
+  private db: any;
+
+  constructor(db: any) {
+    this.db = db;
+  }
+
   /**
    * Create a new initiative
    */
@@ -23,7 +29,7 @@ export class InitiativeRepository {
     data: CreateInitiativeDto,
     createdBy: string
   ) {
-    const [initiative] = await db
+    const [initiative] = await this.db
       .insert(initiatives)
       .values({
         councilId,
@@ -41,14 +47,14 @@ export class InitiativeRepository {
    * Find initiative by ID with vote counts and user's vote
    */
   async findById(id: string, userId?: string) {
-    const [initiative] = await db.select().from(initiatives).where(eq(initiatives.id, id));
+    const [initiative] = await this.db.select().from(initiatives).where(eq(initiatives.id, id));
 
     if (!initiative) {
       return null;
     }
 
     // Get vote counts
-    const [voteCounts] = await db
+    const [voteCounts] = await this.db
       .select({
         upvotes: sql<number>`COUNT(CASE WHEN ${initiativeVotes.voteType} = 'upvote' THEN 1 END)`,
         downvotes: sql<number>`COUNT(CASE WHEN ${initiativeVotes.voteType} = 'downvote' THEN 1 END)`,
@@ -59,7 +65,7 @@ export class InitiativeRepository {
     // Get user's vote if userId provided
     let userVote: 'upvote' | 'downvote' | null = null;
     if (userId) {
-      const [vote] = await db
+      const [vote] = await this.db
         .select()
         .from(initiativeVotes)
         .where(and(eq(initiativeVotes.initiativeId, id), eq(initiativeVotes.userId, userId)));
@@ -92,7 +98,7 @@ export class InitiativeRepository {
     const offset = (page - 1) * limit;
 
     // Get initiatives with vote counts
-    const initiativesList = await db
+    const initiativesList = await this.db
       .select({
         initiative: initiatives,
         upvotes: sql<number>`COUNT(CASE WHEN ${initiativeVotes.voteType} = 'upvote' THEN 1 END)`,
@@ -112,7 +118,7 @@ export class InitiativeRepository {
     // Only query for user votes if there are initiatives
     let userVoteMap = new Map<string, 'upvote' | 'downvote'>();
     if (initiativeIds.length > 0) {
-      const userVotes = await db
+      const userVotes = await this.db
         .select()
         .from(initiativeVotes)
         .where(
@@ -126,7 +132,7 @@ export class InitiativeRepository {
     }
 
     // Get total count
-    const [{ count: total }] = await db
+    const [{ count: total }] = await this.db
       .select({ count: count() })
       .from(initiatives)
       .where(eq(initiatives.councilId, councilId));
@@ -146,7 +152,7 @@ export class InitiativeRepository {
    * Update initiative
    */
   async update(id: string, data: UpdateInitiativeDto) {
-    const [updated] = await db
+    const [updated] = await this.db
       .update(initiatives)
       .set({ ...data, updatedAt: new Date() })
       .where(eq(initiatives.id, id))
@@ -159,7 +165,7 @@ export class InitiativeRepository {
    * Delete initiative
    */
   async delete(id: string) {
-    const [deleted] = await db.delete(initiatives).where(eq(initiatives.id, id)).returning();
+    const [deleted] = await this.db.delete(initiatives).where(eq(initiatives.id, id)).returning();
 
     return deleted;
   }
@@ -169,7 +175,7 @@ export class InitiativeRepository {
    */
   async vote(initiativeId: string, userId: string, voteType: 'upvote' | 'downvote') {
     // Check if vote exists
-    const [existing] = await db
+    const [existing] = await this.db
       .select()
       .from(initiativeVotes)
       .where(
@@ -178,7 +184,7 @@ export class InitiativeRepository {
 
     if (existing) {
       // Update existing vote
-      const [updated] = await db
+      const [updated] = await this.db
         .update(initiativeVotes)
         .set({ voteType, createdAt: new Date() })
         .where(
@@ -189,7 +195,7 @@ export class InitiativeRepository {
       return updated;
     } else {
       // Insert new vote
-      const [inserted] = await db
+      const [inserted] = await this.db
         .insert(initiativeVotes)
         .values({ initiativeId, userId, voteType })
         .returning();
@@ -202,7 +208,7 @@ export class InitiativeRepository {
    * Remove vote from initiative
    */
   async removeVote(initiativeId: string, userId: string) {
-    const [removed] = await db
+    const [removed] = await this.db
       .delete(initiativeVotes)
       .where(
         and(eq(initiativeVotes.initiativeId, initiativeId), eq(initiativeVotes.userId, userId))
@@ -216,7 +222,7 @@ export class InitiativeRepository {
    * Create initiative report
    */
   async createReport(initiativeId: string, data: CreateInitiativeReportDto, createdBy: string) {
-    const [report] = await db
+    const [report] = await this.db
       .insert(initiativeReports)
       .values({
         initiativeId,
@@ -242,7 +248,7 @@ export class InitiativeRepository {
     const { page = 1, limit = 20 } = options;
     const offset = (page - 1) * limit;
 
-    const reports = await db
+    const reports = await this.db
       .select()
       .from(initiativeReports)
       .where(eq(initiativeReports.initiativeId, initiativeId))
@@ -250,7 +256,7 @@ export class InitiativeRepository {
       .limit(limit)
       .offset(offset);
 
-    const [{ count: total }] = await db
+    const [{ count: total }] = await this.db
       .select({ count: count() })
       .from(initiativeReports)
       .where(eq(initiativeReports.initiativeId, initiativeId));
@@ -265,7 +271,10 @@ export class InitiativeRepository {
    * Find report by ID
    */
   async findReportById(id: string) {
-    const [report] = await db.select().from(initiativeReports).where(eq(initiativeReports.id, id));
+    const [report] = await this.db
+      .select()
+      .from(initiativeReports)
+      .where(eq(initiativeReports.id, id));
 
     return report;
   }
@@ -274,7 +283,7 @@ export class InitiativeRepository {
    * Create initiative comment
    */
   async createComment(initiativeId: string, content: string, authorId: string) {
-    const [comment] = await db
+    const [comment] = await this.db
       .insert(initiativeComments)
       .values({ initiativeId, content, authorId })
       .returning();
@@ -295,7 +304,7 @@ export class InitiativeRepository {
     const { page = 1, limit = 20 } = options;
     const offset = (page - 1) * limit;
 
-    const comments = await db
+    const comments = await this.db
       .select()
       .from(initiativeComments)
       .where(eq(initiativeComments.initiativeId, initiativeId))
@@ -303,7 +312,7 @@ export class InitiativeRepository {
       .limit(limit)
       .offset(offset);
 
-    const [{ count: total }] = await db
+    const [{ count: total }] = await this.db
       .select({ count: count() })
       .from(initiativeComments)
       .where(eq(initiativeComments.initiativeId, initiativeId));
@@ -318,7 +327,7 @@ export class InitiativeRepository {
    * Create report comment
    */
   async createReportComment(reportId: string, content: string, authorId: string) {
-    const [comment] = await db
+    const [comment] = await this.db
       .insert(initiativeReportComments)
       .values({ reportId, content, authorId })
       .returning();
@@ -339,7 +348,7 @@ export class InitiativeRepository {
     const { page = 1, limit = 20 } = options;
     const offset = (page - 1) * limit;
 
-    const comments = await db
+    const comments = await this.db
       .select()
       .from(initiativeReportComments)
       .where(eq(initiativeReportComments.reportId, reportId))
@@ -347,7 +356,7 @@ export class InitiativeRepository {
       .limit(limit)
       .offset(offset);
 
-    const [{ count: total }] = await db
+    const [{ count: total }] = await this.db
       .select({ count: count() })
       .from(initiativeReportComments)
       .where(eq(initiativeReportComments.reportId, reportId));
@@ -362,7 +371,7 @@ export class InitiativeRepository {
    * Alias methods for backwards compatibility with tests
    */
   async getReports(initiativeId: string) {
-    const reports = await db
+    const reports = await this.db
       .select()
       .from(initiativeReports)
       .where(eq(initiativeReports.initiativeId, initiativeId))
@@ -371,7 +380,7 @@ export class InitiativeRepository {
   }
 
   async updateReport(id: string, data: { title?: string; content?: string }) {
-    const [updated] = await db
+    const [updated] = await this.db
       .update(initiativeReports)
       .set({ ...data, updatedAt: new Date() })
       .where(eq(initiativeReports.id, id))
@@ -380,7 +389,7 @@ export class InitiativeRepository {
   }
 
   async deleteReport(id: string) {
-    const [deleted] = await db
+    const [deleted] = await this.db
       .delete(initiativeReports)
       .where(eq(initiativeReports.id, id))
       .returning();
@@ -388,7 +397,7 @@ export class InitiativeRepository {
   }
 
   async getComments(initiativeId: string) {
-    const comments = await db
+    const comments = await this.db
       .select()
       .from(initiativeComments)
       .where(eq(initiativeComments.initiativeId, initiativeId))
@@ -397,7 +406,7 @@ export class InitiativeRepository {
   }
 
   async deleteComment(id: string) {
-    const [deleted] = await db
+    const [deleted] = await this.db
       .delete(initiativeComments)
       .where(eq(initiativeComments.id, id))
       .returning();
@@ -405,4 +414,5 @@ export class InitiativeRepository {
   }
 }
 
-export const initiativeRepository = new InitiativeRepository();
+// Default instance for production code paths
+export const initiativeRepository = new InitiativeRepository(realDb);

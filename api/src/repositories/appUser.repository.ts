@@ -1,5 +1,5 @@
 import { eq, ilike, or, sql } from 'drizzle-orm';
-import { db } from '@db/index';
+import { db as realDb } from '@db/index';
 import { appUsers } from '@db/schema';
 
 export type AppUser = typeof appUsers.$inferSelect;
@@ -8,11 +8,16 @@ export type NewAppUser = typeof appUsers.$inferInsert;
 export type UpdateAppUser = Partial<Omit<NewAppUser, 'id' | 'createdAt'>>;
 
 export class AppUserRepository {
+  private db: any;
+
+  constructor(db: any) {
+    this.db = db;
+  }
   /**
    * Find user by ID
    */
   async findById(id: string): Promise<AppUser | undefined> {
-    const [user] = await db.select().from(appUsers).where(eq(appUsers.id, id)).limit(1);
+    const [user] = await this.db.select().from(appUsers).where(eq(appUsers.id, id)).limit(1);
 
     return user;
   }
@@ -21,7 +26,7 @@ export class AppUserRepository {
    * Find user by email
    */
   async findByEmail(email: string): Promise<AppUser | undefined> {
-    const [user] = await db.select().from(appUsers).where(eq(appUsers.email, email)).limit(1);
+    const [user] = await this.db.select().from(appUsers).where(eq(appUsers.email, email)).limit(1);
 
     return user;
   }
@@ -30,7 +35,7 @@ export class AppUserRepository {
    * Find user by username (case-insensitive)
    */
   async findByUsername(username: string): Promise<AppUser | undefined> {
-    const [user] = await db
+    const [user] = await this.db
       .select()
       .from(appUsers)
       .where(sql`LOWER(${appUsers.username}) = LOWER(${username})`)
@@ -43,7 +48,7 @@ export class AppUserRepository {
    * Create a new user
    */
   async create(userData: NewAppUser): Promise<AppUser> {
-    const [user] = await db
+    const [user] = await this.db
       .insert(appUsers)
       .values({
         ...userData,
@@ -74,7 +79,7 @@ export class AppUserRepository {
    * Update user data
    */
   async update(id: string, updates: UpdateAppUser): Promise<AppUser | undefined> {
-    const [user] = await db
+    const [user] = await this.db
       .update(appUsers)
       .set({
         ...updates,
@@ -90,14 +95,14 @@ export class AppUserRepository {
    * Update last seen timestamp
    */
   async updateLastSeen(id: string): Promise<void> {
-    await db.update(appUsers).set({ lastSeenAt: new Date() }).where(eq(appUsers.id, id));
+    await this.db.update(appUsers).set({ lastSeenAt: new Date() }).where(eq(appUsers.id, id));
   }
 
   /**
    * Delete user
    */
   async delete(id: string): Promise<void> {
-    await db.delete(appUsers).where(eq(appUsers.id, id));
+    await this.db.delete(appUsers).where(eq(appUsers.id, id));
   }
 
   /**
@@ -107,7 +112,7 @@ export class AppUserRepository {
   async search(query: string, limit = 10, offset = 0): Promise<AppUser[]> {
     const searchPattern = `%${query}%`;
 
-    const users = await db
+    const users = await this.db
       .select()
       .from(appUsers)
       .where(
@@ -127,7 +132,7 @@ export class AppUserRepository {
    * Check if username is taken (case-insensitive)
    */
   async isUsernameTaken(username: string, excludeUserId?: string): Promise<boolean> {
-    let query = db
+    let query = this.db
       .select({ id: appUsers.id })
       .from(appUsers)
       .where(sql`LOWER(${appUsers.username}) = LOWER(${username})`);
@@ -144,7 +149,7 @@ export class AppUserRepository {
    * Check if email is taken
    */
   async isEmailTaken(email: string, excludeUserId?: string): Promise<boolean> {
-    let query = db.select({ id: appUsers.id }).from(appUsers).where(eq(appUsers.email, email));
+    let query = this.db.select({ id: appUsers.id }).from(appUsers).where(eq(appUsers.email, email));
 
     if (excludeUserId) {
       query = query.where(sql`${appUsers.id} != ${excludeUserId}`) as any;
@@ -158,7 +163,7 @@ export class AppUserRepository {
    * Get all users (with pagination)
    */
   async list(limit = 100, offset = 0): Promise<AppUser[]> {
-    const users = await db
+    const users = await this.db
       .select()
       .from(appUsers)
       .limit(limit)
@@ -172,7 +177,7 @@ export class AppUserRepository {
    * Count total users
    */
   async count(): Promise<number> {
-    const [result] = await db.select({ count: sql<number>`count(*)::int` }).from(appUsers);
+    const [result] = await this.db.select({ count: sql<number>`count(*)::int` }).from(appUsers);
 
     return result?.count ?? 0;
   }
@@ -186,4 +191,4 @@ export class AppUserRepository {
   }
 }
 
-export const appUserRepository = new AppUserRepository();
+export const appUserRepository = new AppUserRepository(realDb);

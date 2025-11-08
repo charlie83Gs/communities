@@ -1,5 +1,4 @@
 import { describe, it, expect, beforeEach, afterEach, mock } from 'bun:test';
-import { db } from '../db/index';
 import { CommunityRepository } from '@/repositories/community.repository';
 import type {
   CommunitySearchFilters,
@@ -8,14 +7,7 @@ import type {
 import type { CreateCommunityDto, UpdateCommunityDto, Community } from '@/types/community.types';
 import { createThenableMockDb, setupMockDbChains } from '../../tests/helpers/mockDb';
 
-// Store original db methods to restore after each test
-const originalDbMethods = {
-  insert: db.insert,
-  select: db.select,
-  update: db.update,
-  delete: (db as any).delete,
-  transaction: db.transaction,
-};
+let communityRepository: CommunityRepository;
 
 // Create mock database
 const mockDb = createThenableMockDb();
@@ -53,21 +45,12 @@ const testCommunity2: Community = {
 };
 
 describe('CommunityRepository', () => {
-  // Create a test instance
-  const repository = new CommunityRepository();
-
   beforeEach(() => {
     // Reset all mocks and setup default chains
     setupMockDbChains(mockDb);
 
-    // Replace db methods with mocks
-    (db.insert as any) = mockDb.insert;
-    (db.select as any) = mockDb.select;
-    (db.update as any) = mockDb.update;
-    (db as any).delete = mockDb.delete;
-
     // Mock transaction to execute callback immediately
-    (db.transaction as any) = mock(async (callback: Function) => {
+    mockDb.transaction = mock(async (callback: Function) => {
       return callback({
         insert: mockDb.insert,
         select: mockDb.select,
@@ -75,25 +58,23 @@ describe('CommunityRepository', () => {
         delete: mockDb.delete,
       });
     });
+
+    // Instantiate repository with the per-test mock DB
+    communityRepository = new CommunityRepository(mockDb as any);
   });
 
   afterEach(() => {
-    // Restore original db methods to prevent pollution of other tests
-    (db.insert as any) = originalDbMethods.insert;
-    (db.select as any) = originalDbMethods.select;
-    (db.update as any) = originalDbMethods.update;
-    (db as any).delete = originalDbMethods.delete;
-    (db.transaction as any) = originalDbMethods.transaction;
+    // Nothing to clean up; a fresh CommunityRepository is created per test
   });
   describe('Type Validation', () => {
     it('should have correct method signatures', () => {
-      expect(typeof repository.create).toBe('function');
-      expect(typeof repository.findById).toBe('function');
-      expect(typeof repository.findAll).toBe('function');
-      expect(typeof repository.update).toBe('function');
-      expect(typeof repository.delete).toBe('function');
-      expect(typeof repository.search).toBe('function');
-      expect(typeof repository.cleanupOldDeleted).toBe('function');
+      expect(typeof communityRepository.create).toBe('function');
+      expect(typeof communityRepository.findById).toBe('function');
+      expect(typeof communityRepository.findAll).toBe('function');
+      expect(typeof communityRepository.update).toBe('function');
+      expect(typeof communityRepository.delete).toBe('function');
+      expect(typeof communityRepository.search).toBe('function');
+      expect(typeof communityRepository.cleanupOldDeleted).toBe('function');
     });
   });
 
@@ -107,7 +88,7 @@ describe('CommunityRepository', () => {
         createdBy: 'user-123',
       };
 
-      const result = await repository.create(data);
+      const result = await communityRepository.create(data);
 
       expect(result).toEqual(testCommunity);
       expect(mockDb.insert).toHaveBeenCalled();
@@ -129,7 +110,7 @@ describe('CommunityRepository', () => {
         createdBy: 'user-456',
       };
 
-      const result = await repository.create(data);
+      const result = await communityRepository.create(data);
 
       expect(result).toBeDefined();
       expect(result.name).toBe('Minimal Community');
@@ -145,7 +126,7 @@ describe('CommunityRepository', () => {
         createdBy: 'user-789',
       };
 
-      const result = await repository.create(data);
+      const result = await communityRepository.create(data);
 
       expect(result).toBeDefined();
       expect(result.name).toBe(testCommunity.name);
@@ -160,7 +141,7 @@ describe('CommunityRepository', () => {
         createdBy: 'user-123',
       };
 
-      const result = await repository.create(data);
+      const result = await communityRepository.create(data);
 
       expect(result.deletedAt).toBeNull();
     });
@@ -170,7 +151,7 @@ describe('CommunityRepository', () => {
     it('should return community for valid id', async () => {
       mockDb.where.mockResolvedValue([testCommunity]);
 
-      const result = await repository.findById('comm-123');
+      const result = await communityRepository.findById('comm-123');
 
       expect(result).toEqual(testCommunity);
       expect(mockDb.select).toHaveBeenCalled();
@@ -180,7 +161,7 @@ describe('CommunityRepository', () => {
     it('should return undefined for nonexistent id', async () => {
       mockDb.where.mockResolvedValue([]);
 
-      const result = await repository.findById('nonexistent');
+      const result = await communityRepository.findById('nonexistent');
 
       expect(result).toBeUndefined();
     });
@@ -189,7 +170,7 @@ describe('CommunityRepository', () => {
       // When querying for a soft-deleted community, it should not be returned
       mockDb.where.mockResolvedValue([]);
 
-      const result = await repository.findById('comm-123');
+      const result = await communityRepository.findById('comm-123');
 
       expect(result).toBeUndefined();
       expect(mockDb.where).toHaveBeenCalled();
@@ -200,7 +181,7 @@ describe('CommunityRepository', () => {
     it('should return array of communities', async () => {
       mockDb.offset.mockResolvedValue([testCommunity, testCommunity2]);
 
-      const result = await repository.findAll();
+      const result = await communityRepository.findAll();
 
       expect(Array.isArray(result)).toBe(true);
       expect(result).toHaveLength(2);
@@ -212,7 +193,7 @@ describe('CommunityRepository', () => {
     it('should respect limit parameter', async () => {
       mockDb.offset.mockResolvedValue([testCommunity]);
 
-      const result = await repository.findAll(5);
+      const result = await communityRepository.findAll(5);
 
       expect(Array.isArray(result)).toBe(true);
       expect(mockDb.limit).toHaveBeenCalled();
@@ -221,7 +202,7 @@ describe('CommunityRepository', () => {
     it('should respect offset parameter', async () => {
       mockDb.offset.mockResolvedValue([testCommunity2]);
 
-      const result = await repository.findAll(10, 5);
+      const result = await communityRepository.findAll(10, 5);
 
       expect(Array.isArray(result)).toBe(true);
       expect(mockDb.offset).toHaveBeenCalled();
@@ -231,8 +212,8 @@ describe('CommunityRepository', () => {
       mockDb.offset.mockResolvedValueOnce([testCommunity]);
       mockDb.offset.mockResolvedValueOnce([testCommunity2]);
 
-      const page1 = await repository.findAll(5, 0);
-      const page2 = await repository.findAll(5, 5);
+      const page1 = await communityRepository.findAll(5, 0);
+      const page2 = await communityRepository.findAll(5, 5);
 
       expect(Array.isArray(page1)).toBe(true);
       expect(Array.isArray(page2)).toBe(true);
@@ -241,7 +222,7 @@ describe('CommunityRepository', () => {
     it('should exclude soft-deleted communities', async () => {
       mockDb.offset.mockResolvedValue([testCommunity, testCommunity2]);
 
-      const result = await repository.findAll();
+      const result = await communityRepository.findAll();
 
       result.forEach((community) => {
         expect(community.deletedAt).toBeNull();
@@ -251,7 +232,7 @@ describe('CommunityRepository', () => {
     it('should use default limit of 10', async () => {
       mockDb.offset.mockResolvedValue([testCommunity]);
 
-      const result = await repository.findAll();
+      const result = await communityRepository.findAll();
 
       expect(Array.isArray(result)).toBe(true);
       expect(mockDb.limit).toHaveBeenCalled();
@@ -260,7 +241,7 @@ describe('CommunityRepository', () => {
     it('should use default offset of 0', async () => {
       mockDb.offset.mockResolvedValue([testCommunity]);
 
-      const result = await repository.findAll(5);
+      const result = await communityRepository.findAll(5);
 
       expect(Array.isArray(result)).toBe(true);
       expect(mockDb.offset).toHaveBeenCalled();
@@ -280,7 +261,7 @@ describe('CommunityRepository', () => {
         name: 'Updated Community Name',
         description: 'Updated description',
       };
-      const result = await repository.update('comm-123', updates);
+      const result = await communityRepository.update('comm-123', updates);
 
       expect(result).toBeDefined();
       expect(result?.name).toBe(updates.name);
@@ -296,7 +277,7 @@ describe('CommunityRepository', () => {
       const updates: UpdateCommunityDto = {
         name: 'Should Not Work',
       };
-      const result = await repository.update('nonexistent', updates);
+      const result = await communityRepository.update('nonexistent', updates);
 
       expect(result).toBeUndefined();
     });
@@ -307,7 +288,7 @@ describe('CommunityRepository', () => {
       const updates: UpdateCommunityDto = {
         name: 'Should Not Update',
       };
-      const result = await repository.update('comm-123', updates);
+      const result = await communityRepository.update('comm-123', updates);
 
       expect(result).toBeUndefined();
     });
@@ -322,7 +303,7 @@ describe('CommunityRepository', () => {
       const updates: UpdateCommunityDto = {
         description: 'Updated description only',
       };
-      const result = await repository.update('comm-123', updates);
+      const result = await communityRepository.update('comm-123', updates);
 
       expect(result).toBeDefined();
       expect(result?.description).toBe(updates.description);
@@ -338,7 +319,7 @@ describe('CommunityRepository', () => {
       };
       mockDb.where.mockResolvedValue([deletedCommunity]);
 
-      const result = await repository.delete('comm-123');
+      const result = await communityRepository.delete('comm-123');
 
       expect(result).toBeDefined();
       expect(result?.deletedAt).not.toBeNull();
@@ -355,11 +336,11 @@ describe('CommunityRepository', () => {
       };
       mockDb.where.mockResolvedValueOnce([deletedCommunity]);
 
-      await repository.delete('comm-123');
+      await communityRepository.delete('comm-123');
 
       // Mock findById to return undefined (as it filters deletedAt)
       mockDb.where.mockResolvedValueOnce([]);
-      const result = await repository.findById('comm-123');
+      const result = await communityRepository.findById('comm-123');
 
       expect(result).toBeUndefined();
     });
@@ -367,7 +348,7 @@ describe('CommunityRepository', () => {
     it('should handle deleting nonexistent community', async () => {
       mockDb.where.mockResolvedValue([]);
 
-      const result = await repository.delete('nonexistent');
+      const result = await communityRepository.delete('nonexistent');
 
       expect(result).toBeUndefined();
     });
@@ -375,7 +356,7 @@ describe('CommunityRepository', () => {
     it('should handle deleting already deleted community', async () => {
       mockDb.where.mockResolvedValue([]);
 
-      const result = await repository.delete('comm-123');
+      const result = await communityRepository.delete('comm-123');
 
       expect(result).toBeUndefined();
     });
@@ -387,7 +368,7 @@ describe('CommunityRepository', () => {
       };
       mockDb.where.mockResolvedValue([deletedCommunity]);
 
-      await repository.delete('comm-123');
+      await communityRepository.delete('comm-123');
 
       // Verify delete was called (for invites)
       expect(mockDb.delete).toHaveBeenCalled();
@@ -404,7 +385,7 @@ describe('CommunityRepository', () => {
       const filters: CommunitySearchFilters = {
         accessibleIds: ['comm-123'],
       };
-      const result = await repository.search(filters);
+      const result = await communityRepository.search(filters);
 
       expect(result).toHaveProperty('rows');
       expect(result).toHaveProperty('total');
@@ -420,7 +401,7 @@ describe('CommunityRepository', () => {
       const filters: CommunitySearchFilters = {
         accessibleIds: [],
       };
-      const result = await repository.search(filters);
+      const result = await communityRepository.search(filters);
 
       expect(result.rows).toEqual([]);
       expect(result.total).toBe(0);
@@ -431,7 +412,7 @@ describe('CommunityRepository', () => {
       mockDb.offset.mockResolvedValueOnce([]);
 
       const filters: CommunitySearchFilters = {};
-      const result = await repository.search(filters);
+      const result = await communityRepository.search(filters);
 
       expect(result.rows).toEqual([]);
       expect(result.total).toBe(0);
@@ -445,7 +426,7 @@ describe('CommunityRepository', () => {
         q: 'test',
         accessibleIds: ['comm-123', 'comm-456'],
       };
-      const result = await repository.search(filters);
+      const result = await communityRepository.search(filters);
 
       expect(Array.isArray(result.rows)).toBe(true);
       expect(typeof result.total).toBe('number');
@@ -459,7 +440,7 @@ describe('CommunityRepository', () => {
         q: 'community',
         accessibleIds: ['comm-123'],
       };
-      const result = await repository.search(filters);
+      const result = await communityRepository.search(filters);
 
       expect(Array.isArray(result.rows)).toBe(true);
     });
@@ -472,7 +453,7 @@ describe('CommunityRepository', () => {
         q: '',
         accessibleIds: ['comm-123'],
       };
-      const result = await repository.search(filters);
+      const result = await communityRepository.search(filters);
 
       expect(Array.isArray(result.rows)).toBe(true);
     });
@@ -485,7 +466,7 @@ describe('CommunityRepository', () => {
         q: '   ',
         accessibleIds: ['comm-123'],
       };
-      const result = await repository.search(filters);
+      const result = await communityRepository.search(filters);
 
       expect(Array.isArray(result.rows)).toBe(true);
     });
@@ -498,7 +479,7 @@ describe('CommunityRepository', () => {
         accessibleIds: ['comm-123', 'comm-456', 'comm-789'],
         limit: 5,
       };
-      const result = await repository.search(filters);
+      const result = await communityRepository.search(filters);
 
       expect(Array.isArray(result.rows)).toBe(true);
       expect(mockDb.limit).toHaveBeenCalled();
@@ -513,7 +494,7 @@ describe('CommunityRepository', () => {
         limit: 10,
         offset: 5,
       };
-      const result = await repository.search(filters);
+      const result = await communityRepository.search(filters);
 
       expect(Array.isArray(result.rows)).toBe(true);
       expect(mockDb.offset).toHaveBeenCalled();
@@ -526,7 +507,7 @@ describe('CommunityRepository', () => {
       const filters: CommunitySearchFilters = {
         accessibleIds: ['comm-123'],
       };
-      const result = await repository.search(filters);
+      const result = await communityRepository.search(filters);
 
       expect(Array.isArray(result.rows)).toBe(true);
       expect(mockDb.limit).toHaveBeenCalled();
@@ -540,7 +521,7 @@ describe('CommunityRepository', () => {
         accessibleIds: ['comm-123'],
         limit: 5,
       };
-      const result = await repository.search(filters);
+      const result = await communityRepository.search(filters);
 
       expect(Array.isArray(result.rows)).toBe(true);
       expect(mockDb.offset).toHaveBeenCalled();
@@ -554,7 +535,7 @@ describe('CommunityRepository', () => {
         accessibleIds: ['comm-123'],
         limit: 200,
       };
-      const result = await repository.search(filters);
+      const result = await communityRepository.search(filters);
 
       expect(Array.isArray(result.rows)).toBe(true);
       expect(mockDb.limit).toHaveBeenCalled();
@@ -568,7 +549,7 @@ describe('CommunityRepository', () => {
         accessibleIds: ['comm-123'],
         limit: 0,
       };
-      const result = await repository.search(filters);
+      const result = await communityRepository.search(filters);
 
       expect(Array.isArray(result.rows)).toBe(true);
     });
@@ -581,7 +562,7 @@ describe('CommunityRepository', () => {
         accessibleIds: ['comm-123'],
         offset: -5,
       };
-      const result = await repository.search(filters);
+      const result = await communityRepository.search(filters);
 
       expect(Array.isArray(result.rows)).toBe(true);
     });
@@ -593,7 +574,7 @@ describe('CommunityRepository', () => {
       const filters: CommunitySearchFilters = {
         accessibleIds: ['comm-123'],
       };
-      const result = await repository.search(filters);
+      const result = await communityRepository.search(filters);
 
       result.rows.forEach((community) => {
         expect(community.deletedAt).toBeNull();
@@ -607,7 +588,7 @@ describe('CommunityRepository', () => {
       const filters: CommunitySearchFilters = {
         accessibleIds: ['comm-123'],
       };
-      const result = await repository.search(filters);
+      const result = await communityRepository.search(filters);
 
       expect(Array.isArray(result.rows)).toBe(true);
     });
@@ -619,7 +600,7 @@ describe('CommunityRepository', () => {
       const filters: CommunitySearchFilters = {
         accessibleIds: ['comm-123', 'comm-456', 'comm-789'],
       };
-      const result = await repository.search(filters);
+      const result = await communityRepository.search(filters);
 
       expect(Array.isArray(result.rows)).toBe(true);
     });
@@ -644,8 +625,8 @@ describe('CommunityRepository', () => {
         limit: 5,
       };
 
-      const page1 = await repository.search({ ...filters, offset: 0 });
-      const page2 = await repository.search({ ...filters, offset: 5 });
+      const page1 = await communityRepository.search({ ...filters, offset: 0 });
+      const page2 = await communityRepository.search({ ...filters, offset: 5 });
 
       expect(Array.isArray(page1.rows)).toBe(true);
       expect(Array.isArray(page2.rows)).toBe(true);
@@ -671,8 +652,8 @@ describe('CommunityRepository', () => {
         limit: 5,
       };
 
-      const page1 = await repository.search({ ...filters, offset: 0 });
-      const page2 = await repository.search({ ...filters, offset: 5 });
+      const page1 = await communityRepository.search({ ...filters, offset: 0 });
+      const page2 = await communityRepository.search({ ...filters, offset: 5 });
 
       expect(page1.total).toBe(page2.total);
     });
@@ -681,7 +662,7 @@ describe('CommunityRepository', () => {
   describe('cleanupOldDeleted', () => {
     it('should return number of deleted communities', async () => {
       // Setup transaction mock to execute the callback
-      (db.transaction as any).mockImplementationOnce(async (callback: Function) => {
+      mockDb.transaction.mockImplementationOnce(async (callback: Function) => {
         // Mock the select query for old communities
         mockDb.where.mockResolvedValueOnce([{ id: 'comm-old-1' }, { id: 'comm-old-2' }]);
         // Mock the delete operations - return the result from callback
@@ -693,14 +674,14 @@ describe('CommunityRepository', () => {
         });
       });
 
-      const result = await repository.cleanupOldDeleted();
+      const result = await communityRepository.cleanupOldDeleted();
 
       expect(result).toBeDefined();
     });
 
     it('should return 0 when no old deleted communities', async () => {
       // Setup transaction mock
-      (db.transaction as any).mockImplementationOnce(async (callback: Function) => {
+      mockDb.transaction.mockImplementationOnce(async (callback: Function) => {
         mockDb.where.mockResolvedValueOnce([]);
         return callback({
           select: mockDb.select,
@@ -710,13 +691,13 @@ describe('CommunityRepository', () => {
         });
       });
 
-      const result = await repository.cleanupOldDeleted();
+      const result = await communityRepository.cleanupOldDeleted();
 
       expect(result).toBe(0);
     });
 
     it('should only delete communities older than 90 days', async () => {
-      (db.transaction as any).mockImplementationOnce(async (callback: Function) => {
+      mockDb.transaction.mockImplementationOnce(async (callback: Function) => {
         mockDb.where.mockResolvedValueOnce([{ id: 'comm-old-1' }]);
         return callback({
           select: mockDb.select,
@@ -726,14 +707,14 @@ describe('CommunityRepository', () => {
         });
       });
 
-      const result = await repository.cleanupOldDeleted();
+      const result = await communityRepository.cleanupOldDeleted();
 
       expect(result).toBeDefined();
       expect(mockDb.where).toHaveBeenCalled();
     });
 
     it('should handle empty result set', async () => {
-      (db.transaction as any).mockImplementationOnce(async (callback: Function) => {
+      mockDb.transaction.mockImplementationOnce(async (callback: Function) => {
         mockDb.where.mockResolvedValueOnce([]);
         return callback({
           select: mockDb.select,
@@ -743,13 +724,13 @@ describe('CommunityRepository', () => {
         });
       });
 
-      const result = await repository.cleanupOldDeleted();
+      const result = await communityRepository.cleanupOldDeleted();
 
       expect(result).toBe(0);
     });
 
     it('should clean up related invites', async () => {
-      (db.transaction as any).mockImplementationOnce(async (callback: Function) => {
+      mockDb.transaction.mockImplementationOnce(async (callback: Function) => {
         mockDb.where.mockResolvedValueOnce([{ id: 'comm-old-1' }]);
         return callback({
           select: mockDb.select,
@@ -759,7 +740,7 @@ describe('CommunityRepository', () => {
         });
       });
 
-      const result = await repository.cleanupOldDeleted();
+      const result = await communityRepository.cleanupOldDeleted();
 
       expect(result).toBeDefined();
     });
@@ -837,7 +818,7 @@ describe('CommunityRepository', () => {
         createdBy: 'user-123',
       };
 
-      const result = await repository.create(data);
+      const result = await communityRepository.create(data);
 
       expect(result).toBeDefined();
       expect(result).toHaveProperty('id');
@@ -849,7 +830,7 @@ describe('CommunityRepository', () => {
     it('findById should return Community or undefined', async () => {
       mockDb.where.mockResolvedValueOnce([testCommunity]);
 
-      const result = await repository.findById('comm-123');
+      const result = await communityRepository.findById('comm-123');
 
       expect(result === undefined || typeof result === 'object').toBe(true);
       if (result) {
@@ -861,7 +842,7 @@ describe('CommunityRepository', () => {
     it('findAll should return array of Community', async () => {
       mockDb.offset.mockResolvedValue([testCommunity, testCommunity2]);
 
-      const result = await repository.findAll();
+      const result = await communityRepository.findAll();
 
       expect(Array.isArray(result)).toBe(true);
       result.forEach((community) => {
@@ -874,7 +855,7 @@ describe('CommunityRepository', () => {
       const updatedCommunity = { ...testCommunity, name: 'Test' };
       mockDb.returning.mockResolvedValue([updatedCommunity]);
 
-      const result = await repository.update('comm-123', { name: 'Test' });
+      const result = await communityRepository.update('comm-123', { name: 'Test' });
 
       expect(result === undefined || typeof result === 'object').toBe(true);
       if (result) {
@@ -887,7 +868,7 @@ describe('CommunityRepository', () => {
       mockDb.where.mockResolvedValueOnce([{ count: 1 }]);
       mockDb.offset.mockResolvedValueOnce([testCommunity]);
 
-      const result = await repository.search({ accessibleIds: ['comm-123'] });
+      const result = await communityRepository.search({ accessibleIds: ['comm-123'] });
 
       expect(result).toHaveProperty('rows');
       expect(result).toHaveProperty('total');
@@ -896,7 +877,7 @@ describe('CommunityRepository', () => {
     });
 
     it('cleanupOldDeleted should return number', async () => {
-      (db.transaction as any).mockImplementationOnce(async (callback: Function) => {
+      mockDb.transaction.mockImplementationOnce(async (callback: Function) => {
         mockDb.where.mockResolvedValueOnce([]);
         return callback({
           select: mockDb.select,
@@ -906,7 +887,7 @@ describe('CommunityRepository', () => {
         });
       });
 
-      const result = await repository.cleanupOldDeleted();
+      const result = await communityRepository.cleanupOldDeleted();
 
       expect(typeof result).toBe('number');
     });

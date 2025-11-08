@@ -1,6 +1,7 @@
-import { describe, it, expect, beforeEach, afterEach, mock } from 'bun:test';
+import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import { CommunityMemberRepository } from '@/repositories/communityMember.repository';
-import { openFGAService } from '@/services/openfga.service';
+
+let communityMemberRepository: CommunityMemberRepository;
 
 // Static test data
 const testCommunityId = 'comm-123';
@@ -8,7 +9,7 @@ const testUserId = 'user-456';
 const testAdminId = 'user-admin';
 const testReaderId = 'user-reader';
 
-// Mock openFGAService methods
+// Mock openFGAService
 const mockOpenFGAService = {
   assignRole: mock(() => Promise.resolve()),
   getRolesForResource: mock(() => Promise.resolve([])),
@@ -18,30 +19,10 @@ const mockOpenFGAService = {
   getUserRolesForResource: mock(() => Promise.resolve([])),
 };
 
-// Store original methods
-const originalMethods = {
-  assignRole: openFGAService.assignRole,
-  getRolesForResource: openFGAService.getRolesForResource,
-  getAccessibleResourceIds: openFGAService.getAccessibleResourceIds,
-  getUserRoleForResource: openFGAService.getUserRoleForResource,
-  removeRole: openFGAService.removeRole,
-  getUserRolesForResource: openFGAService.getUserRolesForResource,
-};
-
 describe('CommunityMemberRepository', () => {
-  let repository: CommunityMemberRepository;
-
   beforeEach(() => {
     // Reset all mocks
     Object.values(mockOpenFGAService).forEach((m) => m.mockReset());
-
-    // Replace openFGAService methods with mocks
-    (openFGAService as any).assignRole = mockOpenFGAService.assignRole;
-    (openFGAService as any).getRolesForResource = mockOpenFGAService.getRolesForResource;
-    (openFGAService as any).getAccessibleResourceIds = mockOpenFGAService.getAccessibleResourceIds;
-    (openFGAService as any).getUserRoleForResource = mockOpenFGAService.getUserRoleForResource;
-    (openFGAService as any).removeRole = mockOpenFGAService.removeRole;
-    (openFGAService as any).getUserRolesForResource = mockOpenFGAService.getUserRolesForResource;
 
     // Set default mock responses
     mockOpenFGAService.assignRole.mockResolvedValue(undefined);
@@ -51,37 +32,27 @@ describe('CommunityMemberRepository', () => {
     mockOpenFGAService.removeRole.mockResolvedValue(undefined);
     mockOpenFGAService.getUserRolesForResource.mockResolvedValue([]);
 
-    // Create fresh repository instance
-    repository = new CommunityMemberRepository();
-  });
-
-  afterEach(() => {
-    // Restore original methods
-    (openFGAService as any).assignRole = originalMethods.assignRole;
-    (openFGAService as any).getRolesForResource = originalMethods.getRolesForResource;
-    (openFGAService as any).getAccessibleResourceIds = originalMethods.getAccessibleResourceIds;
-    (openFGAService as any).getUserRoleForResource = originalMethods.getUserRoleForResource;
-    (openFGAService as any).removeRole = originalMethods.removeRole;
-    (openFGAService as any).getUserRolesForResource = originalMethods.getUserRolesForResource;
+    // Instantiate repository with the per-test mock openFGAService
+    communityMemberRepository = new CommunityMemberRepository(mockOpenFGAService as any);
   });
 
   describe('Type Validation', () => {
     it('should have correct method signatures', () => {
-      expect(typeof repository.addMember).toBe('function');
-      expect(typeof repository.findByCommunity).toBe('function');
-      expect(typeof repository.findByUser).toBe('function');
-      expect(typeof repository.updateRole).toBe('function');
-      expect(typeof repository.removeMember).toBe('function');
-      expect(typeof repository.isMember).toBe('function');
-      expect(typeof repository.getUserRole).toBe('function');
-      expect(typeof repository.getUserRoles).toBe('function');
-      expect(typeof repository.isAdmin).toBe('function');
+      expect(typeof communityMemberRepository.addMember).toBe('function');
+      expect(typeof communityMemberRepository.findByCommunity).toBe('function');
+      expect(typeof communityMemberRepository.findByUser).toBe('function');
+      expect(typeof communityMemberRepository.updateRole).toBe('function');
+      expect(typeof communityMemberRepository.removeMember).toBe('function');
+      expect(typeof communityMemberRepository.isMember).toBe('function');
+      expect(typeof communityMemberRepository.getUserRole).toBe('function');
+      expect(typeof communityMemberRepository.getUserRoles).toBe('function');
+      expect(typeof communityMemberRepository.isAdmin).toBe('function');
     });
   });
 
   describe('addMember', () => {
     it('should add member with default role', async () => {
-      const result = await repository.addMember(testCommunityId, testUserId);
+      const result = await communityMemberRepository.addMember(testCommunityId, testUserId);
 
       expect(result).toBeDefined();
       expect(result.userId).toBe(testUserId);
@@ -97,7 +68,11 @@ describe('CommunityMemberRepository', () => {
     });
 
     it('should add member with admin role', async () => {
-      const result = await repository.addMember(testCommunityId, testAdminId, 'admin');
+      const result = await communityMemberRepository.addMember(
+        testCommunityId,
+        testAdminId,
+        'admin'
+      );
 
       expect(result).toBeDefined();
       expect(result.userId).toBe(testAdminId);
@@ -111,7 +86,11 @@ describe('CommunityMemberRepository', () => {
     });
 
     it('should add member with reader role', async () => {
-      const result = await repository.addMember(testCommunityId, testReaderId, 'reader');
+      const result = await communityMemberRepository.addMember(
+        testCommunityId,
+        testReaderId,
+        'reader'
+      );
 
       expect(result).toBeDefined();
       expect(result.userId).toBe(testReaderId);
@@ -125,7 +104,7 @@ describe('CommunityMemberRepository', () => {
     });
 
     it('should return membership object', async () => {
-      const result = await repository.addMember(testCommunityId, testUserId);
+      const result = await communityMemberRepository.addMember(testCommunityId, testUserId);
 
       expect(result).toHaveProperty('userId');
       expect(result).toHaveProperty('resourceType');
@@ -141,7 +120,7 @@ describe('CommunityMemberRepository', () => {
         { userId: testAdminId, role: 'admin' },
       ]);
 
-      const result = await repository.findByCommunity(testCommunityId);
+      const result = await communityMemberRepository.findByCommunity(testCommunityId);
 
       expect(Array.isArray(result)).toBe(true);
       expect(result.length).toBe(2);
@@ -157,7 +136,7 @@ describe('CommunityMemberRepository', () => {
         { userId: testAdminId, role: 'admin' },
       ]);
 
-      const result = await repository.findByCommunity(testCommunityId);
+      const result = await communityMemberRepository.findByCommunity(testCommunityId);
 
       expect(Array.isArray(result)).toBe(true);
       result.forEach((member) => {
@@ -171,7 +150,7 @@ describe('CommunityMemberRepository', () => {
     it('should return empty array for community with no members', async () => {
       mockOpenFGAService.getRolesForResource.mockResolvedValue([]);
 
-      const result = await repository.findByCommunity('comm-empty');
+      const result = await communityMemberRepository.findByCommunity('comm-empty');
 
       expect(Array.isArray(result)).toBe(true);
       expect(result.length).toBe(0);
@@ -183,7 +162,7 @@ describe('CommunityMemberRepository', () => {
         { userId: testAdminId, role: 'admin' },
       ]);
 
-      const result = await repository.findByCommunity(testCommunityId);
+      const result = await communityMemberRepository.findByCommunity(testCommunityId);
 
       result.forEach((member) => {
         expect(member.resourceType).toBe('communities');
@@ -196,7 +175,7 @@ describe('CommunityMemberRepository', () => {
     it('should return array of communities', async () => {
       mockOpenFGAService.getAccessibleResourceIds.mockResolvedValue([testCommunityId, 'comm-456']);
 
-      const result = await repository.findByUser(testUserId);
+      const result = await communityMemberRepository.findByUser(testUserId);
 
       expect(Array.isArray(result)).toBe(true);
       expect(result.length).toBe(2);
@@ -210,7 +189,7 @@ describe('CommunityMemberRepository', () => {
     it('should return communities with membership info', async () => {
       mockOpenFGAService.getAccessibleResourceIds.mockResolvedValue([testCommunityId]);
 
-      const result = await repository.findByUser(testUserId);
+      const result = await communityMemberRepository.findByUser(testUserId);
 
       expect(Array.isArray(result)).toBe(true);
       result.forEach((membership) => {
@@ -224,7 +203,7 @@ describe('CommunityMemberRepository', () => {
     it('should return empty array for user with no memberships', async () => {
       mockOpenFGAService.getAccessibleResourceIds.mockResolvedValue([]);
 
-      const result = await repository.findByUser('user-no-communities');
+      const result = await communityMemberRepository.findByUser('user-no-communities');
 
       expect(Array.isArray(result)).toBe(true);
       expect(result.length).toBe(0);
@@ -233,7 +212,7 @@ describe('CommunityMemberRepository', () => {
     it('should return correct resourceType for all memberships', async () => {
       mockOpenFGAService.getAccessibleResourceIds.mockResolvedValue([testCommunityId, 'comm-456']);
 
-      const result = await repository.findByUser(testUserId);
+      const result = await communityMemberRepository.findByUser(testUserId);
 
       result.forEach((membership) => {
         expect(membership.resourceType).toBe('communities');
@@ -244,7 +223,11 @@ describe('CommunityMemberRepository', () => {
 
   describe('updateRole', () => {
     it('should update member role to admin', async () => {
-      const result = await repository.updateRole(testCommunityId, testUserId, 'admin');
+      const result = await communityMemberRepository.updateRole(
+        testCommunityId,
+        testUserId,
+        'admin'
+      );
 
       expect(result).toBeDefined();
       expect(result.role).toBe('admin');
@@ -259,7 +242,11 @@ describe('CommunityMemberRepository', () => {
     });
 
     it('should update member role to reader', async () => {
-      const result = await repository.updateRole(testCommunityId, testUserId, 'reader');
+      const result = await communityMemberRepository.updateRole(
+        testCommunityId,
+        testUserId,
+        'reader'
+      );
 
       expect(result).toBeDefined();
       expect(result.role).toBe('reader');
@@ -272,7 +259,11 @@ describe('CommunityMemberRepository', () => {
     });
 
     it('should update member role to member', async () => {
-      const result = await repository.updateRole(testCommunityId, testUserId, 'member');
+      const result = await communityMemberRepository.updateRole(
+        testCommunityId,
+        testUserId,
+        'member'
+      );
 
       expect(result).toBeDefined();
       expect(result.role).toBe('member');
@@ -285,7 +276,11 @@ describe('CommunityMemberRepository', () => {
     });
 
     it('should return membership object after update', async () => {
-      const result = await repository.updateRole(testCommunityId, testUserId, 'admin');
+      const result = await communityMemberRepository.updateRole(
+        testCommunityId,
+        testUserId,
+        'admin'
+      );
 
       expect(result).toHaveProperty('userId');
       expect(result).toHaveProperty('resourceType');
@@ -298,7 +293,7 @@ describe('CommunityMemberRepository', () => {
     it('should remove member from community', async () => {
       mockOpenFGAService.getUserRoleForResource.mockResolvedValue('member');
 
-      const result = await repository.removeMember(testCommunityId, testUserId);
+      const result = await communityMemberRepository.removeMember(testCommunityId, testUserId);
 
       expect(result).toBeDefined();
       expect(result.userId).toBe(testUserId);
@@ -318,7 +313,7 @@ describe('CommunityMemberRepository', () => {
     it('should return membership info on removal', async () => {
       mockOpenFGAService.getUserRoleForResource.mockResolvedValue('admin');
 
-      const result = await repository.removeMember(testCommunityId, testUserId);
+      const result = await communityMemberRepository.removeMember(testCommunityId, testUserId);
 
       expect(result).toHaveProperty('userId');
       expect(result).toHaveProperty('resourceType');
@@ -330,7 +325,10 @@ describe('CommunityMemberRepository', () => {
     it('should handle removing nonexistent member gracefully', async () => {
       mockOpenFGAService.getUserRoleForResource.mockResolvedValue(null);
 
-      const result = await repository.removeMember(testCommunityId, 'user-nonexistent');
+      const result = await communityMemberRepository.removeMember(
+        testCommunityId,
+        'user-nonexistent'
+      );
 
       expect(result).toBeDefined();
       expect(result.role).toBeNull();
@@ -342,7 +340,7 @@ describe('CommunityMemberRepository', () => {
     it('should return true for existing member', async () => {
       mockOpenFGAService.getUserRoleForResource.mockResolvedValue('member');
 
-      const result = await repository.isMember(testCommunityId, testUserId);
+      const result = await communityMemberRepository.isMember(testCommunityId, testUserId);
 
       expect(result).toBe(true);
       expect(mockOpenFGAService.getUserRoleForResource).toHaveBeenCalledWith(
@@ -355,7 +353,7 @@ describe('CommunityMemberRepository', () => {
     it('should return false for non-member', async () => {
       mockOpenFGAService.getUserRoleForResource.mockResolvedValue(null);
 
-      const result = await repository.isMember(testCommunityId, 'user-not-member');
+      const result = await communityMemberRepository.isMember(testCommunityId, 'user-not-member');
 
       expect(result).toBe(false);
     });
@@ -363,7 +361,7 @@ describe('CommunityMemberRepository', () => {
     it('should return true for admin', async () => {
       mockOpenFGAService.getUserRoleForResource.mockResolvedValue('admin');
 
-      const result = await repository.isMember(testCommunityId, testAdminId);
+      const result = await communityMemberRepository.isMember(testCommunityId, testAdminId);
 
       expect(result).toBe(true);
     });
@@ -371,7 +369,7 @@ describe('CommunityMemberRepository', () => {
     it('should return true for reader', async () => {
       mockOpenFGAService.getUserRoleForResource.mockResolvedValue('reader');
 
-      const result = await repository.isMember(testCommunityId, testReaderId);
+      const result = await communityMemberRepository.isMember(testCommunityId, testReaderId);
 
       expect(result).toBe(true);
     });
@@ -379,7 +377,7 @@ describe('CommunityMemberRepository', () => {
     it('should return boolean', async () => {
       mockOpenFGAService.getUserRoleForResource.mockResolvedValue(null);
 
-      const result = await repository.isMember(testCommunityId, testUserId);
+      const result = await communityMemberRepository.isMember(testCommunityId, testUserId);
 
       expect(typeof result).toBe('boolean');
     });
@@ -389,7 +387,7 @@ describe('CommunityMemberRepository', () => {
     it('should return admin role', async () => {
       mockOpenFGAService.getUserRoleForResource.mockResolvedValue('admin');
 
-      const result = await repository.getUserRole(testCommunityId, testAdminId);
+      const result = await communityMemberRepository.getUserRole(testCommunityId, testAdminId);
 
       expect(result).toBe('admin');
       expect(mockOpenFGAService.getUserRoleForResource).toHaveBeenCalledWith(
@@ -402,7 +400,7 @@ describe('CommunityMemberRepository', () => {
     it('should return member role', async () => {
       mockOpenFGAService.getUserRoleForResource.mockResolvedValue('member');
 
-      const result = await repository.getUserRole(testCommunityId, testUserId);
+      const result = await communityMemberRepository.getUserRole(testCommunityId, testUserId);
 
       expect(result).toBe('member');
     });
@@ -410,7 +408,7 @@ describe('CommunityMemberRepository', () => {
     it('should return reader role', async () => {
       mockOpenFGAService.getUserRoleForResource.mockResolvedValue('reader');
 
-      const result = await repository.getUserRole(testCommunityId, testReaderId);
+      const result = await communityMemberRepository.getUserRole(testCommunityId, testReaderId);
 
       expect(result).toBe('reader');
     });
@@ -418,7 +416,7 @@ describe('CommunityMemberRepository', () => {
     it('should return null for non-member', async () => {
       mockOpenFGAService.getUserRoleForResource.mockResolvedValue(null);
 
-      const result = await repository.getUserRole(testCommunityId, 'user-no-role');
+      const result = await communityMemberRepository.getUserRole(testCommunityId, 'user-no-role');
 
       expect(result).toBeNull();
     });
@@ -426,7 +424,7 @@ describe('CommunityMemberRepository', () => {
     it('should return string or null', async () => {
       mockOpenFGAService.getUserRoleForResource.mockResolvedValue('member');
 
-      const result = await repository.getUserRole(testCommunityId, testUserId);
+      const result = await communityMemberRepository.getUserRole(testCommunityId, testUserId);
 
       expect(result === null || typeof result === 'string').toBe(true);
     });
@@ -436,7 +434,7 @@ describe('CommunityMemberRepository', () => {
     it('should return array of roles', async () => {
       mockOpenFGAService.getUserRolesForResource.mockResolvedValue(['admin', 'member']);
 
-      const result = await repository.getUserRoles(testCommunityId, testAdminId);
+      const result = await communityMemberRepository.getUserRoles(testCommunityId, testAdminId);
 
       expect(Array.isArray(result)).toBe(true);
       expect(result.length).toBe(2);
@@ -450,7 +448,7 @@ describe('CommunityMemberRepository', () => {
     it('should return empty array for non-member', async () => {
       mockOpenFGAService.getUserRolesForResource.mockResolvedValue([]);
 
-      const result = await repository.getUserRoles(testCommunityId, 'user-no-roles');
+      const result = await communityMemberRepository.getUserRoles(testCommunityId, 'user-no-roles');
 
       expect(Array.isArray(result)).toBe(true);
       expect(result.length).toBe(0);
@@ -459,7 +457,7 @@ describe('CommunityMemberRepository', () => {
     it('should include admin role', async () => {
       mockOpenFGAService.getUserRolesForResource.mockResolvedValue(['admin']);
 
-      const result = await repository.getUserRoles(testCommunityId, testAdminId);
+      const result = await communityMemberRepository.getUserRoles(testCommunityId, testAdminId);
 
       expect(Array.isArray(result)).toBe(true);
       expect(result).toContain('admin');
@@ -468,7 +466,7 @@ describe('CommunityMemberRepository', () => {
     it('should include member role', async () => {
       mockOpenFGAService.getUserRolesForResource.mockResolvedValue(['member']);
 
-      const result = await repository.getUserRoles(testCommunityId, testUserId);
+      const result = await communityMemberRepository.getUserRoles(testCommunityId, testUserId);
 
       expect(Array.isArray(result)).toBe(true);
       expect(result).toContain('member');
@@ -479,7 +477,7 @@ describe('CommunityMemberRepository', () => {
     it('should return true for admin', async () => {
       mockOpenFGAService.getUserRoleForResource.mockResolvedValue('admin');
 
-      const result = await repository.isAdmin(testCommunityId, testAdminId);
+      const result = await communityMemberRepository.isAdmin(testCommunityId, testAdminId);
 
       expect(result).toBe(true);
       expect(mockOpenFGAService.getUserRoleForResource).toHaveBeenCalledWith(
@@ -492,7 +490,7 @@ describe('CommunityMemberRepository', () => {
     it('should return false for member', async () => {
       mockOpenFGAService.getUserRoleForResource.mockResolvedValue('member');
 
-      const result = await repository.isAdmin(testCommunityId, testUserId);
+      const result = await communityMemberRepository.isAdmin(testCommunityId, testUserId);
 
       expect(result).toBe(false);
     });
@@ -500,7 +498,7 @@ describe('CommunityMemberRepository', () => {
     it('should return false for reader', async () => {
       mockOpenFGAService.getUserRoleForResource.mockResolvedValue('reader');
 
-      const result = await repository.isAdmin(testCommunityId, testReaderId);
+      const result = await communityMemberRepository.isAdmin(testCommunityId, testReaderId);
 
       expect(result).toBe(false);
     });
@@ -508,7 +506,7 @@ describe('CommunityMemberRepository', () => {
     it('should return false for non-member', async () => {
       mockOpenFGAService.getUserRoleForResource.mockResolvedValue(null);
 
-      const result = await repository.isAdmin(testCommunityId, 'user-no-admin');
+      const result = await communityMemberRepository.isAdmin(testCommunityId, 'user-no-admin');
 
       expect(result).toBe(false);
     });
@@ -516,7 +514,7 @@ describe('CommunityMemberRepository', () => {
     it('should return boolean', async () => {
       mockOpenFGAService.getUserRoleForResource.mockResolvedValue(null);
 
-      const result = await repository.isAdmin(testCommunityId, testUserId);
+      const result = await communityMemberRepository.isAdmin(testCommunityId, testUserId);
 
       expect(typeof result).toBe('boolean');
     });
@@ -546,7 +544,7 @@ describe('CommunityMemberRepository', () => {
     it('should handle UUID format community IDs', async () => {
       const communityId = '550e8400-e29b-41d4-a716-446655440000';
 
-      const result = await repository.addMember(communityId, testUserId);
+      const result = await communityMemberRepository.addMember(communityId, testUserId);
 
       expect(result.resourceId).toBe(communityId);
     });
@@ -554,7 +552,7 @@ describe('CommunityMemberRepository', () => {
     it('should handle UUID format user IDs', async () => {
       const userId = '660e8400-e29b-41d4-a716-446655440000';
 
-      const result = await repository.addMember(testCommunityId, userId);
+      const result = await communityMemberRepository.addMember(testCommunityId, userId);
 
       expect(result.userId).toBe(userId);
     });
@@ -562,7 +560,7 @@ describe('CommunityMemberRepository', () => {
     it('should handle empty community members list', async () => {
       mockOpenFGAService.getRolesForResource.mockResolvedValue([]);
 
-      const result = await repository.findByCommunity('comm-empty');
+      const result = await communityMemberRepository.findByCommunity('comm-empty');
 
       expect(Array.isArray(result)).toBe(true);
       expect(result.length).toBe(0);
@@ -571,7 +569,7 @@ describe('CommunityMemberRepository', () => {
     it('should handle user with no communities', async () => {
       mockOpenFGAService.getAccessibleResourceIds.mockResolvedValue([]);
 
-      const result = await repository.findByUser('user-no-comm');
+      const result = await communityMemberRepository.findByUser('user-no-comm');
 
       expect(Array.isArray(result)).toBe(true);
       expect(result.length).toBe(0);
@@ -586,7 +584,7 @@ describe('CommunityMemberRepository', () => {
         { userId: testReaderId, role: 'reader' },
       ]);
 
-      const members = await repository.findByCommunity(testCommunityId);
+      const members = await communityMemberRepository.findByCommunity(testCommunityId);
 
       expect(members.length).toBe(3);
       expect(members.find((m) => m.userId === testAdminId)?.role).toBe('admin');
@@ -597,7 +595,7 @@ describe('CommunityMemberRepository', () => {
     it('should handle user in multiple communities', async () => {
       mockOpenFGAService.getAccessibleResourceIds.mockResolvedValue(['comm-1', 'comm-2', 'comm-3']);
 
-      const communities = await repository.findByUser(testUserId);
+      const communities = await communityMemberRepository.findByUser(testUserId);
 
       expect(communities.length).toBe(3);
       communities.forEach((c) => {

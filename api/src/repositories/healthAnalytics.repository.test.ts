@@ -1,5 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, mock } from 'bun:test';
-import { db } from '@db/index';
+import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
 import { HealthAnalyticsRepository } from '@/repositories/healthAnalytics.repository';
 import type {
   TimeRange,
@@ -10,21 +9,10 @@ import type {
 } from '@/repositories/healthAnalytics.repository';
 import { createThenableMockDb, setupMockDbChains } from '../../tests/helpers/mockDb';
 
-// Store original db methods to restore after each test
-const originalDbMethods = {
-  insert: db.insert,
-  select: db.select,
-  update: db.update,
-  delete: (db as any).delete,
-  execute: (db as any).execute,
-  selectDistinct: (db as any).selectDistinct,
-};
+let healthAnalyticsRepository: HealthAnalyticsRepository;
 
 // Create mock database
 const mockDb = createThenableMockDb();
-
-// Create a test instance
-const repository = new HealthAnalyticsRepository();
 
 // Static test data
 const TEST_COMMUNITY_ID = 'comm-123';
@@ -34,32 +22,20 @@ describe('HealthAnalyticsRepository', () => {
   beforeEach(() => {
     // Reset all mocks and setup default chains
     setupMockDbChains(mockDb);
-
-    // Replace db methods with mocks
-    (db.insert as any) = mockDb.insert;
-    (db.select as any) = mockDb.select;
-    (db.update as any) = mockDb.update;
-    (db as any).delete = mockDb.delete;
-    (db as any).execute = mock(() => Promise.resolve([]));
-    (db as any).selectDistinct = mock(() => mockDb);
+    // Instantiate repository with the per-test mock DB
+    healthAnalyticsRepository = new HealthAnalyticsRepository(mockDb as any);
   });
 
   afterEach(() => {
-    // Restore original db methods to prevent pollution of other tests
-    (db.insert as any) = originalDbMethods.insert;
-    (db.select as any) = originalDbMethods.select;
-    (db.update as any) = originalDbMethods.update;
-    (db as any).delete = originalDbMethods.delete;
-    (db as any).execute = originalDbMethods.execute;
-    (db as any).selectDistinct = originalDbMethods.selectDistinct;
+    // Nothing to clean up; a fresh HealthAnalyticsRepository is created per test
   });
 
   describe('Type Validation', () => {
     it('should have correct method signatures', () => {
-      expect(typeof repository.getWealthOverview).toBe('function');
-      expect(typeof repository.getWealthItems).toBe('function');
-      expect(typeof repository.getTrustOverview).toBe('function');
-      expect(typeof repository.getTrustDistribution).toBe('function');
+      expect(typeof healthAnalyticsRepository.getWealthOverview).toBe('function');
+      expect(typeof healthAnalyticsRepository.getWealthItems).toBe('function');
+      expect(typeof healthAnalyticsRepository.getTrustOverview).toBe('function');
+      expect(typeof healthAnalyticsRepository.getTrustDistribution).toBe('function');
     });
   });
 
@@ -89,12 +65,12 @@ describe('HealthAnalyticsRepository', () => {
       mockDb.where.mockResolvedValueOnce([{ count: 5 }]);
       mockDb.where.mockResolvedValueOnce([{ count: 10 }]);
       mockDb.where.mockResolvedValueOnce([{ itemId: 'item-1' }, { itemId: 'item-2' }]);
-      (db as any).execute.mockResolvedValueOnce([
+      mockDb.execute.mockResolvedValueOnce([
         { date: '2024-01-01', shares: '2', requests: '1', fulfilled: '1' },
         { date: '2024-01-02', shares: '3', requests: '2', fulfilled: '1' },
       ]);
 
-      const result = await repository.getWealthOverview(TEST_COMMUNITY_ID);
+      const result = await healthAnalyticsRepository.getWealthOverview(TEST_COMMUNITY_ID);
 
       expect(result).toBeDefined();
       expect(result).toHaveProperty('openShares');
@@ -107,9 +83,9 @@ describe('HealthAnalyticsRepository', () => {
       mockDb.where.mockResolvedValueOnce([{ count: 8 }]);
       mockDb.where.mockResolvedValueOnce([{ count: 15 }]);
       mockDb.where.mockResolvedValueOnce([{ itemId: 'item-1' }]);
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
-      const result = await repository.getWealthOverview(TEST_COMMUNITY_ID_2);
+      const result = await healthAnalyticsRepository.getWealthOverview(TEST_COMMUNITY_ID_2);
 
       expect(typeof result.openShares).toBe('number');
       expect(typeof result.totalShares).toBe('number');
@@ -120,9 +96,9 @@ describe('HealthAnalyticsRepository', () => {
       mockDb.where.mockResolvedValueOnce([{ count: 0 }]);
       mockDb.where.mockResolvedValueOnce([{ count: 0 }]);
       mockDb.where.mockResolvedValueOnce([]);
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
-      const result = await repository.getWealthOverview(TEST_COMMUNITY_ID);
+      const result = await healthAnalyticsRepository.getWealthOverview(TEST_COMMUNITY_ID);
 
       expect(result.openShares).toBeGreaterThanOrEqual(0);
       expect(result.totalShares).toBeGreaterThanOrEqual(0);
@@ -133,11 +109,11 @@ describe('HealthAnalyticsRepository', () => {
       mockDb.where.mockResolvedValueOnce([{ count: 1 }]);
       mockDb.where.mockResolvedValueOnce([{ count: 1 }]);
       mockDb.where.mockResolvedValueOnce([]);
-      (db as any).execute.mockResolvedValueOnce([
+      mockDb.execute.mockResolvedValueOnce([
         { date: '2024-01-01', shares: '1', requests: '0', fulfilled: '0' },
       ]);
 
-      const result = await repository.getWealthOverview(TEST_COMMUNITY_ID);
+      const result = await healthAnalyticsRepository.getWealthOverview(TEST_COMMUNITY_ID);
 
       expect(Array.isArray(result.timeSeriesData)).toBe(true);
     });
@@ -146,12 +122,12 @@ describe('HealthAnalyticsRepository', () => {
       mockDb.where.mockResolvedValueOnce([{ count: 2 }]);
       mockDb.where.mockResolvedValueOnce([{ count: 5 }]);
       mockDb.where.mockResolvedValueOnce([{ itemId: 'item-1' }]);
-      (db as any).execute.mockResolvedValueOnce([
+      mockDb.execute.mockResolvedValueOnce([
         { date: '2024-01-01', shares: '3', requests: '1', fulfilled: '0' },
         { date: '2024-01-02', shares: '2', requests: '1', fulfilled: '1' },
       ]);
 
-      const result = await repository.getWealthOverview(TEST_COMMUNITY_ID);
+      const result = await healthAnalyticsRepository.getWealthOverview(TEST_COMMUNITY_ID);
 
       result.timeSeriesData.forEach((item) => {
         expect(item).toHaveProperty('date');
@@ -169,9 +145,9 @@ describe('HealthAnalyticsRepository', () => {
       mockDb.where.mockResolvedValueOnce([{ count: 1 }]);
       mockDb.where.mockResolvedValueOnce([{ count: 1 }]);
       mockDb.where.mockResolvedValueOnce([]);
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
-      const result = await repository.getWealthOverview(TEST_COMMUNITY_ID, '7d');
+      const result = await healthAnalyticsRepository.getWealthOverview(TEST_COMMUNITY_ID, '7d');
 
       expect(result).toBeDefined();
       expect(Array.isArray(result.timeSeriesData)).toBe(true);
@@ -181,9 +157,9 @@ describe('HealthAnalyticsRepository', () => {
       mockDb.where.mockResolvedValueOnce([{ count: 1 }]);
       mockDb.where.mockResolvedValueOnce([{ count: 1 }]);
       mockDb.where.mockResolvedValueOnce([]);
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
-      const result = await repository.getWealthOverview(TEST_COMMUNITY_ID, '30d');
+      const result = await healthAnalyticsRepository.getWealthOverview(TEST_COMMUNITY_ID, '30d');
 
       expect(result).toBeDefined();
       expect(Array.isArray(result.timeSeriesData)).toBe(true);
@@ -193,9 +169,9 @@ describe('HealthAnalyticsRepository', () => {
       mockDb.where.mockResolvedValueOnce([{ count: 1 }]);
       mockDb.where.mockResolvedValueOnce([{ count: 1 }]);
       mockDb.where.mockResolvedValueOnce([]);
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
-      const result = await repository.getWealthOverview(TEST_COMMUNITY_ID, '90d');
+      const result = await healthAnalyticsRepository.getWealthOverview(TEST_COMMUNITY_ID, '90d');
 
       expect(result).toBeDefined();
       expect(Array.isArray(result.timeSeriesData)).toBe(true);
@@ -205,9 +181,9 @@ describe('HealthAnalyticsRepository', () => {
       mockDb.where.mockResolvedValueOnce([{ count: 1 }]);
       mockDb.where.mockResolvedValueOnce([{ count: 1 }]);
       mockDb.where.mockResolvedValueOnce([]);
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
-      const result = await repository.getWealthOverview(TEST_COMMUNITY_ID, '1y');
+      const result = await healthAnalyticsRepository.getWealthOverview(TEST_COMMUNITY_ID, '1y');
 
       expect(result).toBeDefined();
       expect(Array.isArray(result.timeSeriesData)).toBe(true);
@@ -217,9 +193,9 @@ describe('HealthAnalyticsRepository', () => {
       mockDb.where.mockResolvedValueOnce([{ count: 1 }]);
       mockDb.where.mockResolvedValueOnce([{ count: 1 }]);
       mockDb.where.mockResolvedValueOnce([]);
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
-      const result = await repository.getWealthOverview(TEST_COMMUNITY_ID);
+      const result = await healthAnalyticsRepository.getWealthOverview(TEST_COMMUNITY_ID);
 
       expect(result).toBeDefined();
       expect(Array.isArray(result.timeSeriesData)).toBe(true);
@@ -229,9 +205,9 @@ describe('HealthAnalyticsRepository', () => {
       mockDb.where.mockResolvedValueOnce([{ count: 0 }]);
       mockDb.where.mockResolvedValueOnce([{ count: 0 }]);
       mockDb.where.mockResolvedValueOnce([]);
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
-      const result = await repository.getWealthOverview(TEST_COMMUNITY_ID);
+      const result = await healthAnalyticsRepository.getWealthOverview(TEST_COMMUNITY_ID);
 
       expect(result.openShares).toBe(0);
       expect(result.totalShares).toBe(0);
@@ -242,20 +218,20 @@ describe('HealthAnalyticsRepository', () => {
       mockDb.where.mockResolvedValueOnce([{ count: 1 }]);
       mockDb.where.mockResolvedValueOnce([{ count: 2 }]);
       mockDb.where.mockResolvedValueOnce([]);
-      (db as any).execute.mockResolvedValueOnce([
+      mockDb.execute.mockResolvedValueOnce([
         { date: '2024-01-01', shares: '1', requests: '0', fulfilled: '0' },
       ]);
 
       mockDb.where.mockResolvedValueOnce([{ count: 1 }]);
       mockDb.where.mockResolvedValueOnce([{ count: 5 }]);
       mockDb.where.mockResolvedValueOnce([]);
-      (db as any).execute.mockResolvedValueOnce([
+      mockDb.execute.mockResolvedValueOnce([
         { date: '2024-01-01', shares: '1', requests: '0', fulfilled: '0' },
         { date: '2024-01-02', shares: '1', requests: '0', fulfilled: '0' },
       ]);
 
-      const result7d = await repository.getWealthOverview(TEST_COMMUNITY_ID, '7d');
-      const result30d = await repository.getWealthOverview(TEST_COMMUNITY_ID, '30d');
+      const result7d = await healthAnalyticsRepository.getWealthOverview(TEST_COMMUNITY_ID, '7d');
+      const result30d = await healthAnalyticsRepository.getWealthOverview(TEST_COMMUNITY_ID, '30d');
 
       expect(result7d.timeSeriesData.length).toBeLessThanOrEqual(
         result30d.timeSeriesData.length + 1
@@ -266,11 +242,11 @@ describe('HealthAnalyticsRepository', () => {
       mockDb.where.mockResolvedValueOnce([{ count: 1 }]);
       mockDb.where.mockResolvedValueOnce([{ count: 1 }]);
       mockDb.where.mockResolvedValueOnce([]);
-      (db as any).execute.mockResolvedValueOnce([
+      mockDb.execute.mockResolvedValueOnce([
         { date: '2024-01-01', shares: '1', requests: '1', fulfilled: '0' },
       ]);
 
-      const result = await repository.getWealthOverview(TEST_COMMUNITY_ID);
+      const result = await healthAnalyticsRepository.getWealthOverview(TEST_COMMUNITY_ID);
 
       result.timeSeriesData.forEach((item) => {
         expect(item.date).not.toBeNull();
@@ -283,15 +259,15 @@ describe('HealthAnalyticsRepository', () => {
 
   describe('getWealthItems', () => {
     it('should return array of wealth items', async () => {
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
-      const result = await repository.getWealthItems(TEST_COMMUNITY_ID);
+      const result = await healthAnalyticsRepository.getWealthItems(TEST_COMMUNITY_ID);
 
       expect(Array.isArray(result)).toBe(true);
     });
 
     it('should have correct item structure', async () => {
-      (db as any).execute.mockResolvedValueOnce([
+      mockDb.execute.mockResolvedValueOnce([
         {
           item_id: 'item-1',
           item_name: 'Laptop',
@@ -300,9 +276,9 @@ describe('HealthAnalyticsRepository', () => {
           value_points: '150',
         },
       ]);
-      (db as any).execute.mockResolvedValueOnce([{ date: '2024-01-01', count: '1' }]);
+      mockDb.execute.mockResolvedValueOnce([{ date: '2024-01-01', count: '1' }]);
 
-      const result = await repository.getWealthItems(TEST_COMMUNITY_ID);
+      const result = await healthAnalyticsRepository.getWealthItems(TEST_COMMUNITY_ID);
 
       result.forEach((item) => {
         expect(item).toHaveProperty('categoryName');
@@ -315,7 +291,7 @@ describe('HealthAnalyticsRepository', () => {
     });
 
     it('should return numeric metrics for items', async () => {
-      (db as any).execute.mockResolvedValueOnce([
+      mockDb.execute.mockResolvedValueOnce([
         {
           item_id: 'item-1',
           item_name: 'Bike',
@@ -324,9 +300,9 @@ describe('HealthAnalyticsRepository', () => {
           value_points: '100',
         },
       ]);
-      (db as any).execute.mockResolvedValueOnce([{ date: '2024-01-01', count: '2' }]);
+      mockDb.execute.mockResolvedValueOnce([{ date: '2024-01-01', count: '2' }]);
 
-      const result = await repository.getWealthItems(TEST_COMMUNITY_ID);
+      const result = await healthAnalyticsRepository.getWealthItems(TEST_COMMUNITY_ID);
 
       result.forEach((item) => {
         expect(typeof item.categoryName).toBe('string');
@@ -339,7 +315,7 @@ describe('HealthAnalyticsRepository', () => {
     });
 
     it('should return non-negative counts', async () => {
-      (db as any).execute.mockResolvedValueOnce([
+      mockDb.execute.mockResolvedValueOnce([
         {
           item_id: 'item-1',
           item_name: 'Tool',
@@ -348,9 +324,9 @@ describe('HealthAnalyticsRepository', () => {
           value_points: '50',
         },
       ]);
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
-      const result = await repository.getWealthItems(TEST_COMMUNITY_ID);
+      const result = await healthAnalyticsRepository.getWealthItems(TEST_COMMUNITY_ID);
 
       result.forEach((item) => {
         expect(item.shareCount).toBeGreaterThanOrEqual(0);
@@ -359,7 +335,7 @@ describe('HealthAnalyticsRepository', () => {
     });
 
     it('should include trend data for each item', async () => {
-      (db as any).execute.mockResolvedValueOnce([
+      mockDb.execute.mockResolvedValueOnce([
         {
           item_id: 'item-1',
           item_name: 'Car',
@@ -368,12 +344,12 @@ describe('HealthAnalyticsRepository', () => {
           value_points: '250',
         },
       ]);
-      (db as any).execute.mockResolvedValueOnce([
+      mockDb.execute.mockResolvedValueOnce([
         { date: '2024-01-01', count: '2' },
         { date: '2024-01-02', count: '3' },
       ]);
 
-      const result = await repository.getWealthItems(TEST_COMMUNITY_ID);
+      const result = await healthAnalyticsRepository.getWealthItems(TEST_COMMUNITY_ID);
 
       result.forEach((item) => {
         expect(Array.isArray(item.trend)).toBe(true);
@@ -387,66 +363,66 @@ describe('HealthAnalyticsRepository', () => {
     });
 
     it('should accept 7d time range', async () => {
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
-      const result = await repository.getWealthItems(TEST_COMMUNITY_ID, '7d');
+      const result = await healthAnalyticsRepository.getWealthItems(TEST_COMMUNITY_ID, '7d');
 
       expect(Array.isArray(result)).toBe(true);
     });
 
     it('should accept 30d time range', async () => {
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
-      const result = await repository.getWealthItems(TEST_COMMUNITY_ID, '30d');
+      const result = await healthAnalyticsRepository.getWealthItems(TEST_COMMUNITY_ID, '30d');
 
       expect(Array.isArray(result)).toBe(true);
     });
 
     it('should accept 90d time range', async () => {
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
-      const result = await repository.getWealthItems(TEST_COMMUNITY_ID, '90d');
+      const result = await healthAnalyticsRepository.getWealthItems(TEST_COMMUNITY_ID, '90d');
 
       expect(Array.isArray(result)).toBe(true);
     });
 
     it('should accept 1y time range', async () => {
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
-      const result = await repository.getWealthItems(TEST_COMMUNITY_ID, '1y');
+      const result = await healthAnalyticsRepository.getWealthItems(TEST_COMMUNITY_ID, '1y');
 
       expect(Array.isArray(result)).toBe(true);
     });
 
     it('should use default time range when not specified', async () => {
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
-      const result = await repository.getWealthItems(TEST_COMMUNITY_ID);
+      const result = await healthAnalyticsRepository.getWealthItems(TEST_COMMUNITY_ID);
 
       expect(Array.isArray(result)).toBe(true);
     });
 
     it('should handle community with no items', async () => {
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
-      const result = await repository.getWealthItems(TEST_COMMUNITY_ID);
+      const result = await healthAnalyticsRepository.getWealthItems(TEST_COMMUNITY_ID);
 
       expect(Array.isArray(result)).toBe(true);
       expect(result.length).toBe(0);
     });
 
     it('should return empty array for nonexistent community', async () => {
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
-      const result = await repository.getWealthItems(TEST_COMMUNITY_ID);
+      const result = await healthAnalyticsRepository.getWealthItems(TEST_COMMUNITY_ID);
 
       expect(Array.isArray(result)).toBe(true);
     });
 
     it('should handle items with zero shares in time range', async () => {
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
-      const result = await repository.getWealthItems(TEST_COMMUNITY_ID);
+      const result = await healthAnalyticsRepository.getWealthItems(TEST_COMMUNITY_ID);
 
       expect(Array.isArray(result)).toBe(true);
     });
@@ -454,13 +430,13 @@ describe('HealthAnalyticsRepository', () => {
 
   describe('getTrustOverview', () => {
     it('should return structured trust overview', async () => {
-      (db as any).execute.mockResolvedValueOnce([{ total: '100' }]);
-      (db as any).execute.mockResolvedValueOnce([{ average: '25', count: '4' }]);
-      (db as any).execute.mockResolvedValueOnce([
+      mockDb.execute.mockResolvedValueOnce([{ total: '100' }]);
+      mockDb.execute.mockResolvedValueOnce([{ average: '25', count: '4' }]);
+      mockDb.execute.mockResolvedValueOnce([
         { date: '2024-01-01', trust_awarded: '10', trust_removed: '2', net_trust: '8' },
       ]);
 
-      const result = await repository.getTrustOverview(TEST_COMMUNITY_ID);
+      const result = await healthAnalyticsRepository.getTrustOverview(TEST_COMMUNITY_ID);
 
       expect(result).toBeDefined();
       expect(result).toHaveProperty('totalTrust');
@@ -470,11 +446,11 @@ describe('HealthAnalyticsRepository', () => {
     });
 
     it('should return numeric trust metrics', async () => {
-      (db as any).execute.mockResolvedValueOnce([{ total: '50' }]);
-      (db as any).execute.mockResolvedValueOnce([{ average: '12.5', count: '4' }]);
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([{ total: '50' }]);
+      mockDb.execute.mockResolvedValueOnce([{ average: '12.5', count: '4' }]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
-      const result = await repository.getTrustOverview(TEST_COMMUNITY_ID);
+      const result = await healthAnalyticsRepository.getTrustOverview(TEST_COMMUNITY_ID);
 
       expect(typeof result.totalTrust).toBe('number');
       expect(typeof result.averageTrust).toBe('number');
@@ -482,11 +458,11 @@ describe('HealthAnalyticsRepository', () => {
     });
 
     it('should return non-negative metrics', async () => {
-      (db as any).execute.mockResolvedValueOnce([{ total: '0' }]);
-      (db as any).execute.mockResolvedValueOnce([{ average: '0', count: '0' }]);
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([{ total: '0' }]);
+      mockDb.execute.mockResolvedValueOnce([{ average: '0', count: '0' }]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
-      const result = await repository.getTrustOverview(TEST_COMMUNITY_ID);
+      const result = await healthAnalyticsRepository.getTrustOverview(TEST_COMMUNITY_ID);
 
       expect(result.totalTrust).toBeGreaterThanOrEqual(0);
       expect(result.averageTrust).toBeGreaterThanOrEqual(0);
@@ -494,26 +470,26 @@ describe('HealthAnalyticsRepository', () => {
     });
 
     it('should return time series data as array', async () => {
-      (db as any).execute.mockResolvedValueOnce([{ total: '10' }]);
-      (db as any).execute.mockResolvedValueOnce([{ average: '5', count: '2' }]);
-      (db as any).execute.mockResolvedValueOnce([
+      mockDb.execute.mockResolvedValueOnce([{ total: '10' }]);
+      mockDb.execute.mockResolvedValueOnce([{ average: '5', count: '2' }]);
+      mockDb.execute.mockResolvedValueOnce([
         { date: '2024-01-01', trust_awarded: '5', trust_removed: '1', net_trust: '4' },
       ]);
 
-      const result = await repository.getTrustOverview(TEST_COMMUNITY_ID);
+      const result = await healthAnalyticsRepository.getTrustOverview(TEST_COMMUNITY_ID);
 
       expect(Array.isArray(result.timeSeriesData)).toBe(true);
     });
 
     it('should have correct time series structure', async () => {
-      (db as any).execute.mockResolvedValueOnce([{ total: '20' }]);
-      (db as any).execute.mockResolvedValueOnce([{ average: '10', count: '2' }]);
-      (db as any).execute.mockResolvedValueOnce([
+      mockDb.execute.mockResolvedValueOnce([{ total: '20' }]);
+      mockDb.execute.mockResolvedValueOnce([{ average: '10', count: '2' }]);
+      mockDb.execute.mockResolvedValueOnce([
         { date: '2024-01-01', trust_awarded: '10', trust_removed: '2', net_trust: '8' },
         { date: '2024-01-02', trust_awarded: '5', trust_removed: '1', net_trust: '4' },
       ]);
 
-      const result = await repository.getTrustOverview(TEST_COMMUNITY_ID);
+      const result = await healthAnalyticsRepository.getTrustOverview(TEST_COMMUNITY_ID);
 
       result.timeSeriesData.forEach((item) => {
         expect(item).toHaveProperty('date');
@@ -528,66 +504,66 @@ describe('HealthAnalyticsRepository', () => {
     });
 
     it('should accept 7d time range', async () => {
-      (db as any).execute.mockResolvedValueOnce([{ total: '5' }]);
-      (db as any).execute.mockResolvedValueOnce([{ average: '5', count: '1' }]);
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([{ total: '5' }]);
+      mockDb.execute.mockResolvedValueOnce([{ average: '5', count: '1' }]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
-      const result = await repository.getTrustOverview(TEST_COMMUNITY_ID, '7d');
+      const result = await healthAnalyticsRepository.getTrustOverview(TEST_COMMUNITY_ID, '7d');
 
       expect(result).toBeDefined();
       expect(Array.isArray(result.timeSeriesData)).toBe(true);
     });
 
     it('should accept 30d time range', async () => {
-      (db as any).execute.mockResolvedValueOnce([{ total: '10' }]);
-      (db as any).execute.mockResolvedValueOnce([{ average: '5', count: '2' }]);
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([{ total: '10' }]);
+      mockDb.execute.mockResolvedValueOnce([{ average: '5', count: '2' }]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
-      const result = await repository.getTrustOverview(TEST_COMMUNITY_ID, '30d');
+      const result = await healthAnalyticsRepository.getTrustOverview(TEST_COMMUNITY_ID, '30d');
 
       expect(result).toBeDefined();
       expect(Array.isArray(result.timeSeriesData)).toBe(true);
     });
 
     it('should accept 90d time range', async () => {
-      (db as any).execute.mockResolvedValueOnce([{ total: '15' }]);
-      (db as any).execute.mockResolvedValueOnce([{ average: '5', count: '3' }]);
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([{ total: '15' }]);
+      mockDb.execute.mockResolvedValueOnce([{ average: '5', count: '3' }]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
-      const result = await repository.getTrustOverview(TEST_COMMUNITY_ID, '90d');
+      const result = await healthAnalyticsRepository.getTrustOverview(TEST_COMMUNITY_ID, '90d');
 
       expect(result).toBeDefined();
       expect(Array.isArray(result.timeSeriesData)).toBe(true);
     });
 
     it('should accept 1y time range', async () => {
-      (db as any).execute.mockResolvedValueOnce([{ total: '20' }]);
-      (db as any).execute.mockResolvedValueOnce([{ average: '5', count: '4' }]);
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([{ total: '20' }]);
+      mockDb.execute.mockResolvedValueOnce([{ average: '5', count: '4' }]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
-      const result = await repository.getTrustOverview(TEST_COMMUNITY_ID, '1y');
+      const result = await healthAnalyticsRepository.getTrustOverview(TEST_COMMUNITY_ID, '1y');
 
       expect(result).toBeDefined();
       expect(Array.isArray(result.timeSeriesData)).toBe(true);
     });
 
     it('should use default time range when not specified', async () => {
-      (db as any).execute.mockResolvedValueOnce([{ total: '10' }]);
-      (db as any).execute.mockResolvedValueOnce([{ average: '5', count: '2' }]);
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([{ total: '10' }]);
+      mockDb.execute.mockResolvedValueOnce([{ average: '5', count: '2' }]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
-      const result = await repository.getTrustOverview(TEST_COMMUNITY_ID);
+      const result = await healthAnalyticsRepository.getTrustOverview(TEST_COMMUNITY_ID);
 
       expect(result).toBeDefined();
       expect(Array.isArray(result.timeSeriesData)).toBe(true);
     });
 
     it('should handle community with no trust data', async () => {
-      (db as any).execute.mockResolvedValueOnce([{ total: '0' }]);
-      (db as any).execute.mockResolvedValueOnce([{ average: '0', count: '0' }]);
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([{ total: '0' }]);
+      mockDb.execute.mockResolvedValueOnce([{ average: '0', count: '0' }]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
-      const result = await repository.getTrustOverview(TEST_COMMUNITY_ID);
+      const result = await healthAnalyticsRepository.getTrustOverview(TEST_COMMUNITY_ID);
 
       expect(result.totalTrust).toBe(0);
       expect(result.averageTrust).toBe(0);
@@ -595,35 +571,35 @@ describe('HealthAnalyticsRepository', () => {
     });
 
     it('should round average trust to 2 decimal places', async () => {
-      (db as any).execute.mockResolvedValueOnce([{ total: '100' }]);
-      (db as any).execute.mockResolvedValueOnce([{ average: '33.333333', count: '3' }]);
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([{ total: '100' }]);
+      mockDb.execute.mockResolvedValueOnce([{ average: '33.333333', count: '3' }]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
-      const result = await repository.getTrustOverview(TEST_COMMUNITY_ID);
+      const result = await healthAnalyticsRepository.getTrustOverview(TEST_COMMUNITY_ID);
 
       const decimalPlaces = result.averageTrust.toString().split('.')[1]?.length || 0;
       expect(decimalPlaces).toBeLessThanOrEqual(2);
     });
 
     it('should round trustPerDay to 2 decimal places', async () => {
-      (db as any).execute.mockResolvedValueOnce([{ total: '100' }]);
-      (db as any).execute.mockResolvedValueOnce([{ average: '10', count: '10' }]);
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([{ total: '100' }]);
+      mockDb.execute.mockResolvedValueOnce([{ average: '10', count: '10' }]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
-      const result = await repository.getTrustOverview(TEST_COMMUNITY_ID);
+      const result = await healthAnalyticsRepository.getTrustOverview(TEST_COMMUNITY_ID);
 
       const decimalPlaces = result.trustPerDay.toString().split('.')[1]?.length || 0;
       expect(decimalPlaces).toBeLessThanOrEqual(2);
     });
 
     it('should calculate netTrust correctly', async () => {
-      (db as any).execute.mockResolvedValueOnce([{ total: '50' }]);
-      (db as any).execute.mockResolvedValueOnce([{ average: '10', count: '5' }]);
-      (db as any).execute.mockResolvedValueOnce([
+      mockDb.execute.mockResolvedValueOnce([{ total: '50' }]);
+      mockDb.execute.mockResolvedValueOnce([{ average: '10', count: '5' }]);
+      mockDb.execute.mockResolvedValueOnce([
         { date: '2024-01-01', trust_awarded: '10', trust_removed: '2', net_trust: '8' },
       ]);
 
-      const result = await repository.getTrustOverview(TEST_COMMUNITY_ID);
+      const result = await healthAnalyticsRepository.getTrustOverview(TEST_COMMUNITY_ID);
 
       result.timeSeriesData.forEach((item) => {
         expect(typeof item.netTrust).toBe('number');
@@ -631,13 +607,13 @@ describe('HealthAnalyticsRepository', () => {
     });
 
     it('should handle negative net trust', async () => {
-      (db as any).execute.mockResolvedValueOnce([{ total: '20' }]);
-      (db as any).execute.mockResolvedValueOnce([{ average: '5', count: '4' }]);
-      (db as any).execute.mockResolvedValueOnce([
+      mockDb.execute.mockResolvedValueOnce([{ total: '20' }]);
+      mockDb.execute.mockResolvedValueOnce([{ average: '5', count: '4' }]);
+      mockDb.execute.mockResolvedValueOnce([
         { date: '2024-01-01', trust_awarded: '5', trust_removed: '10', net_trust: '-5' },
       ]);
 
-      const result = await repository.getTrustOverview(TEST_COMMUNITY_ID);
+      const result = await healthAnalyticsRepository.getTrustOverview(TEST_COMMUNITY_ID);
 
       result.timeSeriesData.forEach((item) => {
         expect(typeof item.netTrust).toBe('number');
@@ -647,20 +623,23 @@ describe('HealthAnalyticsRepository', () => {
 
   describe('getTrustDistribution', () => {
     it('should return array of distribution data', async () => {
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
       const trustLevels = [
         { name: 'New', minScore: 0 },
         { name: 'Stable', minScore: 10 },
         { name: 'Trusted', minScore: 50 },
       ];
-      const result = await repository.getTrustDistribution(TEST_COMMUNITY_ID, trustLevels);
+      const result = await healthAnalyticsRepository.getTrustDistribution(
+        TEST_COMMUNITY_ID,
+        trustLevels
+      );
 
       expect(Array.isArray(result)).toBe(true);
     });
 
     it('should have correct distribution structure', async () => {
-      (db as any).execute.mockResolvedValueOnce([
+      mockDb.execute.mockResolvedValueOnce([
         { user_id: 'user-1', trust_score: '15' },
         { user_id: 'user-2', trust_score: '5' },
       ]);
@@ -669,7 +648,10 @@ describe('HealthAnalyticsRepository', () => {
         { name: 'New', minScore: 0 },
         { name: 'Stable', minScore: 10 },
       ];
-      const result = await repository.getTrustDistribution(TEST_COMMUNITY_ID, trustLevels);
+      const result = await healthAnalyticsRepository.getTrustDistribution(
+        TEST_COMMUNITY_ID,
+        trustLevels
+      );
 
       result.forEach((item) => {
         expect(item).toHaveProperty('trustLevel');
@@ -684,26 +666,32 @@ describe('HealthAnalyticsRepository', () => {
     });
 
     it('should return correct number of levels', async () => {
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
       const trustLevels = [
         { name: 'New', minScore: 0 },
         { name: 'Stable', minScore: 10 },
         { name: 'Trusted', minScore: 50 },
       ];
-      const result = await repository.getTrustDistribution(TEST_COMMUNITY_ID, trustLevels);
+      const result = await healthAnalyticsRepository.getTrustDistribution(
+        TEST_COMMUNITY_ID,
+        trustLevels
+      );
 
       expect(result.length).toBe(trustLevels.length);
     });
 
     it('should return non-negative user counts', async () => {
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
       const trustLevels = [
         { name: 'New', minScore: 0 },
         { name: 'Stable', minScore: 10 },
       ];
-      const result = await repository.getTrustDistribution(TEST_COMMUNITY_ID, trustLevels);
+      const result = await healthAnalyticsRepository.getTrustDistribution(
+        TEST_COMMUNITY_ID,
+        trustLevels
+      );
 
       result.forEach((item) => {
         expect(item.userCount).toBeGreaterThanOrEqual(0);
@@ -711,14 +699,17 @@ describe('HealthAnalyticsRepository', () => {
     });
 
     it('should sort levels by minScore', async () => {
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
       const trustLevels = [
         { name: 'Trusted', minScore: 50 },
         { name: 'New', minScore: 0 },
         { name: 'Stable', minScore: 10 },
       ];
-      const result = await repository.getTrustDistribution(TEST_COMMUNITY_ID, trustLevels);
+      const result = await healthAnalyticsRepository.getTrustDistribution(
+        TEST_COMMUNITY_ID,
+        trustLevels
+      );
 
       for (let i = 1; i < result.length; i++) {
         expect(result[i].minScore).toBeGreaterThan(result[i - 1].minScore);
@@ -726,14 +717,17 @@ describe('HealthAnalyticsRepository', () => {
     });
 
     it('should calculate maxScore correctly', async () => {
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
       const trustLevels = [
         { name: 'New', minScore: 0 },
         { name: 'Stable', minScore: 10 },
         { name: 'Trusted', minScore: 50 },
       ];
-      const result = await repository.getTrustDistribution(TEST_COMMUNITY_ID, trustLevels);
+      const result = await healthAnalyticsRepository.getTrustDistribution(
+        TEST_COMMUNITY_ID,
+        trustLevels
+      );
 
       expect(result[0].maxScore).toBe(9);
       expect(result[1].maxScore).toBe(49);
@@ -741,33 +735,42 @@ describe('HealthAnalyticsRepository', () => {
     });
 
     it('should handle single trust level', async () => {
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
       const trustLevels = [{ name: 'All', minScore: 0 }];
-      const result = await repository.getTrustDistribution(TEST_COMMUNITY_ID, trustLevels);
+      const result = await healthAnalyticsRepository.getTrustDistribution(
+        TEST_COMMUNITY_ID,
+        trustLevels
+      );
 
       expect(result.length).toBe(1);
       expect(result[0].maxScore).toBe(999999);
     });
 
     it('should handle empty trust levels array', async () => {
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
       const trustLevels: Array<{ name: string; minScore: number }> = [];
-      const result = await repository.getTrustDistribution(TEST_COMMUNITY_ID, trustLevels);
+      const result = await healthAnalyticsRepository.getTrustDistribution(
+        TEST_COMMUNITY_ID,
+        trustLevels
+      );
 
       expect(Array.isArray(result)).toBe(true);
       expect(result.length).toBe(0);
     });
 
     it('should handle community with no users', async () => {
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
       const trustLevels = [
         { name: 'New', minScore: 0 },
         { name: 'Stable', minScore: 10 },
       ];
-      const result = await repository.getTrustDistribution(TEST_COMMUNITY_ID, trustLevels);
+      const result = await healthAnalyticsRepository.getTrustDistribution(
+        TEST_COMMUNITY_ID,
+        trustLevels
+      );
 
       result.forEach((item) => {
         expect(item.userCount).toBe(0);
@@ -775,26 +778,32 @@ describe('HealthAnalyticsRepository', () => {
     });
 
     it('should use Infinity for highest level internally', async () => {
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
       const trustLevels = [
         { name: 'Low', minScore: 0 },
         { name: 'High', minScore: 100 },
       ];
-      const result = await repository.getTrustDistribution(TEST_COMMUNITY_ID, trustLevels);
+      const result = await healthAnalyticsRepository.getTrustDistribution(
+        TEST_COMMUNITY_ID,
+        trustLevels
+      );
 
       expect(result[result.length - 1].maxScore).toBe(999999);
     });
 
     it('should preserve trust level names', async () => {
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
       const trustLevels = [
         { name: 'Beginner', minScore: 0 },
         { name: 'Intermediate', minScore: 20 },
         { name: 'Expert', minScore: 80 },
       ];
-      const result = await repository.getTrustDistribution(TEST_COMMUNITY_ID, trustLevels);
+      const result = await healthAnalyticsRepository.getTrustDistribution(
+        TEST_COMMUNITY_ID,
+        trustLevels
+      );
 
       expect(result[0].trustLevel).toBe('Beginner');
       expect(result[1].trustLevel).toBe('Intermediate');
@@ -802,13 +811,16 @@ describe('HealthAnalyticsRepository', () => {
     });
 
     it('should handle non-zero starting minScore', async () => {
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
       const trustLevels = [
         { name: 'Active', minScore: 5 },
         { name: 'Very Active', minScore: 25 },
       ];
-      const result = await repository.getTrustDistribution(TEST_COMMUNITY_ID, trustLevels);
+      const result = await healthAnalyticsRepository.getTrustDistribution(
+        TEST_COMMUNITY_ID,
+        trustLevels
+      );
 
       expect(result[0].minScore).toBe(5);
       expect(result[0].maxScore).toBe(24);
@@ -816,26 +828,32 @@ describe('HealthAnalyticsRepository', () => {
     });
 
     it('should handle large minScore values', async () => {
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
       const trustLevels = [
         { name: 'Normal', minScore: 0 },
         { name: 'Super', minScore: 1000 },
       ];
-      const result = await repository.getTrustDistribution(TEST_COMMUNITY_ID, trustLevels);
+      const result = await healthAnalyticsRepository.getTrustDistribution(
+        TEST_COMMUNITY_ID,
+        trustLevels
+      );
 
       expect(result[1].minScore).toBe(1000);
       expect(result[1].maxScore).toBe(999999);
     });
 
     it('should handle trust levels with same minScore (edge case)', async () => {
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
       const trustLevels = [
         { name: 'Level1', minScore: 10 },
         { name: 'Level2', minScore: 10 },
       ];
-      const result = await repository.getTrustDistribution(TEST_COMMUNITY_ID, trustLevels);
+      const result = await healthAnalyticsRepository.getTrustDistribution(
+        TEST_COMMUNITY_ID,
+        trustLevels
+      );
 
       expect(Array.isArray(result)).toBe(true);
     });
@@ -914,9 +932,9 @@ describe('HealthAnalyticsRepository', () => {
       mockDb.where.mockResolvedValueOnce([{ count: 1 }]);
       mockDb.where.mockResolvedValueOnce([{ count: 1 }]);
       mockDb.where.mockResolvedValueOnce([]);
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
-      const result = await repository.getWealthOverview(TEST_COMMUNITY_ID);
+      const result = await healthAnalyticsRepository.getWealthOverview(TEST_COMMUNITY_ID);
 
       expect(result).toBeDefined();
       expect(typeof result.openShares).toBe('number');
@@ -926,7 +944,7 @@ describe('HealthAnalyticsRepository', () => {
     });
 
     it('getWealthItems should return array of WealthItemData', async () => {
-      (db as any).execute.mockResolvedValueOnce([
+      mockDb.execute.mockResolvedValueOnce([
         {
           item_id: 'item-1',
           item_name: 'Test',
@@ -935,9 +953,9 @@ describe('HealthAnalyticsRepository', () => {
           value_points: '10',
         },
       ]);
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
-      const result = await repository.getWealthItems(TEST_COMMUNITY_ID);
+      const result = await healthAnalyticsRepository.getWealthItems(TEST_COMMUNITY_ID);
 
       expect(Array.isArray(result)).toBe(true);
       result.forEach((item) => {
@@ -951,11 +969,11 @@ describe('HealthAnalyticsRepository', () => {
     });
 
     it('getTrustOverview should return TrustOverviewData', async () => {
-      (db as any).execute.mockResolvedValueOnce([{ total: '10' }]);
-      (db as any).execute.mockResolvedValueOnce([{ average: '5', count: '2' }]);
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([{ total: '10' }]);
+      mockDb.execute.mockResolvedValueOnce([{ average: '5', count: '2' }]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
-      const result = await repository.getTrustOverview(TEST_COMMUNITY_ID);
+      const result = await healthAnalyticsRepository.getTrustOverview(TEST_COMMUNITY_ID);
 
       expect(result).toBeDefined();
       expect(typeof result.totalTrust).toBe('number');
@@ -965,13 +983,16 @@ describe('HealthAnalyticsRepository', () => {
     });
 
     it('getTrustDistribution should return array of TrustDistributionData', async () => {
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
       const trustLevels = [
         { name: 'New', minScore: 0 },
         { name: 'Stable', minScore: 10 },
       ];
-      const result = await repository.getTrustDistribution(TEST_COMMUNITY_ID, trustLevels);
+      const result = await healthAnalyticsRepository.getTrustDistribution(
+        TEST_COMMUNITY_ID,
+        trustLevels
+      );
 
       expect(Array.isArray(result)).toBe(true);
       result.forEach((item) => {
@@ -988,9 +1009,11 @@ describe('HealthAnalyticsRepository', () => {
       mockDb.where.mockResolvedValueOnce([{ count: 1 }]);
       mockDb.where.mockResolvedValueOnce([{ count: 1 }]);
       mockDb.where.mockResolvedValueOnce([]);
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
-      const result = await repository.getWealthOverview('550e8400-e29b-41d4-a716-446655440000');
+      const result = await healthAnalyticsRepository.getWealthOverview(
+        '550e8400-e29b-41d4-a716-446655440000'
+      );
 
       expect(result).toBeDefined();
     });
@@ -999,9 +1022,9 @@ describe('HealthAnalyticsRepository', () => {
       mockDb.where.mockResolvedValueOnce([{ count: 0 }]);
       mockDb.where.mockResolvedValueOnce([{ count: 0 }]);
       mockDb.where.mockResolvedValueOnce([]);
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
-      const result = await repository.getWealthOverview(TEST_COMMUNITY_ID);
+      const result = await healthAnalyticsRepository.getWealthOverview(TEST_COMMUNITY_ID);
 
       expect(result).toBeDefined();
       expect(result.openShares).toBeGreaterThanOrEqual(0);
@@ -1011,9 +1034,9 @@ describe('HealthAnalyticsRepository', () => {
       mockDb.where.mockResolvedValueOnce([{ count: 1 }]);
       mockDb.where.mockResolvedValueOnce([{ count: 1 }]);
       mockDb.where.mockResolvedValueOnce([]);
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
-      const result = await repository.getWealthOverview(TEST_COMMUNITY_ID, '7d');
+      const result = await healthAnalyticsRepository.getWealthOverview(TEST_COMMUNITY_ID, '7d');
 
       expect(result).toBeDefined();
       expect(Array.isArray(result.timeSeriesData)).toBe(true);
@@ -1023,9 +1046,9 @@ describe('HealthAnalyticsRepository', () => {
       mockDb.where.mockResolvedValueOnce([{ count: 1 }]);
       mockDb.where.mockResolvedValueOnce([{ count: 1 }]);
       mockDb.where.mockResolvedValueOnce([]);
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
-      const result = await repository.getWealthOverview(TEST_COMMUNITY_ID, '1y');
+      const result = await healthAnalyticsRepository.getWealthOverview(TEST_COMMUNITY_ID, '1y');
 
       expect(result).toBeDefined();
       expect(Array.isArray(result.timeSeriesData)).toBe(true);
@@ -1035,9 +1058,9 @@ describe('HealthAnalyticsRepository', () => {
       mockDb.where.mockResolvedValueOnce([{ count: 1 }]);
       mockDb.where.mockResolvedValueOnce([{ count: 1 }]);
       mockDb.where.mockResolvedValueOnce([]);
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
-      const result = await repository.getWealthOverview(TEST_COMMUNITY_ID);
+      const result = await healthAnalyticsRepository.getWealthOverview(TEST_COMMUNITY_ID);
 
       expect(Array.isArray(result.timeSeriesData)).toBe(true);
     });
@@ -1046,20 +1069,20 @@ describe('HealthAnalyticsRepository', () => {
       mockDb.where.mockResolvedValueOnce([{ count: 0 }]);
       mockDb.where.mockResolvedValueOnce([{ count: 0 }]);
       mockDb.where.mockResolvedValueOnce([]);
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
-      const result = await repository.getWealthOverview(TEST_COMMUNITY_ID);
+      const result = await healthAnalyticsRepository.getWealthOverview(TEST_COMMUNITY_ID);
 
       expect(typeof result.openShares).toBe('number');
       expect(typeof result.totalShares).toBe('number');
     });
 
     it('should handle division by zero in averages', async () => {
-      (db as any).execute.mockResolvedValueOnce([{ total: '0' }]);
-      (db as any).execute.mockResolvedValueOnce([{ average: '0', count: '0' }]);
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([{ total: '0' }]);
+      mockDb.execute.mockResolvedValueOnce([{ average: '0', count: '0' }]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
-      const result = await repository.getTrustOverview(TEST_COMMUNITY_ID);
+      const result = await healthAnalyticsRepository.getTrustOverview(TEST_COMMUNITY_ID);
 
       expect(typeof result.averageTrust).toBe('number');
       expect(typeof result.trustPerDay).toBe('number');
@@ -1071,22 +1094,22 @@ describe('HealthAnalyticsRepository', () => {
       mockDb.where.mockResolvedValueOnce([{ count: 999999 }]);
       mockDb.where.mockResolvedValueOnce([{ count: 1000000 }]);
       mockDb.where.mockResolvedValueOnce([]);
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
-      const result = await repository.getWealthOverview(TEST_COMMUNITY_ID);
+      const result = await healthAnalyticsRepository.getWealthOverview(TEST_COMMUNITY_ID);
 
       expect(typeof result.totalShares).toBe('number');
       expect(result.totalShares).toBeGreaterThanOrEqual(0);
     });
 
     it('should handle negative netTrust values', async () => {
-      (db as any).execute.mockResolvedValueOnce([{ total: '10' }]);
-      (db as any).execute.mockResolvedValueOnce([{ average: '5', count: '2' }]);
-      (db as any).execute.mockResolvedValueOnce([
+      mockDb.execute.mockResolvedValueOnce([{ total: '10' }]);
+      mockDb.execute.mockResolvedValueOnce([{ average: '5', count: '2' }]);
+      mockDb.execute.mockResolvedValueOnce([
         { date: '2024-01-01', trust_awarded: '5', trust_removed: '10', net_trust: '-5' },
       ]);
 
-      const result = await repository.getTrustOverview(TEST_COMMUNITY_ID);
+      const result = await healthAnalyticsRepository.getTrustOverview(TEST_COMMUNITY_ID);
 
       result.timeSeriesData.forEach((item) => {
         expect(typeof item.netTrust).toBe('number');
@@ -1094,14 +1117,17 @@ describe('HealthAnalyticsRepository', () => {
     });
 
     it('should handle unsorted trust levels input', async () => {
-      (db as any).execute.mockResolvedValueOnce([]);
+      mockDb.execute.mockResolvedValueOnce([]);
 
       const trustLevels = [
         { name: 'High', minScore: 100 },
         { name: 'Low', minScore: 0 },
         { name: 'Medium', minScore: 50 },
       ];
-      const result = await repository.getTrustDistribution(TEST_COMMUNITY_ID, trustLevels);
+      const result = await healthAnalyticsRepository.getTrustDistribution(
+        TEST_COMMUNITY_ID,
+        trustLevels
+      );
 
       for (let i = 1; i < result.length; i++) {
         expect(result[i].minScore).toBeGreaterThan(result[i - 1].minScore);

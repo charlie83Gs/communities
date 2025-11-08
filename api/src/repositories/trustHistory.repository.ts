@@ -1,4 +1,4 @@
-import { db } from '../db/index';
+import { db as realDb } from '../db/index';
 import { and, eq, desc } from 'drizzle-orm';
 import { trustHistory } from '../db/schema/trustHistory.schema';
 
@@ -13,11 +13,17 @@ export interface LogActionParams {
 }
 
 export class TrustHistoryRepository {
+  private db: any;
+
+  constructor(db: any) {
+    this.db = db;
+  }
+
   /**
    * Log a trust action to history
    */
   async logAction(params: LogActionParams) {
-    const [record] = await db
+    const [record] = await this.db
       .insert(trustHistory)
       .values({
         communityId: params.communityId,
@@ -34,7 +40,7 @@ export class TrustHistoryRepository {
    * Get history for a specific user in a community
    */
   async getHistoryForUser(communityId: string, toUserId: string, limit = 50, offset = 0) {
-    return db
+    return this.db
       .select()
       .from(trustHistory)
       .where(and(eq(trustHistory.communityId, communityId), eq(trustHistory.toUserId, toUserId)))
@@ -47,7 +53,7 @@ export class TrustHistoryRepository {
    * Get history for a community
    */
   async getHistoryForCommunity(communityId: string, limit = 50, offset = 0) {
-    return db
+    return this.db
       .select()
       .from(trustHistory)
       .where(eq(trustHistory.communityId, communityId))
@@ -60,7 +66,7 @@ export class TrustHistoryRepository {
    * Get all history for a user across all communities
    */
   async getHistoryForUserAllCommunities(toUserId: string, limit = 50, offset = 0) {
-    return db
+    return this.db
       .select()
       .from(trustHistory)
       .where(eq(trustHistory.toUserId, toUserId))
@@ -70,4 +76,4 @@ export class TrustHistoryRepository {
   }
 }
 
-export const trustHistoryRepository = new TrustHistoryRepository();
+export const trustHistoryRepository = new TrustHistoryRepository(realDb);

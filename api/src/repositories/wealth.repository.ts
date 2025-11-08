@@ -1,4 +1,4 @@
-import { db } from '@db/index';
+import { db as realDb } from '@db/index';
 import {
   wealth,
   wealthRequests,
@@ -41,14 +41,20 @@ export type WealthSearchResult = {
 };
 
 export class WealthRepository {
+  private db: any;
+
+  constructor(db: any) {
+    this.db = db;
+  }
+
   // Wealth
   async createWealth(input: CreateWealthInput): Promise<WealthRecord> {
-    const [row] = await db.insert(wealth).values(input).returning();
+    const [row] = await this.db.insert(wealth).values(input).returning();
     return row;
   }
 
   async findById(id: string): Promise<WealthRecord | undefined> {
-    const [row] = await db.select().from(wealth).where(eq(wealth.id, id));
+    const [row] = await this.db.select().from(wealth).where(eq(wealth.id, id));
     return row;
   }
 
@@ -60,7 +66,7 @@ export class WealthRepository {
     const where = status
       ? and(inArray(wealth.communityId, communityIds), eq(wealth.status, status))
       : inArray(wealth.communityId, communityIds);
-    return await db.select().from(wealth).where(where).orderBy(desc(wealth.createdAt));
+    return await this.db.select().from(wealth).where(where).orderBy(desc(wealth.createdAt));
   }
 
   async listByCommunity(
@@ -70,11 +76,11 @@ export class WealthRepository {
     const where = status
       ? and(eq(wealth.communityId, communityId), eq(wealth.status, status))
       : eq(wealth.communityId, communityId);
-    return await db.select().from(wealth).where(where).orderBy(desc(wealth.createdAt));
+    return await this.db.select().from(wealth).where(where).orderBy(desc(wealth.createdAt));
   }
 
   async updateWealth(id: string, patch: UpdateWealthInput): Promise<WealthRecord | undefined> {
-    const [row] = await db
+    const [row] = await this.db
       .update(wealth)
       .set({ ...patch, updatedAt: new Date() })
       .where(eq(wealth.id, id))
@@ -83,7 +89,7 @@ export class WealthRepository {
   }
 
   async cancelWealth(id: string): Promise<WealthRecord | undefined> {
-    const [row] = await db
+    const [row] = await this.db
       .update(wealth)
       .set({ status: 'cancelled', updatedAt: new Date() })
       .where(eq(wealth.id, id))
@@ -92,7 +98,7 @@ export class WealthRepository {
   }
 
   async markFulfilled(id: string): Promise<WealthRecord | undefined> {
-    const [row] = await db
+    const [row] = await this.db
       .update(wealth)
       .set({ status: 'fulfilled', updatedAt: new Date() })
       .where(eq(wealth.id, id))
@@ -110,7 +116,7 @@ export class WealthRepository {
       wealthItem.distributionType === 'unit_based' && remaining <= 0
         ? 'fulfilled'
         : wealthItem.status;
-    const [row] = await db
+    const [row] = await this.db
       .update(wealth)
       .set({
         unitsAvailable: remaining,
@@ -154,7 +160,7 @@ export class WealthRepository {
     const where = and(...whereParts);
 
     // total count
-    const [{ count }] = await db
+    const [{ count }] = await this.db
       .select({ count: sql<number>`cast(count(*) as int)` })
       .from(wealth)
       .where(where);
@@ -163,7 +169,7 @@ export class WealthRepository {
     const limit = Math.max(1, Math.min(filters.limit ?? 20, 100));
     const offset = Math.max(0, filters.offset ?? 0);
 
-    const rows = await db
+    const rows = await this.db
       .select()
       .from(wealth)
       .where(where)
@@ -176,7 +182,7 @@ export class WealthRepository {
 
   // Wealth Requests
   async createWealthRequest(input: CreateWealthRequestInput): Promise<WealthRequestRecord> {
-    const [row] = await db
+    const [row] = await this.db
       .insert(wealthRequests)
       .values({
         wealthId: input.wealthId,
@@ -189,7 +195,7 @@ export class WealthRepository {
   }
 
   async listRequestsForWealth(wealthId: string): Promise<WealthRequestRecord[]> {
-    return await db
+    return await this.db
       .select()
       .from(wealthRequests)
       .where(eq(wealthRequests.wealthId, wealthId))
@@ -200,7 +206,7 @@ export class WealthRepository {
     wealthId: string,
     requesterId: string
   ): Promise<WealthRequestRecord[]> {
-    return await db
+    return await this.db
       .select()
       .from(wealthRequests)
       .where(
@@ -221,7 +227,7 @@ export class WealthRepository {
           )
         : eq(wealthRequests.requesterId, requesterId);
 
-    return await db
+    return await this.db
       .select()
       .from(wealthRequests)
       .where(where)
@@ -233,7 +239,7 @@ export class WealthRepository {
     statuses?: (typeof wealthRequestStatusEnum.enumValues)[number][]
   ): Promise<WealthRequestRecord[]> {
     // Join wealthRequests with wealth to filter by owner
-    const query = db
+    const query = this.db
       .select({
         id: wealthRequests.id,
         wealthId: wealthRequests.wealthId,
@@ -257,12 +263,12 @@ export class WealthRepository {
   }
 
   async findRequestById(id: string): Promise<WealthRequestRecord | undefined> {
-    const [row] = await db.select().from(wealthRequests).where(eq(wealthRequests.id, id));
+    const [row] = await this.db.select().from(wealthRequests).where(eq(wealthRequests.id, id));
     return row;
   }
 
   async acceptRequest(requestId: string): Promise<WealthRequestRecord | undefined> {
-    const [row] = await db
+    const [row] = await this.db
       .update(wealthRequests)
       .set({ status: 'accepted', updatedAt: new Date() })
       .where(eq(wealthRequests.id, requestId))
@@ -271,7 +277,7 @@ export class WealthRepository {
   }
 
   async rejectRequest(requestId: string): Promise<WealthRequestRecord | undefined> {
-    const [row] = await db
+    const [row] = await this.db
       .update(wealthRequests)
       .set({ status: 'rejected', updatedAt: new Date() })
       .where(eq(wealthRequests.id, requestId))
@@ -280,7 +286,7 @@ export class WealthRepository {
   }
 
   async cancelRequest(requestId: string): Promise<WealthRequestRecord | undefined> {
-    const [row] = await db
+    const [row] = await this.db
       .update(wealthRequests)
       .set({ status: 'cancelled', updatedAt: new Date() })
       .where(eq(wealthRequests.id, requestId))
@@ -289,7 +295,7 @@ export class WealthRepository {
   }
 
   async markRequestFulfilled(requestId: string): Promise<WealthRequestRecord | undefined> {
-    const [row] = await db
+    const [row] = await this.db
       .update(wealthRequests)
       .set({ status: 'fulfilled', updatedAt: new Date() })
       .where(eq(wealthRequests.id, requestId))
@@ -298,7 +304,7 @@ export class WealthRepository {
   }
 
   async confirmRequest(requestId: string): Promise<WealthRequestRecord | undefined> {
-    const [row] = await db
+    const [row] = await this.db
       .update(wealthRequests)
       .set({ status: 'fulfilled', updatedAt: new Date() })
       .where(eq(wealthRequests.id, requestId))
@@ -307,7 +313,7 @@ export class WealthRepository {
   }
 
   async failRequest(requestId: string): Promise<WealthRequestRecord | undefined> {
-    const [row] = await db
+    const [row] = await this.db
       .update(wealthRequests)
       .set({ status: 'failed', updatedAt: new Date() })
       .where(eq(wealthRequests.id, requestId))
@@ -316,4 +322,5 @@ export class WealthRepository {
   }
 }
 
-export const wealthRepository = new WealthRepository();
+// Default instance for production code paths
+export const wealthRepository = new WealthRepository(realDb);

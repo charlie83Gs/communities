@@ -1,4 +1,4 @@
-import { db } from '@db/index';
+import { db as realDb } from '@db/index';
 import { items, wealth } from '@db/schema';
 import { eq, and, isNull, ilike, sql, or } from 'drizzle-orm';
 
@@ -37,11 +37,17 @@ export interface ItemWithCount {
 }
 
 export class ItemsRepository {
+  private db: any;
+
+  constructor(db: any) {
+    this.db = db;
+  }
+
   /**
    * Create a new item
    */
   async create(data: CreateItemDto) {
-    const [item] = await db
+    const [item] = await this.db
       .insert(items)
       .values({
         ...data,
@@ -55,7 +61,7 @@ export class ItemsRepository {
    * Find item by ID
    */
   async findById(id: string) {
-    const [item] = await db.select().from(items).where(eq(items.id, id));
+    const [item] = await this.db.select().from(items).where(eq(items.id, id));
     return item;
   }
 
@@ -63,7 +69,7 @@ export class ItemsRepository {
    * Find item by community and name (case-insensitive)
    */
   async findByName(communityId: string, name: string) {
-    const [item] = await db
+    const [item] = await this.db
       .select()
       .from(items)
       .where(
@@ -86,7 +92,7 @@ export class ItemsRepository {
       conditions.push(isNull(items.deletedAt));
     }
 
-    const result = await db
+    const result = await this.db
       .select({
         id: items.id,
         communityId: items.communityId,
@@ -129,7 +135,7 @@ export class ItemsRepository {
       conditions.push(eq(items.kind, kind));
     }
 
-    return await db
+    return await this.db
       .select()
       .from(items)
       .where(and(...conditions))
@@ -141,7 +147,7 @@ export class ItemsRepository {
    * Update an item
    */
   async update(id: string, data: UpdateItemDto) {
-    const [updated] = await db
+    const [updated] = await this.db
       .update(items)
       .set({
         ...data,
@@ -156,7 +162,7 @@ export class ItemsRepository {
    * Soft delete an item
    */
   async softDelete(id: string) {
-    const [deleted] = await db
+    const [deleted] = await this.db
       .update(items)
       .set({
         deletedAt: new Date(),
@@ -171,7 +177,7 @@ export class ItemsRepository {
    * Check if item has active wealth references
    */
   async hasActiveWealthReferences(itemId: string): Promise<boolean> {
-    const [result] = await db
+    const [result] = await this.db
       .select({ count: sql<number>`count(*)::int` })
       .from(wealth)
       .where(and(eq(wealth.itemId, itemId), eq(wealth.status, 'active')));
@@ -183,7 +189,7 @@ export class ItemsRepository {
    * Get wealth count for an item
    */
   async getWealthCount(itemId: string): Promise<number> {
-    const [result] = await db
+    const [result] = await this.db
       .select({ count: sql<number>`count(*)::int` })
       .from(wealth)
       .where(eq(wealth.itemId, itemId));
@@ -192,4 +198,5 @@ export class ItemsRepository {
   }
 }
 
-export const itemsRepository = new ItemsRepository();
+// Default instance for production code paths
+export const itemsRepository = new ItemsRepository(realDb);

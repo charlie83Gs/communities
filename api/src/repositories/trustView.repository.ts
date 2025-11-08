@@ -1,4 +1,4 @@
-import { db } from '../db';
+import { db as realDb } from '../db';
 import { and, eq, sql, inArray } from 'drizzle-orm';
 import { trustViews } from '../db/schema/trustView.schema';
 import { trustAwards } from '../db/schema/trustAward.schema';
@@ -7,8 +7,14 @@ import { trustAwardRepository } from './trustAward.repository';
 import { adminTrustGrantRepository } from './adminTrustGrant.repository';
 
 export class TrustViewRepository {
+  private db: any;
+
+  constructor(db: any) {
+    this.db = db;
+  }
+
   async get(communityId: string, userId: string) {
-    const [row] = await db
+    const [row] = await this.db
       .select()
       .from(trustViews)
       .where(and(eq(trustViews.communityId, communityId), eq(trustViews.userId, userId)));
@@ -18,7 +24,7 @@ export class TrustViewRepository {
   async upsertZero(communityId: string, userId: string) {
     const existing = await this.get(communityId, userId);
     if (existing) return existing;
-    const [created] = await db
+    const [created] = await this.db
       .insert(trustViews)
       .values({ communityId, userId, points: 0 })
       .returning();
@@ -43,7 +49,7 @@ export class TrustViewRepository {
     await this.upsertZero(communityId, userId);
 
     // Update points
-    const [updated] = await db
+    const [updated] = await this.db
       .update(trustViews)
       .set({ points: totalPoints, updatedAt: new Date() })
       .where(and(eq(trustViews.communityId, communityId), eq(trustViews.userId, userId)))
@@ -55,7 +61,7 @@ export class TrustViewRepository {
   async adjustPoints(communityId: string, userId: string, delta: number) {
     // Ensure row exists
     await this.upsertZero(communityId, userId);
-    const [updated] = await db
+    const [updated] = await this.db
       .update(trustViews)
       .set({
         points: (await this.get(communityId, userId))!.points + delta,
@@ -68,7 +74,7 @@ export class TrustViewRepository {
 
   async setPoints(communityId: string, userId: string, points: number) {
     await this.upsertZero(communityId, userId);
-    const [updated] = await db
+    const [updated] = await this.db
       .update(trustViews)
       .set({ points, updatedAt: new Date() })
       .where(and(eq(trustViews.communityId, communityId), eq(trustViews.userId, userId)))
@@ -77,7 +83,7 @@ export class TrustViewRepository {
   }
 
   async listByCommunity(communityId: string, limit = 50, offset = 0) {
-    const results = await db
+    const results = await this.db
       .select({
         id: trustViews.id,
         communityId: trustViews.communityId,
@@ -117,7 +123,7 @@ export class TrustViewRepository {
   }
 
   async listByUser(userId: string, limit = 50, offset = 0) {
-    return db
+    return this.db
       .select()
       .from(trustViews)
       .where(eq(trustViews.userId, userId))
@@ -129,7 +135,7 @@ export class TrustViewRepository {
    * Get all trust views for a community (for OpenFGA sync)
    */
   async getAllForCommunity(communityId: string) {
-    return db.select().from(trustViews).where(eq(trustViews.communityId, communityId));
+    return this.db.select().from(trustViews).where(eq(trustViews.communityId, communityId));
   }
 
   /**
@@ -143,7 +149,7 @@ export class TrustViewRepository {
       return new Map();
     }
 
-    const rows = await db
+    const rows = await this.db
       .select({
         communityId: trustViews.communityId,
         points: trustViews.points,
@@ -159,4 +165,5 @@ export class TrustViewRepository {
   }
 }
 
-export const trustViewRepository = new TrustViewRepository();
+// Default instance for production code paths
+export const trustViewRepository = new TrustViewRepository(realDb);

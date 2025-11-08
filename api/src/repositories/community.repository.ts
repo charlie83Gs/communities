@@ -1,4 +1,4 @@
-import { db } from '../db/index';
+import { db as realDb } from '../db/index';
 import { communities, communityLinkInvites, communityUserInvites } from '../db/schema';
 import { eq, and, isNull, sql, inArray, or, ilike } from 'drizzle-orm';
 import { CreateCommunityDto, UpdateCommunityDto, Community } from '../types/community.types';
@@ -17,13 +17,19 @@ export type CommunitySearchResult = {
 };
 
 export class CommunityRepository {
+  private db: any;
+
+  constructor(db: any) {
+    this.db = db;
+  }
+
   async create(data: CreateCommunityDto & { createdBy: string }) {
-    const [community] = await db.insert(communities).values(data).returning();
+    const [community] = await this.db.insert(communities).values(data).returning();
     return community;
   }
 
   async findById(id: string) {
-    const [community] = await db
+    const [community] = await this.db
       .select()
       .from(communities)
       .where(and(eq(communities.id, id), isNull(communities.deletedAt)));
@@ -31,7 +37,7 @@ export class CommunityRepository {
   }
 
   async findAll(limit = 10, offset = 0) {
-    return await db
+    return await this.db
       .select()
       .from(communities)
       .where(isNull(communities.deletedAt))
@@ -42,7 +48,7 @@ export class CommunityRepository {
   // REMOVED: findPublic - all communities are now private (membership-based access only)
 
   async update(id: string, data: UpdateCommunityDto) {
-    const [updated] = await db
+    const [updated] = await this.db
       .update(communities)
       .set(data)
       .where(and(eq(communities.id, id), isNull(communities.deletedAt)))
@@ -51,7 +57,7 @@ export class CommunityRepository {
   }
 
   async delete(id: string) {
-    return await db.transaction(async (tx) => {
+    return await this.db.transaction(async (tx) => {
       // Soft delete community
       await tx
         .update(communities)
@@ -97,7 +103,7 @@ export class CommunityRepository {
     const where = and(...whereParts);
 
     // total count
-    const [{ count }] = await db
+    const [{ count }] = await this.db
       .select({ count: sql<number>`cast(count(*) as int)` })
       .from(communities)
       .where(where);
@@ -105,14 +111,14 @@ export class CommunityRepository {
     const limit = Math.max(1, Math.min(filters.limit ?? 20, 100));
     const offset = Math.max(0, filters.offset ?? 0);
 
-    const rows = await db.select().from(communities).where(where).limit(limit).offset(offset);
+    const rows = await this.db.select().from(communities).where(where).limit(limit).offset(offset);
 
     return { rows: rows as Community[], total: count ?? 0 };
   }
 
   async cleanupOldDeleted() {
     const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
-    return await db.transaction(async (tx) => {
+    return await this.db.transaction(async (tx) => {
       const oldCommunityIds = await tx
         .select({ id: communities.id })
         .from(communities)
@@ -139,4 +145,5 @@ export class CommunityRepository {
   }
 }
 
-export const communityRepository = new CommunityRepository();
+// Default instance for production code paths
+export const communityRepository = new CommunityRepository(realDb);

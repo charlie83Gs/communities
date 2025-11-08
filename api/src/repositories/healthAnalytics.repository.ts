@@ -1,4 +1,4 @@
-import { db } from '../db/index';
+import { db as realDb } from '../db/index';
 import { wealth, wealthRequests, trustHistory, items } from '../db/schema';
 import { eq, and, gte, sql, desc, count } from 'drizzle-orm';
 
@@ -48,6 +48,12 @@ export interface TrustDistributionData {
 }
 
 export class HealthAnalyticsRepository {
+  private db: any;
+
+  constructor(db: any) {
+    this.db = db;
+  }
+
   /**
    * Get the date cutoff for a given time range
    */
@@ -78,7 +84,7 @@ export class HealthAnalyticsRepository {
     const dateCutoffStr = dateCutoff.toISOString();
 
     // Count open shares (active status)
-    const openSharesResult = await db
+    const openSharesResult = await this.db
       .select({ count: count() })
       .from(wealth)
       .where(and(eq(wealth.communityId, communityId), eq(wealth.status, 'active')));
@@ -86,7 +92,7 @@ export class HealthAnalyticsRepository {
     const openShares = openSharesResult[0]?.count || 0;
 
     // Count total shares in time range
-    const totalSharesResult = await db
+    const totalSharesResult = await this.db
       .select({ count: count() })
       .from(wealth)
       .where(and(eq(wealth.communityId, communityId), gte(wealth.createdAt, dateCutoff)));
@@ -94,7 +100,7 @@ export class HealthAnalyticsRepository {
     const totalShares = totalSharesResult[0]?.count || 0;
 
     // Count active categories (distinct items used in the time range)
-    const activeCategoriesResult = await db
+    const activeCategoriesResult = await this.db
       .selectDistinct({ itemId: wealth.itemId })
       .from(wealth)
       .where(and(eq(wealth.communityId, communityId), gte(wealth.createdAt, dateCutoff)));
@@ -102,7 +108,7 @@ export class HealthAnalyticsRepository {
     const activeCategories = activeCategoriesResult.length;
 
     // Get time series data - shares, requests, and fulfilled per day
-    const timeSeriesResult = await db.execute<{
+    const timeSeriesResult = await this.db.execute<{
       date: string;
       shares: string;
       requests: string;
@@ -185,7 +191,7 @@ export class HealthAnalyticsRepository {
     // Get items with share counts and value points
     // Note: We count all shares (regardless of time range) to show items with any activity
     // but we'll filter the trend data by time range
-    const itemsResult = await db.execute<{
+    const itemsResult = await this.db.execute<{
       item_id: string;
       item_name: string;
       item_kind: string;
@@ -212,7 +218,7 @@ export class HealthAnalyticsRepository {
     const itemsWithTrends: WealthItemData[] = [];
 
     for (const item of itemsResult as any[]) {
-      const trendResult = await db.execute<{
+      const trendResult = await this.db.execute<{
         date: string;
         count: string;
       }>(sql`
@@ -268,7 +274,7 @@ export class HealthAnalyticsRepository {
     const dateCutoffStr = dateCutoff.toISOString();
 
     // Get total trust awards in time range
-    const totalTrustResult = await db.execute<{ total: string }>(sql`
+    const totalTrustResult = await this.db.execute<{ total: string }>(sql`
       SELECT COALESCE(SUM(points_delta), 0)::text AS total
       FROM ${trustHistory}
       WHERE community_id = ${communityId}
@@ -279,7 +285,7 @@ export class HealthAnalyticsRepository {
     const totalTrust = parseInt((totalTrustResult as any[])[0]?.total || '0', 10);
 
     // Get average trust per user (only considering users with positive trust scores)
-    const averageTrustResult = await db.execute<{
+    const averageTrustResult = await this.db.execute<{
       average: string;
       count: string;
     }>(sql`
@@ -304,7 +310,7 @@ export class HealthAnalyticsRepository {
     const trustPerDay = daysInRange > 0 ? totalTrust / daysInRange : 0;
 
     // Get time series data
-    const timeSeriesResult = await db.execute<{
+    const timeSeriesResult = await this.db.execute<{
       date: string;
       trust_awarded: string;
       trust_removed: string;
@@ -361,7 +367,7 @@ export class HealthAnalyticsRepository {
     trustLevels: Array<{ name: string; minScore: number }>
   ): Promise<TrustDistributionData[]> {
     // Get user trust scores
-    const userTrustResult = await db.execute<{
+    const userTrustResult = await this.db.execute<{
       user_id: string;
       trust_score: string;
     }>(sql`
@@ -403,4 +409,5 @@ export class HealthAnalyticsRepository {
   }
 }
 
-export const healthAnalyticsRepository = new HealthAnalyticsRepository();
+// Default instance for production code paths
+export const healthAnalyticsRepository = new HealthAnalyticsRepository(realDb);

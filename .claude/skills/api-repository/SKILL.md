@@ -1,6 +1,6 @@
 ---
 name: api-repository
-description: This skill teaches the agent how to implement the data access layer in the API project. MANDATORY - You MUST read this skill before modifying any repository files.
+description: This skill teaches the agent how to implement the data access layer in the API project. MANDATORY - You MUST read this skill before modifying any ./api repository files.
 ---
 
 # API Repository Layer Skill
@@ -18,21 +18,32 @@ This skill covers the repository layer of the API project - the data access laye
 ## Key Patterns from Codebase
 
 ### 1. Basic Repository Structure
+
+**CRITICAL: Constructor-Based Pattern for Testability**
+
+All repositories MUST use constructor injection to accept the database instance. This enables proper testing with mock databases.
+
 ```typescript
 // api/src/repositories/community.repository.ts
-import { db } from '@/db';
+import { db as realDb } from '@/db';
 import { communities } from '@/db/schema/communities.schema';
-import { eq, and, isNull, ilike, or, desc } from 'drizzle-orm';
+import { eq, and, isNull, ilike, or, desc, inArray } from 'drizzle-orm';
 import type { CreateCommunityDto, UpdateCommunityDto } from '@/types/community.types';
 
 class CommunityRepository {
+  private db: any;
+
+  constructor(db: any) {
+    this.db = db;
+  }
+
   async create(data: CreateCommunityDto & { createdBy: string }) {
-    const [community] = await db.insert(communities).values(data).returning();
+    const [community] = await this.db.insert(communities).values(data).returning();
     return community;
   }
 
   async findById(id: string) {
-    const [community] = await db
+    const [community] = await this.db
       .select()
       .from(communities)
       .where(and(eq(communities.id, id), isNull(communities.deletedAt)));
@@ -40,7 +51,7 @@ class CommunityRepository {
   }
 
   async update(id: string, data: UpdateCommunityDto) {
-    const [updated] = await db
+    const [updated] = await this.db
       .update(communities)
       .set({ ...data, updatedAt: new Date() })
       .where(and(eq(communities.id, id), isNull(communities.deletedAt)))
@@ -49,7 +60,7 @@ class CommunityRepository {
   }
 
   async delete(id: string) {
-    return await db.transaction(async (tx) => {
+    return await this.db.transaction(async (tx) => {
       // Soft delete community
       const [deleted] = await tx
         .update(communities)
@@ -68,7 +79,7 @@ class CommunityRepository {
   }
 
   async findByIds(ids: string[]) {
-    return await db
+    return await this.db
       .select()
       .from(communities)
       .where(
@@ -80,7 +91,8 @@ class CommunityRepository {
   }
 }
 
-export const communityRepository = new CommunityRepository();
+// Default instance for production code paths
+export const communityRepository = new CommunityRepository(realDb);
 ```
 
 ### 2. Search with Pagination
@@ -278,57 +290,184 @@ async getCommunityStats(communityId: string) {
 
 ## Testing Repositories
 
-Repositories are tested with actual database connections (integration tests):
+**CRITICAL: Use Constructor-Based Mocking Pattern**
+
+Repositories are tested using constructor injection with mock databases. This provides clean test isolation without polluting global state.
 
 ```typescript
 // api/src/repositories/community.repository.test.ts
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import { communityRepository } from "./community.repository";
-import { db } from "@/db";
-import { communities } from "@/db/schema/communities.schema";
+import { CommunityRepository } from "./community.repository";
+import { createThenableMockDb, setupMockDbChains } from "../../tests/helpers/mockDb";
+
+// Create mock database
+const mockDb = createThenableMockDb();
+
+let communityRepository: CommunityRepository;
+
+const testCommunity = {
+  id: 'comm-123',
+  name: 'Test Community',
+  description: 'Test Description',
+  createdBy: 'user-123',
+  createdAt: new Date('2024-01-01'),
+  updatedAt: new Date('2024-01-01'),
+  deletedAt: null,
+};
 
 describe("CommunityRepository", () => {
-  let testCommunityId: string;
-
-  beforeEach(async () => {
-    // Create test data
-    const [community] = await db.insert(communities).values({
-      name: "Test Community",
-      description: "Test",
-      createdBy: "test-user-123"
-    }).returning();
-    testCommunityId = community.id;
+  beforeEach(() => {
+    // Reset all mocks and setup default chains
+    setupMockDbChains(mockDb);
+    // Instantiate repository with the per-test mock DB
+    communityRepository = new CommunityRepository(mockDb as any);
   });
 
-  afterEach(async () => {
-    // Clean up test data
-    await db.delete(communities).where(eq(communities.id, testCommunityId));
+  afterEach(() => {
+    // Nothing to clean up; a fresh CommunityRepository is created per test
+  });
+
+  it("should create a community", async () => {
+    mockDb.returning.mockResolvedValue([testCommunity]);
+
+    const result = await communityRepository.create({
+      name: 'Test Community',
+      description: 'Test Description',
+      createdBy: 'user-123',
+    });
+
+    expect(result).toEqual(testCommunity);
+    expect(mockDb.insert).toHaveBeenCalled();
+    expect(mockDb.values).toHaveBeenCalled();
+    expect(mockDb.returning).toHaveBeenCalled();
   });
 
   it("should find community by id", async () => {
-    const community = await communityRepository.findById(testCommunityId);
-    expect(community).toBeDefined();
-    expect(community.name).toBe("Test Community");
+    mockDb.where.mockResolvedValue([testCommunity]);
+
+    const result = await communityRepository.findById('comm-123');
+
+    expect(result).toEqual(testCommunity);
+    expect(mockDb.select).toHaveBeenCalled();
+    expect(mockDb.where).toHaveBeenCalled();
   });
 
-  it("should not find soft-deleted community", async () => {
-    await communityRepository.delete(testCommunityId);
-    const community = await communityRepository.findById(testCommunityId);
-    expect(community).toBeUndefined();
+  it("should return undefined if not found", async () => {
+    mockDb.where.mockResolvedValue([]);
+
+    const result = await communityRepository.findById('nonexistent');
+
+    expect(result).toBeUndefined();
+  });
+
+  it("should update community", async () => {
+    const updatedCommunity = { ...testCommunity, name: 'Updated Name' };
+    mockDb.returning.mockResolvedValue([updatedCommunity]);
+
+    const result = await communityRepository.update('comm-123', {
+      name: 'Updated Name',
+    });
+
+    expect(result?.name).toBe('Updated Name');
+    expect(mockDb.update).toHaveBeenCalled();
+    expect(mockDb.set).toHaveBeenCalled();
   });
 });
 ```
 
+### Mock Database Helper
+
+The `createThenableMockDb()` helper creates a chainable mock database for testing:
+
+```typescript
+// tests/helpers/mockDb.ts
+import { mock } from "bun:test";
+
+export function createThenableMockDb() {
+  const mockDb: any = {
+    insert: mock(() => mockDb),
+    values: mock(() => mockDb),
+    returning: mock(() => Promise.resolve([])),
+    select: mock(() => mockDb),
+    from: mock(() => mockDb),
+    where: mock(() => mockDb),
+    orderBy: mock(() => mockDb),
+    limit: mock(() => mockDb),
+    offset: mock(() => mockDb),
+    update: mock(() => mockDb),
+    set: mock(() => mockDb),
+    delete: mock(() => mockDb),
+    leftJoin: mock(() => mockDb),
+    innerJoin: mock(() => mockDb),
+    groupBy: mock(() => mockDb),
+    transaction: mock((fn: Function) => fn(mockDb)),
+    execute: mock(() => Promise.resolve([])),
+    // Make it thenable so it can be awaited
+    then: mock((resolve: Function) => {
+      resolve([]);
+      return Promise.resolve([]);
+    }),
+  };
+  return mockDb;
+}
+
+export function setupMockDbChains(mockDb: any) {
+  // Reset all mocks
+  Object.values(mockDb).forEach((m) => {
+    if (typeof m === "function" && "mockReset" in m) {
+      (m as any).mockReset();
+    }
+  });
+
+  // Set up default mock chains
+  mockDb.insert.mockReturnValue(mockDb);
+  mockDb.values.mockReturnValue(mockDb);
+  mockDb.select.mockReturnValue(mockDb);
+  mockDb.from.mockReturnValue(mockDb);
+  mockDb.where.mockReturnValue(mockDb);
+  mockDb.orderBy.mockReturnValue(mockDb);
+  mockDb.limit.mockReturnValue(mockDb);
+  mockDb.offset.mockReturnValue(mockDb);
+  mockDb.update.mockReturnValue(mockDb);
+  mockDb.set.mockReturnValue(mockDb);
+  mockDb.delete.mockReturnValue(mockDb);
+  mockDb.leftJoin.mockReturnValue(mockDb);
+  mockDb.innerJoin.mockReturnValue(mockDb);
+  mockDb.groupBy.mockReturnValue(mockDb);
+  mockDb.transaction.mockImplementation((fn: Function) => fn(mockDb));
+  mockDb.then.mockImplementation((resolve: Function) => {
+    resolve([]);
+    return Promise.resolve([]);
+  });
+}
+```
+
 ## Key Principles
 
-1. **Single Responsibility**: Each repository handles one table or entity
-2. **No Business Logic**: Only data access, no validation or business rules
-3. **Soft Deletes**: Always use `deletedAt` for deletions, never hard delete
-4. **Transactions**: Use for multi-step operations that must succeed together
-5. **Type Safety**: Use schema types from Drizzle
-6. **SQL Safety**: Use parameterized queries, never string concatenation
-7. **Consistent Patterns**: Use same patterns across all repositories
-8. **Return Types**: Always return raw database types, not DTOs
+1. **Constructor Injection**: ALWAYS use constructor to accept database instance
+   - Import `db as realDb` from '@/db'
+   - Add `private db: any;` property
+   - Add `constructor(db: any) { this.db = db; }`
+   - Use `this.db` instead of `db` in all methods
+   - Export default instance: `export const repository = new Repository(realDb);`
+
+2. **Single Responsibility**: Each repository handles one table or entity
+
+3. **No Business Logic**: Only data access, no validation or business rules
+
+4. **Soft Deletes**: Always use `deletedAt` for deletions, never hard delete
+
+5. **Transactions**: Use for multi-step operations that must succeed together
+
+6. **Type Safety**: Use schema types from Drizzle
+
+7. **SQL Safety**: Use parameterized queries, never string concatenation
+
+8. **Consistent Patterns**: Use same patterns across all repositories
+
+9. **Return Types**: Always return raw database types, not DTOs
+
+10. **Testability**: Constructor injection enables clean unit testing with mock databases
 
 ## Drizzle ORM Operators
 

@@ -1,4 +1,4 @@
-import { db } from '../db/index';
+import { db as realDb } from '../db/index';
 import { eq, and, gte, lte, desc, asc, sql } from 'drizzle-orm';
 import { trustHistory } from '../db/schema/trustHistory.schema';
 import { communities } from '../db/schema/communities.schema';
@@ -29,6 +29,11 @@ export interface TrustSummary {
 }
 
 export class TrustAnalyticsRepository {
+  private db: any;
+
+  constructor(db: any) {
+    this.db = db;
+  }
   /**
    * Get trust timeline for a user
    * Returns all trust events (awards, removals, admin grants) with cumulative trust calculation
@@ -57,7 +62,7 @@ export class TrustAnalyticsRepository {
     }
 
     // Query trust history with joins to get community names and user display names
-    const events = await db
+    const events = await this.db
       .select({
         id: trustHistory.id,
         timestamp: trustHistory.createdAt,
@@ -113,7 +118,7 @@ export class TrustAnalyticsRepository {
     }
 
     // Get total points and count of awards/removals
-    const [stats] = await db
+    const [stats] = await this.db
       .select({
         totalPoints: sql<number>`COALESCE(SUM(${trustHistory.pointsDelta}), 0)`,
         totalAwards: sql<number>`COALESCE(COUNT(*) FILTER (WHERE ${trustHistory.action} = 'award'), 0)`,
@@ -127,7 +132,7 @@ export class TrustAnalyticsRepository {
       ? [eq(trustHistory.toUserId, userId), eq(trustHistory.communityId, options.communityId)]
       : [eq(trustHistory.toUserId, userId)];
 
-    const byCommunity = await db
+    const byCommunity = await this.db
       .select({
         communityId: trustHistory.communityId,
         communityName: communities.name,
@@ -156,7 +161,7 @@ export class TrustAnalyticsRepository {
    */
   async getCurrentTrustScore(userId: string, communityId: string): Promise<number> {
     // Count peer awards
-    const [peerCount] = await db
+    const [peerCount] = await this.db
       .select({
         count: sql<number>`COUNT(*)`,
       })
@@ -164,7 +169,7 @@ export class TrustAnalyticsRepository {
       .where(and(eq(trustAwards.communityId, communityId), eq(trustAwards.toUserId, userId)));
 
     // Get admin grant (if exists)
-    const [adminGrant] = await db
+    const [adminGrant] = await this.db
       .select({
         amount: adminTrustGrants.trustAmount,
       })
@@ -180,4 +185,5 @@ export class TrustAnalyticsRepository {
   }
 }
 
-export const trustAnalyticsRepository = new TrustAnalyticsRepository();
+// Default instance for production code paths
+export const trustAnalyticsRepository = new TrustAnalyticsRepository(realDb);

@@ -1,4 +1,4 @@
-import { db } from '../db/index';
+import { db as realDb } from '../db/index';
 import { and, desc, eq, or } from 'drizzle-orm';
 import { trustEvents } from '../db/schema/trustEvent.schema';
 
@@ -10,6 +10,12 @@ export type TrustEventType = 'share_redeemed' | 'posture_adjustment';
  * - Lists events by user/community for audit/explanation endpoints
  */
 export class TrustEventRepository {
+  private db: any;
+
+  constructor(db: any) {
+    this.db = db;
+  }
+
   async create(params: {
     communityId: string;
     type: TrustEventType | string;
@@ -21,7 +27,7 @@ export class TrustEventRepository {
     pointsDeltaA?: number;
     pointsDeltaB?: number;
   }) {
-    const [row] = await db
+    const [row] = await this.db
       .insert(trustEvents)
       .values({
         communityId: params.communityId,
@@ -41,7 +47,7 @@ export class TrustEventRepository {
 
   async listByUser(communityId: string, userId: string, limit = 50, offset = 0) {
     // Return events where the user appears as A or B
-    return db
+    return this.db
       .select()
       .from(trustEvents)
       .where(
@@ -56,7 +62,7 @@ export class TrustEventRepository {
   }
 
   async listByUserB(communityId: string, userId: string, limit = 50, offset = 0) {
-    return db
+    return this.db
       .select()
       .from(trustEvents)
       .where(and(eq(trustEvents.communityId, communityId), eq(trustEvents.subjectUserIdB, userId)))
@@ -66,7 +72,7 @@ export class TrustEventRepository {
   }
 
   async listByCommunity(communityId: string, limit = 100, offset = 0) {
-    return db
+    return this.db
       .select()
       .from(trustEvents)
       .where(eq(trustEvents.communityId, communityId))
@@ -76,7 +82,7 @@ export class TrustEventRepository {
   }
 
   async listByUserAllCommunities(userId: string, limit = 50, offset = 0) {
-    return db
+    return this.db
       .select()
       .from(trustEvents)
       .where(or(eq(trustEvents.subjectUserIdA, userId), eq(trustEvents.subjectUserIdB, userId)))
@@ -86,4 +92,4 @@ export class TrustEventRepository {
   }
 }
 
-export const trustEventRepository = new TrustEventRepository();
+export const trustEventRepository = new TrustEventRepository(realDb);

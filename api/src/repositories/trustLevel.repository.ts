@@ -1,11 +1,17 @@
-import { db } from '../db/index';
+import { db as realDb } from '../db/index';
 import { trustLevels } from '../db/schema';
 import { eq, and, asc } from 'drizzle-orm';
 import { CreateTrustLevelDto, UpdateTrustLevelDto, TrustLevel } from '../types/trustLevel.types';
 
 export class TrustLevelRepository {
+  private db: any;
+
+  constructor(db: any) {
+    this.db = db;
+  }
+
   async create(communityId: string, data: CreateTrustLevelDto): Promise<TrustLevel> {
-    const [trustLevel] = await db
+    const [trustLevel] = await this.db
       .insert(trustLevels)
       .values({
         communityId,
@@ -16,12 +22,12 @@ export class TrustLevelRepository {
   }
 
   async findById(id: string): Promise<TrustLevel | undefined> {
-    const [trustLevel] = await db.select().from(trustLevels).where(eq(trustLevels.id, id));
+    const [trustLevel] = await this.db.select().from(trustLevels).where(eq(trustLevels.id, id));
     return trustLevel as TrustLevel | undefined;
   }
 
   async findByCommunityId(communityId: string): Promise<TrustLevel[]> {
-    const levels = await db
+    const levels = await this.db
       .select()
       .from(trustLevels)
       .where(eq(trustLevels.communityId, communityId))
@@ -30,7 +36,7 @@ export class TrustLevelRepository {
   }
 
   async findByName(communityId: string, name: string): Promise<TrustLevel | undefined> {
-    const [trustLevel] = await db
+    const [trustLevel] = await this.db
       .select()
       .from(trustLevels)
       .where(and(eq(trustLevels.communityId, communityId), eq(trustLevels.name, name)));
@@ -38,7 +44,7 @@ export class TrustLevelRepository {
   }
 
   async update(id: string, data: UpdateTrustLevelDto): Promise<TrustLevel | undefined> {
-    const [updated] = await db
+    const [updated] = await this.db
       .update(trustLevels)
       .set({
         ...data,
@@ -50,7 +56,7 @@ export class TrustLevelRepository {
   }
 
   async delete(id: string): Promise<TrustLevel | undefined> {
-    const [deleted] = await db.delete(trustLevels).where(eq(trustLevels.id, id)).returning();
+    const [deleted] = await this.db.delete(trustLevels).where(eq(trustLevels.id, id)).returning();
     return deleted as TrustLevel | undefined;
   }
 
@@ -61,7 +67,7 @@ export class TrustLevelRepository {
       { name: 'Trusted', threshold: 50 },
     ];
 
-    const created = await db
+    const created = await this.db
       .insert(trustLevels)
       .values(
         defaultLevels.map((level) => ({
@@ -75,9 +81,12 @@ export class TrustLevelRepository {
   }
 
   async deleteAllForCommunity(communityId: string): Promise<number> {
-    const result = await db.delete(trustLevels).where(eq(trustLevels.communityId, communityId));
+    const result = await this.db
+      .delete(trustLevels)
+      .where(eq(trustLevels.communityId, communityId));
     return result.length;
   }
 }
 
-export const trustLevelRepository = new TrustLevelRepository();
+// Default instance for production code paths
+export const trustLevelRepository = new TrustLevelRepository(realDb);

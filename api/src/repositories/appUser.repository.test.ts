@@ -1,22 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
-import { db } from '@db/index';
 import { AppUserRepository } from '@/repositories/appUser.repository';
 import type { AppUser, NewAppUser, UpdateAppUser } from '@/repositories/appUser.repository';
 import { createThenableMockDb, setupMockDbChains } from '../../tests/helpers/mockDb';
 
-// Store original db methods to restore after each test
-const originalDbMethods = {
-  insert: db.insert,
-  select: db.select,
-  update: db.update,
-  delete: (db as any).delete,
-};
+let appUserRepository: AppUserRepository;
 
 // Create mock database
 const mockDb = createThenableMockDb();
-
-// Create a test instance
-const repository = new AppUserRepository();
 
 // Static test data
 const mockUser: AppUser = {
@@ -52,41 +42,33 @@ describe('AppUserRepository', () => {
   beforeEach(() => {
     // Reset all mocks and setup default chains
     setupMockDbChains(mockDb);
-
-    // Replace db methods with mocks
-    (db.insert as any) = mockDb.insert;
-    (db.select as any) = mockDb.select;
-    (db.update as any) = mockDb.update;
-    (db as any).delete = mockDb.delete;
+    // Instantiate repository with the per-test mock DB
+    appUserRepository = new AppUserRepository(mockDb as any);
   });
 
   afterEach(() => {
-    // Restore original db methods to prevent pollution of other tests
-    (db.insert as any) = originalDbMethods.insert;
-    (db.select as any) = originalDbMethods.select;
-    (db.update as any) = originalDbMethods.update;
-    (db as any).delete = originalDbMethods.delete;
+    // Nothing to clean up; a fresh AppUserRepository is created per test
   });
 
   describe('Type Validation', () => {
     it('should have correct method signatures', () => {
-      expect(typeof repository.findById).toBe('function');
-      expect(typeof repository.findByEmail).toBe('function');
-      expect(typeof repository.findByUsername).toBe('function');
-      expect(typeof repository.create).toBe('function');
-      expect(typeof repository.findOrCreate).toBe('function');
-      expect(typeof repository.update).toBe('function');
-      expect(typeof repository.updateLastSeen).toBe('function');
-      expect(typeof repository.delete).toBe('function');
-      expect(typeof repository.search).toBe('function');
-      expect(typeof repository.isUsernameTaken).toBe('function');
-      expect(typeof repository.isEmailTaken).toBe('function');
-      expect(typeof repository.list).toBe('function');
-      expect(typeof repository.count).toBe('function');
+      expect(typeof appUserRepository.findById).toBe('function');
+      expect(typeof appUserRepository.findByEmail).toBe('function');
+      expect(typeof appUserRepository.findByUsername).toBe('function');
+      expect(typeof appUserRepository.create).toBe('function');
+      expect(typeof appUserRepository.findOrCreate).toBe('function');
+      expect(typeof appUserRepository.update).toBe('function');
+      expect(typeof appUserRepository.updateLastSeen).toBe('function');
+      expect(typeof appUserRepository.delete).toBe('function');
+      expect(typeof appUserRepository.search).toBe('function');
+      expect(typeof appUserRepository.isUsernameTaken).toBe('function');
+      expect(typeof appUserRepository.isEmailTaken).toBe('function');
+      expect(typeof appUserRepository.list).toBe('function');
+      expect(typeof appUserRepository.count).toBe('function');
     });
 
     it('should have deprecated backward compatibility method', () => {
-      expect(typeof repository.findBySupertokensUserId).toBe('function');
+      expect(typeof appUserRepository.findBySupertokensUserId).toBe('function');
     });
   });
 
@@ -94,7 +76,7 @@ describe('AppUserRepository', () => {
     it('should return user for valid id', async () => {
       mockDb.limit.mockResolvedValue([mockUser]);
 
-      const result = await repository.findById('user-123');
+      const result = await appUserRepository.findById('user-123');
 
       expect(result).toEqual(mockUser);
       expect(mockDb.select).toHaveBeenCalled();
@@ -105,7 +87,7 @@ describe('AppUserRepository', () => {
     it('should return undefined for nonexistent id', async () => {
       mockDb.limit.mockResolvedValue([]);
 
-      const result = await repository.findById('nonexistent-id');
+      const result = await appUserRepository.findById('nonexistent-id');
 
       expect(result).toBeUndefined();
     });
@@ -115,7 +97,7 @@ describe('AppUserRepository', () => {
     it('should return user for valid email', async () => {
       mockDb.limit.mockResolvedValue([mockUser]);
 
-      const result = await repository.findByEmail('test@example.com');
+      const result = await appUserRepository.findByEmail('test@example.com');
 
       expect(result).toEqual(mockUser);
       expect(mockDb.select).toHaveBeenCalled();
@@ -126,7 +108,7 @@ describe('AppUserRepository', () => {
     it('should return undefined for nonexistent email', async () => {
       mockDb.limit.mockResolvedValue([]);
 
-      const result = await repository.findByEmail('nonexistent@example.com');
+      const result = await appUserRepository.findByEmail('nonexistent@example.com');
 
       expect(result).toBeUndefined();
     });
@@ -136,7 +118,7 @@ describe('AppUserRepository', () => {
     it('should return user for valid username', async () => {
       mockDb.limit.mockResolvedValue([mockUser]);
 
-      const result = await repository.findByUsername('testuser');
+      const result = await appUserRepository.findByUsername('testuser');
 
       expect(result).toEqual(mockUser);
       expect(mockDb.select).toHaveBeenCalled();
@@ -147,7 +129,7 @@ describe('AppUserRepository', () => {
     it('should handle case-insensitive search', async () => {
       mockDb.limit.mockResolvedValue([mockUser]);
 
-      const result = await repository.findByUsername('TestUser');
+      const result = await appUserRepository.findByUsername('TestUser');
 
       expect(result).toEqual(mockUser);
     });
@@ -155,7 +137,7 @@ describe('AppUserRepository', () => {
     it('should return undefined for nonexistent username', async () => {
       mockDb.limit.mockResolvedValue([]);
 
-      const result = await repository.findByUsername('nonexistentuser');
+      const result = await appUserRepository.findByUsername('nonexistentuser');
 
       expect(result).toBeUndefined();
     });
@@ -172,7 +154,7 @@ describe('AppUserRepository', () => {
       };
       mockDb.returning.mockResolvedValue([createdUser]);
 
-      const result = await repository.create(mockNewUser);
+      const result = await appUserRepository.create(mockNewUser);
 
       expect(result).toEqual(createdUser);
       expect(mockDb.insert).toHaveBeenCalled();
@@ -193,7 +175,7 @@ describe('AppUserRepository', () => {
       };
       mockDb.returning.mockResolvedValue([createdUser]);
 
-      const result = await repository.create(userWithImage);
+      const result = await appUserRepository.create(userWithImage);
 
       expect(result.profileImage).toBe('https://example.com/avatar.png');
     });
@@ -208,7 +190,7 @@ describe('AppUserRepository', () => {
       };
       mockDb.returning.mockResolvedValue([createdUser]);
 
-      const result = await repository.create(mockNewUser);
+      const result = await appUserRepository.create(mockNewUser);
 
       expect(result.createdAt).toBeInstanceOf(Date);
       expect(result.updatedAt).toBeInstanceOf(Date);
@@ -227,7 +209,7 @@ describe('AppUserRepository', () => {
       };
       mockDb.returning.mockResolvedValue([createdUser]);
 
-      const result = await repository.findOrCreate(mockNewUser);
+      const result = await appUserRepository.findOrCreate(mockNewUser);
 
       expect(result.created).toBe(true);
       expect(result.user).toEqual(createdUser);
@@ -237,7 +219,7 @@ describe('AppUserRepository', () => {
     it('should return existing user if found', async () => {
       mockDb.limit.mockResolvedValue([mockUser]);
 
-      const result = await repository.findOrCreate(mockNewUser);
+      const result = await appUserRepository.findOrCreate(mockNewUser);
 
       expect(result.created).toBe(false);
       expect(result.user).toEqual(mockUser);
@@ -247,7 +229,7 @@ describe('AppUserRepository', () => {
     it('should return object with user and created flag', async () => {
       mockDb.limit.mockResolvedValue([mockUser]);
 
-      const result = await repository.findOrCreate(mockNewUser);
+      const result = await appUserRepository.findOrCreate(mockNewUser);
 
       expect(result).toHaveProperty('user');
       expect(result).toHaveProperty('created');
@@ -268,7 +250,7 @@ describe('AppUserRepository', () => {
       };
       mockDb.returning.mockResolvedValue([updatedUser]);
 
-      const result = await repository.update('user-123', updates);
+      const result = await appUserRepository.update('user-123', updates);
 
       expect(result).toEqual(updatedUser);
       expect(mockDb.update).toHaveBeenCalled();
@@ -283,7 +265,7 @@ describe('AppUserRepository', () => {
       const updates: UpdateAppUser = {
         displayName: 'Should Not Work',
       };
-      const result = await repository.update('nonexistent-id', updates);
+      const result = await appUserRepository.update('nonexistent-id', updates);
 
       expect(result).toBeUndefined();
     });
@@ -299,7 +281,7 @@ describe('AppUserRepository', () => {
       };
       mockDb.returning.mockResolvedValue([updatedUser]);
 
-      const result = await repository.update('user-123', updates);
+      const result = await appUserRepository.update('user-123', updates);
 
       expect(result).toBeDefined();
       if (result) {
@@ -318,7 +300,7 @@ describe('AppUserRepository', () => {
       };
       mockDb.returning.mockResolvedValue([updatedUser]);
 
-      const result = await repository.update('user-123', updates);
+      const result = await appUserRepository.update('user-123', updates);
 
       expect(result).toBeDefined();
       if (result) {
@@ -332,7 +314,7 @@ describe('AppUserRepository', () => {
     it('should update lastSeenAt timestamp', async () => {
       mockDb.where.mockResolvedValue(undefined);
 
-      await repository.updateLastSeen('user-123');
+      await appUserRepository.updateLastSeen('user-123');
 
       expect(mockDb.update).toHaveBeenCalled();
       expect(mockDb.set).toHaveBeenCalled();
@@ -342,7 +324,7 @@ describe('AppUserRepository', () => {
     it('should not throw for nonexistent user', async () => {
       mockDb.where.mockResolvedValue(undefined);
 
-      await expect(repository.updateLastSeen('nonexistent-id')).resolves.toBeUndefined();
+      await expect(appUserRepository.updateLastSeen('nonexistent-id')).resolves.toBeUndefined();
     });
   });
 
@@ -350,7 +332,7 @@ describe('AppUserRepository', () => {
     it('should delete user', async () => {
       mockDb.where.mockResolvedValue(undefined);
 
-      await repository.delete('user-123');
+      await appUserRepository.delete('user-123');
 
       expect(mockDb.delete).toHaveBeenCalled();
       expect(mockDb.where).toHaveBeenCalled();
@@ -359,7 +341,7 @@ describe('AppUserRepository', () => {
     it('should not throw for nonexistent user', async () => {
       mockDb.where.mockResolvedValue(undefined);
 
-      await expect(repository.delete('nonexistent-id')).resolves.toBeUndefined();
+      await expect(appUserRepository.delete('nonexistent-id')).resolves.toBeUndefined();
     });
   });
 
@@ -367,7 +349,7 @@ describe('AppUserRepository', () => {
     it('should search by username', async () => {
       mockDb.offset.mockResolvedValue([mockUser, mockUser2]);
 
-      const result = await repository.search('testuser');
+      const result = await appUserRepository.search('testuser');
 
       expect(Array.isArray(result)).toBe(true);
       expect(result).toHaveLength(2);
@@ -380,7 +362,7 @@ describe('AppUserRepository', () => {
     it('should handle empty query', async () => {
       mockDb.offset.mockResolvedValue([mockUser, mockUser2]);
 
-      const result = await repository.search('');
+      const result = await appUserRepository.search('');
 
       expect(Array.isArray(result)).toBe(true);
     });
@@ -388,7 +370,7 @@ describe('AppUserRepository', () => {
     it('should respect limit parameter', async () => {
       mockDb.offset.mockResolvedValue([mockUser]);
 
-      const result = await repository.search('test', 5);
+      const result = await appUserRepository.search('test', 5);
 
       expect(Array.isArray(result)).toBe(true);
       expect(result.length).toBeLessThanOrEqual(5);
@@ -397,7 +379,7 @@ describe('AppUserRepository', () => {
     it('should respect offset parameter', async () => {
       mockDb.offset.mockResolvedValue([mockUser2]);
 
-      const result = await repository.search('test', 10, 5);
+      const result = await appUserRepository.search('test', 10, 5);
 
       expect(Array.isArray(result)).toBe(true);
     });
@@ -405,7 +387,7 @@ describe('AppUserRepository', () => {
     it('should return empty array when no matches', async () => {
       mockDb.offset.mockResolvedValue([]);
 
-      const result = await repository.search('nonexistent-query');
+      const result = await appUserRepository.search('nonexistent-query');
 
       expect(Array.isArray(result)).toBe(true);
       expect(result).toHaveLength(0);
@@ -416,7 +398,7 @@ describe('AppUserRepository', () => {
     it('should return true for existing username', async () => {
       mockDb.limit.mockResolvedValue([{ id: 'user-123' }]);
 
-      const result = await repository.isUsernameTaken('testuser');
+      const result = await appUserRepository.isUsernameTaken('testuser');
 
       expect(result).toBe(true);
       expect(mockDb.select).toHaveBeenCalled();
@@ -427,7 +409,7 @@ describe('AppUserRepository', () => {
     it('should return false for nonexistent username', async () => {
       mockDb.limit.mockResolvedValue([]);
 
-      const result = await repository.isUsernameTaken('nonexistent');
+      const result = await appUserRepository.isUsernameTaken('nonexistent');
 
       expect(result).toBe(false);
     });
@@ -435,7 +417,7 @@ describe('AppUserRepository', () => {
     it('should be case-insensitive', async () => {
       mockDb.limit.mockResolvedValue([{ id: 'user-123' }]);
 
-      const result = await repository.isUsernameTaken('TESTUSER');
+      const result = await appUserRepository.isUsernameTaken('TESTUSER');
 
       expect(result).toBe(true);
     });
@@ -443,7 +425,7 @@ describe('AppUserRepository', () => {
     it('should exclude user by id', async () => {
       mockDb.limit.mockResolvedValue([]);
 
-      const result = await repository.isUsernameTaken('testuser', 'user-123');
+      const result = await appUserRepository.isUsernameTaken('testuser', 'user-123');
 
       expect(result).toBe(false);
     });
@@ -451,7 +433,7 @@ describe('AppUserRepository', () => {
     it('should return true when checking another user with same username', async () => {
       mockDb.limit.mockResolvedValue([{ id: 'user-456' }]);
 
-      const result = await repository.isUsernameTaken('testuser', 'user-123');
+      const result = await appUserRepository.isUsernameTaken('testuser', 'user-123');
 
       expect(result).toBe(true);
     });
@@ -461,7 +443,7 @@ describe('AppUserRepository', () => {
     it('should return true for existing email', async () => {
       mockDb.limit.mockResolvedValue([{ id: 'user-123' }]);
 
-      const result = await repository.isEmailTaken('test@example.com');
+      const result = await appUserRepository.isEmailTaken('test@example.com');
 
       expect(result).toBe(true);
       expect(mockDb.select).toHaveBeenCalled();
@@ -472,7 +454,7 @@ describe('AppUserRepository', () => {
     it('should return false for nonexistent email', async () => {
       mockDb.limit.mockResolvedValue([]);
 
-      const result = await repository.isEmailTaken('nonexistent@example.com');
+      const result = await appUserRepository.isEmailTaken('nonexistent@example.com');
 
       expect(result).toBe(false);
     });
@@ -480,7 +462,7 @@ describe('AppUserRepository', () => {
     it('should exclude user by id', async () => {
       mockDb.limit.mockResolvedValue([]);
 
-      const result = await repository.isEmailTaken('test@example.com', 'user-123');
+      const result = await appUserRepository.isEmailTaken('test@example.com', 'user-123');
 
       expect(result).toBe(false);
     });
@@ -488,7 +470,7 @@ describe('AppUserRepository', () => {
     it('should return true when checking another user with same email', async () => {
       mockDb.limit.mockResolvedValue([{ id: 'user-456' }]);
 
-      const result = await repository.isEmailTaken('test@example.com', 'user-123');
+      const result = await appUserRepository.isEmailTaken('test@example.com', 'user-123');
 
       expect(result).toBe(true);
     });
@@ -498,7 +480,7 @@ describe('AppUserRepository', () => {
     it('should return array of users', async () => {
       mockDb.orderBy.mockResolvedValue([mockUser, mockUser2]);
 
-      const result = await repository.list();
+      const result = await appUserRepository.list();
 
       expect(Array.isArray(result)).toBe(true);
       expect(result).toHaveLength(2);
@@ -511,7 +493,7 @@ describe('AppUserRepository', () => {
     it('should respect limit parameter', async () => {
       mockDb.orderBy.mockResolvedValue([mockUser]);
 
-      const result = await repository.list(10);
+      const result = await appUserRepository.list(10);
 
       expect(Array.isArray(result)).toBe(true);
       expect(result.length).toBeLessThanOrEqual(10);
@@ -520,17 +502,17 @@ describe('AppUserRepository', () => {
     it('should respect offset parameter', async () => {
       mockDb.orderBy.mockResolvedValue([mockUser2]);
 
-      const result = await repository.list(10, 5);
+      const result = await appUserRepository.list(10, 5);
 
       expect(Array.isArray(result)).toBe(true);
     });
 
     it('should handle pagination', async () => {
       mockDb.orderBy.mockResolvedValueOnce([mockUser]);
-      const page1 = await repository.list(5, 0);
+      const page1 = await appUserRepository.list(5, 0);
 
       mockDb.orderBy.mockResolvedValueOnce([mockUser2]);
-      const page2 = await repository.list(5, 5);
+      const page2 = await appUserRepository.list(5, 5);
 
       expect(Array.isArray(page1)).toBe(true);
       expect(Array.isArray(page2)).toBe(true);
@@ -541,7 +523,7 @@ describe('AppUserRepository', () => {
     it('should return number', async () => {
       mockDb.from.mockResolvedValue([{ count: 42 }]);
 
-      const result = await repository.count();
+      const result = await appUserRepository.count();
 
       expect(typeof result).toBe('number');
       expect(result).toBe(42);
@@ -552,7 +534,7 @@ describe('AppUserRepository', () => {
     it('should return non-negative number', async () => {
       mockDb.from.mockResolvedValue([{ count: 0 }]);
 
-      const result = await repository.count();
+      const result = await appUserRepository.count();
 
       expect(result).toBeGreaterThanOrEqual(0);
     });
@@ -560,7 +542,7 @@ describe('AppUserRepository', () => {
     it('should handle null count', async () => {
       mockDb.from.mockResolvedValue([{ count: null }]);
 
-      const result = await repository.count();
+      const result = await appUserRepository.count();
 
       expect(result).toBe(0);
     });
@@ -570,7 +552,7 @@ describe('AppUserRepository', () => {
     it('should call findById', async () => {
       mockDb.limit.mockResolvedValue([mockUser]);
 
-      const result = await repository.findBySupertokensUserId('user-123');
+      const result = await appUserRepository.findBySupertokensUserId('user-123');
 
       expect(result).toEqual(mockUser);
       expect(mockDb.select).toHaveBeenCalled();
@@ -578,10 +560,10 @@ describe('AppUserRepository', () => {
 
     it('should return same result as findById', async () => {
       mockDb.limit.mockResolvedValueOnce([mockUser]);
-      const result1 = await repository.findById('user-123');
+      const result1 = await appUserRepository.findById('user-123');
 
       mockDb.limit.mockResolvedValueOnce([mockUser]);
-      const result2 = await repository.findBySupertokensUserId('user-123');
+      const result2 = await appUserRepository.findBySupertokensUserId('user-123');
 
       expect(result1).toEqual(result2);
     });
@@ -638,7 +620,7 @@ describe('AppUserRepository', () => {
     it('findById should return AppUser or undefined', async () => {
       mockDb.limit.mockResolvedValue([mockUser]);
 
-      const result = await repository.findById('user-123');
+      const result = await appUserRepository.findById('user-123');
 
       expect(result).toBeDefined();
       if (result) {
@@ -659,7 +641,7 @@ describe('AppUserRepository', () => {
       };
       mockDb.returning.mockResolvedValue([createdUser]);
 
-      const result = await repository.create(mockNewUser);
+      const result = await appUserRepository.create(mockNewUser);
 
       expect(result).toBeDefined();
       expect(result).toHaveProperty('id');
@@ -670,7 +652,7 @@ describe('AppUserRepository', () => {
     it('findOrCreate should return object with user and created flag', async () => {
       mockDb.limit.mockResolvedValue([mockUser]);
 
-      const result = await repository.findOrCreate(mockNewUser);
+      const result = await appUserRepository.findOrCreate(mockNewUser);
 
       expect(result).toHaveProperty('user');
       expect(result).toHaveProperty('created');
@@ -681,7 +663,7 @@ describe('AppUserRepository', () => {
     it('search should return array of AppUser', async () => {
       mockDb.offset.mockResolvedValue([mockUser, mockUser2]);
 
-      const result = await repository.search('test');
+      const result = await appUserRepository.search('test');
 
       expect(Array.isArray(result)).toBe(true);
       result.forEach((user) => {

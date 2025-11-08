@@ -1,4 +1,4 @@
-import { db } from '../db';
+import { db as realDb } from '../db';
 import {
   councils,
   councilManagers,
@@ -23,14 +23,20 @@ export type UpdateCouncilDto = {
 };
 
 export class CouncilRepository {
+  private db: any;
+
+  constructor(db: any) {
+    this.db = db;
+  }
+
   /**
    * Create a new council
    */
   async create(data: CreateCouncilDto) {
-    const [council] = await db.insert(councils).values(data).returning();
+    const [council] = await this.db.insert(councils).values(data).returning();
 
     // Initialize trust score for the council
-    await db.insert(councilTrustScores).values({
+    await this.db.insert(councilTrustScores).values({
       councilId: council.id,
       trustScore: 0,
     });
@@ -42,7 +48,7 @@ export class CouncilRepository {
    * Find council by ID (not deleted)
    */
   async findById(id: string) {
-    const [council] = await db
+    const [council] = await this.db
       .select()
       .from(councils)
       .where(and(eq(councils.id, id), isNull(councils.deletedAt)));
@@ -66,7 +72,7 @@ export class CouncilRepository {
     const offset = (page - 1) * limit;
 
     // Build the query with join to get trust score
-    const query = db
+    const query = this.db
       .select({
         council: councils,
         trustScore: councilTrustScores.trustScore,
@@ -95,7 +101,7 @@ export class CouncilRepository {
     const results = await query;
 
     // Get total count
-    const [{ count: total }] = await db
+    const [{ count: total }] = await this.db
       .select({ count: count() })
       .from(councils)
       .where(and(eq(councils.communityId, communityId), isNull(councils.deletedAt)));
@@ -113,7 +119,7 @@ export class CouncilRepository {
    * Update council details
    */
   async update(id: string, data: UpdateCouncilDto) {
-    const [updated] = await db
+    const [updated] = await this.db
       .update(councils)
       .set({ ...data, updatedAt: new Date() })
       .where(and(eq(councils.id, id), isNull(councils.deletedAt)))
@@ -126,7 +132,7 @@ export class CouncilRepository {
    * Soft delete a council
    */
   async delete(id: string) {
-    const [deleted] = await db
+    const [deleted] = await this.db
       .update(councils)
       .set({ deletedAt: new Date() })
       .where(eq(councils.id, id))
@@ -139,7 +145,10 @@ export class CouncilRepository {
    * Add a manager to a council
    */
   async addManager(councilId: string, userId: string) {
-    const [manager] = await db.insert(councilManagers).values({ councilId, userId }).returning();
+    const [manager] = await this.db
+      .insert(councilManagers)
+      .values({ councilId, userId })
+      .returning();
 
     return manager;
   }
@@ -148,7 +157,7 @@ export class CouncilRepository {
    * Remove a manager from a council
    */
   async removeManager(councilId: string, userId: string) {
-    const [removed] = await db
+    const [removed] = await this.db
       .delete(councilManagers)
       .where(and(eq(councilManagers.councilId, councilId), eq(councilManagers.userId, userId)))
       .returning();
@@ -160,14 +169,17 @@ export class CouncilRepository {
    * Get all managers for a council
    */
   async getManagers(councilId: string) {
-    return await db.select().from(councilManagers).where(eq(councilManagers.councilId, councilId));
+    return await this.db
+      .select()
+      .from(councilManagers)
+      .where(eq(councilManagers.councilId, councilId));
   }
 
   /**
    * Check if user is a manager of a council
    */
   async isManager(councilId: string, userId: string) {
-    const [manager] = await db
+    const [manager] = await this.db
       .select()
       .from(councilManagers)
       .where(and(eq(councilManagers.councilId, councilId), eq(councilManagers.userId, userId)));
@@ -179,7 +191,7 @@ export class CouncilRepository {
    * Get council trust score
    */
   async getTrustScore(councilId: string) {
-    const [score] = await db
+    const [score] = await this.db
       .select()
       .from(councilTrustScores)
       .where(eq(councilTrustScores.councilId, councilId));
@@ -191,7 +203,7 @@ export class CouncilRepository {
    * Check if user has awarded trust to a council
    */
   async hasAwardedTrust(councilId: string, userId: string) {
-    const [award] = await db
+    const [award] = await this.db
       .select()
       .from(councilTrustAwards)
       .where(
@@ -210,7 +222,7 @@ export class CouncilRepository {
    */
   async awardTrust(councilId: string, userId: string) {
     // Check if award exists
-    const [existing] = await db
+    const [existing] = await this.db
       .select()
       .from(councilTrustAwards)
       .where(
@@ -220,7 +232,7 @@ export class CouncilRepository {
     let award;
     if (existing) {
       // Restore if previously removed
-      [award] = await db
+      [award] = await this.db
         .update(councilTrustAwards)
         .set({ removedAt: null, awardedAt: new Date() })
         .where(
@@ -229,7 +241,7 @@ export class CouncilRepository {
         .returning();
     } else {
       // Create new award
-      [award] = await db
+      [award] = await this.db
         .insert(councilTrustAwards)
         .values({ councilId, userId, awardedAt: new Date(), removedAt: null })
         .returning();
@@ -239,7 +251,7 @@ export class CouncilRepository {
     await this.recalculateTrustScore(councilId);
 
     // Log to history
-    await db.insert(councilTrustHistory).values({
+    await this.db.insert(councilTrustHistory).values({
       councilId,
       userId,
       action: 'awarded',
@@ -252,7 +264,7 @@ export class CouncilRepository {
    * Remove trust from a council
    */
   async removeTrust(councilId: string, userId: string) {
-    const [removed] = await db
+    const [removed] = await this.db
       .update(councilTrustAwards)
       .set({ removedAt: new Date() })
       .where(
@@ -268,7 +280,7 @@ export class CouncilRepository {
     await this.recalculateTrustScore(councilId);
 
     // Log to history
-    await db.insert(councilTrustHistory).values({
+    await this.db.insert(councilTrustHistory).values({
       councilId,
       userId,
       action: 'removed',
@@ -281,14 +293,14 @@ export class CouncilRepository {
    * Recalculate trust score for a council
    */
   async recalculateTrustScore(councilId: string) {
-    const [{ count: trustCount }] = await db
+    const [{ count: trustCount }] = await this.db
       .select({ count: count() })
       .from(councilTrustAwards)
       .where(
         and(eq(councilTrustAwards.councilId, councilId), isNull(councilTrustAwards.removedAt))
       );
 
-    await db
+    await this.db
       .update(councilTrustScores)
       .set({ trustScore: Number(trustCount), updatedAt: new Date() })
       .where(eq(councilTrustScores.councilId, councilId));
@@ -300,7 +312,7 @@ export class CouncilRepository {
    * Get council inventory
    */
   async getInventory(councilId: string) {
-    return await db
+    return await this.db
       .select()
       .from(councilInventory)
       .where(eq(councilInventory.councilId, councilId));
@@ -313,7 +325,7 @@ export class CouncilRepository {
     const { page = 1, limit = 20 } = options;
     const offset = (page - 1) * limit;
 
-    const transactions = await db
+    const transactions = await this.db
       .select()
       .from(councilTransactions)
       .where(eq(councilTransactions.councilId, councilId))
@@ -321,7 +333,7 @@ export class CouncilRepository {
       .limit(limit)
       .offset(offset);
 
-    const [{ count: total }] = await db
+    const [{ count: total }] = await this.db
       .select({ count: count() })
       .from(councilTransactions)
       .where(eq(councilTransactions.councilId, councilId));
@@ -336,7 +348,7 @@ export class CouncilRepository {
    * Get member count for a council
    */
   async getMemberCount(councilId: string) {
-    const [{ count: memberCount }] = await db
+    const [{ count: memberCount }] = await this.db
       .select({ count: count() })
       .from(councilManagers)
       .where(eq(councilManagers.councilId, councilId));
@@ -345,4 +357,5 @@ export class CouncilRepository {
   }
 }
 
-export const councilRepository = new CouncilRepository();
+// Default instance for production code paths
+export const councilRepository = new CouncilRepository(realDb);

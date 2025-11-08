@@ -1,17 +1,10 @@
-import { describe, test, expect, beforeEach, afterEach, mock } from 'bun:test';
-import { db } from '../db/index';
+import { describe, test, expect, beforeEach, mock } from 'bun:test';
 import { createThenableMockDb, setupMockDbChains } from '../../tests/helpers/mockDb';
 import { TrustViewRepository } from './trustView.repository';
 import { trustAwardRepository } from './trustAward.repository';
 import { adminTrustGrantRepository } from './adminTrustGrant.repository';
 
-// Store original db methods to restore after each test
-const originalDbMethods = {
-  insert: db.insert,
-  select: db.select,
-  update: db.update,
-  delete: (db as any).delete,
-};
+let trustViewRepository: TrustViewRepository;
 
 // Create mock database
 const mockDb = createThenableMockDb();
@@ -25,8 +18,6 @@ const mockGetGrantAmount = mock(() => Promise.resolve(0));
 (adminTrustGrantRepository as any).getGrantAmount = mockGetGrantAmount;
 
 describe('TrustViewRepository', () => {
-  const repository = new TrustViewRepository();
-
   // Test data - static IDs
   const testCommunityId1 = 'comm-123';
   const testCommunityId2 = 'comm-456';
@@ -60,26 +51,15 @@ describe('TrustViewRepository', () => {
     mockCountAwardsToUser.mockResolvedValue(0);
     mockGetGrantAmount.mockResolvedValue(0);
 
-    // Replace db methods with mocks
-    (db.insert as any) = mockDb.insert;
-    (db.select as any) = mockDb.select;
-    (db.update as any) = mockDb.update;
-    (db as any).delete = mockDb.delete;
-  });
-
-  afterEach(() => {
-    // Restore original db methods to prevent pollution of other tests
-    (db.insert as any) = originalDbMethods.insert;
-    (db.select as any) = originalDbMethods.select;
-    (db.update as any) = originalDbMethods.update;
-    (db as any).delete = originalDbMethods.delete;
+    // Instantiate repository with the per-test mock DB
+    trustViewRepository = new TrustViewRepository(mockDb as any);
   });
 
   describe('get', () => {
     test('should return null when trust view does not exist', async () => {
       mockDb.where.mockResolvedValue([]);
 
-      const view = await repository.get(testCommunityId1, testUserId1);
+      const view = await trustViewRepository.get(testCommunityId1, testUserId1);
 
       expect(view).toBeNull();
       expect(mockDb.select).toHaveBeenCalled();
@@ -90,7 +70,7 @@ describe('TrustViewRepository', () => {
     test('should return trust view when it exists', async () => {
       mockDb.where.mockResolvedValue([testTrustView1]);
 
-      const view = await repository.get(testCommunityId1, testUserId1);
+      const view = await trustViewRepository.get(testCommunityId1, testUserId1);
 
       expect(view).toBeDefined();
       expect(view?.communityId).toBe(testCommunityId1);
@@ -106,7 +86,7 @@ describe('TrustViewRepository', () => {
       // Insert returns the created view
       mockDb.returning.mockResolvedValue([testTrustView1]);
 
-      const view = await repository.upsertZero(testCommunityId1, testUserId1);
+      const view = await trustViewRepository.upsertZero(testCommunityId1, testUserId1);
 
       expect(view).toBeDefined();
       expect(view.communityId).toBe(testCommunityId1);
@@ -122,8 +102,8 @@ describe('TrustViewRepository', () => {
       // Second call - get returns existing again
       mockDb.where.mockResolvedValueOnce([testTrustView1]);
 
-      const first = await repository.upsertZero(testCommunityId1, testUserId1);
-      const second = await repository.upsertZero(testCommunityId1, testUserId1);
+      const first = await trustViewRepository.upsertZero(testCommunityId1, testUserId1);
+      const second = await trustViewRepository.upsertZero(testCommunityId1, testUserId1);
 
       expect(first.id).toBe(second.id);
       expect(second.points).toBe(0);
@@ -140,8 +120,8 @@ describe('TrustViewRepository', () => {
       mockDb.where.mockResolvedValueOnce([]);
       mockDb.returning.mockResolvedValueOnce([view2]);
 
-      const view1 = await repository.upsertZero(testCommunityId1, testUserId1);
-      const view2Result = await repository.upsertZero(testCommunityId2, testUserId1);
+      const view1 = await trustViewRepository.upsertZero(testCommunityId1, testUserId1);
+      const view2Result = await trustViewRepository.upsertZero(testCommunityId2, testUserId1);
 
       expect(view1.communityId).toBe(testCommunityId1);
       expect(view2Result.communityId).toBe(testCommunityId2);
@@ -162,7 +142,7 @@ describe('TrustViewRepository', () => {
       const updatedView = { ...testTrustView1, points: 2 };
       mockDb.returning.mockResolvedValueOnce([updatedView]);
 
-      const view = await repository.recalculatePoints(testCommunityId1, testUserId2);
+      const view = await trustViewRepository.recalculatePoints(testCommunityId1, testUserId2);
 
       expect(view.points).toBe(2);
       expect(mockCountAwardsToUser).toHaveBeenCalledWith(testCommunityId1, testUserId2);
@@ -181,7 +161,7 @@ describe('TrustViewRepository', () => {
       const updatedView = { ...testTrustView1, points: 10 };
       mockDb.returning.mockResolvedValueOnce([updatedView]);
 
-      const view = await repository.recalculatePoints(testCommunityId1, testUserId1);
+      const view = await trustViewRepository.recalculatePoints(testCommunityId1, testUserId1);
 
       expect(view.points).toBe(10);
     });
@@ -198,7 +178,7 @@ describe('TrustViewRepository', () => {
       const updatedView = { ...testTrustView1, points: 7 };
       mockDb.returning.mockResolvedValueOnce([updatedView]);
 
-      const view = await repository.recalculatePoints(testCommunityId1, testUserId2);
+      const view = await trustViewRepository.recalculatePoints(testCommunityId1, testUserId2);
 
       expect(view.points).toBe(7); // 2 peer awards + 5 admin grant
     });
@@ -214,7 +194,7 @@ describe('TrustViewRepository', () => {
       const updatedView = { ...testTrustView1, points: 1 };
       mockDb.returning.mockResolvedValueOnce([updatedView]);
 
-      const view = await repository.recalculatePoints(testCommunityId1, testUserId1);
+      const view = await trustViewRepository.recalculatePoints(testCommunityId1, testUserId1);
 
       expect(view.points).toBe(1); // Corrected from 100 to 1
     });
@@ -230,7 +210,7 @@ describe('TrustViewRepository', () => {
       // Update call
       mockDb.returning.mockResolvedValueOnce([testTrustView1]);
 
-      const view = await repository.recalculatePoints(testCommunityId1, testUserId1);
+      const view = await trustViewRepository.recalculatePoints(testCommunityId1, testUserId1);
 
       expect(view.points).toBe(0);
     });
@@ -248,7 +228,7 @@ describe('TrustViewRepository', () => {
       // Update call
       mockDb.returning.mockResolvedValue([updatedView]);
 
-      const view = await repository.adjustPoints(testCommunityId1, testUserId1, 5);
+      const view = await trustViewRepository.adjustPoints(testCommunityId1, testUserId1, 5);
 
       expect(view.points).toBe(15);
       expect(mockDb.update).toHaveBeenCalled();
@@ -263,7 +243,7 @@ describe('TrustViewRepository', () => {
       mockDb.where.mockResolvedValueOnce([initialView]);
       mockDb.returning.mockResolvedValue([updatedView]);
 
-      const view = await repository.adjustPoints(testCommunityId1, testUserId1, -3);
+      const view = await trustViewRepository.adjustPoints(testCommunityId1, testUserId1, -3);
 
       expect(view.points).toBe(7);
     });
@@ -279,7 +259,7 @@ describe('TrustViewRepository', () => {
       // Update call
       mockDb.returning.mockResolvedValueOnce([newView]);
 
-      const view = await repository.adjustPoints(testCommunityId1, testUserId1, 5);
+      const view = await trustViewRepository.adjustPoints(testCommunityId1, testUserId1, 5);
 
       expect(view.points).toBe(5);
     });
@@ -291,7 +271,7 @@ describe('TrustViewRepository', () => {
       mockDb.where.mockResolvedValueOnce([testTrustView1]);
       mockDb.returning.mockResolvedValue([negativeView]);
 
-      const view = await repository.adjustPoints(testCommunityId1, testUserId1, -5);
+      const view = await trustViewRepository.adjustPoints(testCommunityId1, testUserId1, -5);
 
       expect(view.points).toBe(-5);
     });
@@ -306,7 +286,7 @@ describe('TrustViewRepository', () => {
       // Update call
       mockDb.returning.mockResolvedValue([updatedView]);
 
-      const view = await repository.setPoints(testCommunityId1, testUserId1, 25);
+      const view = await trustViewRepository.setPoints(testCommunityId1, testUserId1, 25);
 
       expect(view.points).toBe(25);
     });
@@ -317,7 +297,7 @@ describe('TrustViewRepository', () => {
       mockDb.where.mockResolvedValueOnce([{ ...testTrustView1, points: 10 }]);
       mockDb.returning.mockResolvedValue([updatedView]);
 
-      const view = await repository.setPoints(testCommunityId1, testUserId1, 50);
+      const view = await trustViewRepository.setPoints(testCommunityId1, testUserId1, 50);
 
       expect(view.points).toBe(50);
     });
@@ -331,7 +311,7 @@ describe('TrustViewRepository', () => {
       // Update call
       mockDb.returning.mockResolvedValueOnce([newView]);
 
-      const view = await repository.setPoints(testCommunityId1, testUserId1, 30);
+      const view = await trustViewRepository.setPoints(testCommunityId1, testUserId1, 30);
 
       expect(view.points).toBe(30);
     });
@@ -342,7 +322,7 @@ describe('TrustViewRepository', () => {
       mockDb.where.mockResolvedValueOnce([{ ...testTrustView1, points: 100 }]);
       mockDb.returning.mockResolvedValue([zeroView]);
 
-      const view = await repository.setPoints(testCommunityId1, testUserId1, 0);
+      const view = await trustViewRepository.setPoints(testCommunityId1, testUserId1, 0);
 
       expect(view.points).toBe(0);
     });
@@ -352,7 +332,7 @@ describe('TrustViewRepository', () => {
     test('should return empty array when community has no views', async () => {
       mockDb.offset.mockResolvedValue([]);
 
-      const views = await repository.listByCommunity(testCommunityId1);
+      const views = await trustViewRepository.listByCommunity(testCommunityId1);
 
       expect(views).toEqual([]);
       expect(mockDb.select).toHaveBeenCalled();
@@ -378,7 +358,7 @@ describe('TrustViewRepository', () => {
 
       mockDb.offset.mockResolvedValue([view1, view2]);
 
-      const views = await repository.listByCommunity(testCommunityId1);
+      const views = await trustViewRepository.listByCommunity(testCommunityId1);
 
       expect(views).toHaveLength(2);
 
@@ -398,7 +378,7 @@ describe('TrustViewRepository', () => {
       const views = [testTrustView1, testTrustView2, { ...testTrustView1, id: 'view-789' }];
       mockDb.offset.mockResolvedValue(views.slice(0, 3));
 
-      const result = await repository.listByCommunity(testCommunityId1, 3, 0);
+      const result = await trustViewRepository.listByCommunity(testCommunityId1, 3, 0);
 
       expect(result.length).toBeLessThanOrEqual(3);
       expect(mockDb.limit).toHaveBeenCalled();
@@ -407,7 +387,7 @@ describe('TrustViewRepository', () => {
     test('should respect offset parameter', async () => {
       mockDb.offset.mockResolvedValue([testTrustView2]);
 
-      const offsetViews = await repository.listByCommunity(testCommunityId1, 50, 2);
+      const offsetViews = await trustViewRepository.listByCommunity(testCommunityId1, 50, 2);
 
       expect(mockDb.offset).toHaveBeenCalled();
       expect(offsetViews).toBeDefined();
@@ -418,7 +398,7 @@ describe('TrustViewRepository', () => {
     test('should return empty array when user has no views', async () => {
       mockDb.offset.mockResolvedValue([]);
 
-      const views = await repository.listByUser(testUserId1);
+      const views = await trustViewRepository.listByUser(testUserId1);
 
       expect(views).toEqual([]);
       expect(mockDb.select).toHaveBeenCalled();
@@ -431,7 +411,7 @@ describe('TrustViewRepository', () => {
 
       mockDb.offset.mockResolvedValue([view1, view2]);
 
-      const views = await repository.listByUser(testUserId1);
+      const views = await trustViewRepository.listByUser(testUserId1);
 
       expect(views).toHaveLength(2);
       expect(views.every((v) => v.userId === testUserId1)).toBe(true);
@@ -447,7 +427,7 @@ describe('TrustViewRepository', () => {
       ];
       mockDb.offset.mockResolvedValue(views.slice(0, 3));
 
-      const result = await repository.listByUser(testUserId1, 3, 0);
+      const result = await trustViewRepository.listByUser(testUserId1, 3, 0);
 
       expect(result.length).toBeLessThanOrEqual(3);
       expect(mockDb.limit).toHaveBeenCalled();
@@ -458,7 +438,7 @@ describe('TrustViewRepository', () => {
     test('should return empty array when community has no views', async () => {
       mockDb.where.mockResolvedValue([]);
 
-      const views = await repository.getAllForCommunity(testCommunityId1);
+      const views = await trustViewRepository.getAllForCommunity(testCommunityId1);
 
       expect(views).toEqual([]);
       expect(mockDb.select).toHaveBeenCalled();
@@ -473,7 +453,7 @@ describe('TrustViewRepository', () => {
       ];
       mockDb.where.mockResolvedValue(views);
 
-      const result = await repository.getAllForCommunity(testCommunityId1);
+      const result = await trustViewRepository.getAllForCommunity(testCommunityId1);
 
       expect(result).toHaveLength(3);
       expect(result.every((v) => v.communityId === testCommunityId1)).toBe(true);
@@ -482,7 +462,7 @@ describe('TrustViewRepository', () => {
 
   describe('getBatchForUser', () => {
     test('should return empty map when no community IDs provided', async () => {
-      const map = await repository.getBatchForUser([], testUserId1);
+      const map = await trustViewRepository.getBatchForUser([], testUserId1);
 
       expect(map.size).toBe(0);
     });
@@ -494,7 +474,7 @@ describe('TrustViewRepository', () => {
       ];
       mockDb.where.mockResolvedValue(rows);
 
-      const map = await repository.getBatchForUser(
+      const map = await trustViewRepository.getBatchForUser(
         [testCommunityId1, testCommunityId2],
         testUserId1
       );
@@ -509,7 +489,7 @@ describe('TrustViewRepository', () => {
       mockDb.where.mockResolvedValue(rows);
 
       const nonExistentCommunityId = 'comm-nonexistent';
-      const map = await repository.getBatchForUser(
+      const map = await trustViewRepository.getBatchForUser(
         [testCommunityId1, nonExistentCommunityId],
         testUserId1
       );
@@ -522,7 +502,7 @@ describe('TrustViewRepository', () => {
     test('should handle user with no trust views', async () => {
       mockDb.where.mockResolvedValue([]);
 
-      const map = await repository.getBatchForUser(
+      const map = await trustViewRepository.getBatchForUser(
         [testCommunityId1, testCommunityId2],
         testUserId1
       );
@@ -537,7 +517,7 @@ describe('TrustViewRepository', () => {
       ];
       mockDb.where.mockResolvedValue(rows);
 
-      const map = await repository.getBatchForUser(
+      const map = await trustViewRepository.getBatchForUser(
         [testCommunityId1, testCommunityId2],
         testUserId1
       );

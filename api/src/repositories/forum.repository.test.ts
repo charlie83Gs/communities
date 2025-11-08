@@ -1,15 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
-import { forumRepository } from '@/repositories/forum.repository';
-import { db } from '@db/index';
+import { ForumRepository } from '@/repositories/forum.repository';
 import { createThenableMockDb, setupMockDbChains } from '../../tests/helpers/mockDb';
 
-// Store original db methods to restore after each test
-const originalDbMethods = {
-  insert: db.insert,
-  select: db.select,
-  update: db.update,
-  delete: (db as any).delete,
-};
+let forumRepository: ForumRepository;
 
 // Create mock database
 const mockDb = createThenableMockDb();
@@ -59,20 +52,12 @@ describe('ForumRepository', () => {
   beforeEach(() => {
     // Reset all mocks and setup default chains
     setupMockDbChains(mockDb);
-
-    // Replace db methods with mocks
-    (db.insert as any) = mockDb.insert;
-    (db.select as any) = mockDb.select;
-    (db.update as any) = mockDb.update;
-    (db.delete as any) = mockDb.delete;
+    // Instantiate repository with the per-test mock DB
+    forumRepository = new ForumRepository(mockDb as any);
   });
 
   afterEach(() => {
-    // Restore original db methods to prevent pollution of other tests
-    (db.insert as any) = originalDbMethods.insert;
-    (db.select as any) = originalDbMethods.select;
-    (db.update as any) = originalDbMethods.update;
-    (db.delete as any) = originalDbMethods.delete;
+    // Nothing to clean up; a fresh ForumRepository is created per test
   });
 
   describe('Category Operations', () => {

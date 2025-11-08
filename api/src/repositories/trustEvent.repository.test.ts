@@ -1,22 +1,13 @@
 import { describe, test, expect, beforeEach, afterEach } from 'bun:test';
-import { db } from '../db/index';
 import { createThenableMockDb, setupMockDbChains } from '../../tests/helpers/mockDb';
 import { TrustEventRepository } from './trustEvent.repository';
 
-// Store original db methods to restore after each test
-const originalDbMethods = {
-  insert: db.insert,
-  select: db.select,
-  update: db.update,
-  delete: (db as any).delete,
-};
+let trustEventRepository: TrustEventRepository;
 
 // Create mock database
 const mockDb = createThenableMockDb();
 
 describe('TrustEventRepository', () => {
-  const repository = new TrustEventRepository();
-
   // Test data - all const, no reassignment
   const testCommunityId = 'test-community-123';
   const testUserId1 = 'test-user-1';
@@ -28,20 +19,12 @@ describe('TrustEventRepository', () => {
   beforeEach(() => {
     // Reset all mocks and setup default chains
     setupMockDbChains(mockDb);
-
-    // Replace db methods with mocks
-    (db.insert as any) = mockDb.insert;
-    (db.select as any) = mockDb.select;
-    (db.update as any) = mockDb.update;
-    (db as any).delete = mockDb.delete;
+    // Instantiate repository with the per-test mock DB
+    trustEventRepository = new TrustEventRepository(mockDb as any);
   });
 
   afterEach(() => {
-    // Restore original db methods to prevent pollution of other tests
-    (db.insert as any) = originalDbMethods.insert;
-    (db.select as any) = originalDbMethods.select;
-    (db.update as any) = originalDbMethods.update;
-    (db as any).delete = originalDbMethods.delete;
+    // Nothing to clean up; a fresh TrustEventRepository is created per test
   });
 
   describe('create', () => {
@@ -62,7 +45,7 @@ describe('TrustEventRepository', () => {
 
       mockDb.returning.mockResolvedValue([mockEvent]);
 
-      const event = await repository.create({
+      const event = await trustEventRepository.create({
         communityId: testCommunityId,
         type: 'share_redeemed',
         entityType: 'share',
@@ -107,7 +90,7 @@ describe('TrustEventRepository', () => {
 
       mockDb.returning.mockResolvedValue([mockEvent]);
 
-      const event = await repository.create({
+      const event = await trustEventRepository.create({
         communityId: testCommunityId,
         type: 'posture_adjustment',
       });
@@ -141,7 +124,7 @@ describe('TrustEventRepository', () => {
 
       mockDb.returning.mockResolvedValue([mockEvent]);
 
-      const event = await repository.create({
+      const event = await trustEventRepository.create({
         communityId: testCommunityId,
         type: 'share_redeemed',
         subjectUserIdA: testUserId1,
@@ -171,7 +154,7 @@ describe('TrustEventRepository', () => {
 
       mockDb.returning.mockResolvedValue([mockEvent]);
 
-      const event = await repository.create({
+      const event = await trustEventRepository.create({
         communityId: testCommunityId,
         type: 'custom_event_type',
         actorUserId: testUserId1,
@@ -185,7 +168,7 @@ describe('TrustEventRepository', () => {
     test('should return empty array when user has no events', async () => {
       mockDb.offset.mockResolvedValue([]);
 
-      const events = await repository.listByUser(testCommunityId, testUserId1, 50, 0);
+      const events = await trustEventRepository.listByUser(testCommunityId, testUserId1, 50, 0);
 
       expect(events).toEqual([]);
       expect(mockDb.select).toHaveBeenCalled();
@@ -211,7 +194,7 @@ describe('TrustEventRepository', () => {
 
       mockDb.offset.mockResolvedValue(mockEvents);
 
-      const events = await repository.listByUser(testCommunityId, testUserId1, 50, 0);
+      const events = await trustEventRepository.listByUser(testCommunityId, testUserId1, 50, 0);
 
       expect(events).toHaveLength(1);
       expect(events[0].subjectUserIdA).toBe(testUserId1);
@@ -233,7 +216,7 @@ describe('TrustEventRepository', () => {
 
       mockDb.offset.mockResolvedValue(mockEvents);
 
-      const events = await repository.listByUser(testCommunityId, testUserId2, 50, 0);
+      const events = await trustEventRepository.listByUser(testCommunityId, testUserId2, 50, 0);
 
       expect(events).toHaveLength(1);
       expect(events[0].subjectUserIdB).toBe(testUserId2);
@@ -261,7 +244,7 @@ describe('TrustEventRepository', () => {
 
       mockDb.offset.mockResolvedValue(mockEvents);
 
-      const events = await repository.listByUser(testCommunityId, testUserId1, 50, 0);
+      const events = await trustEventRepository.listByUser(testCommunityId, testUserId1, 50, 0);
 
       expect(events).toHaveLength(2);
     });
@@ -275,7 +258,7 @@ describe('TrustEventRepository', () => {
 
       mockDb.offset.mockResolvedValue(mockEvents);
 
-      const events = await repository.listByUser(testCommunityId, testUserId1, 3, 0);
+      const events = await trustEventRepository.listByUser(testCommunityId, testUserId1, 3, 0);
 
       expect(events).toHaveLength(3);
       expect(mockDb.limit).toHaveBeenCalled();
@@ -290,7 +273,12 @@ describe('TrustEventRepository', () => {
 
       mockDb.offset.mockResolvedValue(mockEvents);
 
-      const offsetEvents = await repository.listByUser(testCommunityId, testUserId1, 50, 2);
+      const offsetEvents = await trustEventRepository.listByUser(
+        testCommunityId,
+        testUserId1,
+        50,
+        2
+      );
 
       expect(offsetEvents).toHaveLength(3);
       expect(mockDb.offset).toHaveBeenCalled();
@@ -304,7 +292,7 @@ describe('TrustEventRepository', () => {
 
       mockDb.offset.mockResolvedValue(mockEvents);
 
-      const events = await repository.listByUser(testCommunityId, testUserId1, 50, 0);
+      const events = await trustEventRepository.listByUser(testCommunityId, testUserId1, 50, 0);
 
       expect(events[0].id).toBe('event-16');
       expect(events[1].id).toBe('event-15');
@@ -314,7 +302,12 @@ describe('TrustEventRepository', () => {
     test('should not return events from other communities', async () => {
       mockDb.offset.mockResolvedValue([]);
 
-      const events = await repository.listByUser(differentCommunityId, testUserId1, 50, 0);
+      const events = await trustEventRepository.listByUser(
+        differentCommunityId,
+        testUserId1,
+        50,
+        0
+      );
 
       expect(events).toEqual([]);
     });
@@ -324,7 +317,7 @@ describe('TrustEventRepository', () => {
     test('should return empty array when user has no B events', async () => {
       mockDb.offset.mockResolvedValue([]);
 
-      const events = await repository.listByUserB(testCommunityId, testUserId1, 50, 0);
+      const events = await trustEventRepository.listByUserB(testCommunityId, testUserId1, 50, 0);
 
       expect(events).toEqual([]);
     });
@@ -343,7 +336,7 @@ describe('TrustEventRepository', () => {
 
       mockDb.offset.mockResolvedValue(mockEvents);
 
-      const events = await repository.listByUserB(testCommunityId, testUserId1, 50, 0);
+      const events = await trustEventRepository.listByUserB(testCommunityId, testUserId1, 50, 0);
 
       expect(events).toHaveLength(1);
       expect(events[0].subjectUserIdB).toBe(testUserId1);
@@ -357,7 +350,7 @@ describe('TrustEventRepository', () => {
 
       mockDb.offset.mockResolvedValue(mockEvents);
 
-      const events = await repository.listByUserB(testCommunityId, testUserId1, 2, 1);
+      const events = await trustEventRepository.listByUserB(testCommunityId, testUserId1, 2, 1);
 
       expect(events).toHaveLength(2);
     });
@@ -367,7 +360,7 @@ describe('TrustEventRepository', () => {
     test('should return empty array when community has no events', async () => {
       mockDb.offset.mockResolvedValue([]);
 
-      const events = await repository.listByCommunity(testCommunityId, 100, 0);
+      const events = await trustEventRepository.listByCommunity(testCommunityId, 100, 0);
 
       expect(events).toEqual([]);
     });
@@ -399,7 +392,7 @@ describe('TrustEventRepository', () => {
 
       mockDb.offset.mockResolvedValue(mockEvents);
 
-      const events = await repository.listByCommunity(testCommunityId, 100, 0);
+      const events = await trustEventRepository.listByCommunity(testCommunityId, 100, 0);
 
       expect(events).toHaveLength(3);
       expect(events.every((e) => e.communityId === testCommunityId)).toBe(true);
@@ -410,7 +403,7 @@ describe('TrustEventRepository', () => {
 
       mockDb.offset.mockResolvedValue(mockEvents);
 
-      const events = await repository.listByCommunity(testCommunityId, 3, 0);
+      const events = await trustEventRepository.listByCommunity(testCommunityId, 3, 0);
 
       expect(events).toHaveLength(3);
     });
@@ -420,7 +413,7 @@ describe('TrustEventRepository', () => {
 
       mockDb.offset.mockResolvedValue(mockEvents);
 
-      const offsetEvents = await repository.listByCommunity(testCommunityId, 100, 2);
+      const offsetEvents = await trustEventRepository.listByCommunity(testCommunityId, 100, 2);
 
       expect(offsetEvents).toHaveLength(3);
     });
@@ -433,7 +426,7 @@ describe('TrustEventRepository', () => {
 
       mockDb.offset.mockResolvedValue(mockEvents);
 
-      const events = await repository.listByCommunity(testCommunityId, 100, 0);
+      const events = await trustEventRepository.listByCommunity(testCommunityId, 100, 0);
 
       expect(events[0].id).toBe('event-30');
       expect(events[1].id).toBe('event-29');
@@ -444,7 +437,7 @@ describe('TrustEventRepository', () => {
     test('should return empty array when user has no events', async () => {
       mockDb.offset.mockResolvedValue([]);
 
-      const events = await repository.listByUserAllCommunities(testUserId1, 50, 0);
+      const events = await trustEventRepository.listByUserAllCommunities(testUserId1, 50, 0);
 
       expect(events).toEqual([]);
     });
@@ -462,7 +455,7 @@ describe('TrustEventRepository', () => {
 
       mockDb.offset.mockResolvedValue(mockEvents);
 
-      const events = await repository.listByUserAllCommunities(testUserId1, 50, 0);
+      const events = await trustEventRepository.listByUserAllCommunities(testUserId1, 50, 0);
 
       expect(events.length).toBeGreaterThanOrEqual(1);
       expect(events.some((e) => e.communityId === testCommunityId)).toBe(true);
@@ -488,7 +481,7 @@ describe('TrustEventRepository', () => {
 
       mockDb.offset.mockResolvedValue(mockEvents);
 
-      const events = await repository.listByUserAllCommunities(testUserId1, 50, 0);
+      const events = await trustEventRepository.listByUserAllCommunities(testUserId1, 50, 0);
 
       expect(events.length).toBeGreaterThanOrEqual(2);
     });
@@ -498,7 +491,7 @@ describe('TrustEventRepository', () => {
 
       mockDb.offset.mockResolvedValue(mockEvents);
 
-      const events = await repository.listByUserAllCommunities(testUserId1, 3, 0);
+      const events = await trustEventRepository.listByUserAllCommunities(testUserId1, 3, 0);
 
       expect(events).toHaveLength(3);
     });
@@ -508,7 +501,7 @@ describe('TrustEventRepository', () => {
 
       mockDb.offset.mockResolvedValue(mockEvents);
 
-      const offsetEvents = await repository.listByUserAllCommunities(testUserId1, 50, 2);
+      const offsetEvents = await trustEventRepository.listByUserAllCommunities(testUserId1, 50, 2);
 
       expect(offsetEvents.length).toBeGreaterThanOrEqual(1);
     });
@@ -533,7 +526,7 @@ describe('TrustEventRepository', () => {
 
       mockDb.offset.mockResolvedValue(mockEvents);
 
-      const events = await repository.listByUserAllCommunities(testUserId1, 50, 0);
+      const events = await trustEventRepository.listByUserAllCommunities(testUserId1, 50, 0);
 
       expect(events[0].id).toBe('event-41');
       expect(events[1].id).toBe('event-40');

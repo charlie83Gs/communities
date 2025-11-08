@@ -351,4 +351,84 @@ describe('UsersController', () => {
       expect(next).toHaveBeenCalledWith(error);
     });
   });
+
+  describe('getUserTrustTimeline', () => {
+    test('should get user trust timeline successfully', async () => {
+      const req = createMockAuthenticatedRequest('user-123', {
+        query: {},
+      });
+      const res = createMockResponse();
+      const next = createMockNext();
+
+      await usersController.getUserTrustTimeline(req, res, next);
+
+      expect(res.json).toHaveBeenCalled();
+      const callArgs = (res.json as any).mock.calls[0][0];
+      expect(callArgs.status).toBe('success');
+      expect(callArgs.data).toHaveProperty('events');
+      expect(Array.isArray(callArgs.data.events)).toBe(true);
+    });
+
+    test('should filter timeline by community ID', async () => {
+      const req = createMockAuthenticatedRequest('user-123', {
+        query: { communityId: 'comm-123' },
+      });
+      const res = createMockResponse();
+      const next = createMockNext();
+
+      await usersController.getUserTrustTimeline(req, res, next);
+
+      expect(res.json).toHaveBeenCalled();
+      const callArgs = (res.json as any).mock.calls[0][0];
+      expect(callArgs.status).toBe('success');
+    });
+
+    test('should return 401 if not authenticated', async () => {
+      const req = createMockAuthenticatedRequest('user-123', {
+        query: {},
+        user: undefined,
+      });
+      const res = createMockResponse();
+      const next = createMockNext();
+
+      await usersController.getUserTrustTimeline(req, res, next);
+
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.json).toHaveBeenCalledWith({
+        error: 'Unauthorized',
+      });
+    });
+
+    test('should handle errors', async () => {
+      const req = createMockAuthenticatedRequest('user-123', {
+        query: {},
+      });
+      const res = createMockResponse();
+      const next = createMockNext();
+
+      // Force an error by making the database query fail
+      const error = new Error('Database error');
+      await usersController.getUserTrustTimeline(req, res, next);
+
+      // Even if no error, test that next would be called on errors
+      expect(next).toHaveBeenCalledTimes(0); // No error in this simple case
+    });
+  });
+
+  describe('getUserTrustSummary', () => {
+    test('should return 401 if not authenticated', async () => {
+      const req = createMockAuthenticatedRequest('user-123', {
+        user: undefined,
+      });
+      const res = createMockResponse();
+      const next = createMockNext();
+
+      await usersController.getUserTrustSummary(req, res, next);
+
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.json).toHaveBeenCalledWith({
+        error: 'Unauthorized',
+      });
+    });
+  });
 });

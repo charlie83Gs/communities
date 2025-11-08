@@ -1,22 +1,13 @@
 import { describe, test, expect, beforeEach, afterEach } from 'bun:test';
-import { db } from '../db/index';
 import { createThenableMockDb, setupMockDbChains } from '../../tests/helpers/mockDb';
 import { TrustAnalyticsRepository } from './trustAnalytics.repository';
 
-// Store original db methods to restore after each test
-const originalDbMethods = {
-  insert: db.insert,
-  select: db.select,
-  update: db.update,
-  delete: (db as any).delete,
-};
+let trustAnalyticsRepository: TrustAnalyticsRepository;
 
 // Create mock database
 const mockDb = createThenableMockDb();
 
 describe('TrustAnalyticsRepository', () => {
-  const repository = new TrustAnalyticsRepository();
-
   // Test data - static strings, no dynamic IDs
   const testCommunityId1 = 'testCommunityId1';
   const testCommunityId2 = 'testCommunityId2';
@@ -28,27 +19,19 @@ describe('TrustAnalyticsRepository', () => {
   beforeEach(() => {
     // Reset all mocks and setup default chains
     setupMockDbChains(mockDb);
-
-    // Replace db methods with mocks
-    (db.insert as any) = mockDb.insert;
-    (db.select as any) = mockDb.select;
-    (db.update as any) = mockDb.update;
-    (db as any).delete = mockDb.delete;
+    // Instantiate repository with the per-test mock DB
+    trustAnalyticsRepository = new TrustAnalyticsRepository(mockDb as any);
   });
 
   afterEach(() => {
-    // Restore original db methods to prevent pollution of other tests
-    (db.insert as any) = originalDbMethods.insert;
-    (db.select as any) = originalDbMethods.select;
-    (db.update as any) = originalDbMethods.update;
-    (db as any).delete = originalDbMethods.delete;
+    // Nothing to clean up; a fresh TrustAnalyticsRepository is created per test
   });
 
   describe('getTrustTimeline', () => {
     test('should return empty array when user has no trust history', async () => {
       mockDb.orderBy.mockResolvedValue([]);
 
-      const timeline = await repository.getTrustTimeline(testUserId1);
+      const timeline = await trustAnalyticsRepository.getTrustTimeline(testUserId1);
 
       expect(timeline).toEqual([]);
       expect(mockDb.select).toHaveBeenCalled();
@@ -82,7 +65,7 @@ describe('TrustAnalyticsRepository', () => {
       ];
       mockDb.orderBy.mockResolvedValue(mockEvents);
 
-      const timeline = await repository.getTrustTimeline(testUserId1);
+      const timeline = await trustAnalyticsRepository.getTrustTimeline(testUserId1);
 
       expect(timeline).toHaveLength(2);
       // Timeline is returned in descending order (newest first)
@@ -117,7 +100,7 @@ describe('TrustAnalyticsRepository', () => {
       ];
       mockDb.orderBy.mockResolvedValue(mockEvents);
 
-      const timeline = await repository.getTrustTimeline(testUserId1);
+      const timeline = await trustAnalyticsRepository.getTrustTimeline(testUserId1);
 
       expect(timeline).toHaveLength(2);
       expect(timeline[0].cumulativeTrust).toBe(0); // 1 - 1 = 0
@@ -151,7 +134,7 @@ describe('TrustAnalyticsRepository', () => {
       ];
       mockDb.orderBy.mockResolvedValue(mockEvents);
 
-      const timeline = await repository.getTrustTimeline(testUserId1);
+      const timeline = await trustAnalyticsRepository.getTrustTimeline(testUserId1);
 
       expect(timeline).toHaveLength(2);
       expect(timeline[0].type).toBe('admin_grant');
@@ -175,7 +158,7 @@ describe('TrustAnalyticsRepository', () => {
       ];
       mockDb.orderBy.mockResolvedValue(mockEvents);
 
-      const timeline = await repository.getTrustTimeline(testUserId1, {
+      const timeline = await trustAnalyticsRepository.getTrustTimeline(testUserId1, {
         communityId: testCommunityId1,
       });
 
@@ -199,7 +182,7 @@ describe('TrustAnalyticsRepository', () => {
       ];
       mockDb.orderBy.mockResolvedValue(mockEvents);
 
-      const timeline = await repository.getTrustTimeline(testUserId1, {
+      const timeline = await trustAnalyticsRepository.getTrustTimeline(testUserId1, {
         startDate: new Date('2024-01-01T11:00:00Z'),
       });
 
@@ -223,7 +206,7 @@ describe('TrustAnalyticsRepository', () => {
       ];
       mockDb.orderBy.mockResolvedValue(mockEvents);
 
-      const timeline = await repository.getTrustTimeline(testUserId1);
+      const timeline = await trustAnalyticsRepository.getTrustTimeline(testUserId1);
 
       expect(timeline[0].fromUserDisplayName).toBeDefined();
       expect(timeline[0].fromUserDisplayName).toContain('Analytics User');
@@ -245,7 +228,7 @@ describe('TrustAnalyticsRepository', () => {
       ];
       mockDb.orderBy.mockResolvedValue(mockEvents);
 
-      const timeline = await repository.getTrustTimeline(testUserId1);
+      const timeline = await trustAnalyticsRepository.getTrustTimeline(testUserId1);
 
       expect(timeline[0].communityName).toBe('Test Community Analytics 1');
     });
@@ -266,7 +249,7 @@ describe('TrustAnalyticsRepository', () => {
       ];
       mockDb.orderBy.mockResolvedValue(mockEvents);
 
-      const timeline = await repository.getTrustTimeline(testUserId1);
+      const timeline = await trustAnalyticsRepository.getTrustTimeline(testUserId1);
 
       expect(timeline[0].fromUserId).toBeNull();
       expect(timeline[0].fromUserDisplayName).toBeNull();
@@ -284,7 +267,7 @@ describe('TrustAnalyticsRepository', () => {
       ]);
       mockDb.groupBy.mockResolvedValue([]);
 
-      const summary = await repository.getTrustSummary(testUserId1);
+      const summary = await trustAnalyticsRepository.getTrustSummary(testUserId1);
 
       expect(summary.totalTrustPoints).toBe(0);
       expect(summary.totalAwardsReceived).toBe(0);
@@ -308,7 +291,7 @@ describe('TrustAnalyticsRepository', () => {
         },
       ]);
 
-      const summary = await repository.getTrustSummary(testUserId1);
+      const summary = await trustAnalyticsRepository.getTrustSummary(testUserId1);
 
       expect(summary.totalTrustPoints).toBe(7); // 1 + 1 + 5
     });
@@ -329,7 +312,7 @@ describe('TrustAnalyticsRepository', () => {
         },
       ]);
 
-      const summary = await repository.getTrustSummary(testUserId1);
+      const summary = await trustAnalyticsRepository.getTrustSummary(testUserId1);
 
       expect(summary.totalAwardsReceived).toBe(2);
       expect(summary.totalAwardsRemoved).toBe(1);
@@ -357,7 +340,7 @@ describe('TrustAnalyticsRepository', () => {
         },
       ]);
 
-      const summary = await repository.getTrustSummary(testUserId1);
+      const summary = await trustAnalyticsRepository.getTrustSummary(testUserId1);
 
       expect(summary.trustByCommunity).toHaveLength(2);
 
@@ -384,7 +367,7 @@ describe('TrustAnalyticsRepository', () => {
         },
       ]);
 
-      const summary = await repository.getTrustSummary(testUserId1, {
+      const summary = await trustAnalyticsRepository.getTrustSummary(testUserId1, {
         communityId: testCommunityId1,
       });
 
@@ -409,7 +392,7 @@ describe('TrustAnalyticsRepository', () => {
         },
       ]);
 
-      const summary = await repository.getTrustSummary(testUserId1);
+      const summary = await trustAnalyticsRepository.getTrustSummary(testUserId1);
 
       expect(summary.trustByCommunity[0].communityName).toBe('Test Community Analytics 1');
     });
@@ -420,7 +403,10 @@ describe('TrustAnalyticsRepository', () => {
       mockDb.where.mockResolvedValueOnce([{ count: 0 }]);
       mockDb.where.mockResolvedValueOnce([]);
 
-      const score = await repository.getCurrentTrustScore(testUserId1, testCommunityId1);
+      const score = await trustAnalyticsRepository.getCurrentTrustScore(
+        testUserId1,
+        testCommunityId1
+      );
 
       expect(score).toBe(0);
     });
@@ -429,7 +415,10 @@ describe('TrustAnalyticsRepository', () => {
       mockDb.where.mockResolvedValueOnce([{ count: 2 }]);
       mockDb.where.mockResolvedValueOnce([]);
 
-      const score = await repository.getCurrentTrustScore(testUserId1, testCommunityId1);
+      const score = await trustAnalyticsRepository.getCurrentTrustScore(
+        testUserId1,
+        testCommunityId1
+      );
 
       expect(score).toBe(2);
     });
@@ -438,7 +427,10 @@ describe('TrustAnalyticsRepository', () => {
       mockDb.where.mockResolvedValueOnce([{ count: 0 }]);
       mockDb.where.mockResolvedValueOnce([{ amount: 10 }]);
 
-      const score = await repository.getCurrentTrustScore(testUserId1, testCommunityId1);
+      const score = await trustAnalyticsRepository.getCurrentTrustScore(
+        testUserId1,
+        testCommunityId1
+      );
 
       expect(score).toBe(10);
     });
@@ -447,7 +439,10 @@ describe('TrustAnalyticsRepository', () => {
       mockDb.where.mockResolvedValueOnce([{ count: 2 }]);
       mockDb.where.mockResolvedValueOnce([{ amount: 5 }]);
 
-      const score = await repository.getCurrentTrustScore(testUserId1, testCommunityId1);
+      const score = await trustAnalyticsRepository.getCurrentTrustScore(
+        testUserId1,
+        testCommunityId1
+      );
 
       expect(score).toBe(7); // 2 + 5
     });
@@ -456,7 +451,10 @@ describe('TrustAnalyticsRepository', () => {
       mockDb.where.mockResolvedValueOnce([{ count: 2 }]);
       mockDb.where.mockResolvedValueOnce([]);
 
-      const score = await repository.getCurrentTrustScore(testUserId1, testCommunityId1);
+      const score = await trustAnalyticsRepository.getCurrentTrustScore(
+        testUserId1,
+        testCommunityId1
+      );
 
       expect(score).toBe(2); // Only comm1 awards
     });
@@ -466,13 +464,19 @@ describe('TrustAnalyticsRepository', () => {
       mockDb.where.mockResolvedValueOnce([{ count: 2 }]);
       mockDb.where.mockResolvedValueOnce([]);
 
-      const score1 = await repository.getCurrentTrustScore(testUserId1, testCommunityId1);
+      const score1 = await trustAnalyticsRepository.getCurrentTrustScore(
+        testUserId1,
+        testCommunityId1
+      );
 
       // Second call for testUserId2
       mockDb.where.mockResolvedValueOnce([{ count: 1 }]);
       mockDb.where.mockResolvedValueOnce([]);
 
-      const score2 = await repository.getCurrentTrustScore(testUserId2, testCommunityId1);
+      const score2 = await trustAnalyticsRepository.getCurrentTrustScore(
+        testUserId2,
+        testCommunityId1
+      );
 
       expect(score1).toBe(2);
       expect(score2).toBe(1);

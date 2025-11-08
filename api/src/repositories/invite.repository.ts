@@ -1,4 +1,4 @@
-import { db } from '@db/index';
+import { db as realDb } from '@db/index';
 import { communityUserInvites, communityLinkInvites } from '@db/schema';
 import { and, eq, lt, or, gt, isNull } from 'drizzle-orm';
 
@@ -22,9 +22,14 @@ export type CreateLinkInviteInput = {
 };
 
 export class InviteRepository {
+  private db: any;
+
+  constructor(db: any) {
+    this.db = db;
+  }
   async createUserInvite(input: CreateUserInviteInput): Promise<UserInviteRecord> {
     console.log(`[InviteRepository] createUserInvite called with input:`, JSON.stringify(input));
-    const [row] = await db
+    const [row] = await this.db
       .insert(communityUserInvites)
       .values({
         communityId: input.communityId,
@@ -38,7 +43,7 @@ export class InviteRepository {
   }
 
   async createLinkInvite(input: CreateLinkInviteInput): Promise<LinkInviteRecord> {
-    const [row] = await db
+    const [row] = await this.db
       .insert(communityLinkInvites)
       .values({
         communityId: input.communityId,
@@ -53,7 +58,7 @@ export class InviteRepository {
   }
 
   async findUserInviteById(id: string): Promise<UserInviteRecord | undefined> {
-    const [row] = await db
+    const [row] = await this.db
       .select()
       .from(communityUserInvites)
       .where(eq(communityUserInvites.id, id));
@@ -61,7 +66,7 @@ export class InviteRepository {
   }
 
   async findLinkInviteById(id: string): Promise<LinkInviteRecord | undefined> {
-    const [row] = await db
+    const [row] = await this.db
       .select()
       .from(communityLinkInvites)
       .where(eq(communityLinkInvites.id, id));
@@ -75,7 +80,7 @@ export class InviteRepository {
   }
 
   async findBySecret(secret: string): Promise<LinkInviteRecord | undefined> {
-    const [row] = await db
+    const [row] = await this.db
       .select()
       .from(communityLinkInvites)
       .where(eq(communityLinkInvites.secret, secret));
@@ -83,7 +88,7 @@ export class InviteRepository {
   }
 
   async markUserInviteRedeemed(id: string, userId: string): Promise<UserInviteRecord | undefined> {
-    const [row] = await db
+    const [row] = await this.db
       .update(communityUserInvites)
       .set({
         status: 'redeemed',
@@ -97,7 +102,7 @@ export class InviteRepository {
   }
 
   async markLinkInviteRedeemed(id: string, userId: string): Promise<LinkInviteRecord | undefined> {
-    const [row] = await db
+    const [row] = await this.db
       .update(communityLinkInvites)
       .set({
         status: 'redeemed',
@@ -125,7 +130,7 @@ export class InviteRepository {
   }
 
   async cancelUserInvite(id: string): Promise<UserInviteRecord | undefined> {
-    const [row] = await db
+    const [row] = await this.db
       .update(communityUserInvites)
       .set({
         status: 'cancelled',
@@ -138,7 +143,7 @@ export class InviteRepository {
   }
 
   async cancelLinkInvite(id: string): Promise<LinkInviteRecord | undefined> {
-    const [row] = await db
+    const [row] = await this.db
       .update(communityLinkInvites)
       .set({
         status: 'cancelled',
@@ -165,7 +170,7 @@ export class InviteRepository {
   }
 
   async expirePastDueLinkInvites(now: Date = new Date()): Promise<number> {
-    const result = await db
+    const result = await this.db
       .update(communityLinkInvites)
       .set({ status: 'expired', updatedAt: new Date() })
       .where(
@@ -181,7 +186,7 @@ export class InviteRepository {
   }
 
   async findPendingUserInvitesByCommunity(communityId: string): Promise<UserInviteRecord[]> {
-    return await db
+    return await this.db
       .select()
       .from(communityUserInvites)
       .where(
@@ -194,7 +199,7 @@ export class InviteRepository {
   }
 
   async findPendingUserInvitesByUser(userId: string): Promise<UserInviteRecord[]> {
-    return await db
+    return await this.db
       .select()
       .from(communityUserInvites)
       .where(
@@ -208,7 +213,7 @@ export class InviteRepository {
 
   async findActiveLinkInvitesByCommunity(communityId: string): Promise<LinkInviteRecord[]> {
     const now = new Date();
-    return await db
+    return await this.db
       .select()
       .from(communityLinkInvites)
       .where(
@@ -222,4 +227,5 @@ export class InviteRepository {
   }
 }
 
-export const inviteRepository = new InviteRepository();
+// Default instance for production code paths
+export const inviteRepository = new InviteRepository(realDb);

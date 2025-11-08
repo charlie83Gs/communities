@@ -1,13 +1,19 @@
-import { db } from '../db/index';
+import { db as realDb } from '../db/index';
 import { and, eq, count } from 'drizzle-orm';
 import { trustAwards } from '../db/schema/trustAward.schema';
 
 export class TrustAwardRepository {
+  private db: any;
+
+  constructor(db: any) {
+    this.db = db;
+  }
+
   /**
    * Create a new trust award
    */
   async createAward(communityId: string, fromUserId: string, toUserId: string) {
-    const [award] = await db
+    const [award] = await this.db
       .insert(trustAwards)
       .values({
         communityId,
@@ -22,7 +28,7 @@ export class TrustAwardRepository {
    * Delete a trust award
    */
   async deleteAward(communityId: string, fromUserId: string, toUserId: string) {
-    const [deleted] = await db
+    const [deleted] = await this.db
       .delete(trustAwards)
       .where(
         and(
@@ -39,7 +45,7 @@ export class TrustAwardRepository {
    * Check if a user has awarded trust to another user
    */
   async hasAward(communityId: string, fromUserId: string, toUserId: string): Promise<boolean> {
-    const [award] = await db
+    const [award] = await this.db
       .select()
       .from(trustAwards)
       .where(
@@ -56,7 +62,7 @@ export class TrustAwardRepository {
    * Get a specific trust award
    */
   async getAward(communityId: string, fromUserId: string, toUserId: string) {
-    const [award] = await db
+    const [award] = await this.db
       .select()
       .from(trustAwards)
       .where(
@@ -73,7 +79,7 @@ export class TrustAwardRepository {
    * List all awards given by a user in a community
    */
   async listUserAwards(communityId: string, fromUserId: string) {
-    return db
+    return this.db
       .select()
       .from(trustAwards)
       .where(and(eq(trustAwards.communityId, communityId), eq(trustAwards.fromUserId, fromUserId)));
@@ -83,7 +89,7 @@ export class TrustAwardRepository {
    * List all awards received by a user in a community
    */
   async listAwardsToUser(communityId: string, toUserId: string) {
-    return db
+    return this.db
       .select()
       .from(trustAwards)
       .where(and(eq(trustAwards.communityId, communityId), eq(trustAwards.toUserId, toUserId)));
@@ -93,7 +99,7 @@ export class TrustAwardRepository {
    * Count awards received by a user in a community
    */
   async countAwardsToUser(communityId: string, toUserId: string): Promise<number> {
-    const [result] = await db
+    const [result] = await this.db
       .select({ count: count() })
       .from(trustAwards)
       .where(and(eq(trustAwards.communityId, communityId), eq(trustAwards.toUserId, toUserId)));
@@ -104,7 +110,7 @@ export class TrustAwardRepository {
    * Count awards given by a user in a community
    */
   async countAwardsFromUser(communityId: string, fromUserId: string): Promise<number> {
-    const [result] = await db
+    const [result] = await this.db
       .select({ count: count() })
       .from(trustAwards)
       .where(and(eq(trustAwards.communityId, communityId), eq(trustAwards.fromUserId, fromUserId)));
@@ -112,4 +118,5 @@ export class TrustAwardRepository {
   }
 }
 
-export const trustAwardRepository = new TrustAwardRepository();
+// Default instance for production code paths
+export const trustAwardRepository = new TrustAwardRepository(realDb);

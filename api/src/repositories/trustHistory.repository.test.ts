@@ -1,15 +1,8 @@
 import { describe, test, expect, beforeEach, afterEach } from 'bun:test';
 import { TrustHistoryRepository } from './trustHistory.repository';
-import { db } from '../db/index';
 import { createThenableMockDb, setupMockDbChains } from '../../tests/helpers/mockDb';
 
-// Store original db methods to restore after each test
-const originalDbMethods = {
-  insert: db.insert,
-  select: db.select,
-  update: db.update,
-  delete: (db as any).delete,
-};
+let trustHistoryRepository: TrustHistoryRepository;
 
 // Create mock database
 const mockDb = createThenableMockDb();
@@ -51,32 +44,22 @@ const testAdminGrantRecord = {
 };
 
 describe('TrustHistoryRepository', () => {
-  const repository = new TrustHistoryRepository();
-
   beforeEach(() => {
     // Reset all mocks and setup default chains
     setupMockDbChains(mockDb);
-
-    // Replace db methods with mocks
-    (db.insert as any) = mockDb.insert;
-    (db.select as any) = mockDb.select;
-    (db.update as any) = mockDb.update;
-    (db as any).delete = mockDb.delete;
+    // Instantiate repository with the per-test mock DB
+    trustHistoryRepository = new TrustHistoryRepository(mockDb as any);
   });
 
   afterEach(() => {
-    // Restore original db methods to prevent pollution of other tests
-    (db.insert as any) = originalDbMethods.insert;
-    (db.select as any) = originalDbMethods.select;
-    (db.update as any) = originalDbMethods.update;
-    (db as any).delete = originalDbMethods.delete;
+    // Nothing to clean up; a fresh TrustHistoryRepository is created per test
   });
 
   describe('logAction', () => {
     test('should log an award action with all fields', async () => {
       mockDb.returning.mockResolvedValue([testAwardRecord]);
 
-      const record = await repository.logAction({
+      const record = await trustHistoryRepository.logAction({
         communityId: testCommunityId,
         fromUserId: testUserId1,
         toUserId: testUserId2,
@@ -98,7 +81,7 @@ describe('TrustHistoryRepository', () => {
     test('should log a remove action', async () => {
       mockDb.returning.mockResolvedValue([testRemoveRecord]);
 
-      const record = await repository.logAction({
+      const record = await trustHistoryRepository.logAction({
         communityId: testCommunityId,
         fromUserId: testUserId1,
         toUserId: testUserId2,
@@ -114,7 +97,7 @@ describe('TrustHistoryRepository', () => {
     test('should log an admin_grant action with null fromUserId', async () => {
       mockDb.returning.mockResolvedValue([testAdminGrantRecord]);
 
-      const record = await repository.logAction({
+      const record = await trustHistoryRepository.logAction({
         communityId: testCommunityId,
         fromUserId: null,
         toUserId: testUserId2,
@@ -131,7 +114,7 @@ describe('TrustHistoryRepository', () => {
       const adminGrantWithoutFrom = { ...testAdminGrantRecord, pointsDelta: 5 };
       mockDb.returning.mockResolvedValue([adminGrantWithoutFrom]);
 
-      const record = await repository.logAction({
+      const record = await trustHistoryRepository.logAction({
         communityId: testCommunityId,
         toUserId: testUserId2,
         action: 'admin_grant',
@@ -148,7 +131,7 @@ describe('TrustHistoryRepository', () => {
     test('should return empty array when user has no history', async () => {
       mockDb.offset.mockResolvedValue([]);
 
-      const history = await repository.getHistoryForUser(testCommunityId, testUserId1);
+      const history = await trustHistoryRepository.getHistoryForUser(testCommunityId, testUserId1);
 
       expect(history).toEqual([]);
       expect(mockDb.select).toHaveBeenCalled();
@@ -163,7 +146,7 @@ describe('TrustHistoryRepository', () => {
       const historyRecords = [testAwardRecord, testRemoveRecord];
       mockDb.offset.mockResolvedValue(historyRecords);
 
-      const history = await repository.getHistoryForUser(testCommunityId, testUserId2);
+      const history = await trustHistoryRepository.getHistoryForUser(testCommunityId, testUserId2);
 
       expect(history).toHaveLength(2);
       expect(history[0]).toEqual(testAwardRecord);
@@ -176,7 +159,12 @@ describe('TrustHistoryRepository', () => {
       const historyRecords = [testAwardRecord, testRemoveRecord, testAdminGrantRecord];
       mockDb.offset.mockResolvedValue(historyRecords.slice(0, 3));
 
-      const history = await repository.getHistoryForUser(testCommunityId, testUserId2, 3, 0);
+      const history = await trustHistoryRepository.getHistoryForUser(
+        testCommunityId,
+        testUserId2,
+        3,
+        0
+      );
 
       expect(history).toHaveLength(3);
       expect(mockDb.limit).toHaveBeenCalled();
@@ -186,7 +174,12 @@ describe('TrustHistoryRepository', () => {
       const offsetRecords = [testRemoveRecord];
       mockDb.offset.mockResolvedValue(offsetRecords);
 
-      const history = await repository.getHistoryForUser(testCommunityId, testUserId2, 50, 2);
+      const history = await trustHistoryRepository.getHistoryForUser(
+        testCommunityId,
+        testUserId2,
+        50,
+        2
+      );
 
       expect(history).toHaveLength(1);
       expect(mockDb.offset).toHaveBeenCalled();
@@ -195,7 +188,10 @@ describe('TrustHistoryRepository', () => {
     test('should not return history from other communities', async () => {
       mockDb.offset.mockResolvedValue([]);
 
-      const history = await repository.getHistoryForUser('different-comm-456', testUserId2);
+      const history = await trustHistoryRepository.getHistoryForUser(
+        'different-comm-456',
+        testUserId2
+      );
 
       expect(history).toEqual([]);
     });
@@ -204,7 +200,7 @@ describe('TrustHistoryRepository', () => {
       const allActions = [testAwardRecord, testRemoveRecord, testAdminGrantRecord];
       mockDb.offset.mockResolvedValue(allActions);
 
-      const history = await repository.getHistoryForUser(testCommunityId, testUserId2);
+      const history = await trustHistoryRepository.getHistoryForUser(testCommunityId, testUserId2);
 
       expect(history).toHaveLength(3);
       expect(history.some((h) => h.action === 'award')).toBe(true);
@@ -217,7 +213,7 @@ describe('TrustHistoryRepository', () => {
     test('should return empty array when community has no history', async () => {
       mockDb.offset.mockResolvedValue([]);
 
-      const history = await repository.getHistoryForCommunity(testCommunityId);
+      const history = await trustHistoryRepository.getHistoryForCommunity(testCommunityId);
 
       expect(history).toEqual([]);
       expect(mockDb.select).toHaveBeenCalled();
@@ -232,7 +228,7 @@ describe('TrustHistoryRepository', () => {
       const historyRecords = [record1, record2, record3];
       mockDb.offset.mockResolvedValue(historyRecords);
 
-      const history = await repository.getHistoryForCommunity(testCommunityId);
+      const history = await trustHistoryRepository.getHistoryForCommunity(testCommunityId);
 
       expect(history).toHaveLength(3);
       expect(history.every((h) => h.communityId === testCommunityId)).toBe(true);
@@ -242,7 +238,7 @@ describe('TrustHistoryRepository', () => {
       const historyRecords = [testAwardRecord, testRemoveRecord, testAdminGrantRecord];
       mockDb.offset.mockResolvedValue(historyRecords.slice(0, 3));
 
-      const history = await repository.getHistoryForCommunity(testCommunityId, 3, 0);
+      const history = await trustHistoryRepository.getHistoryForCommunity(testCommunityId, 3, 0);
 
       expect(history).toHaveLength(3);
       expect(mockDb.limit).toHaveBeenCalled();
@@ -252,7 +248,7 @@ describe('TrustHistoryRepository', () => {
       const offsetRecords = [testAdminGrantRecord];
       mockDb.offset.mockResolvedValue(offsetRecords);
 
-      const history = await repository.getHistoryForCommunity(testCommunityId, 50, 2);
+      const history = await trustHistoryRepository.getHistoryForCommunity(testCommunityId, 50, 2);
 
       expect(history).toHaveLength(1);
       expect(mockDb.offset).toHaveBeenCalled();
@@ -263,7 +259,7 @@ describe('TrustHistoryRepository', () => {
     test('should return empty array when user has no history', async () => {
       mockDb.offset.mockResolvedValue([]);
 
-      const history = await repository.getHistoryForUserAllCommunities(testUserId1);
+      const history = await trustHistoryRepository.getHistoryForUserAllCommunities(testUserId1);
 
       expect(history).toEqual([]);
       expect(mockDb.select).toHaveBeenCalled();
@@ -275,7 +271,7 @@ describe('TrustHistoryRepository', () => {
       const comm2Record = { ...testRemoveRecord, communityId: 'comm-456' };
       mockDb.offset.mockResolvedValue([comm1Record, comm2Record]);
 
-      const history = await repository.getHistoryForUserAllCommunities(testUserId2);
+      const history = await trustHistoryRepository.getHistoryForUserAllCommunities(testUserId2);
 
       expect(history).toHaveLength(2);
       expect(history.every((h) => h.toUserId === testUserId2)).toBe(true);
@@ -285,7 +281,11 @@ describe('TrustHistoryRepository', () => {
       const historyRecords = [testAwardRecord, testRemoveRecord, testAdminGrantRecord];
       mockDb.offset.mockResolvedValue(historyRecords.slice(0, 3));
 
-      const history = await repository.getHistoryForUserAllCommunities(testUserId2, 3, 0);
+      const history = await trustHistoryRepository.getHistoryForUserAllCommunities(
+        testUserId2,
+        3,
+        0
+      );
 
       expect(history).toHaveLength(3);
       expect(mockDb.limit).toHaveBeenCalled();
@@ -295,7 +295,11 @@ describe('TrustHistoryRepository', () => {
       const offsetRecords = [testAdminGrantRecord];
       mockDb.offset.mockResolvedValue(offsetRecords);
 
-      const history = await repository.getHistoryForUserAllCommunities(testUserId2, 50, 2);
+      const history = await trustHistoryRepository.getHistoryForUserAllCommunities(
+        testUserId2,
+        50,
+        2
+      );
 
       expect(history).toHaveLength(1);
       expect(mockDb.offset).toHaveBeenCalled();
@@ -305,7 +309,7 @@ describe('TrustHistoryRepository', () => {
       const allActions = [testAwardRecord, testRemoveRecord, testAdminGrantRecord];
       mockDb.offset.mockResolvedValue(allActions);
 
-      const history = await repository.getHistoryForUserAllCommunities(testUserId2);
+      const history = await trustHistoryRepository.getHistoryForUserAllCommunities(testUserId2);
 
       expect(history).toHaveLength(3);
       expect(history.some((h) => h.action === 'award')).toBe(true);

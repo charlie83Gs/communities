@@ -1,4 +1,4 @@
-import { openFGAService } from '../services/openfga.service';
+import { openFGAService as realOpenFGAService } from '../services/openfga.service';
 
 /**
  * CommunityMemberRepository
@@ -7,6 +7,12 @@ import { openFGAService } from '../services/openfga.service';
  * All role assignments and checks are performed via OpenFGA.
  */
 export class CommunityMemberRepository {
+  private openFGAService: any;
+
+  constructor(openFGAService: any) {
+    this.openFGAService = openFGAService;
+  }
+
   /**
    * Add a member to a community with a specific role
    */
@@ -15,7 +21,7 @@ export class CommunityMemberRepository {
     userId: string,
     role: 'member' | 'admin' | 'reader' = 'member'
   ) {
-    await openFGAService.assignRole(userId, 'communities', communityId, role);
+    await this.openFGAService.assignRole(userId, 'communities', communityId, role);
 
     // Return a simple membership object for compatibility
     return {
@@ -31,7 +37,7 @@ export class CommunityMemberRepository {
    * Returns user IDs and their roles from OpenFGA
    */
   async findByCommunity(communityId: string) {
-    const rolesData = await openFGAService.getRolesForResource('communities', communityId);
+    const rolesData = await this.openFGAService.getRolesForResource('communities', communityId);
 
     return rolesData.map((item) => ({
       userId: item.userId,
@@ -47,7 +53,7 @@ export class CommunityMemberRepository {
    */
   async findByUser(userId: string) {
     // Get all communities where user has read access (covers all roles)
-    const communityIds = await openFGAService.getAccessibleResourceIds(
+    const communityIds = await this.openFGAService.getAccessibleResourceIds(
       userId,
       'communities',
       'read'
@@ -65,7 +71,7 @@ export class CommunityMemberRepository {
    * Update a user's role in a community
    */
   async updateRole(communityId: string, userId: string, role: 'member' | 'admin' | 'reader') {
-    await openFGAService.assignRole(userId, 'communities', communityId, role);
+    await this.openFGAService.assignRole(userId, 'communities', communityId, role);
 
     return {
       userId,
@@ -79,13 +85,13 @@ export class CommunityMemberRepository {
    * Remove a member from a community
    */
   async removeMember(communityId: string, userId: string) {
-    const currentRole = await openFGAService.getUserRoleForResource(
+    const currentRole = await this.openFGAService.getUserRoleForResource(
       userId,
       'communities',
       communityId
     );
 
-    await openFGAService.removeRole(userId, 'communities', communityId);
+    await this.openFGAService.removeRole(userId, 'communities', communityId);
 
     return {
       userId,
@@ -99,7 +105,11 @@ export class CommunityMemberRepository {
    * Check if a user is a member of a community (has any role)
    */
   async isMember(communityId: string, userId: string) {
-    const role = await openFGAService.getUserRoleForResource(userId, 'communities', communityId);
+    const role = await this.openFGAService.getUserRoleForResource(
+      userId,
+      'communities',
+      communityId
+    );
     return !!role;
   }
 
@@ -107,23 +117,28 @@ export class CommunityMemberRepository {
    * Get a user's role in a community
    */
   async getUserRole(communityId: string, userId: string) {
-    return await openFGAService.getUserRoleForResource(userId, 'communities', communityId);
+    return await this.openFGAService.getUserRoleForResource(userId, 'communities', communityId);
   }
 
   /**
    * Get all roles for a user in a community
    */
   async getUserRoles(communityId: string, userId: string): Promise<string[]> {
-    return await openFGAService.getUserRolesForResource(userId, 'communities', communityId);
+    return await this.openFGAService.getUserRolesForResource(userId, 'communities', communityId);
   }
 
   /**
    * Check if a user is an admin of a community
    */
   async isAdmin(communityId: string, userId: string) {
-    const role = await openFGAService.getUserRoleForResource(userId, 'communities', communityId);
+    const role = await this.openFGAService.getUserRoleForResource(
+      userId,
+      'communities',
+      communityId
+    );
     return role === 'admin';
   }
 }
 
-export const communityMemberRepository = new CommunityMemberRepository();
+// Default instance for production code paths
+export const communityMemberRepository = new CommunityMemberRepository(realOpenFGAService);

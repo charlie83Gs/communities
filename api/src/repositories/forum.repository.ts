@@ -1,4 +1,4 @@
-import { db } from '@db/index';
+import { db as realDb } from '@db/index';
 import { forumCategories, forumThreads, forumPosts, forumVotes, forumThreadTags } from '@db/schema';
 import { eq, and, desc, sql, inArray } from 'drizzle-orm';
 
@@ -49,10 +49,16 @@ export type CreateVoteDto = {
 };
 
 export class ForumRepository {
+  private db: any;
+
+  constructor(db: any) {
+    this.db = db;
+  }
+
   // ===== CATEGORIES =====
 
   async createCategory(data: CreateCategoryDto): Promise<ForumCategoryRecord> {
-    const [category] = await db
+    const [category] = await this.db
       .insert(forumCategories)
       .values({
         communityId: data.communityId,
@@ -65,12 +71,15 @@ export class ForumRepository {
   }
 
   async findCategoryById(id: string): Promise<ForumCategoryRecord | undefined> {
-    const [category] = await db.select().from(forumCategories).where(eq(forumCategories.id, id));
+    const [category] = await this.db
+      .select()
+      .from(forumCategories)
+      .where(eq(forumCategories.id, id));
     return category;
   }
 
   async findCategoriesByCommunity(communityId: string): Promise<ForumCategoryRecord[]> {
-    return await db
+    return await this.db
       .select()
       .from(forumCategories)
       .where(eq(forumCategories.communityId, communityId))
@@ -81,7 +90,7 @@ export class ForumRepository {
     id: string,
     data: UpdateCategoryDto
   ): Promise<ForumCategoryRecord | undefined> {
-    const [updated] = await db
+    const [updated] = await this.db
       .update(forumCategories)
       .set({ ...data, updatedAt: new Date() })
       .where(eq(forumCategories.id, id))
@@ -90,7 +99,7 @@ export class ForumRepository {
   }
 
   async deleteCategory(id: string): Promise<ForumCategoryRecord | undefined> {
-    const [deleted] = await db
+    const [deleted] = await this.db
       .delete(forumCategories)
       .where(eq(forumCategories.id, id))
       .returning();
@@ -100,7 +109,7 @@ export class ForumRepository {
   // ===== THREADS =====
 
   async createThread(data: CreateThreadDto): Promise<ForumThreadRecord> {
-    const [thread] = await db
+    const [thread] = await this.db
       .insert(forumThreads)
       .values({
         categoryId: data.categoryId,
@@ -112,7 +121,7 @@ export class ForumRepository {
 
     // Add tags if provided
     if (data.tags && data.tags.length > 0) {
-      await db.insert(forumThreadTags).values(
+      await this.db.insert(forumThreadTags).values(
         data.tags.map((tag) => ({
           threadId: thread.id,
           tag,
@@ -124,7 +133,7 @@ export class ForumRepository {
   }
 
   async findThreadById(id: string): Promise<ForumThreadRecord | undefined> {
-    const [thread] = await db.select().from(forumThreads).where(eq(forumThreads.id, id));
+    const [thread] = await this.db.select().from(forumThreads).where(eq(forumThreads.id, id));
     return thread;
   }
 
@@ -139,13 +148,13 @@ export class ForumRepository {
     const { limit = 20, offset = 0, sort = 'newest' } = options;
 
     // Get total count
-    const [{ count }] = await db
+    const [{ count }] = await this.db
       .select({ count: sql<number>`count(*)::int` })
       .from(forumThreads)
       .where(eq(forumThreads.categoryId, categoryId));
 
     // Build query based on sort option
-    let query = db
+    let query = this.db
       .select({
         thread: forumThreads,
         postCount:
@@ -178,7 +187,7 @@ export class ForumRepository {
   }
 
   async updateThread(id: string, data: UpdateThreadDto): Promise<ForumThreadRecord | undefined> {
-    const [updated] = await db
+    const [updated] = await this.db
       .update(forumThreads)
       .set({ ...data, updatedAt: new Date() })
       .where(eq(forumThreads.id, id))
@@ -187,12 +196,12 @@ export class ForumRepository {
   }
 
   async deleteThread(id: string): Promise<ForumThreadRecord | undefined> {
-    const [deleted] = await db.delete(forumThreads).where(eq(forumThreads.id, id)).returning();
+    const [deleted] = await this.db.delete(forumThreads).where(eq(forumThreads.id, id)).returning();
     return deleted;
   }
 
   async getThreadTags(threadId: string): Promise<string[]> {
-    const tags = await db
+    const tags = await this.db
       .select()
       .from(forumThreadTags)
       .where(eq(forumThreadTags.threadId, threadId));
@@ -202,7 +211,7 @@ export class ForumRepository {
   // ===== POSTS =====
 
   async createPost(data: CreatePostDto): Promise<ForumPostRecord> {
-    const [post] = await db
+    const [post] = await this.db
       .insert(forumPosts)
       .values({
         threadId: data.threadId,
@@ -214,7 +223,7 @@ export class ForumRepository {
   }
 
   async findPostById(id: string): Promise<ForumPostRecord | undefined> {
-    const [post] = await db.select().from(forumPosts).where(eq(forumPosts.id, id));
+    const [post] = await this.db.select().from(forumPosts).where(eq(forumPosts.id, id));
     return post;
   }
 
@@ -224,7 +233,7 @@ export class ForumRepository {
   ): Promise<ForumPostRecord[]> {
     const { limit = 50, offset = 0 } = options;
 
-    return await db
+    return await this.db
       .select()
       .from(forumPosts)
       .where(eq(forumPosts.threadId, threadId))
@@ -234,7 +243,7 @@ export class ForumRepository {
   }
 
   async updatePost(id: string, data: UpdatePostDto): Promise<ForumPostRecord | undefined> {
-    const [updated] = await db
+    const [updated] = await this.db
       .update(forumPosts)
       .set({ ...data, updatedAt: new Date() })
       .where(eq(forumPosts.id, id))
@@ -243,7 +252,7 @@ export class ForumRepository {
   }
 
   async deletePost(id: string): Promise<ForumPostRecord | undefined> {
-    const [deleted] = await db.delete(forumPosts).where(eq(forumPosts.id, id)).returning();
+    const [deleted] = await this.db.delete(forumPosts).where(eq(forumPosts.id, id)).returning();
     return deleted;
   }
 
@@ -262,14 +271,14 @@ export class ForumRepository {
       conditions.push(sql`${forumVotes.threadId} IS NULL`);
     }
 
-    const [existingVote] = await db
+    const [existingVote] = await this.db
       .select()
       .from(forumVotes)
       .where(and(...conditions));
 
     if (existingVote) {
       // Update existing vote
-      const [updated] = await db
+      const [updated] = await this.db
         .update(forumVotes)
         .set({ voteType: data.voteType })
         .where(eq(forumVotes.id, existingVote.id))
@@ -277,7 +286,7 @@ export class ForumRepository {
       return updated;
     } else {
       // Create new vote
-      const [vote] = await db
+      const [vote] = await this.db
         .insert(forumVotes)
         .values({
           userId: data.userId,
@@ -299,7 +308,7 @@ export class ForumRepository {
       conditions.push(eq(forumVotes.postId, postId));
     }
 
-    await db.delete(forumVotes).where(and(...conditions));
+    await this.db.delete(forumVotes).where(and(...conditions));
   }
 
   async getVoteCounts(
@@ -314,7 +323,7 @@ export class ForumRepository {
       conditions.push(eq(forumVotes.postId, postId));
     }
 
-    const [result] = await db
+    const [result] = await this.db
       .select({
         upvotes: sql<number>`COUNT(*) FILTER (WHERE ${forumVotes.voteType} = 'up')::int`,
         downvotes: sql<number>`COUNT(*) FILTER (WHERE ${forumVotes.voteType} = 'down')::int`,
@@ -338,7 +347,7 @@ export class ForumRepository {
       conditions.push(eq(forumVotes.postId, postId));
     }
 
-    const [vote] = await db
+    const [vote] = await this.db
       .select()
       .from(forumVotes)
       .where(and(...conditions));
@@ -351,7 +360,7 @@ export class ForumRepository {
   async getCategoryStats(
     categoryId: string
   ): Promise<{ threadCount: number; lastActivity: Date | null }> {
-    const [result] = await db
+    const [result] = await this.db
       .select({
         threadCount: sql<number>`COUNT(*)::int`,
         lastActivity: sql<Date | null>`MAX(${forumThreads.updatedAt})`,
@@ -368,7 +377,7 @@ export class ForumRepository {
     upvotes: number;
     downvotes: number;
   }> {
-    const [postStats] = await db
+    const [postStats] = await this.db
       .select({
         postCount: sql<number>`COUNT(*)::int`,
         lastActivity: sql<Date | null>`MAX(${forumPosts.createdAt})`,
@@ -387,4 +396,5 @@ export class ForumRepository {
   }
 }
 
-export const forumRepository = new ForumRepository();
+// Default instance for production code paths
+export const forumRepository = new ForumRepository(realDb);

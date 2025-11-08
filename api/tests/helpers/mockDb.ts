@@ -44,6 +44,8 @@ export function createThenableMockDb() {
     rightJoin: mock(() => mockDb),
     groupBy: mock(() => mockDb),
     having: mock(() => mockDb),
+    execute: mock(() => Promise.resolve([])),
+    selectDistinct: mock(() => mockDb),
     // Make it thenable so it can be awaited
     then: mock((resolve: Function) => {
       resolve([]);
@@ -82,6 +84,7 @@ export function setupMockDbChains(mockDb: any) {
   mockDb.groupBy.mockReturnValue(mockDb);
   mockDb.having.mockReturnValue(mockDb);
   mockDb.delete.mockReturnValue(mockDb);
+  mockDb.selectDistinct.mockReturnValue(mockDb);
   mockDb.then.mockImplementation((resolve: Function) => {
     resolve([]);
     return Promise.resolve([]);
