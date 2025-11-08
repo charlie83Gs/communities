@@ -1,630 +1,311 @@
-import { OpenFgaClient, CredentialsMethod } from '@openfga/sdk';
-import { authorizationModel } from '../config/openfga.model';
-import fs from 'fs';
-import path from 'path';
+import {
+  openFGARepository as defaultRepository,
+  OpenFGARepository,
+} from '../repositories/openfga.repository';
+import {
+  BASE_ROLES,
+  FEATURE_ROLES,
+  TRUST_ROLES,
+  PERMISSIONS,
+  SUBJECT_TYPES,
+  BaseRole,
+  FeatureRole,
+  TrustRole,
+  Permission,
+  SubjectType,
+  isBaseRole,
+  isFeatureRole,
+  isTrustRole,
+  isPermission,
+  mapResourceType,
+  mapActionToPermission,
+} from '../config/openfga.constants';
 
+/**
+ * OpenFGA Service
+ *
+ * High-level service for managing permissions based on the role-based schema.
+ * This service provides methods for checking permissions, managing roles, and syncing trust levels.
+ *
+ * Schema Concepts:
+ * - BASE ROLES (admin, member): Foundational community membership roles (mutually exclusive)
+ * - FEATURE ROLES (forum_manager, pool_creator, etc.): Specific permissions granted by admins
+ * - TRUST ROLES (trust_forum_manager, etc.): Auto-granted when trust score >= threshold
+ * - PERMISSIONS (can_*): Computed unions of admin + feature_role + trust_role
+ *
+ * Simplified API:
+ * - checkAccess(): Universal permission check
+ * - assignRelation() / revokeRelation(): Generic relation management
+ * - Specialized helpers for common patterns (base roles, feature roles, trust sync)
+ */
 export class OpenFGAService {
-  private client: OpenFgaClient;
-  private storeId: string | null = null;
-  private authorizationModelId: string | null = null;
-  private initialized = false;
+  private repository: OpenFGARepository;
 
-  // Retry/backoff config for robust startup against OpenFGA readiness/migrations
-  private readonly maxInitAttempts = Number(process.env.OPENFGA_INIT_MAX_ATTEMPTS ?? 15); // ~75s with 5s steps
-  private readonly initAttemptDelayMs = Number(process.env.OPENFGA_INIT_DELAY_MS ?? 5000);
-
-  constructor() {
-    // Initialize client with environment variables
-    this.client = new OpenFgaClient({
-      apiUrl: process.env.OPENFGA_API_URL || 'http://localhost:8080',
-      storeId: process.env.OPENFGA_STORE_ID,
-      authorizationModelId: process.env.OPENFGA_AUTHORIZATION_MODEL_ID,
-      credentials: process.env.OPENFGA_API_TOKEN
-        ? {
-            method: CredentialsMethod.ApiToken,
-            config: {
-              token: process.env.OPENFGA_API_TOKEN,
-            },
-          }
-        : undefined,
-    });
-
-    this.storeId = process.env.OPENFGA_STORE_ID || null;
-    this.authorizationModelId = process.env.OPENFGA_AUTHORIZATION_MODEL_ID || null;
-  }
-
-  private async sleep(ms: number) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+  constructor(repository: OpenFGARepository = defaultRepository) {
+    this.repository = repository;
   }
 
   /**
-   * Update .env file with OpenFGA credentials
-   * This ensures the same store and model are used across restarts
-   */
-  private updateEnvFile(storeId: string, authorizationModelId: string): void {
-    try {
-      const envPath = path.resolve(process.cwd(), '.env');
-
-      if (!fs.existsSync(envPath)) {
-        console.warn('[OpenFGA] .env file not found, skipping persistence');
-        return;
-      }
-
-      let envContent = fs.readFileSync(envPath, 'utf-8');
-
-      // Update or add OPENFGA_STORE_ID
-      if (envContent.includes('OPENFGA_STORE_ID=')) {
-        envContent = envContent.replace(/OPENFGA_STORE_ID=.*/g, `OPENFGA_STORE_ID=${storeId}`);
-      } else {
-        envContent += `\nOPENFGA_STORE_ID=${storeId}`;
-      }
-
-      // Update or add OPENFGA_AUTHORIZATION_MODEL_ID
-      if (envContent.includes('OPENFGA_AUTHORIZATION_MODEL_ID=')) {
-        envContent = envContent.replace(
-          /OPENFGA_AUTHORIZATION_MODEL_ID=.*/g,
-          `OPENFGA_AUTHORIZATION_MODEL_ID=${authorizationModelId}`
-        );
-      } else {
-        envContent += `\nOPENFGA_AUTHORIZATION_MODEL_ID=${authorizationModelId}`;
-      }
-
-      fs.writeFileSync(envPath, envContent, 'utf-8');
-      console.log('[OpenFGA] Persisted store and model IDs to .env file');
-    } catch (error) {
-      console.error('[OpenFGA] Failed to update .env file:', error);
-      // Non-fatal error - don't throw
-    }
-  }
-
-  /**
-   * Verify that a store exists in OpenFGA
-   */
-  private async verifyStoreExists(storeId: string): Promise<boolean> {
-    try {
-      const response = await fetch(
-        `${process.env.OPENFGA_API_URL || 'http://localhost:8080'}/stores/${storeId}`
-      );
-      return response.ok;
-    } catch (error) {
-      console.warn(`[OpenFGA] Failed to verify store ${storeId}:`, error);
-      return false;
-    }
-  }
-
-  /**
-   * Verify that an authorization model exists in OpenFGA
-   */
-  private async verifyAuthorizationModelExists(storeId: string, modelId: string): Promise<boolean> {
-    try {
-      const response = await fetch(
-        `${process.env.OPENFGA_API_URL || 'http://localhost:8080'}/stores/${storeId}/authorization-models/${modelId}`
-      );
-      return response.ok;
-    } catch (error) {
-      console.warn(`[OpenFGA] Failed to verify authorization model ${modelId}:`, error);
-      return false;
-    }
-  }
-
-  /**
-   * Initialize OpenFGA store and authorization model
-   *
-   * This method implements a robust initialization flow that:
-   * 1. Verifies cached IDs actually exist in OpenFGA
-   * 2. Creates missing stores/models automatically
-   * 3. Persists valid IDs to .env for future use
-   * 4. Handles container restarts and database resets gracefully
+   * Initialize OpenFGA
    */
   async initialize(): Promise<void> {
-    if (this.initialized) return;
-
-    // Retry loop to handle:
-    // - OpenFGA container not yet ready (connection refused)
-    // - OpenFGA datastore migrations not yet complete (returns readiness errors)
-    // - Transient network hiccups at startup
-    let attempt = 0;
-    let lastError: unknown = null;
-
-    while (attempt < this.maxInitAttempts) {
-      attempt++;
-      try {
-        let needsPersistence = false;
-
-        // Step 1: Verify and create store if needed
-        if (this.storeId) {
-          console.log(`[OpenFGA] Verifying cached store ID: ${this.storeId}`);
-          const storeExists = await this.verifyStoreExists(this.storeId);
-
-          if (!storeExists) {
-            console.warn(
-              `[OpenFGA] Cached store ID ${this.storeId} does not exist - creating new store`
-            );
-            this.storeId = null;
-            needsPersistence = true;
-          } else {
-            console.log(`[OpenFGA] Verified store exists: ${this.storeId}`);
-          }
-        }
-
-        if (!this.storeId) {
-          const store = await this.client.createStore({
-            name: process.env.OPENFGA_STORE_NAME || 'share-app',
-          });
-          this.storeId = store.id;
-          console.log(`[OpenFGA] Created new store: ${this.storeId}`);
-          needsPersistence = true;
-        }
-
-        // Step 2: Update client with verified store ID
-        this.client = new OpenFgaClient({
-          apiUrl: process.env.OPENFGA_API_URL || 'http://localhost:8080',
-          storeId: this.storeId,
-          credentials: process.env.OPENFGA_API_TOKEN
-            ? {
-                method: CredentialsMethod.ApiToken,
-                config: {
-                  token: process.env.OPENFGA_API_TOKEN,
-                },
-              }
-            : undefined,
-        });
-
-        // Step 3: Verify and create authorization model if needed
-        if (this.authorizationModelId) {
-          console.log(
-            `[OpenFGA] Verifying cached authorization model ID: ${this.authorizationModelId}`
-          );
-          const modelExists = await this.verifyAuthorizationModelExists(
-            this.storeId,
-            this.authorizationModelId
-          );
-
-          if (!modelExists) {
-            console.warn(
-              `[OpenFGA] Cached authorization model ID ${this.authorizationModelId} does not exist - creating new model`
-            );
-            this.authorizationModelId = null;
-            needsPersistence = true;
-          } else {
-            console.log(
-              `[OpenFGA] Verified authorization model exists: ${this.authorizationModelId}`
-            );
-          }
-        }
-
-        if (!this.authorizationModelId) {
-          // Cast to satisfy SDK type narrowing differences across versions
-          const model = await this.client.writeAuthorizationModel(authorizationModel as any);
-          this.authorizationModelId = model.authorization_model_id;
-          console.log(`[OpenFGA] Created new authorization model: ${this.authorizationModelId}`);
-          needsPersistence = true;
-        }
-
-        // Step 4: Update client with verified authorization model ID
-        this.client = new OpenFgaClient({
-          apiUrl: process.env.OPENFGA_API_URL || 'http://localhost:8080',
-          storeId: this.storeId,
-          authorizationModelId: this.authorizationModelId,
-          credentials: process.env.OPENFGA_API_TOKEN
-            ? {
-                method: CredentialsMethod.ApiToken,
-                config: {
-                  token: process.env.OPENFGA_API_TOKEN,
-                },
-              }
-            : undefined,
-        });
-
-        // Step 5: Persist to .env file if we created new resources or verified IDs changed
-        if (needsPersistence && this.storeId && this.authorizationModelId) {
-          this.updateEnvFile(this.storeId, this.authorizationModelId);
-        }
-
-        this.initialized = true;
-        console.log('[OpenFGA] Initialization complete - store and authorization model ready');
-        return;
-      } catch (error) {
-        lastError = error;
-        const waitMs = this.initAttemptDelayMs;
-        console.warn(
-          `[OpenFGA] Initialization attempt ${attempt}/${this.maxInitAttempts} failed; retrying in ${Math.round(
-            waitMs / 1000
-          )}s...`,
-          error
-        );
-        await this.sleep(waitMs);
-      }
-    }
-
-    console.error('[OpenFGA] CRITICAL: Exhausted initialization retries; OpenFGA not ready.');
-    throw lastError ?? new Error('OpenFGA initialization failed after retries');
+    await this.repository.initialize();
   }
 
-  /**
-   * Map resource type to OpenFGA type
-   */
-  private mapResourceType(resourceType: string): string {
-    const typeMap: Record<string, string> = {
-      communities: 'community',
-      wealth: 'wealth',
-      wealth_comments: 'wealth_comment',
-      wealthComments: 'wealth_comment',
-      invites: 'invite',
-    };
-    return typeMap[resourceType] || resourceType;
-  }
+  // ========================================
+  // CORE PERMISSION CHECKING
+  // ========================================
 
   /**
-   * Map action to OpenFGA relation
+   * Universal permission/role check
+   *
+   * Checks if a user has a specific relation on an object.
+   *
+   * @param userId - User ID
+   * @param objectType - Resource type (e.g., 'community', 'wealth')
+   * @param objectId - Resource ID
+   * @param relation - Relation to check (e.g., 'admin', 'can_read', 'can_manage_forum')
+   * @returns True if user has the relation
+   *
+   * @example
+   * // Check permission
+   * await checkAccess(userId, 'community', commId, 'can_manage_forum')
+   *
+   * // Check base role
+   * await checkAccess(userId, 'community', commId, 'admin')
+   *
+   * // Check CRUD action (will map to can_update)
+   * await checkAccess(userId, 'community', commId, 'update')
    */
-  private mapAction(action: string): string {
-    const actionMap: Record<string, string> = {
-      create: 'can_create',
-      read: 'can_read',
-      update: 'can_update',
-      delete: 'can_delete',
-    };
-    return actionMap[action] || `can_${action}`;
-  }
-
-  /**
-   * Check if user can perform action on resource
-   */
-  async can(
+  async checkAccess(
     userId: string,
-    resourceType: string,
-    resourceId: string,
-    action: string
+    objectType: string,
+    objectId: string,
+    relation: string
   ): Promise<boolean> {
-    if (!this.initialized) {
-      await this.initialize();
-    }
-
     try {
-      // Check for superadmin first
-      const isSuperadmin = await this.client.check({
+      // Map action to permission if needed (e.g., 'update' -> 'can_update')
+      const mappedRelation = relation.startsWith('can_')
+        ? relation
+        : mapActionToPermission(relation);
+
+      // Map resource type
+      const fgaType = mapResourceType(objectType);
+
+      return await this.repository.check({
         user: `user:${userId}`,
-        relation: 'superadmin',
-        object: 'system:global',
+        relation: mappedRelation,
+        object: `${fgaType}:${objectId}`,
       });
-
-      if (isSuperadmin.allowed) {
-        return true;
-      }
-
-      // Check specific permission
-      const fgaType = this.mapResourceType(resourceType);
-      const fgaRelation = this.mapAction(action);
-
-      const response = await this.client.check({
-        user: `user:${userId}`,
-        relation: fgaRelation,
-        object: `${fgaType}:${resourceId}`,
-      });
-
-      return response.allowed || false;
     } catch (error) {
-      console.error('OpenFGA check error:', error);
+      console.error('[OpenFGA Service] Check access error:', error);
       return false;
     }
   }
 
   /**
-   * Get user's role for a resource (from OpenFGA)
-   * Returns the highest privilege role the user has for the resource
+   * Use for low-level checks where you need exact control
    */
-  async getUserRoleForResource(
-    userId: string,
-    resourceType: string,
-    resourceId: string
-  ): Promise<string | null> {
-    if (!this.initialized) {
-      await this.initialize();
-    }
-
-    const fgaType = this.mapResourceType(resourceType);
-    const roles = ['admin', 'member', 'reader'];
-
-    // Check roles in order of privilege (highest to lowest)
-    for (const role of roles) {
-      try {
-        const response = await this.client.check({
-          user: `user:${userId}`,
-          relation: role,
-          object: `${fgaType}:${resourceId}`,
-        });
-
-        if (response.allowed) {
-          return role;
-        }
-      } catch (error) {
-        console.error(`Failed to check role ${role} for user ${userId}:`, error);
-      }
-    }
-
-    return null;
+  async check(params: { user: string; relation: string; object: string }): Promise<boolean> {
+    return await this.repository.check(params);
   }
 
   /**
-   * Get all roles for a specific user on a resource (from OpenFGA)
-   * Returns all roles the user has on the resource as an array
-   */
-  async getUserRolesForResource(
-    userId: string,
-    resourceType: string,
-    resourceId: string
-  ): Promise<string[]> {
-    if (!this.initialized) {
-      await this.initialize();
-    }
-
-    const fgaType = this.mapResourceType(resourceType);
-    const roles = ['admin', 'member', 'reader'];
-    const userRoles: string[] = [];
-
-    // Check all roles for the user
-    for (const role of roles) {
-      try {
-        const response = await this.client.check({
-          user: `user:${userId}`,
-          relation: role,
-          object: `${fgaType}:${resourceId}`,
-        });
-
-        if (response.allowed) {
-          userRoles.push(role);
-        }
-      } catch (error) {
-        console.error(`Failed to check role ${role} for user ${userId}:`, error);
-      }
-    }
-
-    return userRoles;
-  }
-
-  /**
-   * Get all users with their roles for a resource (from OpenFGA)
-   * This queries OpenFGA to find all users with any role on the resource
-   */
-  async getRolesForResource(
-    resourceType: string,
-    resourceId: string
-  ): Promise<{ userId: string; role: string }[]> {
-    if (!this.initialized) {
-      await this.initialize();
-    }
-
-    const fgaType = this.mapResourceType(resourceType);
-    const roles = ['admin', 'member', 'reader'];
-    const userRoles: { userId: string; role: string }[] = [];
-
-    try {
-      // For each role, read all tuples for that relation
-      for (const role of roles) {
-        const response = await this.client.read({
-          // Cast request body due to SDK minor type differences
-          tuple_key: {
-            object: `${fgaType}:${resourceId}`,
-            relation: role,
-          },
-        } as any);
-
-        if (response.tuples) {
-          for (const tuple of response.tuples) {
-            const userMatch = tuple.key.user?.match(/^user:(.+)$/);
-            if (userMatch) {
-              const userId = userMatch[1];
-              // Filter out the special "metadata" user used for invite role metadata
-              if (userId !== 'metadata') {
-                userRoles.push({
-                  userId: userId,
-                  role: role,
-                });
-              }
-            }
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Failed to get roles for resource:', error);
-    }
-
-    return userRoles;
-  }
-
-  /**
-   * Get all resource IDs user has access to for a given action (from OpenFGA)
-   * This uses OpenFGA's listObjects API to efficiently find all accessible resources
+   * Get all resource IDs user has access to for a given relation
+   *
+   * @param userId - User ID
+   * @param resourceType - Resource type
+   * @param relation - Relation or action to check
+   * @returns Array of resource IDs
+   *
+   * @example
+   * // Get all communities user can read
+   * const ids = await getAccessibleResourceIds(userId, 'community', 'read')
    */
   async getAccessibleResourceIds(
     userId: string,
     resourceType: string,
-    action: string
+    relation: string
   ): Promise<string[]> {
-    if (!this.initialized) {
-      await this.initialize();
-    }
-
     try {
-      const fgaType = this.mapResourceType(resourceType);
-      const fgaRelation = this.mapAction(action);
+      const fgaType = mapResourceType(resourceType);
+      const mappedRelation = relation.startsWith('can_')
+        ? relation
+        : mapActionToPermission(relation);
 
-      const response = await this.client.listObjects({
+      return await this.repository.listObjects({
         user: `user:${userId}`,
-        relation: fgaRelation,
+        relation: mappedRelation,
         type: fgaType,
       });
-
-      // Extract IDs from the object references (format: "type:id")
-      return (
-        response.objects?.map((obj) => {
-          const parts = obj.split(':');
-          return parts.length > 1 ? parts.slice(1).join(':') : obj;
-        }) || []
-      );
     } catch (error) {
-      console.error('Failed to list accessible resources:', error);
+      console.error('[OpenFGA Service] Failed to list accessible resources:', error);
       return [];
     }
   }
 
+  // ========================================
+  // GENERIC RELATION MANAGEMENT
+  // ========================================
+
   /**
-   * Assign role to user for a resource (OpenFGA only)
-   * OpenFGA is now the single source of truth for authorization
+   * Assign a relation between subject and object
    *
-   * This method is idempotent and handles race conditions by:
-   * 1. Reading current state to verify what tuples exist
-   * 2. Attempting to delete old roles with error handling (defensive delete)
-   * 3. Writing the new tuple if it doesn't already exist
-   * 4. Ensuring a user can only have ONE role per community at a time
+   * Generic method for assigning any relation type.
+   * Handles validation, mutual exclusivity, and idempotency.
    *
-   * The delete and write operations are separated to handle cases where tuples
-   * might not exist (e.g., due to race conditions or computed vs direct tuples).
+   * @param subject - Subject ID (e.g., user ID, community ID)
+   * @param subjectType - Type of subject
+   * @param relation - Relation to assign
+   * @param objectType - Object resource type
+   * @param objectId - Object resource ID
+   * @param options - Additional options
+   *
+   * @example
+   * // Assign base role (mutually exclusive)
+   * await assignRelation(userId, 'user', 'admin', 'community', commId, {
+   *   mutuallyExclusive: BASE_ROLES
+   * })
+   *
+   * // Assign feature role
+   * await assignRelation(userId, 'user', 'forum_manager', 'community', commId, {
+   *   validate: isFeatureRole
+   * })
+   *
+   * // Assign superadmin
+   * await assignRelation(userId, 'user', 'superadmin', 'system', 'global')
+   *
+   * // Create resource relationship
+   * await assignRelation(parentId, 'community', 'parent_community', 'wealth', wealthId)
    */
-  async assignRole(
-    userId: string,
-    resourceType: string,
-    resourceId: string,
-    role: string
+  async assignRelation(
+    subject: string,
+    subjectType: SubjectType,
+    relation: string,
+    objectType: string,
+    objectId: string,
+    options: {
+      mutuallyExclusive?: readonly string[];
+      validate?: (relation: string) => boolean;
+      skipVerification?: boolean;
+    } = {}
   ): Promise<void> {
-    if (!this.initialized) {
-      await this.initialize();
-    }
+    const fgaObjectType = mapResourceType(objectType);
+    const subjectStr = subjectType === 'user' ? `user:${subject}` : `${subjectType}:${subject}`;
 
-    const fgaType = this.mapResourceType(resourceType);
-    const allRoles = ['admin', 'member', 'reader'];
-
-    // Validate the role is one we recognize
-    if (!allRoles.includes(role)) {
-      throw new Error(`Invalid role: ${role}. Must be one of: ${allRoles.join(', ')}`);
+    // Validation
+    if (options.validate && !options.validate(relation)) {
+      throw new Error(`Invalid relation: ${relation}`);
     }
 
     try {
       console.log(
-        `[OpenFGA] Assigning role "${role}" to user:${userId} on ${fgaType}:${resourceId}`
+        `[OpenFGA Service] Assigning relation "${relation}" to ${subjectStr} on ${fgaObjectType}:${objectId}`
       );
 
-      // Step 1: Read current state - get all existing role tuples for this user on this resource
-      const existingTuples = await this.client.read({
-        // Cast request body due to SDK minor type differences
-        tuple_key: {
-          user: `user:${userId}`,
-          object: `${fgaType}:${resourceId}`,
-        },
-      } as any);
+      // Handle mutually exclusive relations (e.g., base roles)
+      if (options.mutuallyExclusive && options.mutuallyExclusive.length > 0) {
+        // Read current state
+        const existingTuples = await this.repository.readTuples({
+          user: subjectStr,
+          object: `${fgaObjectType}:${objectId}`,
+        });
 
-      const existingRoles = new Set<string>();
+        const existingRelations = new Set(
+          existingTuples
+            .map((t) => t.key.relation)
+            .filter((r) => options.mutuallyExclusive!.includes(r))
+        );
 
-      if (existingTuples.tuples) {
-        for (const tuple of existingTuples.tuples) {
-          const relation = tuple.key.relation;
-          // Only consider actual role relations, not permission relations
-          if (allRoles.includes(relation)) {
-            existingRoles.add(relation);
-          }
+        // Check if already in desired state
+        if (existingRelations.has(relation) && existingRelations.size === 1) {
+          console.log(
+            `[OpenFGA Service] Relation "${relation}" already exists as the only mutually exclusive relation - idempotent`
+          );
+          return;
         }
-      }
 
-      // Step 2: Check if the desired role already exists as the only role
-      if (existingRoles.has(role) && existingRoles.size === 1) {
-        console.log(
-          `[OpenFGA] User already has exactly role "${role}" - operation is idempotent, no changes needed`
-        );
-        return; // Idempotent - already in desired state
-      }
+        // Build deletes and writes
+        const deletes: Array<{ user: string; relation: string; object: string }> = [];
+        const writes: Array<{ user: string; relation: string; object: string }> = [];
 
-      // Step 3: Delete old roles (if any) - use defensive approach with error handling
-      // We separate the delete from the write to avoid atomic failures when tuples don't exist
-      const rolesToDelete = allRoles.filter((r) => r !== role && existingRoles.has(r));
+        // Delete conflicting relations (only those that actually exist)
+        const relationsToDelete = Array.from(existingRelations).filter((r) => r !== relation);
+        for (const oldRelation of relationsToDelete) {
+          deletes.push({
+            user: subjectStr,
+            relation: oldRelation,
+            object: `${fgaObjectType}:${objectId}`,
+          });
+        }
 
-      if (rolesToDelete.length > 0) {
-        console.log(
-          `[OpenFGA] Removing existing roles from user:${userId}: ${rolesToDelete.join(', ')}`
-        );
+        // Write new relation if not exists
+        if (!existingRelations.has(relation)) {
+          writes.push({
+            user: subjectStr,
+            relation,
+            object: `${fgaObjectType}:${objectId}`,
+          });
+        }
 
-        // Delete each old role individually with error handling
-        for (const oldRole of rolesToDelete) {
+        // Execute batch write (only if there's something to do)
+        if (deletes.length > 0 || writes.length > 0) {
           try {
-            await this.client.write({
-              deletes: [
-                {
-                  user: `user:${userId}`,
-                  relation: oldRole,
-                  object: `${fgaType}:${resourceId}`,
-                },
-              ],
-            });
-            console.log(`[OpenFGA] Successfully removed role "${oldRole}" from user:${userId}`);
-          } catch (deleteError: any) {
-            // Ignore "tuple doesn't exist" errors - this can happen due to race conditions
-            // or if the tuple was computed rather than direct
-            const errorMessage = deleteError?.message || String(deleteError);
-            if (errorMessage.includes('cannot delete a tuple which does not exist')) {
-              console.log(
-                `[OpenFGA] Tuple for role "${oldRole}" already deleted (race condition or computed tuple) - ignoring`
+            await this.repository.write(
+              writes.length > 0 ? writes : undefined,
+              deletes.length > 0 ? deletes : undefined
+            );
+          } catch (error: any) {
+            // If batch write fails due to tuple not existing, try again with only writes
+            if (error?.apiErrorCode === 'write_failed_due_to_invalid_input' && deletes.length > 0) {
+              console.warn(
+                `[OpenFGA Service] Batch write failed, retrying with writes only (some tuples may not exist)`
               );
+              // Retry with just the writes (the deletes might reference non-existent tuples)
+              if (writes.length > 0) {
+                await this.repository.write(writes, undefined);
+              }
             } else {
-              // Re-throw other errors
-              throw deleteError;
+              throw error;
             }
           }
         }
-      }
 
-      // Step 4: Write the new role tuple
-      // IMPORTANT: Always write the role tuple, even if it appeared to exist in the initial read.
-      // This ensures the role is a direct tuple, not a computed one, and handles race conditions
-      // where the tuple might have been deleted between our read and this write.
-      console.log(
-        `[OpenFGA] Writing role "${role}" tuple for user:${userId} (${existingRoles.has(role) ? 'refreshing' : 'creating'})`
-      );
+        // Verify final state if verification not skipped
+        if (!options.skipVerification) {
+          const hasRelation = await this.repository.check({
+            user: subjectStr,
+            relation: relation,
+            object: `${fgaObjectType}:${objectId}`,
+          });
 
-      try {
-        await this.client.write({
-          writes: [
-            {
-              user: `user:${userId}`,
-              relation: role,
-              object: `${fgaType}:${resourceId}`,
-            },
-          ],
-        });
+          if (!hasRelation) {
+            throw new Error(
+              `Verification failed: ${subjectStr} does not have relation "${relation}" on ${fgaObjectType}:${objectId}`
+            );
+          }
+        }
 
         console.log(
-          `[OpenFGA] Successfully wrote role "${role}" to user:${userId} on ${fgaType}:${resourceId}`
+          `[OpenFGA Service] Successfully assigned relation "${relation}" to ${subjectStr} on ${fgaObjectType}:${objectId}`
         );
-      } catch (writeError: any) {
-        // If the tuple already exists, that's fine - we've achieved our goal
-        const errorMessage = writeError?.message || String(writeError);
-        if (errorMessage.includes('cannot write a tuple which already exists')) {
-          console.log(
-            `[OpenFGA] Tuple for role "${role}" already exists (concurrent write) - operation is idempotent`
-          );
-        } else {
-          // Re-throw other errors
-          throw writeError;
-        }
-      }
+      } else {
+        // Simple assignment (no mutual exclusivity)
+        await this.repository.write([
+          {
+            user: subjectStr,
+            relation,
+            object: `${fgaObjectType}:${objectId}`,
+          },
+        ]);
 
-      // Step 5: Verify the final state (defensive check)
-      const finalRoles = await this.getUserRolesForResource(userId, resourceType, resourceId);
-
-      if (finalRoles.length !== 1 || finalRoles[0] !== role) {
-        console.error(
-          `[OpenFGA] WARNING: Unexpected final state for user:${userId} on ${fgaType}:${resourceId}. Expected: ["${role}"], Got: ${JSON.stringify(finalRoles)}`
-        );
-        throw new Error(
-          `Failed to assign role properly. Expected single role "${role}", but found: ${JSON.stringify(finalRoles)}`
+        console.log(
+          `[OpenFGA Service] Successfully assigned relation "${relation}" to ${subjectStr} on ${fgaObjectType}:${objectId}`
         );
       }
-
-      console.log(
-        `[OpenFGA] Verified: user:${userId} has exactly role "${role}" on ${fgaType}:${resourceId}`
-      );
     } catch (error) {
       console.error(
-        `[OpenFGA] Failed to assign role "${role}" to user:${userId} on ${fgaType}:${resourceId}:`,
+        `[OpenFGA Service] Failed to assign relation "${relation}" to ${subjectStr} on ${fgaObjectType}:${objectId}:`,
         error
       );
       throw error;
@@ -632,68 +313,379 @@ export class OpenFGAService {
   }
 
   /**
-   * Remove role from user for a resource (OpenFGA only)
-   * Removes all role tuples for the user on the resource
+   * Revoke relation(s) between subject and object
+   *
+   * @param subject - Subject ID
+   * @param subjectType - Type of subject
+   * @param relation - Relation(s) to revoke (string or array)
+   * @param objectType - Object resource type
+   * @param objectId - Object resource ID
+   *
+   * @example
+   * // Revoke single relation
+   * await revokeRelation(userId, 'user', 'forum_manager', 'community', commId)
+   *
+   * // Revoke multiple relations
+   * await revokeRelation(userId, 'user', ['admin', 'member'], 'community', commId)
    */
-  async removeRole(userId: string, resourceType: string, resourceId: string): Promise<void> {
-    if (!this.initialized) {
-      await this.initialize();
-    }
+  async revokeRelation(
+    subject: string,
+    subjectType: SubjectType,
+    relation: string | string[],
+    objectType: string,
+    objectId: string
+  ): Promise<void> {
+    const fgaObjectType = mapResourceType(objectType);
+    const subjectStr = subjectType === 'user' ? `user:${subject}` : `${subjectType}:${subject}`;
+    const relations = Array.isArray(relation) ? relation : [relation];
 
     try {
-      const fgaType = this.mapResourceType(resourceType);
+      const deletes = relations.map((r) => ({
+        user: subjectStr,
+        relation: r,
+        object: `${fgaObjectType}:${objectId}`,
+      }));
 
-      // Remove all role tuples for this user on this resource
-      await this.removeRoleTuplesFromOpenFGA(userId, fgaType, resourceId);
+      await this.repository.write(undefined, deletes);
+
+      console.log(
+        `[OpenFGA Service] Successfully revoked relation(s) "${relations.join(', ')}" from ${subjectStr} on ${fgaObjectType}:${objectId}`
+      );
     } catch (error) {
-      console.error('Failed to delete role from OpenFGA:', error);
+      console.error(
+        `[OpenFGA Service] Failed to revoke relation(s) "${relations.join(', ')}" from ${subjectStr} on ${fgaObjectType}:${objectId}:`,
+        error
+      );
       throw error;
     }
   }
 
-  /**
-   * Remove all role tuples for a user on a resource
-   * Helper method to clean up before reassigning roles
-   */
-  private async removeRoleTuplesFromOpenFGA(
-    userId: string,
-    fgaType: string,
-    resourceId: string
-  ): Promise<void> {
-    const roles = ['admin', 'member', 'reader'];
+  // ========================================
+  // BASE ROLE MANAGEMENT (admin, member)
+  // ========================================
 
-    // Delete each role individually with error handling to avoid batch failures
-    for (const role of roles) {
+  /**
+   * Assign a base role to a user on a resource
+   *
+   * Base roles are mutually exclusive - user can only have ONE base role per resource.
+   *
+   * @param userId - User ID
+   * @param resourceType - Resource type
+   * @param resourceId - Resource ID
+   * @param role - Base role ('admin' or 'member')
+   */
+  async assignBaseRole(
+    userId: string,
+    resourceType: string,
+    resourceId: string,
+    role: BaseRole
+  ): Promise<void> {
+    if (!isBaseRole(role)) {
+      throw new Error(`Invalid base role: ${role}. Must be one of: ${BASE_ROLES.join(', ')}`);
+    }
+
+    await this.assignRelation(userId, 'user', role, resourceType, resourceId, {
+      mutuallyExclusive: BASE_ROLES,
+      validate: isBaseRole,
+    });
+  }
+
+  /**
+   * Remove all base roles from a user on a resource
+   *
+   * Checks which base roles the user actually has before attempting to delete them.
+   * This prevents OpenFGA errors when trying to delete non-existent tuples.
+   */
+  async removeBaseRole(userId: string, resourceType: string, resourceId: string): Promise<void> {
+    // Get all roles the user currently has
+    const currentRoles = await this.getUserBaseRole(userId, resourceType, resourceId, {
+      returnAll: true,
+    });
+
+    // If user has no roles, nothing to do
+    if (!currentRoles || !Array.isArray(currentRoles) || currentRoles.length === 0) {
+      console.log(
+        `[OpenFGA Service] No base roles to remove for user:${userId} on ${resourceType}:${resourceId}`
+      );
+      return;
+    }
+
+    // Only revoke the roles that actually exist
+    await this.revokeRelation(userId, 'user', currentRoles, resourceType, resourceId);
+  }
+
+  /**
+   * Get user's base role for a resource
+   *
+   * @param userId - User ID
+   * @param resourceType - Resource type
+   * @param resourceId - Resource ID
+   * @param options - Options
+   * @returns Single role (highest privilege) or array of roles or null
+   *
+   * @example
+   * // Get single role (highest privilege)
+   * const role = await getUserBaseRole(userId, 'community', commId) // 'admin' | 'member' | null
+   *
+   * // Get all roles (should be 0-1 with current schema)
+   * const roles = await getUserBaseRole(userId, 'community', commId, { returnAll: true }) // ['admin']
+   */
+  async getUserBaseRole(
+    userId: string,
+    resourceType: string,
+    resourceId: string,
+    options: { returnAll?: boolean } = {}
+  ): Promise<BaseRole | BaseRole[] | null> {
+    const fgaType = mapResourceType(resourceType);
+    const userRoles: BaseRole[] = [];
+
+    for (const role of BASE_ROLES) {
       try {
-        await this.client.write({
-          deletes: [
-            {
-              user: `user:${userId}`,
-              relation: role,
-              object: `${fgaType}:${resourceId}`,
-            },
-          ],
+        const hasRole = await this.repository.check({
+          user: `user:${userId}`,
+          relation: role,
+          object: `${fgaType}:${resourceId}`,
         });
-        console.log(
-          `[OpenFGA] Successfully removed role "${role}" from user:${userId} on ${fgaType}:${resourceId}`
+
+        if (hasRole) {
+          if (!options.returnAll) {
+            return role; // Return first (highest privilege)
+          }
+          userRoles.push(role);
+        }
+      } catch (error) {
+        console.error(
+          `[OpenFGA Service] Failed to check base role ${role} for user ${userId}:`,
+          error
         );
-      } catch (error: any) {
-        // Ignore "tuple doesn't exist" errors - this is expected when removing roles
-        const errorMessage = error?.message || String(error);
-        if (errorMessage.includes('cannot delete a tuple which does not exist')) {
-          console.debug(
-            `[OpenFGA] Tuple for role "${role}" doesn't exist (already deleted or never created) - ignoring`
-          );
-        } else {
-          // Re-throw other errors
-          throw error;
+      }
+    }
+
+    return options.returnAll ? userRoles : null;
+  }
+
+  /**
+   * Get all users with their base roles for a resource
+   *
+   * @returns Array of { userId, role } objects
+   */
+  async getBaseRolesForResource(
+    resourceType: string,
+    resourceId: string
+  ): Promise<{ userId: string; role: BaseRole }[]> {
+    const fgaType = mapResourceType(resourceType);
+    const userRoles: { userId: string; role: BaseRole }[] = [];
+
+    try {
+      for (const role of BASE_ROLES) {
+        const tuples = await this.repository.readTuples({
+          object: `${fgaType}:${resourceId}`,
+          relation: role,
+        });
+
+        for (const tuple of tuples) {
+          const userMatch = tuple.key.user?.match(/^user:(.+)$/);
+          if (userMatch) {
+            const userId = userMatch[1];
+            // Filter out special users
+            if (userId !== 'metadata') {
+              userRoles.push({ userId, role });
+            }
+          }
         }
       }
+    } catch (error) {
+      console.error('[OpenFGA Service] Failed to get base roles for resource:', error);
+    }
+
+    return userRoles;
+  }
+
+  // ========================================
+  // FEATURE ROLE MANAGEMENT (forum_manager, etc.)
+  // ========================================
+
+  /**
+   * Assign a feature role to a user
+   *
+   * Feature roles grant specific permissions.
+   * Users can have MULTIPLE feature roles.
+   *
+   * @param userId - User ID
+   * @param communityId - Community ID
+   * @param role - Feature role (e.g., 'forum_manager', 'pool_creator')
+   */
+  async assignFeatureRole(userId: string, communityId: string, role: FeatureRole): Promise<void> {
+    if (!isFeatureRole(role)) {
+      throw new Error(`Invalid feature role: ${role}. Must be one of the defined feature roles.`);
+    }
+
+    await this.assignRelation(userId, 'user', role, 'community', communityId, {
+      validate: isFeatureRole,
+      skipVerification: true, // Skip verification for performance (non-mutually-exclusive)
+    });
+  }
+
+  /**
+   * Revoke a feature role from a user
+   */
+  async revokeFeatureRole(userId: string, communityId: string, role: FeatureRole): Promise<void> {
+    await this.revokeRelation(userId, 'user', role, 'community', communityId);
+  }
+
+  // ========================================
+  // TRUST ROLE SYNCHRONIZATION
+  // ========================================
+
+  /**
+   * Sync trust roles for a user based on their trust score
+   *
+   * Trust roles are auto-granted when trust >= threshold.
+   * This method should be called whenever a user's trust score changes.
+   *
+   * @param userId - User ID
+   * @param communityId - Community ID
+   * @param trustScore - User's current trust score
+   * @param thresholds - Map of trust role to minimum trust required
+   *
+   * @example
+   * await syncTrustRoles(userId, commId, 30, {
+   *   trust_trust_granter: 15,
+   *   trust_wealth_creator: 10,
+   *   trust_poll_creator: 15,
+   *   trust_forum_manager: 30,
+   * })
+   */
+  async syncTrustRoles(
+    userId: string,
+    communityId: string,
+    trustScore: number,
+    thresholds: Record<string, number>
+  ): Promise<void> {
+    try {
+      const writes: Array<{ user: string; relation: string; object: string }> = [];
+      const deletes: Array<{ user: string; relation: string; object: string }> = [];
+
+      // Iterate through all possible trust roles
+      for (const [trustRole, minTrust] of Object.entries(thresholds)) {
+        // Only process trust roles (prefixed with "trust_")
+        if (!isTrustRole(trustRole)) {
+          continue;
+        }
+
+        const shouldHaveRole = trustScore >= minTrust;
+
+        // Read current state
+        const hasRole = await this.repository.check({
+          user: `user:${userId}`,
+          relation: trustRole,
+          object: `community:${communityId}`,
+        });
+
+        if (shouldHaveRole && !hasRole) {
+          // Grant the trust role
+          writes.push({
+            user: `user:${userId}`,
+            relation: trustRole,
+            object: `community:${communityId}`,
+          });
+        } else if (!shouldHaveRole && hasRole) {
+          // Revoke the trust role
+          deletes.push({
+            user: `user:${userId}`,
+            relation: trustRole,
+            object: `community:${communityId}`,
+          });
+        }
+      }
+
+      // Batch write changes
+      if (writes.length > 0 || deletes.length > 0) {
+        await this.repository.write(
+          writes.length > 0 ? writes : undefined,
+          deletes.length > 0 ? deletes : undefined
+        );
+        console.log(
+          `[OpenFGA Service] Synced trust roles for user:${userId} on community:${communityId} (trust: ${trustScore}, granted: ${writes.length}, revoked: ${deletes.length})`
+        );
+      }
+    } catch (error) {
+      console.error('[OpenFGA Service] Failed to sync trust roles:', error);
+      throw error;
+    }
+  }
+
+  // ========================================
+  // INVITE METADATA MANAGEMENT
+  // ========================================
+
+  /**
+   * Store role metadata for an invite
+   *
+   * Uses a special "grants_X" relation to indicate what role this invite will grant
+   * The 'metadata' user is a special user ID used to store metadata about resources
+   */
+  async setInviteRoleMetadata(inviteId: string, role: BaseRole): Promise<void> {
+    const grantsRelation = `grants_${role}`;
+    await this.assignRelation('metadata', 'user', grantsRelation, 'invite', inviteId, {
+      skipVerification: true,
+    });
+  }
+
+  /**
+   * Retrieve role metadata from an invite
+   *
+   * @returns The role that this invite will grant when redeemed
+   */
+  async getInviteRoleMetadata(inviteId: string): Promise<BaseRole | null> {
+    try {
+      for (const role of BASE_ROLES) {
+        const hasGrant = await this.repository.check({
+          user: `user:metadata`,
+          relation: `grants_${role}`,
+          object: `invite:${inviteId}`,
+        });
+
+        if (hasGrant) {
+          return role;
+        }
+      }
+
+      return null;
+    } catch (error) {
+      console.error('[OpenFGA Service] Failed to get invite role metadata:', error);
+      return null;
     }
   }
 
   /**
-   * Create relationship between resources (e.g., wealth -> community)
+   * Remove role metadata from an invite
+   */
+  async removeInviteRoleMetadata(inviteId: string): Promise<void> {
+    try {
+      const deletes = BASE_ROLES.map((role) => ({
+        user: `user:metadata`,
+        relation: `grants_${role}`,
+        object: `invite:${inviteId}`,
+      }));
+
+      await this.repository.write(undefined, deletes);
+    } catch (error) {
+      // Ignore errors - metadata might not exist
+      console.debug('[OpenFGA Service] No invite metadata to delete:', error);
+    }
+  }
+
+  // ========================================
+  // RESOURCE RELATIONSHIPS
+  // ========================================
+
+  /**
+   * Create relationship between resources
+   *
+   * @example
+   * // Link wealth to community
+   * await createRelationship('wealth', wealthId, 'parent_community', 'community', commId)
    */
   async createRelationship(
     childType: string,
@@ -702,25 +694,19 @@ export class OpenFGAService {
     parentType: string,
     parentId: string
   ): Promise<void> {
-    if (!this.initialized) {
-      await this.initialize();
-    }
-
     try {
-      const fgaChildType = this.mapResourceType(childType);
-      const fgaParentType = this.mapResourceType(parentType);
+      const fgaChildType = mapResourceType(childType);
+      const fgaParentType = mapResourceType(parentType);
 
-      await this.client.write({
-        writes: [
-          {
-            user: `${fgaParentType}:${parentId}`,
-            relation: relation,
-            object: `${fgaChildType}:${childId}`,
-          },
-        ],
-      });
+      await this.repository.write([
+        {
+          user: `${fgaParentType}:${parentId}`,
+          relation: relation,
+          object: `${fgaChildType}:${childId}`,
+        },
+      ]);
     } catch (error) {
-      console.error('Failed to create relationship in OpenFGA:', error);
+      console.error('[OpenFGA Service] Failed to create relationship:', error);
     }
   }
 
@@ -734,375 +720,50 @@ export class OpenFGAService {
     parentType: string,
     parentId: string
   ): Promise<void> {
-    if (!this.initialized) {
-      await this.initialize();
-    }
-
     try {
-      const fgaChildType = this.mapResourceType(childType);
-      const fgaParentType = this.mapResourceType(parentType);
+      const fgaChildType = mapResourceType(childType);
+      const fgaParentType = mapResourceType(parentType);
 
-      await this.client.write({
-        deletes: [
-          {
-            user: `${fgaParentType}:${parentId}`,
-            relation: relation,
-            object: `${fgaChildType}:${childId}`,
-          },
-        ],
-      });
+      await this.repository.write(undefined, [
+        {
+          user: `${fgaParentType}:${parentId}`,
+          relation: relation,
+          object: `${fgaChildType}:${childId}`,
+        },
+      ]);
     } catch (error) {
-      console.error('Failed to remove relationship from OpenFGA:', error);
+      console.error('[OpenFGA Service] Failed to remove relationship:', error);
     }
   }
 
-  /**
-   * Grant superadmin role to a user
-   */
-  async grantSuperadmin(userId: string): Promise<void> {
-    if (!this.initialized) {
-      await this.initialize();
-    }
-
-    try {
-      await this.client.write({
-        writes: [
-          {
-            user: `user:${userId}`,
-            relation: 'superadmin',
-            object: 'system:global',
-          },
-        ],
-      });
-    } catch (error) {
-      console.error('Failed to grant superadmin in OpenFGA:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Revoke superadmin role from a user
-   */
-  async revokeSuperadmin(userId: string): Promise<void> {
-    if (!this.initialized) {
-      await this.initialize();
-    }
-
-    try {
-      await this.client.write({
-        deletes: [
-          {
-            user: `user:${userId}`,
-            relation: 'superadmin',
-            object: 'system:global',
-          },
-        ],
-      });
-    } catch (error) {
-      console.error('Failed to revoke superadmin from OpenFGA:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Store role metadata for an invite
-   * Uses a special "grants_X" relation to indicate what role this invite will grant
-   */
-  async setInviteRoleMetadata(inviteId: string, role: string): Promise<void> {
-    if (!this.initialized) {
-      await this.initialize();
-    }
-
-    try {
-      // Use a synthetic user to store the metadata
-      // We use "metadata:role" as a special marker
-      const grantsRelation = `grants_${role}`;
-
-      await this.client.write({
-        writes: [
-          {
-            user: `user:metadata`,
-            relation: grantsRelation,
-            object: `invite:${inviteId}`,
-          },
-        ],
-      });
-    } catch (error) {
-      console.error('Failed to set invite role metadata in OpenFGA:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Retrieve role metadata from an invite
-   * Returns the role that this invite will grant when redeemed
-   */
-  async getInviteRoleMetadata(inviteId: string): Promise<string | null> {
-    if (!this.initialized) {
-      await this.initialize();
-    }
-
-    try {
-      const roles = ['admin', 'member', 'reader'];
-
-      // Check each grants_X relation to find which one is set
-      for (const role of roles) {
-        const response = await this.client.check({
-          user: `user:metadata`,
-          relation: `grants_${role}`,
-          object: `invite:${inviteId}`,
-        });
-
-        if (response.allowed) {
-          return role;
-        }
-      }
-
-      return null;
-    } catch (error) {
-      console.error('Failed to get invite role metadata from OpenFGA:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Remove role metadata from an invite
-   * Used when cancelling or after redeeming an invite
-   */
-  async removeInviteRoleMetadata(inviteId: string): Promise<void> {
-    if (!this.initialized) {
-      await this.initialize();
-    }
-
-    try {
-      const roles = ['admin', 'member', 'reader'];
-      const deletes = roles.map((role) => ({
-        user: `user:metadata`,
-        relation: `grants_${role}`,
-        object: `invite:${inviteId}`,
-      }));
-
-      await this.client.write({ deletes });
-    } catch (error) {
-      // Ignore errors - metadata might not exist
-      console.debug('No invite metadata to delete:', error);
-    }
-  }
+  // ========================================
+  // LOW-LEVEL UTILITIES
+  // ========================================
 
   /**
    * Batch write tuples for performance
-   *
-   * Writes and/or deletes multiple tuples in a single API call.
-   * Used for bulk operations like trust score syncs.
    */
   async batchWrite(
     writes: Array<{ user: string; relation: string; object: string }>,
     deletes: Array<{ user: string; relation: string; object: string }>
   ): Promise<void> {
-    if (!this.initialized) {
-      await this.initialize();
-    }
-
     try {
-      await this.client.write({ writes, deletes });
+      await this.repository.write(writes, deletes);
     } catch (error) {
-      console.error('Failed to batch write to OpenFGA:', error);
+      console.error('[OpenFGA Service] Failed to batch write:', error);
       throw error;
     }
   }
 
   /**
    * Read tuples matching a pattern
-   *
-   * Retrieves all tuples that match the given pattern.
-   * Used for querying relationships.
    */
   async readTuples(pattern: {
     user?: string;
     relation?: string;
     object?: string;
   }): Promise<Array<{ key: { user?: string; relation: string; object: string } }>> {
-    if (!this.initialized) {
-      await this.initialize();
-    }
-
-    try {
-      const response = await this.client.read({
-        // Cast request body due to SDK minor type differences
-        tuple_key: pattern,
-      } as any);
-
-      return response.tuples || [];
-    } catch (error) {
-      console.error('Failed to read tuples from OpenFGA:', error);
-      return [];
-    }
-  }
-
-  /**
-   * Check permission (simple wrapper)
-   *
-   * Direct check method for simple permission queries.
-   */
-  async check(params: { user: string; relation: string; object: string }): Promise<boolean> {
-    if (!this.initialized) {
-      await this.initialize();
-    }
-
-    try {
-      const response = await this.client.check(params);
-      return response.allowed || false;
-    } catch (error) {
-      console.error('OpenFGA check error:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Check if user has trust level >= threshold
-   *
-   * Convenience method for trust-based checks.
-   * Checks if user has any trust_level_X relation where X >= threshold.
-   */
-  async checkTrustLevel(
-    userId: string,
-    communityId: string,
-    minTrustLevel: number
-  ): Promise<boolean> {
-    if (!this.initialized) {
-      await this.initialize();
-    }
-
-    try {
-      // Check admin first (admins bypass trust requirements)
-      const isAdmin = await this.check({
-        user: `user:${userId}`,
-        relation: 'admin',
-        object: `community:${communityId}`,
-      });
-
-      if (isAdmin) {
-        return true;
-      }
-
-      // Check trust levels from required level up to 100
-      const clampedMin = Math.max(0, Math.min(100, Math.floor(minTrustLevel)));
-
-      for (let level = clampedMin; level <= 100; level++) {
-        const hasTrust = await this.check({
-          user: `user:${userId}`,
-          relation: `trust_level_${level}`,
-          object: `community:${communityId}`,
-        });
-
-        if (hasTrust) {
-          return true;
-        }
-      }
-
-      return false;
-    } catch (error) {
-      console.error('OpenFGA trust level check error:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Check if user has explicit permission grant
-   *
-   * Checks user-based permissions (poll_creator, dispute_handler, etc.)
-   */
-  async checkUserPermission(
-    userId: string,
-    communityId: string,
-    permission: 'poll_creator' | 'dispute_handler'
-  ): Promise<boolean> {
-    if (!this.initialized) {
-      await this.initialize();
-    }
-
-    try {
-      // Check admin first (admins have all permissions)
-      const isAdmin = await this.check({
-        user: `user:${userId}`,
-        relation: 'admin',
-        object: `community:${communityId}`,
-      });
-
-      if (isAdmin) {
-        return true;
-      }
-
-      // Check explicit permission
-      return await this.check({
-        user: `user:${userId}`,
-        relation: permission,
-        object: `community:${communityId}`,
-      });
-    } catch (error) {
-      console.error('OpenFGA user permission check error:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Assign user permission
-   *
-   * Grants explicit user-based permission (poll_creator, dispute_handler, etc.)
-   */
-  async assignUserPermission(
-    userId: string,
-    communityId: string,
-    permission: 'poll_creator' | 'dispute_handler'
-  ): Promise<void> {
-    if (!this.initialized) {
-      await this.initialize();
-    }
-
-    try {
-      await this.client.write({
-        writes: [
-          {
-            user: `user:${userId}`,
-            relation: permission,
-            object: `community:${communityId}`,
-          },
-        ],
-      });
-    } catch (error) {
-      console.error('Failed to assign user permission in OpenFGA:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Revoke user permission
-   *
-   * Removes explicit user-based permission.
-   */
-  async revokeUserPermission(
-    userId: string,
-    communityId: string,
-    permission: 'poll_creator' | 'dispute_handler'
-  ): Promise<void> {
-    if (!this.initialized) {
-      await this.initialize();
-    }
-
-    try {
-      await this.client.write({
-        deletes: [
-          {
-            user: `user:${userId}`,
-            relation: permission,
-            object: `community:${communityId}`,
-          },
-        ],
-      });
-    } catch (error) {
-      console.error('Failed to revoke user permission from OpenFGA:', error);
-      throw error;
-    }
+    return await this.repository.readTuples(pattern);
   }
 }
 

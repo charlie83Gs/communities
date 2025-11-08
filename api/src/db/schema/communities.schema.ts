@@ -9,6 +9,7 @@ export const communities = pgTable('communities', {
 
   // Trust System Configuration
   minTrustToAwardTrust: jsonb('min_trust_to_award_trust').notNull().default({ type: 'number', value: 15 }),
+  minTrustToViewTrust: jsonb('min_trust_to_view_trust').notNull().default({ type: 'number', value: 0 }),
   trustTitles: jsonb('trust_titles').default({
     titles: [
       { name: 'New', minScore: 0 },
@@ -19,18 +20,30 @@ export const communities = pgTable('communities', {
 
   // Wealth Access Configuration
   minTrustForWealth: jsonb('min_trust_for_wealth').notNull().default({ type: 'number', value: 10 }),
+  minTrustToViewWealth: jsonb('min_trust_to_view_wealth').notNull().default({ type: 'number', value: 0 }),
 
   // Item Management Configuration
   minTrustForItemManagement: jsonb('min_trust_for_item_management').notNull().default({ type: 'number', value: 20 }),
+  minTrustToViewItems: jsonb('min_trust_to_view_items').notNull().default({ type: 'number', value: 0 }),
 
   // Dispute Handling Configuration
   minTrustForDisputes: jsonb('min_trust_for_disputes').default({ type: 'number', value: 20 }),
+  minTrustToViewDisputes: jsonb('min_trust_to_view_disputes').default({ type: 'number', value: 0 }),
   disputeResolutionRole: varchar('dispute_resolution_role', { length: 100 }),
   disputeHandlingCouncils: jsonb('dispute_handling_councils').default([]), // Array of council IDs
 
   // Polling Permissions
   pollCreatorUsers: jsonb('poll_creator_users').default([]), // Array of user IDs
   minTrustForPolls: jsonb('min_trust_for_polls').default({ type: 'number', value: 15 }),
+  minTrustToViewPolls: jsonb('min_trust_to_view_polls').default({ type: 'number', value: 0 }),
+
+  // Pool Permissions
+  minTrustForPoolCreation: jsonb('min_trust_for_pool_creation').default({ type: 'number', value: 20 }),
+  minTrustToViewPools: jsonb('min_trust_to_view_pools').default({ type: 'number', value: 0 }),
+
+  // Council Permissions
+  minTrustForCouncilCreation: jsonb('min_trust_for_council_creation').default({ type: 'number', value: 25 }),
+  minTrustToViewCouncils: jsonb('min_trust_to_view_councils').default({ type: 'number', value: 0 }),
 
   // Analytics Configuration
   nonContributionThresholdDays: integer('non_contribution_threshold_days').default(30),
@@ -51,6 +64,7 @@ export const communities = pgTable('communities', {
   minTrustForFlagging: jsonb('min_trust_for_flagging').default({ type: 'number', value: 15 }),
   minTrustForFlagReview: jsonb('min_trust_for_flag_review').default({ type: 'number', value: 30 }),
   minTrustForForumModeration: jsonb('min_trust_for_forum_moderation').default({ type: 'number', value: 30 }),
+  minTrustToViewForum: jsonb('min_trust_to_view_forum').default({ type: 'number', value: 0 }),
 
   createdBy: text('created_by').references(() => appUsers.id),
   createdAt: timestamp('created_at').defaultNow(),
