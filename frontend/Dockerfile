@@ -3,6 +3,18 @@ FROM oven/bun:1 AS builder
 
 WORKDIR /app
 
+# Accept build arguments for Vite environment variables
+ARG VITE_API_URL=https://api.plv.it.com
+ARG VITE_KEYCLOAK_URL=https://auth.plv.it.com
+ARG VITE_KEYCLOAK_REALM=share-app
+ARG VITE_KEYCLOAK_CLIENT_ID=communities-app
+
+# Set environment variables for the build
+ENV VITE_API_URL=${VITE_API_URL}
+ENV VITE_KEYCLOAK_URL=${VITE_KEYCLOAK_URL}
+ENV VITE_KEYCLOAK_REALM=${VITE_KEYCLOAK_REALM}
+ENV VITE_KEYCLOAK_CLIENT_ID=${VITE_KEYCLOAK_CLIENT_ID}
+
 # Copy package files
 COPY package.json bun.lock ./
 
@@ -12,7 +24,7 @@ RUN bun install --frozen-lockfile
 # Copy source code and configuration
 COPY . .
 
-# Build the application
+# Build the application with environment variables
 RUN bun run build
 
 # Production stage - using nginx to serve static files
