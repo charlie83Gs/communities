@@ -5,7 +5,9 @@ import {
   wealthStatusEnum,
   wealthDistributionTypeEnum,
   wealthRequestStatusEnum,
+  recurrentFrequencyEnum,
 } from '@db/schema/wealth.schema';
+import { items } from '@db/schema/items.schema';
 import { and, desc, eq, inArray, ilike, or, gte, lte, sql } from 'drizzle-orm';
 
 export type WealthRecord = typeof wealth.$inferSelect;
@@ -319,6 +321,157 @@ export class WealthRepository {
       .where(eq(wealthRequests.id, requestId))
       .returning();
     return row;
+  }
+
+  // Recurrent Wealth Methods
+
+  /**
+   * Find all wealth items that are due for replenishment
+   * @param currentDate - The current date to compare against nextReplenishmentDate
+   * @returns Array of wealth records that need replenishment
+   */
+  async findDueForReplenishment(currentDate: Date = new Date()): Promise<WealthRecord[]> {
+    return await this.db
+      .select()
+      .from(wealth)
+      .where(
+        and(
+          eq(wealth.isRecurrent, true),
+          eq(wealth.status, 'active'),
+          lte(wealth.nextReplenishmentDate, currentDate)
+        )
+      );
+  }
+
+  /**
+   * Replenish a wealth item by adding units and updating replenishment dates
+   * @param id - Wealth item ID
+   * @param unitsToAdd - Number of units to add
+   * @param frequency - Recurrent frequency ('weekly' or 'monthly')
+   * @returns Updated wealth record
+   */
+  async replenishWealth(
+    id: string,
+    unitsToAdd: number,
+    frequency: 'weekly' | 'monthly'
+  ): Promise<WealthRecord | undefined> {
+    const now = new Date();
+    const nextReplenishment = this.calculateNextReplenishmentDate(now, frequency);
+
+    const [row] = await this.db
+      .update(wealth)
+      .set({
+        unitsAvailable: sql`${wealth.unitsAvailable} + ${unitsToAdd}`,
+        lastReplenishedAt: now,
+        nextReplenishmentDate: nextReplenishment,
+        updatedAt: now,
+      })
+      .where(eq(wealth.id, id))
+      .returning();
+
+    return row;
+  }
+
+  /**
+   * Get a wealth item with its associated item details (including kind)
+   * @param wealthId - Wealth item ID
+   * @returns Wealth record with item details
+   */
+  async findByIdWithItem(wealthId: string): Promise<
+    | {
+        wealth: WealthRecord;
+        item: typeof items.$inferSelect;
+      }
+    | undefined
+  > {
+    const [result] = await this.db
+      .select({
+        wealth: wealth,
+        item: items,
+      })
+      .from(wealth)
+      .innerJoin(items, eq(wealth.itemId, items.id))
+      .where(eq(wealth.id, wealthId));
+
+    return result;
+  }
+
+  /**
+   * Calculate the next replenishment date based on frequency
+   * @param fromDate - Starting date
+   * @param frequency - 'weekly' or 'monthly'
+   * @returns Next replenishment date
+   */
+  private calculateNextReplenishmentDate(fromDate: Date, frequency: 'weekly' | 'monthly'): Date {
+    const nextDate = new Date(fromDate);
+    if (frequency === 'weekly') {
+      nextDate.setDate(nextDate.getDate() + 7);
+    } else if (frequency === 'monthly') {
+      nextDate.setMonth(nextDate.getMonth() + 1);
+    }
+    return nextDate;
+  }
+
+  /**
+   * Get all wealth contributions to a specific pool
+   * @param poolId - Pool ID
+   * @returns Array of wealth records that are contributions to the pool
+   */
+  async getContributionsByPoolId(poolId: string): Promise<WealthRecord[]> {
+    return await this.db
+      .select()
+      .from(wealth)
+      .where(eq(wealth.targetPoolId, poolId))
+      .orderBy(desc(wealth.createdAt));
+  }
+
+  /**
+   * Get all wealth distributions from a specific pool with item details and recipient info
+   * @param poolId - Pool ID
+   * @returns Array of wealth records that are distributions from the pool
+   */
+  async getDistributionsByPoolId(poolId: string): Promise<WealthRecord[]> {
+    const results = await this.db
+      .select({
+        wealth: wealth,
+        item: items,
+        wealthRequest: wealthRequests,
+      })
+      .from(wealth)
+      .leftJoin(items, eq(wealth.itemId, items.id))
+      .leftJoin(wealthRequests, eq(wealth.id, wealthRequests.wealthId))
+      .where(eq(wealth.sourcePoolId, poolId))
+      .orderBy(desc(wealth.createdAt));
+
+    // Flatten the results to include item and request data in wealth object
+    return results.map((row: any) => ({
+      ...row.wealth,
+      item: row.item,
+      wealthRequest: row.wealthRequest,
+    }));
+  }
+
+  /**
+   * Get pending contributions to a pool (wealth requests not yet fulfilled) with item details
+   * @param poolId - Pool ID
+   * @returns Array of wealth records with item information
+   */
+  async getPendingContributionsByPoolId(poolId: string): Promise<WealthRecord[]> {
+    const results = await this.db
+      .select({
+        wealth: wealth,
+        item: items,
+      })
+      .from(wealth)
+      .leftJoin(items, eq(wealth.itemId, items.id))
+      .where(and(eq(wealth.targetPoolId, poolId), eq(wealth.status, 'active')))
+      .orderBy(desc(wealth.createdAt));
+
+    // Flatten the results to include item data in wealth object
+    return results.map((row: any) => ({
+      ...row.wealth,
+      item: row.item,
+    }));
   }
 }
 

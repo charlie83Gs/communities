@@ -48,6 +48,22 @@ export const useCouncilsListQuery = (
   }));
 };
 
+export const useManagedCouncilsQuery = (
+  communityId: Accessor<string | undefined>
+) => {
+  return createQuery(() => ({
+    queryKey: ['councils', 'managed', communityId()],
+    queryFn: async () => {
+      const cid = communityId();
+      if (!cid) return { councils: [], total: 0, page: 1, limit: 20 };
+      return councilsService.getManagedCouncils(cid);
+    },
+    enabled: !!communityId(),
+    staleTime: 30000, // 30 seconds
+    gcTime: 5 * 60 * 1000, // 5 minutes
+  }));
+};
+
 export const useCouncilDetailQuery = (
   communityId: Accessor<string | undefined>,
   councilId: Accessor<string | undefined>

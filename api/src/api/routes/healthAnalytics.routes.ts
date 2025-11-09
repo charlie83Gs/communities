@@ -22,6 +22,12 @@ router.get(
   healthAnalyticsController.getWealthItems
 );
 
+router.get(
+  '/:communityId/health/wealth/aggregated',
+  verifyToken,
+  healthAnalyticsController.getAggregatedWealth
+);
+
 // Trust analytics
 router.get(
   '/:communityId/health/trust/overview',
@@ -33,6 +39,25 @@ router.get(
   '/:communityId/health/trust/distribution',
   verifyToken,
   healthAnalyticsController.getTrustDistribution
+);
+
+// Needs analytics
+router.get(
+  '/:communityId/health/needs/overview',
+  verifyToken,
+  healthAnalyticsController.getNeedsOverview
+);
+
+router.get(
+  '/:communityId/health/needs/items',
+  verifyToken,
+  healthAnalyticsController.getNeedsItems
+);
+
+router.get(
+  '/:communityId/health/needs/aggregated',
+  verifyToken,
+  healthAnalyticsController.getAggregatedNeeds
 );
 
 export default router;

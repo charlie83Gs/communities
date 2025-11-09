@@ -55,6 +55,10 @@ interface CommunityContextValue {
 
   // Analytics permissions
   canViewAnalytics: () => boolean;
+
+  // Needs permissions
+  canViewNeeds: () => boolean;
+  canPublishNeeds: () => boolean;
 }
 
 const CommunityContext = createContext<CommunityContextValue>();
@@ -100,6 +104,9 @@ export const CommunityProvider = (props: ParentProps<{ communityId: string }>) =
 
   const canViewAnalytics = createMemo(() => trustMeQuery.data?.canViewAnalytics || false);
 
+  const canViewNeeds = createMemo(() => trustMeQuery.data?.canViewNeeds || false);
+  const canPublishNeeds = createMemo(() => trustMeQuery.data?.canPublishNeeds || false);
+
   const value: CommunityContextValue = {
     community: () => communityQuery.data,
     role: () => roleQuery.data,
@@ -135,6 +142,8 @@ export const CommunityProvider = (props: ParentProps<{ communityId: string }>) =
     canFlagContent,
     canReviewFlags,
     canViewAnalytics,
+    canViewNeeds,
+    canPublishNeeds,
   };
 
   return (

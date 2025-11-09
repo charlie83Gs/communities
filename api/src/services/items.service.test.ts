@@ -536,8 +536,8 @@ describe('ItemsService', () => {
       const result = await itemsService.ensureDefaultItem('comm-123', 'user-123');
 
       expect(result).toBeDefined();
-      // Should create 20 default items (10 objects + 10 services)
-      expect(mockItemsRepository.create).toHaveBeenCalledTimes(20);
+      // Should create 83 default items (49 objects + 34 services)
+      expect(mockItemsRepository.create).toHaveBeenCalledTimes(83);
 
       // Verify object items created with wealth values
       expect(mockItemsRepository.create).toHaveBeenCalledWith(
@@ -592,8 +592,8 @@ describe('ItemsService', () => {
 
       await itemsService.ensureDefaultItem('comm-123', 'user-123');
 
-      // Should create only 19 items (one already existed)
-      expect(mockItemsRepository.create).toHaveBeenCalledTimes(19);
+      // Should create only 82 items (one already existed)
+      expect(mockItemsRepository.create).toHaveBeenCalledTimes(82);
     });
 
     it('should return first default item', async () => {

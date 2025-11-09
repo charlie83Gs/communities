@@ -62,9 +62,12 @@ export class TrustLevelRepository {
 
   async createDefaultLevels(communityId: string): Promise<TrustLevel[]> {
     const defaultLevels = [
-      { name: 'New', threshold: 0 },
-      { name: 'Stable', threshold: 10 },
-      { name: 'Trusted', threshold: 50 },
+      { name: 'New Member', threshold: 0 },
+      { name: 'Known Member', threshold: 10 },
+      { name: 'Trusted Member', threshold: 25 },
+      { name: 'Advanced Member', threshold: 50 },
+      { name: 'Community Expert', threshold: 100 },
+      { name: 'Community Leader', threshold: 200 },
     ];
 
     const created = await this.db

@@ -1,0 +1,200 @@
+### Pools API Tests
+### Base URL
+@baseUrl = http://localhost:3000/api/v1
+@token = YOUR_JWT_TOKEN_HERE
+@communityId = YOUR_COMMUNITY_ID
+@councilId = YOUR_COUNCIL_ID
+@poolId = YOUR_POOL_ID
+@itemId = YOUR_ITEM_ID
+@wealthId = YOUR_WEALTH_ID
+
+### 1. Create a Pool
+POST {{baseUrl}}/communities/{{communityId}}/councils/{{councilId}}/pools
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Community Tomatoes Pool",
+  "description": "Aggregation point for community tomato sharing",
+  "primaryItemId": "{{itemId}}",
+  "distributionLocation": "Community Center, Main Hall",
+  "distributionType": "needs_based",
+  "maxUnitsPerUser": 5,
+  "minimumContribution": 1
+}
+
+### 2. List Community Pools
+GET {{baseUrl}}/communities/{{communityId}}/pools
+Authorization: Bearer {{token}}
+
+### 3. Get Pool by ID
+GET {{baseUrl}}/communities/{{communityId}}/pools/{{poolId}}
+Authorization: Bearer {{token}}
+
+### 4. Update Pool
+PATCH {{baseUrl}}/communities/{{communityId}}/pools/{{poolId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Updated Tomatoes Pool",
+  "maxUnitsPerUser": 10,
+  "distributionLocation": "New Community Center"
+}
+
+### 5. Delete Pool
+DELETE {{baseUrl}}/communities/{{communityId}}/pools/{{poolId}}
+Authorization: Bearer {{token}}
+
+### ============================================
+### POOL CONTRIBUTIONS
+### ============================================
+
+### 6. Contribute to Pool
+POST {{baseUrl}}/communities/{{communityId}}/pools/{{poolId}}/contributions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemId": "{{itemId}}",
+  "unitsOffered": 10,
+  "title": "Fresh Tomatoes from My Garden",
+  "description": "Organic heirloom tomatoes, freshly harvested",
+  "message": "Happy to contribute to the community pool!"
+}
+
+### 7. List Pending Contributions
+GET {{baseUrl}}/communities/{{communityId}}/pools/{{poolId}}/contributions/pending
+Authorization: Bearer {{token}}
+
+### 8. Confirm Contribution
+PATCH {{baseUrl}}/communities/{{communityId}}/pools/{{poolId}}/contributions/{{wealthId}}/confirm
+Authorization: Bearer {{token}}
+
+### 9. Reject Contribution
+PATCH {{baseUrl}}/communities/{{communityId}}/pools/{{poolId}}/contributions/{{wealthId}}/reject
+Authorization: Bearer {{token}}
+
+### ============================================
+### POOL DISTRIBUTIONS
+### ============================================
+
+### 10. Manual Distribution from Pool
+POST {{baseUrl}}/communities/{{communityId}}/pools/{{poolId}}/distributions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "recipientId": "user-456",
+  "itemId": "{{itemId}}",
+  "unitsDistributed": 5,
+  "title": "Tomatoes from Community Pool",
+  "description": "Your share from this week's tomato pool"
+}
+
+### 11. Preview Mass Distribution
+POST {{baseUrl}}/communities/{{communityId}}/pools/{{poolId}}/distributions/mass/preview
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemId": "{{itemId}}",
+  "maxUnitsPerUser": 5,
+  "fulfillmentStrategy": "full"
+}
+
+### 12. Preview Mass Distribution with Selected Users
+POST {{baseUrl}}/communities/{{communityId}}/pools/{{poolId}}/distributions/mass/preview
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemId": "{{itemId}}",
+  "maxUnitsPerUser": 5,
+  "selectedUserIds": ["user-123", "user-456", "user-789"],
+  "fulfillmentStrategy": "equal"
+}
+
+### 13. List Distributions from Pool
+GET {{baseUrl}}/communities/{{communityId}}/pools/{{poolId}}/distributions
+Authorization: Bearer {{token}}
+
+### 14. Execute Mass Distribution
+POST {{baseUrl}}/communities/{{communityId}}/pools/{{poolId}}/distributions/mass
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemId": "{{itemId}}",
+  "maxUnitsPerUser": 5,
+  "fulfillmentStrategy": "full"
+}
+
+### 15. Execute Mass Distribution with Partial Strategy
+POST {{baseUrl}}/communities/{{communityId}}/pools/{{poolId}}/distributions/mass
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemId": "{{itemId}}",
+  "maxUnitsPerUser": 3,
+  "fulfillmentStrategy": "partial"
+}
+
+### ============================================
+### POOL INVENTORY
+### ============================================
+
+### 16. Get Pool Inventory
+GET {{baseUrl}}/communities/{{communityId}}/pools/{{poolId}}/inventory
+Authorization: Bearer {{token}}
+
+### ============================================
+### ERROR CASES
+### ============================================
+
+### 17. Create Pool with Missing Required Fields (Should fail validation)
+POST {{baseUrl}}/communities/{{communityId}}/councils/{{councilId}}/pools
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Invalid Pool"
+}
+
+### 18. Contribute with Units Below Minimum (Should fail business logic)
+POST {{baseUrl}}/communities/{{communityId}}/pools/{{poolId}}/contributions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemId": "{{itemId}}",
+  "unitsOffered": 0,
+  "title": "Invalid Contribution"
+}
+
+### 19. Distribute More Than Available (Should fail business logic)
+POST {{baseUrl}}/communities/{{communityId}}/pools/{{poolId}}/distributions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "recipientId": "user-456",
+  "itemId": "{{itemId}}",
+  "unitsDistributed": 999999,
+  "title": "Invalid Distribution"
+}
+
+### 20. Access Pool Without Permissions (Should fail authorization)
+GET {{baseUrl}}/communities/{{communityId}}/pools/{{poolId}}
+
+### 21. Create Pool as Non-Manager (Should fail authorization)
+POST {{baseUrl}}/communities/{{communityId}}/councils/{{councilId}}/pools
+Authorization: Bearer INVALID_TOKEN
+Content-Type: application/json
+
+{
+  "name": "Unauthorized Pool",
+  "description": "Should not be created",
+  "distributionType": "manual"
+}

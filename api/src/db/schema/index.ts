@@ -18,3 +18,6 @@ export * from './forum.schema';
 export * from './polls.schema';
 export * from './councils.schema';
 export * from './initiatives.schema';
+export * from './pools.schema';
+export * from './needs.schema';
+export * from './communityEvents.schema';

@@ -1,0 +1,159 @@
+### Needs API Test Cases
+### Prerequisites: Set up environment variables
+
+@baseUrl = http://localhost:3000
+@token = {{$dotenv KEYCLOAK_TEST_TOKEN}}
+@communityId = {{$dotenv TEST_COMMUNITY_ID}}
+@councilId = {{$dotenv TEST_COUNCIL_ID}}
+@itemId = {{$dotenv TEST_ITEM_ID}}
+
+### 1. Create a member need
+POST {{baseUrl}}/api/v1/needs
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "communityId": "{{communityId}}",
+  "itemId": "{{itemId}}",
+  "title": "Weekly vegetables",
+  "description": "I need fresh vegetables every week for my family",
+  "priority": "need",
+  "unitsNeeded": 5,
+  "isRecurring": true,
+  "recurrence": "weekly"
+}
+
+### 2. Create a one-time need
+POST {{baseUrl}}/api/v1/needs
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "communityId": "{{communityId}}",
+  "itemId": "{{itemId}}",
+  "title": "Coffee table",
+  "description": "Looking for a small coffee table",
+  "priority": "want",
+  "unitsNeeded": 1,
+  "isRecurring": false
+}
+
+### 3. List needs for a community
+GET {{baseUrl}}/api/v1/needs?communityId={{communityId}}
+Authorization: Bearer {{token}}
+
+### 4. List needs with filters (priority=need)
+GET {{baseUrl}}/api/v1/needs?communityId={{communityId}}&priority=need
+Authorization: Bearer {{token}}
+
+### 5. List needs with filters (isRecurring=true)
+GET {{baseUrl}}/api/v1/needs?communityId={{communityId}}&isRecurring=true
+Authorization: Bearer {{token}}
+
+### 6. List needs with filters (status=active)
+GET {{baseUrl}}/api/v1/needs?communityId={{communityId}}&status=active
+Authorization: Bearer {{token}}
+
+### 7. Get a specific need by ID (replace with actual need ID)
+@needId = REPLACE_WITH_ACTUAL_NEED_ID
+GET {{baseUrl}}/api/v1/needs/{{needId}}
+Authorization: Bearer {{token}}
+
+### 8. Update a need
+PATCH {{baseUrl}}/api/v1/needs/{{needId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Updated: Weekly vegetables",
+  "unitsNeeded": 7,
+  "status": "active"
+}
+
+### 9. Get aggregated needs for a community
+GET {{baseUrl}}/api/v1/needs/aggregated?communityId={{communityId}}
+Authorization: Bearer {{token}}
+
+### 10. Delete a need
+DELETE {{baseUrl}}/api/v1/needs/{{needId}}
+Authorization: Bearer {{token}}
+
+### ========================================
+### COUNCIL NEEDS
+### ========================================
+
+### 11. Create a council need
+POST {{baseUrl}}/api/v1/needs/council
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "councilId": "{{councilId}}",
+  "communityId": "{{communityId}}",
+  "itemId": "{{itemId}}",
+  "title": "Gardening tools for community garden",
+  "description": "We need various gardening tools monthly",
+  "priority": "need",
+  "unitsNeeded": 10,
+  "isRecurring": true,
+  "recurrence": "monthly"
+}
+
+### 12. List council needs
+GET {{baseUrl}}/api/v1/needs/council?councilId={{councilId}}
+Authorization: Bearer {{token}}
+
+### 13. Get a specific council need by ID (replace with actual council need ID)
+@councilNeedId = REPLACE_WITH_ACTUAL_COUNCIL_NEED_ID
+GET {{baseUrl}}/api/v1/needs/council/{{councilNeedId}}
+Authorization: Bearer {{token}}
+
+### 14. Update a council need
+PATCH {{baseUrl}}/api/v1/needs/council/{{councilNeedId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Updated: Gardening tools for community garden",
+  "unitsNeeded": 15,
+  "status": "active"
+}
+
+### 15. Delete a council need
+DELETE {{baseUrl}}/api/v1/needs/council/{{councilNeedId}}
+Authorization: Bearer {{token}}
+
+### ========================================
+### ERROR CASES
+### ========================================
+
+### 16. Try to create a need without authentication (should fail)
+POST {{baseUrl}}/api/v1/needs
+Content-Type: application/json
+
+{
+  "communityId": "{{communityId}}",
+  "itemId": "{{itemId}}",
+  "title": "Test need",
+  "priority": "need",
+  "unitsNeeded": 1,
+  "isRecurring": false
+}
+
+### 17. Try to create a recurring need without recurrence frequency (should fail)
+POST {{baseUrl}}/api/v1/needs
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "communityId": "{{communityId}}",
+  "itemId": "{{itemId}}",
+  "title": "Invalid recurring need",
+  "priority": "need",
+  "unitsNeeded": 1,
+  "isRecurring": true
+}
+
+### 18. Try to get a non-existent need (should fail with 404)
+GET {{baseUrl}}/api/v1/needs/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{token}}

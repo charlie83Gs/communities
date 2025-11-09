@@ -31,6 +31,15 @@ export const wealthStatisticsDict = {
       trend: 'Trend',
       noData: 'No wealth data available',
 
+      // Aggregated section
+      aggregatedTitle: 'Aggregated Wealth Shares',
+      aggregatedDescription: 'Total active shares for each item across the community',
+      activeSharesColumn: 'Active Shares',
+      totalQuantityColumn: 'Total Quantity',
+      sharersColumn: 'Sharers',
+      valuePointsColumn: 'Value Points',
+      noActiveShares: 'No active wealth shares in the community',
+
       // Errors
       errorLoading: 'Error loading wealth statistics',
       accessDeniedTitle: 'Access Restricted',
@@ -65,6 +74,14 @@ export const wealthStatisticsDict = {
       trend: 'Tendencia',
       noData: 'No hay datos de riqueza disponibles',
 
+      aggregatedTitle: 'Compartidos de Riqueza Agregados',
+      aggregatedDescription: 'Total de compartidos activos para cada artículo en la comunidad',
+      activeSharesColumn: 'Compartidos Activos',
+      totalQuantityColumn: 'Cantidad Total',
+      sharersColumn: 'Compartidores',
+      valuePointsColumn: 'Puntos de Valor',
+      noActiveShares: 'No hay compartidos de riqueza activos en la comunidad',
+
       errorLoading: 'Error al cargar estadísticas de riqueza',
       accessDeniedTitle: 'Acceso Restringido',
       accessDeniedMessage: 'No tiene permiso para ver análisis de riqueza. Esto requiere privilegios de administrador o una puntuación de confianza suficiente.',
@@ -97,6 +114,14 @@ export const wealthStatisticsDict = {
       valuePoints: 'मूल्य अंक',
       trend: 'प्रवृत्ति',
       noData: 'कोई धन डेटा उपलब्ध नहीं',
+
+      aggregatedTitle: 'एकत्रित धन शेयर',
+      aggregatedDescription: 'समुदाय में प्रत्येक वस्तु के लिए कुल सक्रिय शेयर',
+      activeSharesColumn: 'सक्रिय शेयर',
+      totalQuantityColumn: 'कुल मात्रा',
+      sharersColumn: 'साझा करने वाले',
+      valuePointsColumn: 'मूल्य अंक',
+      noActiveShares: 'समुदाय में कोई सक्रिय धन शेयर नहीं',
 
       errorLoading: 'धन सांख्यिकी लोड करने में त्रुटि',
       accessDeniedTitle: 'पहुंच प्रतिबंधित',

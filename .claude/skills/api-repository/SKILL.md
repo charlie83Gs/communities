@@ -507,6 +507,90 @@ sql`count(*)::int`
 sql`${items.quantity} - ${quantity}`
 ```
 
+## Special Case: OpenFGA Repository
+
+The OpenFGA repository is unique as it wraps the OpenFGA SDK client instead of a database. It follows different patterns:
+
+### Key Pattern: Direct SDK Parameter Passing
+
+**CRITICAL**: The OpenFGA SDK expects parameters directly, NOT wrapped in API-specific keys.
+
+```typescript
+// api/src/repositories/openfga.repository.ts
+async readTuples(pattern: {
+  user?: string;
+  relation?: string;
+  object?: string;
+}): Promise<Array<{ key: { user?: string; relation: string; object: string } }>> {
+  await this.ensureInitialized();
+
+  try {
+    // ✅ CORRECT: Pass pattern directly to SDK
+    // SDK expects { user?, relation?, object? }
+    // NOT wrapped in tuple_key (that's the REST API format)
+    const response = await this.client.read(pattern);
+
+    return response.tuples || [];
+  } catch (error) {
+    console.error('[OpenFGA Repository] Read tuples error:', error);
+    return [];
+  }
+}
+```
+
+**Common Mistake to Avoid:**
+```typescript
+// ❌ WRONG: Wrapping in tuple_key
+const response = await this.client.read({
+  tuple_key: pattern  // This causes the SDK to ignore the filter!
+} as any);
+```
+
+### Why This Matters
+
+If the SDK receives incorrectly formatted parameters:
+- The filter is ignored
+- **ALL tuples in the entire store are returned**
+- This can cause catastrophic bugs where operations affect wrong users
+- Example: Assigning a role to User A could accidentally delete User B's roles
+
+### Write Operations
+
+Similarly, write operations expect tuples directly:
+
+```typescript
+async write(
+  writes?: Array<{ user: string; relation: string; object: string }>,
+  deletes?: Array<{ user: string; relation: string; object: string }>
+): Promise<void> {
+  await this.ensureInitialized();
+
+  try {
+    // ✅ CORRECT: Pass arrays directly
+    await this.client.write({ writes, deletes });
+  } catch (error) {
+    console.error('[OpenFGA Repository] Write error:', error);
+    throw error;
+  }
+}
+```
+
+### Testing OpenFGA Repository
+
+OpenFGA repository tests use a mock SDK client instead of a mock database:
+
+```typescript
+import { mock } from 'bun:test';
+
+const mockRepository = {
+  check: mock(() => Promise.resolve(false)),
+  read: mock(() => Promise.resolve({ tuples: [] })),
+  readTuples: mock(() => Promise.resolve([])),
+  write: mock(() => Promise.resolve()),
+  listObjects: mock(() => Promise.resolve([])),
+};
+```
+
 ## Related Skills
 - `api-service` - Business logic layer
 - `api-db` - Database migrations and schema

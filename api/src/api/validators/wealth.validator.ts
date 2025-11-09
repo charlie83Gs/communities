@@ -2,9 +2,10 @@ import { z } from 'zod';
 import { Request, Response, NextFunction } from 'express';
 
 const durationType = z.enum(['timebound', 'unlimited']);
-const distributionType = z.enum(['request_based', 'unit_based']);
+const distributionType = z.enum(['unit_based']);
+const recurrentFrequency = z.enum(['weekly', 'monthly']);
 const wealthStatus = z.enum(['active', 'fulfilled', 'expired', 'cancelled']);
-const wealthRequestStatus = z.enum(['pending', 'accepted', 'rejected', 'cancelled', 'fulfilled']);
+const wealthRequestStatus = z.enum(['pending', 'accepted', 'rejected', 'cancelled', 'fulfilled', 'failed']);
 
 export const createWealthSchema = z.object({
   body: z.object({
@@ -15,11 +16,26 @@ export const createWealthSchema = z.object({
     image: z.string().max(255).optional().nullable(),
     durationType: durationType,
     endDate: z.string().datetime().or(z.date()).optional().nullable(),
-    distributionType: distributionType,
-    unitsAvailable: z.number().int().positive().optional().nullable(),
+    unitsAvailable: z.number().int().positive().default(1),
     maxUnitsPerUser: z.number().int().positive().optional().nullable(),
+    // Recurrent fields
+    isRecurrent: z.boolean().default(false),
+    recurrentFrequency: recurrentFrequency.optional().nullable(),
+    recurrentReplenishValue: z.number().int().positive().optional().nullable(),
     automationEnabled: z.boolean().optional(),
-  }),
+  }).refine(
+    (data) => {
+      // If isRecurrent is true, recurrentFrequency and recurrentReplenishValue are required
+      if (data.isRecurrent) {
+        return !!data.recurrentFrequency && !!data.recurrentReplenishValue;
+      }
+      return true;
+    },
+    {
+      message: "recurrentFrequency and recurrentReplenishValue are required when isRecurrent is true",
+      path: ["isRecurrent"],
+    }
+  ),
 });
 
 export const updateWealthSchema = z.object({
@@ -31,8 +47,11 @@ export const updateWealthSchema = z.object({
     description: z.string().optional().nullable(),
     image: z.string().max(255).optional().nullable(),
     endDate: z.string().datetime().or(z.date()).optional().nullable(),
-    unitsAvailable: z.number().int().nonnegative().optional(),
+    unitsAvailable: z.number().int().positive().optional(),
     maxUnitsPerUser: z.number().int().positive().optional(),
+    // Recurrent fields (for updating recurrent settings)
+    recurrentFrequency: recurrentFrequency.optional().nullable(),
+    recurrentReplenishValue: z.number().int().positive().optional().nullable(),
     automationEnabled: z.boolean().optional(),
     status: wealthStatus.optional(),
   }),
@@ -95,7 +114,7 @@ export const requestWealthSchema = z.object({
   }),
   body: z.object({
     message: z.string().max(2000).optional().nullable(),
-    unitsRequested: z.number().int().positive().optional().nullable(),
+    unitsRequested: z.number().int().positive().default(1),
   }),
 }).passthrough();
 
@@ -124,6 +143,8 @@ export const validateCreateWealth = (req: Request, res: Response, next: NextFunc
     if (req.body.durationType === 'timebound' && !req.body.endDate) {
       return res.status(400).json({ status: 'error', message: 'endDate is required for timebound wealths' });
     }
+    // Note: Validation that recurrent can only be set for service items is done in the service layer
+    // where we have access to the item's kind from the database
     next();
   } catch (err) {
     const r = handleZodError(res, err);

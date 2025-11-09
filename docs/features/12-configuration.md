@@ -2,9 +2,9 @@
 id: FT-12
 title: Configuration Options
 status: implemented
-version: 1.0
-last_updated: 2025-01-06
-related_features: [FT-01, FT-02, FT-03, FT-04, FT-05, FT-06, FT-07, FT-10]
+version: 1.1
+last_updated: 2025-11-08
+related_features: [FT-01, FT-02, FT-03, FT-04, FT-05, FT-06, FT-07, FT-08, FT-10]
 ---
 
 # Configuration Options
@@ -15,12 +15,15 @@ Each community can customize these settings to match their governance model and 
 ## Trust System Configuration
 
 ### Trust Title Names and Thresholds
-- Customizable trust level names (e.g., "New", "Stable", "Trusted")
+- Customizable trust level names (e.g., "New Member", "Known Member", "Trusted Member")
 - Configure score thresholds for each title
 - Default levels:
-  - **New**: Score < 10
-  - **Stable**: Score >= 10
-  - **Trusted**: Score >= 50
+  - **New Member**: Score >= 0
+  - **Known Member**: Score >= 10
+  - **Trusted Member**: Score >= 25
+  - **Advanced Member**: Score >= 50
+  - **Community Expert**: Score >= 100
+  - **Community Benefactor**: Score >= 200
 
 ### Trust Award Threshold
 - `minTrustToAwardTrust` - Minimum trust score to award trust to others (default: 15)
@@ -38,6 +41,13 @@ Each community can customize these settings to match their governance model and 
 ### Trust-Capped Items
 - Individual wealth items can set their own trust requirements
 - Overrides community-wide settings for specific items
+
+## Needs System Configuration
+
+### Publishing Access
+- `minTrustForNeeds` - Minimum trust score to publish needs (default: 5)
+  - Lower than wealth threshold to encourage need expression
+  - Helps community understand resource requirements early
 
 ## Pool Configuration
 
@@ -101,6 +111,7 @@ Each community can customize these settings to match their governance model and 
 |----------|---------|---------|---------|
 | Trust | minTrustToAwardTrust | 15 | Award trust to others |
 | Wealth | minTrustForWealth | 10 | Publish/share wealth |
+| Needs | minTrustForNeeds | 5 | Publish needs |
 | Polls | minTrustForPolls | 15 | Create polls |
 | Disputes | minTrustForDisputes | 20 | Handle disputes |
 | Pools | minTrustForPoolCreation | 20 | Create pools |
@@ -126,4 +137,5 @@ Each community can customize these settings to match their governance model and 
 - [FT-05: Pools](./05-pools.md)
 - [FT-06: Councils](./06-councils.md)
 - [FT-07: Voting & Polling](./07-voting-polling.md)
+- [FT-08: Needs System](./08-needs-system.md)
 - [FT-10: Forum System](./10-forum-system.md)

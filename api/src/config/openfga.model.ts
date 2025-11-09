@@ -62,6 +62,8 @@ export const authorizationModel = {
      * - item_viewer: Can view items
      * - item_manager: Can manage items
      * - analytics_viewer: Can view analytics
+     * - needs_viewer: Can view needs
+     * - needs_publisher: Can publish needs
      *
      * Trust Roles (auto-granted when trust >= threshold):
      * - trust_trust_viewer, trust_trust_granter, trust_wealth_viewer, trust_wealth_creator,
@@ -69,7 +71,8 @@ export const authorizationModel = {
      * - trust_pool_viewer, trust_pool_creator, trust_council_viewer, trust_council_creator,
      * - trust_forum_viewer, trust_forum_manager, trust_thread_creator,
      * - trust_attachment_uploader, trust_content_flagger, trust_flag_reviewer,
-     * - trust_item_viewer, trust_item_manager, trust_analytics_viewer
+     * - trust_item_viewer, trust_item_manager, trust_analytics_viewer,
+     * - trust_needs_viewer, trust_needs_publisher
      *
      * Permissions (union of admin + regular_role + trust_role):
      * - can_view_trust, can_award_trust, can_view_wealth, can_create_wealth,
@@ -77,7 +80,7 @@ export const authorizationModel = {
      * - can_view_pool, can_create_pool, can_view_council, can_create_council,
      * - can_view_forum, can_manage_forum, can_create_thread, can_upload_attachment,
      * - can_flag_content, can_review_flag, can_view_item, can_manage_item,
-     * - can_view_analytics
+     * - can_view_analytics, can_view_needs, can_publish_needs
      */
     {
       type: 'community',
@@ -108,6 +111,8 @@ export const authorizationModel = {
         item_viewer: { this: {} },
         item_manager: { this: {} },
         analytics_viewer: { this: {} },
+        needs_viewer: { this: {} },
+        needs_publisher: { this: {} },
 
         // ========== TRUST ROLES (Auto-Granted) ==========
         trust_trust_viewer: { this: {} },
@@ -131,6 +136,8 @@ export const authorizationModel = {
         trust_item_viewer: { this: {} },
         trust_item_manager: { this: {} },
         trust_analytics_viewer: { this: {} },
+        trust_needs_viewer: { this: {} },
+        trust_needs_publisher: { this: {} },
 
         // ========== PERMISSIONS (UNIONS) ==========
         // Basic community permissions
@@ -341,6 +348,24 @@ export const authorizationModel = {
             ],
           },
         },
+        can_view_needs: {
+          union: {
+            child: [
+              { computedUserset: { relation: 'admin' } },
+              { computedUserset: { relation: 'needs_viewer' } },
+              { computedUserset: { relation: 'trust_needs_viewer' } },
+            ],
+          },
+        },
+        can_publish_needs: {
+          union: {
+            child: [
+              { computedUserset: { relation: 'admin' } },
+              { computedUserset: { relation: 'needs_publisher' } },
+              { computedUserset: { relation: 'trust_needs_publisher' } },
+            ],
+          },
+        },
       },
       metadata: {
         relations: {
@@ -372,6 +397,8 @@ export const authorizationModel = {
           item_viewer: { directly_related_user_types: [{ type: 'user' }] },
           item_manager: { directly_related_user_types: [{ type: 'user' }] },
           analytics_viewer: { directly_related_user_types: [{ type: 'user' }] },
+          needs_viewer: { directly_related_user_types: [{ type: 'user' }] },
+          needs_publisher: { directly_related_user_types: [{ type: 'user' }] },
 
           // Trust roles (auto-granted)
           trust_trust_viewer: { directly_related_user_types: [{ type: 'user' }] },
@@ -397,6 +424,8 @@ export const authorizationModel = {
           trust_item_viewer: { directly_related_user_types: [{ type: 'user' }] },
           trust_item_manager: { directly_related_user_types: [{ type: 'user' }] },
           trust_analytics_viewer: { directly_related_user_types: [{ type: 'user' }] },
+          trust_needs_viewer: { directly_related_user_types: [{ type: 'user' }] },
+          trust_needs_publisher: { directly_related_user_types: [{ type: 'user' }] },
         },
       },
     },

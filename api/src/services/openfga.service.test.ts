@@ -175,8 +175,15 @@ describe('OpenFGAService', () => {
 
       await service.assignBaseRole('user-123', 'communities', 'comm-123', 'member');
 
-      // Should not write since role already exists
-      expect(mockRepository.write).not.toHaveBeenCalled();
+      // With new implementation: always write first, then no cleanup needed since no conflicts
+      expect(mockRepository.write).toHaveBeenCalledTimes(1);
+      expect(mockRepository.write).toHaveBeenCalledWith([
+        {
+          user: 'user:user-123',
+          relation: 'member',
+          object: 'community:comm-123',
+        },
+      ]);
     });
 
     it('should replace conflicting base roles', async () => {
@@ -194,23 +201,26 @@ describe('OpenFGAService', () => {
 
       await service.assignBaseRole('user-123', 'communities', 'comm-123', 'member');
 
-      // Should write with both deletes and writes
-      expect(mockRepository.write).toHaveBeenCalledWith(
-        expect.arrayContaining([
-          {
-            user: 'user:user-123',
-            relation: 'member',
-            object: 'community:comm-123',
-          },
-        ]),
-        expect.arrayContaining([
-          {
-            user: 'user:user-123',
-            relation: 'admin',
-            object: 'community:comm-123',
-          },
-        ])
-      );
+      // With new implementation: two separate calls - first delete conflicts, then write
+      expect(mockRepository.write).toHaveBeenCalledTimes(2);
+
+      // First call: delete conflicting role
+      expect(mockRepository.write).toHaveBeenNthCalledWith(1, undefined, [
+        {
+          user: 'user:user-123',
+          relation: 'admin',
+          object: 'community:comm-123',
+        },
+      ]);
+
+      // Second call: write the desired role
+      expect(mockRepository.write).toHaveBeenNthCalledWith(2, [
+        {
+          user: 'user:user-123',
+          relation: 'member',
+          object: 'community:comm-123',
+        },
+      ]);
     });
 
     it('should throw error for invalid role', async () => {

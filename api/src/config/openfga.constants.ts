@@ -41,6 +41,8 @@ export const FEATURE_ROLES = [
   'item_viewer',
   'item_manager',
   'analytics_viewer',
+  'needs_viewer',
+  'needs_publisher',
 ] as const;
 export type FeatureRole = (typeof FEATURE_ROLES)[number];
 
@@ -71,6 +73,8 @@ export const TRUST_ROLES = [
   'trust_item_viewer',
   'trust_item_manager',
   'trust_analytics_viewer',
+  'trust_needs_viewer',
+  'trust_needs_publisher',
 ] as const;
 export type TrustRole = (typeof TRUST_ROLES)[number];
 
@@ -104,6 +108,8 @@ export const PERMISSIONS = [
   'can_view_item',
   'can_manage_item',
   'can_view_analytics',
+  'can_view_needs',
+  'can_publish_needs',
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 

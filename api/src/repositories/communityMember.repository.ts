@@ -16,11 +16,7 @@ export class CommunityMemberRepository {
   /**
    * Add a member to a community with a specific role (admin or member)
    */
-  async addMember(
-    communityId: string,
-    userId: string,
-    role: 'member' | 'admin' = 'member'
-  ) {
+  async addMember(communityId: string, userId: string, role: 'member' | 'admin' = 'member') {
     // Use the new assignBaseRole method
     await this.openFGAService.assignBaseRole(userId, 'community', communityId, role);
 

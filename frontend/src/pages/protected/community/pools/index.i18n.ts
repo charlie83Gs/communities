@@ -1,0 +1,47 @@
+export const poolsIndexDict = {
+  en: {
+    poolsIndex: {
+      title: 'Community Pools',
+      subtitle: 'Resource aggregation and distribution logistics',
+      createPool: 'Create Pool',
+      noPools: 'No pools found',
+      noPoolsDescription: 'Pools help coordinate resource sharing between producers and consumers.',
+      filterByCouncil: 'Filter by Council',
+      filterByItem: 'Filter by Item',
+      allCouncils: 'All Councils',
+      allItems: 'All Items',
+      loading: 'Loading pools...',
+      error: 'Failed to load pools',
+    },
+  },
+  es: {
+    poolsIndex: {
+      title: 'Pools Comunitarios',
+      subtitle: 'Agregación de recursos y logística de distribución',
+      createPool: 'Crear Pool',
+      noPools: 'No se encontraron pools',
+      noPoolsDescription: 'Los pools ayudan a coordinar el intercambio de recursos entre productores y consumidores.',
+      filterByCouncil: 'Filtrar por Consejo',
+      filterByItem: 'Filtrar por Artículo',
+      allCouncils: 'Todos los Consejos',
+      allItems: 'Todos los Artículos',
+      loading: 'Cargando pools...',
+      error: 'Error al cargar pools',
+    },
+  },
+  hi: {
+    poolsIndex: {
+      title: 'सामुदायिक पूल',
+      subtitle: 'संसाधन एकत्रीकरण और वितरण लॉजिस्टिक्स',
+      createPool: 'पूल बनाएं',
+      noPools: 'कोई पूल नहीं मिला',
+      noPoolsDescription: 'पूल उत्पादकों और उपभोक्ताओं के बीच संसाधन साझाकरण को समन्वित करने में मदद करते हैं।',
+      filterByCouncil: 'परिषद द्वारा फ़िल्टर करें',
+      filterByItem: 'वस्तु द्वारा फ़िल्टर करें',
+      allCouncils: 'सभी परिषद',
+      allItems: 'सभी वस्तुएं',
+      loading: 'पूल लोड हो रहे हैं...',
+      error: 'पूल लोड करने में विफल',
+    },
+  },
+} as const;

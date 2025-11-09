@@ -191,6 +191,12 @@ export class TrustController {
    *                     canCreateWealth:
    *                       type: boolean
    *                       description: Whether user can create wealth
+   *                     canViewNeeds:
+   *                       type: boolean
+   *                       description: Whether user can view needs
+   *                     canPublishNeeds:
+   *                       type: boolean
+   *                       description: Whether user can publish needs
    *                     canViewItems:
    *                       type: boolean
    *                       description: Whether user can view items

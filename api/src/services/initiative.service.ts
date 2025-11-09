@@ -21,10 +21,20 @@ export class InitiativeService {
     }
 
     // Check if user is community admin
-    const isAdmin = await openFGAService.checkAccess(userId, 'community', council.communityId, 'admin');
+    const isAdmin = await openFGAService.checkAccess(
+      userId,
+      'community',
+      council.communityId,
+      'admin'
+    );
 
     // Check if user is council member (has can_manage permission on council)
-    const canManageCouncil = await openFGAService.checkAccess(userId, 'council', councilId, 'can_manage');
+    const canManageCouncil = await openFGAService.checkAccess(
+      userId,
+      'council',
+      councilId,
+      'can_manage'
+    );
 
     return isAdmin || canManageCouncil;
   }
@@ -88,7 +98,12 @@ export class InitiativeService {
     }
 
     // Check user can read the community
-    const canRead = await openFGAService.checkAccess(userId, 'community', initiative.communityId, 'can_read');
+    const canRead = await openFGAService.checkAccess(
+      userId,
+      'community',
+      initiative.communityId,
+      'can_read'
+    );
     if (!canRead) {
       throw new AppError('Forbidden: not a member of this community', 403);
     }
@@ -114,7 +129,12 @@ export class InitiativeService {
     }
 
     // Check user can read the community
-    const canRead = await openFGAService.checkAccess(userId, 'community', council.communityId, 'can_read');
+    const canRead = await openFGAService.checkAccess(
+      userId,
+      'community',
+      council.communityId,
+      'can_read'
+    );
     if (!canRead) {
       throw new AppError('Forbidden: not a member of this community', 403);
     }
@@ -199,7 +219,12 @@ export class InitiativeService {
     }
 
     // Check user can read the community
-    const canRead = await openFGAService.checkAccess(userId, 'community', initiative.communityId, 'can_read');
+    const canRead = await openFGAService.checkAccess(
+      userId,
+      'community',
+      initiative.communityId,
+      'can_read'
+    );
     if (!canRead) {
       throw new AppError('Forbidden: not a member of this community', 403);
     }
@@ -220,7 +245,12 @@ export class InitiativeService {
     }
 
     // Check user can read the community
-    const canRead = await openFGAService.checkAccess(userId, 'community', initiative.communityId, 'can_read');
+    const canRead = await openFGAService.checkAccess(
+      userId,
+      'community',
+      initiative.communityId,
+      'can_read'
+    );
     if (!canRead) {
       throw new AppError('Forbidden: not a member of this community', 403);
     }
@@ -281,7 +311,12 @@ export class InitiativeService {
     }
 
     // Check user can read the community
-    const canRead = await openFGAService.checkAccess(userId, 'community', initiative.communityId, 'can_read');
+    const canRead = await openFGAService.checkAccess(
+      userId,
+      'community',
+      initiative.communityId,
+      'can_read'
+    );
     if (!canRead) {
       throw new AppError('Forbidden: not a member of this community', 403);
     }
@@ -299,7 +334,12 @@ export class InitiativeService {
     }
 
     // Check user can read the community
-    const canRead = await openFGAService.checkAccess(userId, 'community', initiative.communityId, 'can_read');
+    const canRead = await openFGAService.checkAccess(
+      userId,
+      'community',
+      initiative.communityId,
+      'can_read'
+    );
     if (!canRead) {
       throw new AppError('Forbidden: not a member of this community', 403);
     }
@@ -334,7 +374,12 @@ export class InitiativeService {
     }
 
     // Check user can read the community
-    const canRead = await openFGAService.checkAccess(userId, 'community', initiative.communityId, 'can_read');
+    const canRead = await openFGAService.checkAccess(
+      userId,
+      'community',
+      initiative.communityId,
+      'can_read'
+    );
     if (!canRead) {
       throw new AppError('Forbidden: not a member of this community', 403);
     }
@@ -373,7 +418,12 @@ export class InitiativeService {
     }
 
     // Check user can read the community
-    const canRead = await openFGAService.checkAccess(userId, 'community', initiative.communityId, 'can_read');
+    const canRead = await openFGAService.checkAccess(
+      userId,
+      'community',
+      initiative.communityId,
+      'can_read'
+    );
     if (!canRead) {
       throw new AppError('Forbidden: not a member of this community', 403);
     }
@@ -413,7 +463,12 @@ export class InitiativeService {
     }
 
     // Check user can read the community
-    const canRead = await openFGAService.checkAccess(userId, 'community', initiative.communityId, 'can_read');
+    const canRead = await openFGAService.checkAccess(
+      userId,
+      'community',
+      initiative.communityId,
+      'can_read'
+    );
     if (!canRead) {
       throw new AppError('Forbidden: not a member of this community', 403);
     }

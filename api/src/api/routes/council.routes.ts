@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { councilController } from '../controllers/council.controller';
 import { verifyToken } from '../middleware/auth.middleware';
+import { councilsController } from '../controllers/councils.controller';
+import { validateGetManagedCouncils } from '../validators/councils.validator';
 
 const router = Router();
 
@@ -9,6 +11,7 @@ router.use(verifyToken);
 
 // Council management
 router.get('/:communityId/councils', councilController.list.bind(councilController));
+router.get('/:communityId/councils/managed', validateGetManagedCouncils, councilsController.getManagedCouncils.bind(councilsController));
 router.get('/:communityId/councils/:councilId', councilController.getById.bind(councilController));
 router.post('/:communityId/councils', councilController.create.bind(councilController));
 router.put('/:communityId/councils/:councilId', councilController.update.bind(councilController));

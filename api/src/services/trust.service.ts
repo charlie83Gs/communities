@@ -21,6 +21,9 @@ export type TrustMeResult = {
   // Wealth permissions
   canViewWealth: boolean;
   canCreateWealth: boolean;
+  // Needs permissions
+  canViewNeeds: boolean;
+  canPublishNeeds: boolean;
   // Item permissions
   canViewItems: boolean;
   canManageItems: boolean;
@@ -81,6 +84,8 @@ export class TrustService {
         trust_trust_granter: community.minTrustToAwardTrust?.value ?? 15,
         trust_wealth_viewer: community.minTrustToViewWealth?.value ?? 0,
         trust_wealth_creator: community.minTrustForWealth?.value ?? 10,
+        trust_needs_viewer: community.minTrustToViewNeeds?.value ?? 0,
+        trust_needs_publisher: community.minTrustForNeeds?.value ?? 5,
         trust_poll_viewer: community.minTrustToViewPolls?.value ?? 0,
         trust_poll_creator: community.minTrustForPolls?.value ?? 15,
         trust_dispute_viewer: community.minTrustToViewDisputes?.value ?? 0,
@@ -203,6 +208,8 @@ export class TrustService {
       canAwardTrust,
       canViewWealth,
       canCreateWealth,
+      canViewNeeds,
+      canPublishNeeds,
       canViewItems,
       canManageItems,
       canViewDisputes,
@@ -225,6 +232,8 @@ export class TrustService {
       openFGAService.checkAccess(userId, 'community', communityId, 'can_award_trust'),
       openFGAService.checkAccess(userId, 'community', communityId, 'can_view_wealth'),
       openFGAService.checkAccess(userId, 'community', communityId, 'can_create_wealth'),
+      openFGAService.checkAccess(userId, 'community', communityId, 'can_view_needs'),
+      openFGAService.checkAccess(userId, 'community', communityId, 'can_publish_needs'),
       openFGAService.checkAccess(userId, 'community', communityId, 'can_view_item'),
       openFGAService.checkAccess(userId, 'community', communityId, 'can_manage_item'),
       openFGAService.checkAccess(userId, 'community', communityId, 'can_view_dispute'),
@@ -252,6 +261,8 @@ export class TrustService {
       canAwardTrust,
       canViewWealth,
       canCreateWealth,
+      canViewNeeds,
+      canPublishNeeds,
       canViewItems,
       canManageItems,
       canViewDisputes,
@@ -366,10 +377,7 @@ export class TrustService {
     );
 
     if (!canAwardTrust) {
-      throw new AppError(
-        'Unauthorized: You do not have permission to award trust',
-        401
-      );
+      throw new AppError('Unauthorized: You do not have permission to award trust', 401);
     }
 
     // Create award

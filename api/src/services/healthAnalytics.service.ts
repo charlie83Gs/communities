@@ -131,6 +131,82 @@ export class HealthAnalyticsService {
 
     return { distribution };
   }
+
+  /**
+   * Get needs overview statistics
+   */
+  async getNeedsOverview(communityId: string, userId: string, timeRange: TimeRange = '30d') {
+    await this.checkHealthAnalyticsAccess(communityId, userId);
+
+    logger.info(
+      `[HealthAnalyticsService getNeedsOverview] Fetching needs overview for community: ${communityId}, timeRange: ${timeRange}`
+    );
+
+    const overview = await healthAnalyticsRepository.getNeedsOverview(communityId, timeRange);
+
+    logger.debug(
+      `[HealthAnalyticsService getNeedsOverview] Retrieved overview - activeNeeds: ${overview.totalActiveNeeds}, activeWants: ${overview.totalActiveWants}`
+    );
+
+    return overview;
+  }
+
+  /**
+   * Get needs items with aggregation
+   */
+  async getNeedsItems(communityId: string, userId: string, timeRange: TimeRange = '30d') {
+    await this.checkHealthAnalyticsAccess(communityId, userId);
+
+    logger.info(
+      `[HealthAnalyticsService getNeedsItems] Fetching needs items for community: ${communityId}, timeRange: ${timeRange}`
+    );
+
+    const items = await healthAnalyticsRepository.getNeedsItems(communityId, timeRange);
+
+    logger.debug(
+      `[HealthAnalyticsService getNeedsItems] Retrieved ${items.length} needs items with aggregation`
+    );
+
+    return items;
+  }
+
+  /**
+   * Get aggregated needs by recurrence pattern
+   */
+  async getAggregatedNeeds(communityId: string, userId: string) {
+    await this.checkHealthAnalyticsAccess(communityId, userId);
+
+    logger.info(
+      `[HealthAnalyticsService getAggregatedNeeds] Fetching aggregated needs for community: ${communityId}`
+    );
+
+    const aggregatedNeeds = await healthAnalyticsRepository.getAggregatedNeeds(communityId);
+
+    logger.debug(
+      `[HealthAnalyticsService getAggregatedNeeds] Retrieved aggregated needs with ${aggregatedNeeds.reduce((sum, group) => sum + group.items.length, 0)} total items across 4 recurrence patterns`
+    );
+
+    return aggregatedNeeds;
+  }
+
+  /**
+   * Get aggregated wealth shares by item
+   */
+  async getAggregatedWealth(communityId: string, userId: string) {
+    await this.checkHealthAnalyticsAccess(communityId, userId);
+
+    logger.info(
+      `[HealthAnalyticsService getAggregatedWealth] Fetching aggregated wealth for community: ${communityId}`
+    );
+
+    const aggregatedWealth = await healthAnalyticsRepository.getAggregatedWealth(communityId);
+
+    logger.debug(
+      `[HealthAnalyticsService getAggregatedWealth] Retrieved ${aggregatedWealth.length} items with active shares`
+    );
+
+    return aggregatedWealth;
+  }
 }
 
 export const healthAnalyticsService = new HealthAnalyticsService();

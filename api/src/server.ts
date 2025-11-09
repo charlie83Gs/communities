@@ -1,6 +1,8 @@
 import app, { initPromise } from './app';
 import cron from 'node-cron';
 import { communityRepository } from './repositories/community.repository';
+import { runWealthReplenishmentJob } from './jobs/wealthReplenishment.job';
+import { runNeedsReplenishmentJob } from './jobs/needsReplenishment.job';
 
 const PORT = process.env.PORT || 3000;
 
@@ -26,7 +28,27 @@ const startServer = async () => {
         }
       });
 
+      // Wealth replenishment job: Run daily at 1 AM to replenish recurrent services
+      cron.schedule('0 1 * * *', async () => {
+        try {
+          await runWealthReplenishmentJob();
+        } catch (err) {
+          console.error('Wealth replenishment job failed:', err);
+        }
+      });
+
+      // Needs replenishment job: Run daily at 2 AM to update recurring needs tracking
+      cron.schedule('0 2 * * *', async () => {
+        try {
+          await runNeedsReplenishmentJob();
+        } catch (err) {
+          console.error('Needs replenishment job failed:', err);
+        }
+      });
+
       console.log('🧹 Cleanup job scheduled: Daily at midnight for old deleted communities');
+      console.log('🔄 Wealth replenishment job scheduled: Daily at 1 AM for recurrent services');
+      console.log('📋 Needs replenishment job scheduled: Daily at 2 AM for recurring needs tracking');
     });
   } catch (error) {
     console.error('[Server] FATAL: Failed to start server:', error);

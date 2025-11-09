@@ -1,8 +1,8 @@
 import { Component, createSignal, For, Show } from 'solid-js';
 import { StatCard } from '@/components/common/StatCard';
 import { LineChart } from '@/components/common/LineChart';
-import { useWealthOverviewQuery, useWealthItemsQuery } from '@/hooks/queries/useHealthQueries';
-import type { TimeRange } from '@/types/health.types';
+import { useWealthOverviewQuery, useWealthItemsQuery, useAggregatedWealthQuery } from '@/hooks/queries/useHealthQueries';
+import type { TimeRange, AggregatedWealthData } from '@/types/health.types';
 import { makeTranslator } from '@/i18n/makeTranslator';
 import { wealthStatisticsDict } from './WealthStatistics.i18n';
 
@@ -23,6 +23,16 @@ export const WealthStatistics: Component<WealthStatisticsProps> = (props) => {
     () => props.communityId,
     timeRange
   );
+
+  const aggregatedQuery = useAggregatedWealthQuery(
+    () => props.communityId
+  );
+
+  const getRowClass = (item: AggregatedWealthData) => {
+    return item.categoryName === 'Objects'
+      ? 'bg-ocean-50/20 dark:bg-ocean-900/10'
+      : 'bg-forest-50/20 dark:bg-forest-900/10';
+  };
 
   const timeRangeOptions: { label: string; value: TimeRange }[] = [
     { label: t('range7d'), value: '7d' },
@@ -236,6 +246,121 @@ export const WealthStatistics: Component<WealthStatisticsProps> = (props) => {
 
       {/* Items Loading State */}
       <Show when={itemsQuery.isLoading}>
+        <div class="bg-stone-100 dark:bg-stone-700 rounded-lg h-64 animate-pulse" />
+      </Show>
+
+      {/* Aggregated Wealth Shares */}
+      <Show when={!aggregatedQuery.isLoading && aggregatedQuery.data}>
+        <div class="bg-white dark:bg-stone-800 rounded-lg shadow-md border border-stone-200 dark:border-stone-700 overflow-hidden">
+          <div class="p-6 border-b border-stone-200 dark:border-stone-700">
+            <div class="flex items-start gap-3">
+              <span class="text-2xl">📊</span>
+              <div class="flex-1">
+                <h3 class="text-lg font-semibold text-stone-900 dark:text-stone-100">
+                  {t('aggregatedTitle')}
+                </h3>
+                <p class="text-sm text-stone-600 dark:text-stone-400 mt-1">
+                  {t('aggregatedDescription')}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Aggregated Table */}
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-stone-50 dark:bg-stone-900">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-stone-500 dark:text-stone-400 uppercase tracking-wider">
+                    {t('category')}
+                  </th>
+                  <th class="px-6 py-3 text-right text-xs font-medium text-stone-500 dark:text-stone-400 uppercase tracking-wider">
+                    <span class="inline-flex items-center gap-1">
+                      <span>📋</span>
+                      {t('activeSharesColumn')}
+                    </span>
+                  </th>
+                  <th class="px-6 py-3 text-right text-xs font-medium text-stone-500 dark:text-stone-400 uppercase tracking-wider">
+                    <span class="inline-flex items-center gap-1">
+                      <span>📦</span>
+                      {t('totalQuantityColumn')}
+                    </span>
+                  </th>
+                  <th class="px-6 py-3 text-right text-xs font-medium text-stone-500 dark:text-stone-400 uppercase tracking-wider">
+                    <span class="inline-flex items-center gap-1">
+                      <span>👥</span>
+                      {t('sharersColumn')}
+                    </span>
+                  </th>
+                  <th class="px-6 py-3 text-right text-xs font-medium text-stone-500 dark:text-stone-400 uppercase tracking-wider">
+                    <span class="inline-flex items-center gap-1">
+                      <span>💎</span>
+                      {t('valuePointsColumn')}
+                    </span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="bg-white dark:bg-stone-800 divide-y divide-stone-200 dark:divide-stone-700">
+                <Show
+                  when={aggregatedQuery.data && aggregatedQuery.data.length > 0}
+                  fallback={
+                    <tr>
+                      <td colspan="5" class="px-6 py-8 text-center text-stone-500 dark:text-stone-400">
+                        <div class="flex flex-col items-center gap-2">
+                          <span class="text-2xl">📭</span>
+                          <p>{t('noActiveShares')}</p>
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                >
+                  <For each={aggregatedQuery.data}>
+                    {(item) => (
+                      <tr class={`hover:bg-stone-50 dark:hover:bg-stone-700/50 transition-colors ${getRowClass(item)}`}>
+                        <td class="px-6 py-4 text-sm">
+                          <div class="flex flex-col">
+                            <span class="font-medium text-stone-900 dark:text-stone-100">
+                              {item.itemName}
+                            </span>
+                            <span class={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium w-fit mt-1 ${
+                              item.categoryName === 'Objects'
+                                ? 'bg-ocean-100 dark:bg-ocean-900 text-ocean-800 dark:text-ocean-200'
+                                : 'bg-forest-100 dark:bg-forest-900 text-forest-800 dark:text-forest-200'
+                            }`}>
+                              {item.categoryName}
+                            </span>
+                          </div>
+                        </td>
+                        <td class="px-6 py-4 text-right text-sm">
+                          <span class="text-lg font-bold text-ocean-600 dark:text-ocean-400">
+                            {item.activeShares}
+                          </span>
+                        </td>
+                        <td class="px-6 py-4 text-right text-sm">
+                          <span class="text-base font-semibold text-stone-900 dark:text-stone-100">
+                            {item.totalQuantity.toLocaleString()}
+                          </span>
+                        </td>
+                        <td class="px-6 py-4 text-right text-sm text-stone-600 dark:text-stone-400">
+                          <span class="font-medium">{item.sharerCount}</span>
+                        </td>
+                        <td class="px-6 py-4 text-right text-sm">
+                          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-success-100 dark:bg-success-900 text-success-800 dark:text-success-200">
+                            {item.totalValuePoints.toLocaleString()}
+                          </span>
+                        </td>
+                      </tr>
+                    )}
+                  </For>
+                </Show>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </Show>
+
+      {/* Aggregated Loading State */}
+      <Show when={aggregatedQuery.isLoading}>
         <div class="bg-stone-100 dark:bg-stone-700 rounded-lg h-64 animate-pulse" />
       </Show>
     </div>

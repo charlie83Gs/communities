@@ -205,73 +205,49 @@ export class OpenFGAService {
 
       // Handle mutually exclusive relations (e.g., base roles)
       if (options.mutuallyExclusive && options.mutuallyExclusive.length > 0) {
-        // Read current state
+        // Step 1: Read current state to check for conflicts
         const existingTuples = await this.repository.readTuples({
           user: subjectStr,
           object: `${fgaObjectType}:${objectId}`,
         });
 
-        const existingRelations = new Set(
-          existingTuples
-            .map((t) => t.key.relation)
-            .filter((r) => options.mutuallyExclusive!.includes(r))
+        const conflictingRelations = existingTuples.filter(
+          (t) => options.mutuallyExclusive!.includes(t.key.relation) && t.key.relation !== relation
         );
 
-        // Check if already in desired state
-        if (existingRelations.has(relation) && existingRelations.size === 1) {
+        // Step 2: Remove conflicting relations ONLY if they exist
+        // This happens BEFORE adding the new role
+        if (conflictingRelations.length > 0) {
           console.log(
-            `[OpenFGA Service] Relation "${relation}" already exists as the only mutually exclusive relation - idempotent`
+            `[OpenFGA Service] Removing ${conflictingRelations.length} conflicting relations before assigning "${relation}" to ${subjectStr} on ${fgaObjectType}:${objectId}`
           );
-          return;
+
+          await this.repository.write(
+            undefined,
+            conflictingRelations.map((t) => ({
+              user: t.key.user,
+              relation: t.key.relation,
+              object: t.key.object,
+            }))
+          );
+
+          console.log(`[OpenFGA Service] Successfully removed conflicting relations`);
         }
 
-        // Build deletes and writes
-        const deletes: Array<{ user: string; relation: string; object: string }> = [];
-        const writes: Array<{ user: string; relation: string; object: string }> = [];
-
-        // Delete conflicting relations (only those that actually exist)
-        const relationsToDelete = Array.from(existingRelations).filter((r) => r !== relation);
-        for (const oldRelation of relationsToDelete) {
-          deletes.push({
-            user: subjectStr,
-            relation: oldRelation,
-            object: `${fgaObjectType}:${objectId}`,
-          });
-        }
-
-        // Write new relation if not exists
-        if (!existingRelations.has(relation)) {
-          writes.push({
+        // Step 3: Write the desired relation (idempotent - won't fail if already exists)
+        await this.repository.write([
+          {
             user: subjectStr,
             relation,
             object: `${fgaObjectType}:${objectId}`,
-          });
-        }
+          },
+        ]);
 
-        // Execute batch write (only if there's something to do)
-        if (deletes.length > 0 || writes.length > 0) {
-          try {
-            await this.repository.write(
-              writes.length > 0 ? writes : undefined,
-              deletes.length > 0 ? deletes : undefined
-            );
-          } catch (error: any) {
-            // If batch write fails due to tuple not existing, try again with only writes
-            if (error?.apiErrorCode === 'write_failed_due_to_invalid_input' && deletes.length > 0) {
-              console.warn(
-                `[OpenFGA Service] Batch write failed, retrying with writes only (some tuples may not exist)`
-              );
-              // Retry with just the writes (the deletes might reference non-existent tuples)
-              if (writes.length > 0) {
-                await this.repository.write(writes, undefined);
-              }
-            } else {
-              throw error;
-            }
-          }
-        }
+        console.log(
+          `[OpenFGA Service] Wrote relation "${relation}" to ${subjectStr} on ${fgaObjectType}:${objectId}`
+        );
 
-        // Verify final state if verification not skipped
+        // Step 4: Verify final state if verification not skipped
         if (!options.skipVerification) {
           const hasRelation = await this.repository.check({
             user: subjectStr,

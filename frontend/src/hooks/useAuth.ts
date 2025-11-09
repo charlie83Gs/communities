@@ -8,8 +8,6 @@ import type { User } from '@/types/user.types';
 let __authChecking = false;
 
 export const useAuth = () => {
-  const queryClient = useQueryClient();
-
   const checkSession = async () => {
     if (__authChecking) return;
     __authChecking = true;
@@ -84,7 +82,14 @@ export const useAuth = () => {
   const logout = async () => {
     try {
       // Clear all cached queries to prevent data leakage between users
-      queryClient.clear();
+      // Access queryClient lazily only when needed (during logout)
+      try {
+        const queryClient = useQueryClient();
+        queryClient.clear();
+      } catch (error) {
+        // QueryClient might not be available in all contexts, which is fine
+        console.warn('QueryClient not available during logout:', error);
+      }
 
       setAuthStore({ user: null, isAuthenticated: false, isLoading: false });
 

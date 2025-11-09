@@ -30,11 +30,13 @@ export const keycloakRoutes: RouteDefinition[] = [
   },
   {
     path: '/keycloak-dashboard',
-    component: () => (
-      <ProtectedRoute>
-        <KeycloakDashboard />
-      </ProtectedRoute>
-    ),
+    component: () => {
+      return (
+        <ProtectedRoute>
+          <KeycloakDashboard />
+        </ProtectedRoute>
+      );
+    },
   },
   {
     path: '**',

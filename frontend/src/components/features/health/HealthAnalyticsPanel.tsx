@@ -1,12 +1,13 @@
 import { Component, createSignal, Show, createMemo } from 'solid-js';
 import { WealthStatistics } from './WealthStatistics';
 import { TrustStatistics } from './TrustStatistics';
+import { NeedsStatistics } from './NeedsStatistics';
 import { useCommunity } from '@/contexts/CommunityContext';
 import { useMyTrustSummaryQuery } from '@/hooks/queries/useMyTrustSummaryQuery';
 import { makeTranslator } from '@/i18n/makeTranslator';
 import { healthAnalyticsPanelDict } from './HealthAnalyticsPanel.i18n';
 
-type HealthTab = 'wealth' | 'trust';
+type HealthTab = 'wealth' | 'trust' | 'needs';
 
 interface HealthAnalyticsPanelProps {
   communityId: string;
@@ -122,6 +123,19 @@ export const HealthAnalyticsPanel: Component<HealthAnalyticsPanelProps> = (props
                 <span>{t('trustTab')}</span>
               </div>
             </button>
+            <button
+              onClick={() => setActiveTab('needs')}
+              class={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
+                activeTab() === 'needs'
+                  ? 'text-ocean-600 dark:text-ocean-400 border-b-2 border-ocean-600 dark:border-ocean-400 bg-ocean-50/50 dark:bg-ocean-900/20'
+                  : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-stone-50 dark:hover:bg-stone-700/50'
+              }`}
+            >
+              <div class="flex items-center justify-center gap-2">
+                <span class="text-lg">📋</span>
+                <span>{t('needsTab')}</span>
+              </div>
+            </button>
           </div>
         </div>
 
@@ -131,6 +145,9 @@ export const HealthAnalyticsPanel: Component<HealthAnalyticsPanelProps> = (props
         </Show>
         <Show when={activeTab() === 'trust'}>
           <TrustStatistics communityId={props.communityId} />
+        </Show>
+        <Show when={activeTab() === 'needs'}>
+          <NeedsStatistics communityId={props.communityId} />
         </Show>
       </div>
       </Show>

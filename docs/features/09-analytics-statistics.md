@@ -1,10 +1,10 @@
 ---
 id: FT-09
 title: Statistics & Analytics
-status: planned
-version: 1.0
-last_updated: 2025-01-06
-related_features: [FT-01, FT-02, FT-03, FT-04, FT-06]
+status: partial
+version: 1.1
+last_updated: 2025-11-09
+related_features: [FT-01, FT-02, FT-03, FT-04, FT-06, FT-08]
 ---
 
 # Statistics & Analytics
@@ -62,6 +62,17 @@ Visualize overall community vitality:
 - Council participation rates
 - Trust-capped wealth usage patterns
 
+### Needs Analytics (Implemented)
+Aggregated view of community resource requirements:
+
+- **Needs Overview**: Total active needs vs wants, breakdown by priority
+- **Needs by Item**: What items/services the community needs most
+- **Recurrence Patterns**: Distribution of one-time, daily, weekly, monthly needs
+- **Objects vs Services**: Breakdown of tangible items vs service requirements
+- **Member Participation**: Number of members expressing needs
+- **Council Needs**: Separate aggregation for council-level requirements
+- **Trends**: Time-series data showing how community needs evolve
+
 ## Configuration
 
 ### Analytics Settings
@@ -70,6 +81,14 @@ Visualize overall community vitality:
 - **Metric Visibility Settings**: Configure which metrics are visible to non-admins
 
 ## Related Database Tables
+
+### Implemented
+- `needs` - Member resource requirements (used for needs analytics)
+- `council_needs` - Council resource requirements (used for needs analytics)
+- `items` - Standardized resource/service names (linked to needs)
+- `trust_history` - Trust awards and removals (used for trust analytics)
+- `wealth` - Wealth shares (used for wealth analytics)
+- `wealth_requests` - Wealth requests (used for wealth analytics)
 
 ### Planned
 - `member_statistics` - Aggregated statistics for member contributions and activity
@@ -82,6 +101,7 @@ Visualize overall community vitality:
 - [FT-03: Trust System](./03-trust-system.md)
 - [FT-04: Wealth Sharing](./04-wealth-sharing.md)
 - [FT-06: Councils](./06-councils.md)
+- [FT-08: Needs System](./08-needs-system.md)
 
 ## Use Cases
 

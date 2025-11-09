@@ -8,6 +8,12 @@ import { communityRepository } from '@repositories/community.repository';
 import { AppError } from '@utils/errors';
 import { openFGAService } from './openfga.service';
 import type { Item } from '@db/schema';
+import {
+  DEFAULT_ITEMS,
+  DEFAULT_ITEM_LANGUAGE,
+  getItemTranslation,
+  type SupportedLanguage,
+} from '@config/defaultItems.constants';
 
 export type CreateItemDto = {
   communityId: string;
@@ -255,147 +261,33 @@ export class ItemsService {
   /**
    * Ensure default items exist for a community
    * Called when creating a community to create comprehensive default item categories
+   *
+   * @param communityId - The community ID to create items for
+   * @param creatorId - The user ID creating the community
+   * @param language - Language for item names/descriptions (default: 'en')
+   * @returns The first created item (for backward compatibility)
    */
-  async ensureDefaultItem(communityId: string, creatorId: string): Promise<Item> {
-    // Define all default items with specific, valuable items
-    const defaultItems = [
-      // Objects (physical items with clear value)
-      {
-        name: 'Fresh Vegetables (kg)',
-        description: 'Fresh vegetables sold by weight',
-        kind: 'object' as const,
-        wealthValue: '5',
-      },
-      {
-        name: 'Canned Food (unit)',
-        description: 'Non-perishable canned food items',
-        kind: 'object' as const,
-        wealthValue: '3',
-      },
-      {
-        name: 'Bread (loaf)',
-        description: 'Fresh baked bread',
-        kind: 'object' as const,
-        wealthValue: '2',
-      },
-      {
-        name: 'Clothing Item',
-        description: 'Clothing items (shirts, pants, jackets, etc.)',
-        kind: 'object' as const,
-        wealthValue: '10',
-      },
-      {
-        name: 'Hand Tool',
-        description: 'Manual hand tools (hammer, screwdriver, wrench, etc.)',
-        kind: 'object' as const,
-        wealthValue: '15',
-      },
-      {
-        name: 'Power Tool',
-        description: 'Electric or battery-powered tools',
-        kind: 'object' as const,
-        wealthValue: '50',
-      },
-      {
-        name: 'Book',
-        description: 'Books, textbooks, or reading materials',
-        kind: 'object' as const,
-        wealthValue: '8',
-      },
-      {
-        name: 'Bicycle',
-        description: 'Bicycle for transportation or recreation',
-        kind: 'object' as const,
-        wealthValue: '100',
-      },
-      {
-        name: 'Furniture Item',
-        description: 'Household furniture (chair, table, shelf, etc.)',
-        kind: 'object' as const,
-        wealthValue: '50',
-      },
-      {
-        name: 'Bedding/Linens Set',
-        description: 'Bedding, sheets, pillows, or towels',
-        kind: 'object' as const,
-        wealthValue: '25',
-      },
-
-      // Services (specific services with clear value)
-      {
-        name: 'Home Repair (hour)',
-        description: 'Home repair and maintenance services',
-        kind: 'service' as const,
-        wealthValue: '20',
-      },
-      {
-        name: 'Gardening Help (hour)',
-        description: 'Gardening, landscaping, and yard work',
-        kind: 'service' as const,
-        wealthValue: '15',
-      },
-      {
-        name: 'Childcare (hour)',
-        description: 'Babysitting and child supervision',
-        kind: 'service' as const,
-        wealthValue: '18',
-      },
-      {
-        name: 'Tutoring (hour)',
-        description: 'Educational tutoring and teaching',
-        kind: 'service' as const,
-        wealthValue: '25',
-      },
-      {
-        name: 'Cooking/Meal Prep (meal)',
-        description: 'Meal preparation and cooking services',
-        kind: 'service' as const,
-        wealthValue: '10',
-      },
-      {
-        name: 'Transportation/Ride (trip)',
-        description: 'Transportation and ride sharing',
-        kind: 'service' as const,
-        wealthValue: '8',
-      },
-      {
-        name: 'Pet Care (day)',
-        description: 'Pet sitting, walking, and care',
-        kind: 'service' as const,
-        wealthValue: '12',
-      },
-      {
-        name: 'Tech Support (hour)',
-        description: 'Computer and technology assistance',
-        kind: 'service' as const,
-        wealthValue: '30',
-      },
-      {
-        name: 'Cleaning Service (hour)',
-        description: 'House and office cleaning',
-        kind: 'service' as const,
-        wealthValue: '20',
-      },
-      {
-        name: 'Moving Help (hour)',
-        description: 'Moving and heavy lifting assistance',
-        kind: 'service' as const,
-        wealthValue: '18',
-      },
-    ];
-
-    // Create all default items
+  async ensureDefaultItem(
+    communityId: string,
+    creatorId: string,
+    language: SupportedLanguage = DEFAULT_ITEM_LANGUAGE
+  ): Promise<Item> {
+    // Create all default items from the comprehensive constants file
     const createdItems: Item[] = [];
-    for (const itemData of defaultItems) {
+
+    for (const itemTemplate of DEFAULT_ITEMS) {
+      // Get translation for the specified language
+      const translation = getItemTranslation(itemTemplate, language);
+
       // Check if item already exists (by exact name)
-      const existing = await itemsRepository.findByName(communityId, itemData.name);
+      const existing = await itemsRepository.findByName(communityId, translation.name);
       if (!existing) {
         const item = await itemsRepository.create({
           communityId,
-          name: itemData.name,
-          description: itemData.description,
-          kind: itemData.kind,
-          wealthValue: itemData.wealthValue,
+          name: translation.name,
+          description: translation.description || null,
+          kind: itemTemplate.kind,
+          wealthValue: itemTemplate.wealthValue.toString(),
           isDefault: true,
           createdBy: creatorId,
         });

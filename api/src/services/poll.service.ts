@@ -33,6 +33,14 @@ export class PollService {
   }
 
   /**
+   * Check if user can view polls in a community
+   * Uses OpenFGA unified permission check: admin OR poll_viewer OR trust_poll_viewer
+   */
+  private async canViewPolls(userId: string, communityId: string): Promise<boolean> {
+    return await openFGAService.checkAccess(userId, 'community', communityId, 'can_view_poll');
+  }
+
+  /**
    * Create a new poll
    */
   async createPoll(data: CreatePollDto, userId: string): Promise<Poll> {
@@ -136,6 +144,16 @@ export class PollService {
     // Verify user is a member of the community
     await this.ensureMemberOrAdmin(communityId, userId);
 
+    // Check poll viewing permission
+    const canView = await this.canViewPolls(userId, communityId);
+
+    if (!canView) {
+      throw new AppError(
+        'You do not have permission to view polls. You need the poll_viewer role or sufficient trust level.',
+        403
+      );
+    }
+
     // Build query conditions
     const conditions = [eq(polls.communityId, communityId)];
 
@@ -163,6 +181,16 @@ export class PollService {
   async getPollById(communityId: string, pollId: string, userId: string): Promise<PollWithDetails> {
     // Verify user is a member of the community
     await this.ensureMemberOrAdmin(communityId, userId);
+
+    // Check poll viewing permission
+    const canView = await this.canViewPolls(userId, communityId);
+
+    if (!canView) {
+      throw new AppError(
+        'You do not have permission to view polls. You need the poll_viewer role or sufficient trust level.',
+        403
+      );
+    }
 
     // Fetch poll
     const [poll] = await db
@@ -237,6 +265,16 @@ export class PollService {
   async vote(communityId: string, pollId: string, optionId: string, userId: string): Promise<void> {
     // Verify user is a member of the community
     await this.ensureMemberOrAdmin(communityId, userId);
+
+    // Check poll viewing permission (users must be able to view polls to vote)
+    const canView = await this.canViewPolls(userId, communityId);
+
+    if (!canView) {
+      throw new AppError(
+        'You do not have permission to view polls. You need the poll_viewer role or sufficient trust level.',
+        403
+      );
+    }
 
     // Fetch poll
     const [poll] = await db

@@ -9,7 +9,9 @@ import { items } from './items.schema';
  */
 export const wealthTypeEnum = pgEnum('wealth_type', ['object', 'service']);
 export const wealthDurationTypeEnum = pgEnum('wealth_duration_type', ['timebound', 'unlimited']);
-export const wealthDistributionTypeEnum = pgEnum('wealth_distribution_type', ['request_based', 'unit_based']);
+export const wealthDistributionTypeEnum = pgEnum('wealth_distribution_type', ['unit_based']);
+export const wealthSharingTargetEnum = pgEnum('wealth_sharing_target', ['community', 'council', 'pool']);
+export const recurrentFrequencyEnum = pgEnum('recurrent_frequency', ['weekly', 'monthly']);
 export const wealthStatusEnum = pgEnum('wealth_status', ['active', 'fulfilled', 'expired', 'cancelled']);
 
 export const wealthRequestStatusEnum = pgEnum('wealth_request_status', [
@@ -44,8 +46,21 @@ export const wealth = pgTable('wealth', {
   endDate: timestamp('end_date'), // required only when durationType == timebound
 
   distributionType: wealthDistributionTypeEnum('distribution_type').notNull(),
-  unitsAvailable: integer('units_available'),
+  unitsAvailable: integer('units_available').notNull().default(1),
   maxUnitsPerUser: integer('max_units_per_user'),
+
+  // Sharing target (community, council, or pool)
+  sharingTarget: wealthSharingTargetEnum('sharing_target').default('community').notNull(),
+  targetCouncilId: uuid('target_council_id'), // For council-targeted shares
+  targetPoolId: uuid('target_pool_id'), // For pool contributions
+  sourcePoolId: uuid('source_pool_id'), // For distributions from pools
+
+  // Recurrent wealth (services only)
+  isRecurrent: boolean('is_recurrent').notNull().default(false),
+  recurrentFrequency: recurrentFrequencyEnum('recurrent_frequency'),
+  recurrentReplenishValue: integer('recurrent_replenish_value'),
+  lastReplenishedAt: timestamp('last_replenished_at'),
+  nextReplenishmentDate: timestamp('next_replenishment_date'),
 
   automationEnabled: boolean('automation_enabled').default(false),
 
@@ -87,7 +102,7 @@ export const wealthRequests = pgTable('wealth_requests', {
   message: text('message'),
 
   // For unit_based distribution
-  unitsRequested: integer('units_requested'),
+  unitsRequested: integer('units_requested').notNull().default(1),
 
   status: wealthRequestStatusEnum('status').default('pending').notNull(),
 

@@ -78,20 +78,10 @@ export class TrustService {
 
   async setAdminGrant(communityId: string, toUserId: string, amount: number): Promise<void> {
     const url = `${this.basePath}/${communityId}/trust/admin/grants/${toUserId}`;
-    // Check if grant exists to decide POST or PUT
-    try {
-      const grants = await this.getAdminGrants(communityId);
-      const exists = grants.some(g => g.toUserId === toUserId);
-
-      if (exists) {
-        await apiClient.put(url, { amount });
-      } else {
-        await apiClient.post(url, { amount });
-      }
-    } catch (error) {
-      // If getAdminGrants fails, try POST
-      await apiClient.post(url, { amount });
-    }
+    // Backend handles upsert logic - just use PUT
+    // This avoids making an extra admin-privileged API call (getAdminGrants)
+    // during the mutation which could fail if OpenFGA roles are temporarily inconsistent
+    await apiClient.put(url, { amount });
   }
 
   async deleteAdminGrant(communityId: string, toUserId: string): Promise<void> {

@@ -76,6 +76,30 @@ export const apiClient = {
     return (json && typeof json === 'object' && 'data' in json) ? json.data : json;
   },
 
+  async patch(endpoint: string, body?: unknown) {
+    const authHeaders = await getAuthHeaders();
+    const response = await fetch(`${baseUrl}${endpoint}`, {
+      method: 'PATCH',
+      headers: {
+        ...authHeaders,
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: body ? JSON.stringify(body) : undefined,
+    });
+
+    if (!response.ok) {
+      throw new Error(`API Error: ${response.status}`);
+    }
+    // Check if response has content
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      const json = await response.json();
+      return (json && typeof json === 'object' && 'data' in json) ? json.data : json;
+    }
+    // No body for 204, return void
+  },
+
   async delete(endpoint: string) {
     const authHeaders = await getAuthHeaders();
     const response = await fetch(`${baseUrl}${endpoint}`, {

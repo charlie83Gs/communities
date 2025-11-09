@@ -215,6 +215,12 @@ export const CommunitySettings: Component<CommunitySettingsProps> = (props) => {
     levelId: undefined,
   });
 
+  // Needs thresholds
+  const [minTrustForNeeds, setMinTrustForNeeds] = createSignal<TrustLevelPickerValue>({
+    customValue: 5,
+    levelId: undefined,
+  });
+
   // Trust threshold fields - viewer thresholds (new)
   const [minTrustToViewTrust, setMinTrustToViewTrust] = createSignal<TrustLevelPickerValue>({
     customValue: 0,
@@ -245,6 +251,10 @@ export const CommunitySettings: Component<CommunitySettingsProps> = (props) => {
     levelId: undefined,
   });
   const [minTrustToViewForum, setMinTrustToViewForum] = createSignal<TrustLevelPickerValue>({
+    customValue: 0,
+    levelId: undefined,
+  });
+  const [minTrustToViewNeeds, setMinTrustToViewNeeds] = createSignal<TrustLevelPickerValue>({
     customValue: 0,
     levelId: undefined,
   });
@@ -293,6 +303,9 @@ export const CommunitySettings: Component<CommunitySettingsProps> = (props) => {
       setMinTrustForHealthAnalytics(
         trustRequirementToPickerValue(comm.minTrustForHealthAnalytics, levels, 20)
       );
+      setMinTrustForNeeds(
+        trustRequirementToPickerValue(comm.minTrustForNeeds, levels, 5)
+      );
 
       // Viewer thresholds
       setMinTrustToViewTrust(
@@ -319,6 +332,9 @@ export const CommunitySettings: Component<CommunitySettingsProps> = (props) => {
       setMinTrustToViewForum(
         trustRequirementToPickerValue(comm.minTrustToViewForum, levels, 0)
       );
+      setMinTrustToViewNeeds(
+        trustRequirementToPickerValue(comm.minTrustToViewNeeds, levels, 0)
+      );
     }
   });
 
@@ -338,6 +354,7 @@ export const CommunitySettings: Component<CommunitySettingsProps> = (props) => {
       minTrustForFlagging: pickerValueToTrustRequirement(minTrustForFlagging()),
       minTrustForFlagReview: pickerValueToTrustRequirement(minTrustForFlagReview()),
       minTrustForHealthAnalytics: pickerValueToTrustRequirement(minTrustForHealthAnalytics()),
+      minTrustForNeeds: pickerValueToTrustRequirement(minTrustForNeeds()),
       minTrustToViewTrust: pickerValueToTrustRequirement(minTrustToViewTrust()),
       minTrustToViewWealth: pickerValueToTrustRequirement(minTrustToViewWealth()),
       minTrustToViewItems: pickerValueToTrustRequirement(minTrustToViewItems()),
@@ -346,6 +363,7 @@ export const CommunitySettings: Component<CommunitySettingsProps> = (props) => {
       minTrustToViewPools: pickerValueToTrustRequirement(minTrustToViewPools()),
       minTrustToViewCouncils: pickerValueToTrustRequirement(minTrustToViewCouncils()),
       minTrustToViewForum: pickerValueToTrustRequirement(minTrustToViewForum()),
+      minTrustToViewNeeds: pickerValueToTrustRequirement(minTrustToViewNeeds()),
     };
 
     // Mutation will automatically invalidate queries via onSuccess in the hook
@@ -443,6 +461,13 @@ export const CommunitySettings: Component<CommunitySettingsProps> = (props) => {
                       trustLevels={trustLevels.data}
                     />
                     <TrustThresholdRow
+                      label={t('permViewNeeds')}
+                      communityId={props.communityId}
+                      value={minTrustToViewNeeds()}
+                      onChange={setMinTrustToViewNeeds}
+                      trustLevels={trustLevels.data}
+                    />
+                    <TrustThresholdRow
                       label={t('permViewItems')}
                       communityId={props.communityId}
                       value={minTrustToViewItems()}
@@ -510,6 +535,20 @@ export const CommunitySettings: Component<CommunitySettingsProps> = (props) => {
                       communityId={props.communityId}
                       value={minTrustForWealth()}
                       onChange={setMinTrustForWealth}
+                      trustLevels={trustLevels.data}
+                    />
+
+                    {/* Needs Configuration Section */}
+                    <tr class="bg-stone-100 dark:bg-stone-800">
+                      <td colspan="3" class="px-6 py-3 text-sm font-semibold text-stone-900 dark:text-stone-100">
+                        {t('sectionNeedsConfig')}
+                      </td>
+                    </tr>
+                    <TrustThresholdRow
+                      label={t('permPublishNeeds')}
+                      communityId={props.communityId}
+                      value={minTrustForNeeds()}
+                      onChange={setMinTrustForNeeds}
                       trustLevels={trustLevels.data}
                     />
 

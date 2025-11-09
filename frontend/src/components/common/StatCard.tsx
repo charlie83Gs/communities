@@ -19,7 +19,7 @@ export const StatCard: Component<StatCardProps> = (props) => {
   return (
     <div class="bg-white dark:bg-stone-800 rounded-lg shadow-md p-6 border border-stone-200 dark:border-stone-700">
       <div class="flex items-start justify-between">
-        <div class="flex-1">
+        <div class="flex-1 min-w-0">
           <p class="text-sm font-medium text-stone-600 dark:text-stone-400 mb-1">
             {props.title}
           </p>
@@ -39,7 +39,7 @@ export const StatCard: Component<StatCardProps> = (props) => {
           )}
         </div>
         {props.icon && (
-          <div class="ml-4 p-3 bg-ocean-100 dark:bg-ocean-900 rounded-lg">
+          <div class="ml-2 p-2 bg-ocean-100 dark:bg-ocean-900 rounded-lg flex-shrink-0">
             {props.icon}
           </div>
         )}

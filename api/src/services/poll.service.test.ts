@@ -100,7 +100,7 @@ describe('PollService - Permission Checks', () => {
     it('should reject user without poll creation permission', async () => {
       // First call (can_read) returns true, second call (can_create_poll) returns false
       mockOpenFGAService.checkAccess
-        .mockResolvedValueOnce(true)  // can_read - is member
+        .mockResolvedValueOnce(true) // can_read - is member
         .mockResolvedValueOnce(false); // can_create_poll - no permission
 
       await expect(pollService.createPoll(basePollDto, 'user-123')).rejects.toThrow(
@@ -120,7 +120,7 @@ describe('PollService - Permission Checks', () => {
 
     it('should verify unified permission check is called', async () => {
       mockOpenFGAService.checkAccess
-        .mockResolvedValueOnce(true)  // can_read
+        .mockResolvedValueOnce(true) // can_read
         .mockResolvedValueOnce(false); // can_create_poll
 
       try {
@@ -227,7 +227,24 @@ describe('PollService - Permission Checks', () => {
       );
     });
 
-    it('should allow member to list polls', async () => {
+    it('should reject member without can_view_poll permission', async () => {
+      mockOpenFGAService.checkAccess
+        .mockResolvedValueOnce(true) // can_read - is member
+        .mockResolvedValueOnce(false); // can_view_poll - no permission
+
+      await expect(pollService.listPolls('comm-123', 'user-123')).rejects.toThrow(
+        'You do not have permission to view polls. You need the poll_viewer role or sufficient trust level.'
+      );
+
+      expect(mockOpenFGAService.checkAccess).toHaveBeenCalledWith(
+        'user-123',
+        'community',
+        'comm-123',
+        'can_view_poll'
+      );
+    });
+
+    it('should allow member to list polls when they have can_view_poll permission', async () => {
       mockOpenFGAService.checkAccess.mockResolvedValue(true);
 
       // Note: This will fail at database level, but permission check passes
@@ -236,6 +253,7 @@ describe('PollService - Permission Checks', () => {
       } catch (error: any) {
         // Should not be a permission error
         expect(error.message).not.toContain('You must be a member');
+        expect(error.message).not.toContain('You do not have permission to view polls');
       }
 
       expect(mockOpenFGAService.checkAccess).toHaveBeenCalledWith(
@@ -243,6 +261,13 @@ describe('PollService - Permission Checks', () => {
         'community',
         'comm-123',
         'can_read'
+      );
+
+      expect(mockOpenFGAService.checkAccess).toHaveBeenCalledWith(
+        'user-123',
+        'community',
+        'comm-123',
+        'can_view_poll'
       );
     });
   });
@@ -256,7 +281,24 @@ describe('PollService - Permission Checks', () => {
       );
     });
 
-    it('should allow member to view poll', async () => {
+    it('should reject member without can_view_poll permission', async () => {
+      mockOpenFGAService.checkAccess
+        .mockResolvedValueOnce(true) // can_read - is member
+        .mockResolvedValueOnce(false); // can_view_poll - no permission
+
+      await expect(pollService.getPollById('comm-123', 'poll-123', 'user-123')).rejects.toThrow(
+        'You do not have permission to view polls. You need the poll_viewer role or sufficient trust level.'
+      );
+
+      expect(mockOpenFGAService.checkAccess).toHaveBeenCalledWith(
+        'user-123',
+        'community',
+        'comm-123',
+        'can_view_poll'
+      );
+    });
+
+    it('should allow member to view poll when they have can_view_poll permission', async () => {
       mockOpenFGAService.checkAccess.mockResolvedValue(true);
 
       // Note: This will fail at database level, but permission check passes
@@ -265,6 +307,7 @@ describe('PollService - Permission Checks', () => {
       } catch (error: any) {
         // Should not be a permission error
         expect(error.message).not.toContain('You must be a member');
+        expect(error.message).not.toContain('You do not have permission to view polls');
       }
 
       expect(mockOpenFGAService.checkAccess).toHaveBeenCalledWith(
@@ -272,6 +315,13 @@ describe('PollService - Permission Checks', () => {
         'community',
         'comm-123',
         'can_read'
+      );
+
+      expect(mockOpenFGAService.checkAccess).toHaveBeenCalledWith(
+        'user-123',
+        'community',
+        'comm-123',
+        'can_view_poll'
       );
     });
   });
@@ -285,7 +335,24 @@ describe('PollService - Permission Checks', () => {
       );
     });
 
-    it('should allow member to attempt voting', async () => {
+    it('should reject member without can_view_poll permission from voting', async () => {
+      mockOpenFGAService.checkAccess
+        .mockResolvedValueOnce(true) // can_read - is member
+        .mockResolvedValueOnce(false); // can_view_poll - no permission
+
+      await expect(pollService.vote('comm-123', 'poll-123', 'opt-1', 'user-123')).rejects.toThrow(
+        'You do not have permission to view polls. You need the poll_viewer role or sufficient trust level.'
+      );
+
+      expect(mockOpenFGAService.checkAccess).toHaveBeenCalledWith(
+        'user-123',
+        'community',
+        'comm-123',
+        'can_view_poll'
+      );
+    });
+
+    it('should allow member to attempt voting when they have can_view_poll permission', async () => {
       mockOpenFGAService.checkAccess.mockResolvedValue(true);
 
       // Note: This will fail at database level, but permission check passes
@@ -294,6 +361,7 @@ describe('PollService - Permission Checks', () => {
       } catch (error: any) {
         // Should not be a permission error
         expect(error.message).not.toContain('You must be a member');
+        expect(error.message).not.toContain('You do not have permission to view polls');
       }
 
       expect(mockOpenFGAService.checkAccess).toHaveBeenCalledWith(
@@ -301,6 +369,13 @@ describe('PollService - Permission Checks', () => {
         'community',
         'comm-123',
         'can_read'
+      );
+
+      expect(mockOpenFGAService.checkAccess).toHaveBeenCalledWith(
+        'user-123',
+        'community',
+        'comm-123',
+        'can_view_poll'
       );
     });
   });
@@ -513,7 +588,6 @@ describe('PollService - Permission Checks', () => {
       );
     });
   });
-
 
   describe('createPoll - Council Member Verification', () => {
     it('should require council membership even with poll creation permission', async () => {

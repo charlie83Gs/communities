@@ -2,8 +2,8 @@
 id: FT-03
 title: Trust System
 status: implemented
-version: 1.0
-last_updated: 2025-01-06
+version: 1.1
+last_updated: 2025-11-08
 related_features: [FT-01, FT-02, FT-04, FT-06, FT-13]
 ---
 
@@ -16,9 +16,12 @@ The trust system is the foundation of community-based access control, allowing m
 - Each member has a **trust score** representing how many community members trust them
 - Trust titles are configurable at the community management level
 - **Default trust levels:**
-  - **New**: Score < 10
-  - **Stable**: Score >= 10
-  - **Trusted**: Score >= 50
+  - **New Member**: Score >= 0
+  - **Known Member**: Score >= 10
+  - **Trusted Member**: Score >= 25
+  - **Advanced Member**: Score >= 50
+  - **Community Expert**: Score >= 100
+  - **Community Benefactor**: Score >= 200
 
 ## Awarding Trust
 - Members can award trust to other members once they reach a configurable threshold (default: 15)

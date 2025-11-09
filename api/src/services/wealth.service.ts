@@ -1,5 +1,6 @@
 import { wealthRepository } from '@repositories/wealth.repository';
 import { appUserRepository } from '@repositories/appUser.repository';
+import { itemsRepository } from '@repositories/items.repository';
 import { AppError } from '@utils/errors';
 import { openFGAService } from './openfga.service';
 import {
@@ -16,9 +17,12 @@ export type CreateWealthDto = {
   image?: string | null;
   durationType: 'timebound' | 'unlimited';
   endDate?: string | Date | null;
-  distributionType: 'request_based' | 'unit_based';
-  unitsAvailable?: number | null;
+  unitsAvailable?: number;
   maxUnitsPerUser?: number | null;
+  // Recurrent fields
+  isRecurrent?: boolean;
+  recurrentFrequency?: 'weekly' | 'monthly' | null;
+  recurrentReplenishValue?: number | null;
   automationEnabled?: boolean;
 };
 
@@ -31,6 +35,8 @@ export type UpdateWealthDto = Partial<
     | 'endDate'
     | 'unitsAvailable'
     | 'maxUnitsPerUser'
+    | 'recurrentFrequency'
+    | 'recurrentReplenishValue'
     | 'automationEnabled'
   >
 > & {
@@ -43,7 +49,7 @@ export type WealthSearchParams = {
   durationType?: 'timebound' | 'unlimited';
   endDateAfter?: string | Date;
   endDateBefore?: string | Date;
-  distributionType?: 'request_based' | 'unit_based';
+  distributionType?: 'unit_based';
   status?: 'active' | 'fulfilled' | 'expired' | 'cancelled';
   page?: number;
   limit?: number;
@@ -89,10 +95,31 @@ export class WealthService {
     if (dto.durationType === 'timebound' && !dto.endDate) {
       throw new AppError('endDate is required for timebound wealth', 400);
     }
-    if (dto.distributionType === 'unit_based') {
-      if (dto.unitsAvailable == null || dto.unitsAvailable <= 0) {
-        throw new AppError('unitsAvailable must be a positive integer for unit_based wealth', 400);
+
+    // Validate recurrent settings
+    if (dto.isRecurrent) {
+      if (!dto.recurrentFrequency || !dto.recurrentReplenishValue) {
+        throw new AppError(
+          'recurrentFrequency and recurrentReplenishValue are required when isRecurrent is true',
+          400
+        );
       }
+
+      // Validate that recurrent can only be set for service items
+      const item = await itemsRepository.findById(dto.itemId);
+      if (!item) {
+        throw new AppError('Item not found', 404);
+      }
+      if (item.kind !== 'service') {
+        throw new AppError('Recurrent wealth can only be created for service items', 400);
+      }
+    }
+
+    // Calculate next replenishment date for recurrent items
+    let nextReplenishmentDate: Date | null = null;
+    const now = new Date();
+    if (dto.isRecurrent && dto.recurrentFrequency) {
+      nextReplenishmentDate = this.calculateNextReplenishmentDate(now, dto.recurrentFrequency);
     }
 
     const wealthItem = await wealthRepository.createWealth({
@@ -104,9 +131,14 @@ export class WealthService {
       image: dto.image ?? null,
       durationType: dto.durationType,
       endDate: dto.endDate ? new Date(dto.endDate) : null,
-      distributionType: dto.distributionType,
-      unitsAvailable: dto.unitsAvailable ?? null,
+      distributionType: 'unit_based', // Always unit_based now
+      unitsAvailable: dto.unitsAvailable ?? 1,
       maxUnitsPerUser: dto.maxUnitsPerUser ?? null,
+      isRecurrent: dto.isRecurrent ?? false,
+      recurrentFrequency: dto.recurrentFrequency ?? null,
+      recurrentReplenishValue: dto.recurrentReplenishValue ?? null,
+      lastReplenishedAt: dto.isRecurrent ? now : null,
+      nextReplenishmentDate: nextReplenishmentDate,
       automationEnabled: dto.automationEnabled ?? false,
       status: 'active',
     });
@@ -133,6 +165,22 @@ export class WealthService {
     }
 
     return wealthItem;
+  }
+
+  /**
+   * Calculate the next replenishment date based on frequency
+   * @param fromDate - Starting date
+   * @param frequency - 'weekly' or 'monthly'
+   * @returns Next replenishment date
+   */
+  private calculateNextReplenishmentDate(fromDate: Date, frequency: 'weekly' | 'monthly'): Date {
+    const nextDate = new Date(fromDate);
+    if (frequency === 'weekly') {
+      nextDate.setDate(nextDate.getDate() + 7);
+    } else if (frequency === 'monthly') {
+      nextDate.setMonth(nextDate.getMonth() + 1);
+    }
+    return nextDate;
   }
 
   async getWealth(id: string, userId: string): Promise<WealthRecord> {
@@ -659,6 +707,55 @@ export class WealthService {
     return {
       ...updatedReq,
     };
+  }
+
+  /**
+   * Replenish all wealth items that are due for replenishment
+   * This method is called by the daily cron job
+   * @returns Summary of replenishment results
+   */
+  async replenishDueWealthItems(): Promise<{
+    total: number;
+    succeeded: number;
+    failed: number;
+    errors: Array<{ wealthId: string; error: string }>;
+  }> {
+    const dueItems = await wealthRepository.findDueForReplenishment();
+    const results = {
+      total: dueItems.length,
+      succeeded: 0,
+      failed: 0,
+      errors: [] as Array<{ wealthId: string; error: string }>,
+    };
+
+    for (const item of dueItems) {
+      try {
+        if (!item.recurrentFrequency || !item.recurrentReplenishValue) {
+          results.failed++;
+          results.errors.push({
+            wealthId: item.id,
+            error: 'Missing recurrent configuration',
+          });
+          continue;
+        }
+
+        await wealthRepository.replenishWealth(
+          item.id,
+          item.recurrentReplenishValue,
+          item.recurrentFrequency
+        );
+        results.succeeded++;
+      } catch (error) {
+        results.failed++;
+        results.errors.push({
+          wealthId: item.id,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+        console.error(`Failed to replenish wealth ${item.id}:`, error);
+      }
+    }
+
+    return results;
   }
 }
 

@@ -494,11 +494,7 @@ describe('CommunityService', () => {
         name: 'Updated Community',
       });
 
-      await communityService.updateCommunity(
-        'comm-123',
-        { name: 'Updated Community' },
-        'user-123'
-      );
+      await communityService.updateCommunity('comm-123', { name: 'Updated Community' }, 'user-123');
 
       expect(mockCommunityMemberRepository.findByCommunity).not.toHaveBeenCalled();
       expect(mockOpenFGAService.syncTrustRoles).not.toHaveBeenCalled();

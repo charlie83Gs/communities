@@ -434,6 +434,8 @@ export class CommunityService {
       minTrustForFlagReview,
       minTrustForForumModeration,
       minTrustToViewForum,
+      minTrustForNeeds,
+      minTrustToViewNeeds,
     ] = await Promise.all([
       resolveTrustRequirement(communityId, community.minTrustToAwardTrust),
       resolveTrustRequirement(communityId, community.minTrustToViewTrust),
@@ -456,6 +458,8 @@ export class CommunityService {
       resolveTrustRequirement(communityId, community.minTrustForFlagReview),
       resolveTrustRequirement(communityId, community.minTrustForForumModeration),
       resolveTrustRequirement(communityId, community.minTrustToViewForum),
+      resolveTrustRequirement(communityId, community.minTrustForNeeds),
+      resolveTrustRequirement(communityId, community.minTrustToViewNeeds),
     ]);
 
     // Map thresholds to trust role names (matching OpenFGA constants)
@@ -481,6 +485,8 @@ export class CommunityService {
       trust_item_viewer: minTrustToViewItems,
       trust_item_manager: minTrustForItemManagement,
       trust_analytics_viewer: minTrustForHealthAnalytics,
+      trust_needs_viewer: minTrustToViewNeeds,
+      trust_needs_publisher: minTrustForNeeds,
     };
   }
 
@@ -530,6 +536,14 @@ export class CommunityService {
     for (const memberId of uniqueUserIds) {
       // Use getUserRoles to get the correct roles (same as getMemberById)
       const roles = await communityMemberRepository.getUserRoles(communityId, memberId);
+
+      // Skip users with no roles (race condition or stale data from OpenFGA)
+      if (!roles || roles.length === 0) {
+        logger.debug(
+          `[CommunityService getMembers] Skipping user ${memberId} - no roles found (likely race condition or stale OpenFGA data)`
+        );
+        continue;
+      }
 
       // Fetch user details from app_users (memberId is the user ID)
       const user = await appUserRepository.findById(memberId);

@@ -23,7 +23,10 @@ import { CommunitySidebar, SidebarTab } from '@/components/features/communities/
 import { ForumContent } from '@/components/features/forum/ForumContent';
 import { ItemsManagementPanel } from '@/components/features/items/ItemsManagementPanel';
 import { TrustTimeline } from '@/components/features/communities/TrustTimeline';
+import { CommunityActivityTimeline } from '@/components/features/communities/CommunityActivityTimeline';
 import { HealthAnalyticsPanel } from '@/components/features/health/HealthAnalyticsPanel';
+import { NeedsList } from '@/components/features/needs/NeedsList';
+import { PoolsList } from '@/components/features/pools/PoolsList';
 import { makeTranslator } from '@/i18n/makeTranslator';
 import { communityDetailsDict } from './[id].i18n';
 import { useTrustLevelsQuery } from '@/hooks/queries/useTrustLevelsQuery';
@@ -126,6 +129,18 @@ const CommunityDetailsContent: Component = () => {
       visible: canViewWealth(),
     },
     {
+      id: 'pools' as SidebarTab,
+      label: t('tabPools'),
+      icon: 'pools' as const,
+      visible: canViewPools(),
+    },
+    {
+      id: 'needs' as SidebarTab,
+      label: t('tabNeeds'),
+      icon: 'needs' as const,
+      visible: role() !== undefined, // Visible to all community members
+    },
+    {
       id: 'members' as SidebarTab,
       label: t('tabMembers'),
       icon: 'members' as const,
@@ -178,6 +193,12 @@ const CommunityDetailsContent: Component = () => {
       label: t('tabTrustGrants'),
       icon: 'trust' as const,
       visible: isAdmin(),
+    },
+    {
+      id: 'activity' as SidebarTab,
+      label: t('tabActivity'),
+      icon: 'activity' as const,
+      visible: role() !== undefined, // Visible to all community members
     },
     {
       id: 'settings' as SidebarTab,
@@ -356,6 +377,29 @@ const CommunityDetailsContent: Component = () => {
                           </div>
                         </Show>
                       </Match>
+                      <Match when={activeTab() === 'needs'}>
+                        <Show when={role()} fallback={<div class="p-4 text-stone-500 dark:text-stone-400">{t('mustBeMember')}</div>}>
+                          <div class="space-y-6">
+                            <SectionDisclaimer>
+                              {t('disclaimerNeeds')}
+                            </SectionDisclaimer>
+                            <NeedsList communityId={communityData().id} />
+                          </div>
+                        </Show>
+                      </Match>
+                      <Match when={activeTab() === 'pools'}>
+                        <Show when={canViewPools()} fallback={<div class="p-4 text-stone-500 dark:text-stone-400">{t('mustBeMember')}</div>}>
+                          <div class="space-y-6">
+                            <SectionDisclaimer>
+                              {t('disclaimerPools')}
+                            </SectionDisclaimer>
+                            <PoolsList
+                              communityId={communityData().id}
+                              canCreatePool={canCreatePools()}
+                            />
+                          </div>
+                        </Show>
+                      </Match>
                       <Match when={activeTab() === 'forum'}>
                         <Show when={canViewForum()} fallback={<div class="p-4 text-stone-500 dark:text-stone-400">{t('mustBeMember')}</div>}>
                           <ForumContent communityId={communityData().id} />
@@ -364,6 +408,11 @@ const CommunityDetailsContent: Component = () => {
                       <Match when={activeTab() === 'trust-timeline'}>
                         <Show when={canViewTrust()} fallback={<div class="p-4 text-stone-500 dark:text-stone-400">{t('mustBeMember')}</div>}>
                           <TrustTimeline communityId={communityData().id} />
+                        </Show>
+                      </Match>
+                      <Match when={activeTab() === 'activity'}>
+                        <Show when={role()} fallback={<div class="p-4 text-stone-500 dark:text-stone-400">{t('mustBeMember')}</div>}>
+                          <CommunityActivityTimeline communityId={communityData().id} />
                         </Show>
                       </Match>
                       <Match when={activeTab() === 'health'}>

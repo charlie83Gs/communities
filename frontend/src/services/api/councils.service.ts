@@ -40,6 +40,14 @@ class CouncilsService {
   }
 
   /**
+   * Get councils managed by the current user
+   * GET /api/v1/communities/:communityId/councils/managed
+   */
+  async getManagedCouncils(communityId: string): Promise<CouncilsListResponse> {
+    return apiClient.get(`${this.basePath}/${communityId}/councils/managed`);
+  }
+
+  /**
    * Get council details with inventory and managers
    * GET /api/v1/communities/:communityId/councils/:councilId
    */

@@ -57,6 +57,48 @@
       "when": 1762631373159,
       "tag": "0007_striped_kang",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1762638632980,
+      "tag": "0008_dry_microchip",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1762640489870,
+      "tag": "0009_massive_blink",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1762643498117,
+      "tag": "0010_regular_millenium_guard",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1762647384485,
+      "tag": "0011_narrow_thaddeus_ross",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1762648184216,
+      "tag": "0012_redundant_blob",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1762657199177,
+      "tag": "0013_complex_misty_knight",
+      "breakpoints": true
     }
   ]
 }

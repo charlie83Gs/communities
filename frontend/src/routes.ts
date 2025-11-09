@@ -46,6 +46,31 @@ export const routes: RouteDefinition[] = [
         path: ':id/polls/:pollId',
         component: lazy(() => import('./pages/protected/community/polls/[pollId]')),
       },
+      {
+        path: ':id/needs',
+        component: lazy(() => import('./pages/protected/community/needs')),
+      },
+      {
+        path: ':id/needs/create',
+        component: lazy(() => import('./pages/protected/community/needs/create')),
+      },
+      {
+        path: ':id/needs/aggregate',
+        component: lazy(() => import('./pages/protected/community/needs/aggregate')),
+      },
+      // Pools are now embedded in the community page via the sidebar
+      // {
+      //   path: ':id/pools',
+      //   component: lazy(() => import('./pages/protected/community/pools')),
+      // },
+      {
+        path: ':id/pools/create',
+        component: lazy(() => import('./pages/protected/community/pools/create')),
+      },
+      {
+        path: ':id/pools/:poolId',
+        component: lazy(() => import('./pages/protected/community/pools/[poolId]')),
+      },
     ],
   },
   {
@@ -113,6 +138,20 @@ export const routes: RouteDefinition[] = [
       {
         path: ':id',
         component: lazy(() => import('./pages/protected/users/[id]')),
+      },
+    ],
+  },
+  {
+    path: '/councils',
+    component: AuthGuard,
+    children: [
+      {
+        path: ':id/needs',
+        component: lazy(() => import('./pages/protected/council/needs')),
+      },
+      {
+        path: ':id/needs/create',
+        component: lazy(() => import('./pages/protected/council/needs/create')),
       },
     ],
   },

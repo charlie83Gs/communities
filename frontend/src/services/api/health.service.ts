@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { WealthHealthData, TrustHealthData, TimeRange, WealthOverview, WealthItemStats, TrustOverview, TrustDistribution } from '@/types/health.types';
+import type { WealthHealthData, TrustHealthData, NeedsHealthData, TimeRange, WealthOverview, WealthItemStats, TrustOverview, TrustDistribution, NeedsOverview, NeedsItemStats } from '@/types/health.types';
 
 // API Response Types (what the backend actually returns)
 interface ApiWealthOverviewResponse {
@@ -45,6 +45,32 @@ interface ApiTrustDistributionResponse {
     maxScore: number;
     userCount: number;
   }>;
+}
+
+interface ApiNeedsOverviewResponse {
+  totalActiveNeeds: number;
+  totalActiveWants: number;
+  activeMembers: number;
+  activeCouncils: number;
+  objectsVsServices: {
+    objects: number;
+    services: number;
+  };
+  timeSeriesData: Array<{
+    date: string;
+    needs: number;
+    wants: number;
+  }>;
+}
+
+interface ApiNeedsItemResponse {
+  categoryName: string;
+  itemName: string;
+  priority: 'need' | 'want';
+  recurrence: 'one-time' | 'daily' | 'weekly' | 'monthly';
+  totalUnitsNeeded: number;
+  memberCount: number;
+  source: 'member' | 'council' | 'both';
 }
 
 class HealthService {
@@ -117,6 +143,54 @@ class HealthService {
         : `${item.minScore}-${item.maxScore}`,
       userCount: item.userCount,
     }));
+  }
+
+  async getNeedsOverview(communityId: string, range: TimeRange = '30d'): Promise<NeedsHealthData['overview']> {
+    const params = new URLSearchParams({ timeRange: range });
+    const response = await apiClient.get<ApiNeedsOverviewResponse>(
+      `${this.basePath}/${communityId}/health/needs/overview?${params}`
+    );
+
+    // Transform API response to match frontend types
+    return {
+      totalActiveNeeds: response.totalActiveNeeds,
+      totalActiveWants: response.totalActiveWants,
+      activeMembers: response.activeMembers,
+      activeCouncils: response.activeCouncils,
+      objectsVsServices: response.objectsVsServices,
+      timeSeries: {
+        needs: response.timeSeriesData.map(d => ({ date: d.date, value: d.needs })),
+        wants: response.timeSeriesData.map(d => ({ date: d.date, value: d.wants })),
+      },
+    };
+  }
+
+  async getNeedsItems(communityId: string, range: TimeRange = '30d'): Promise<NeedsHealthData['items']> {
+    const params = new URLSearchParams({ timeRange: range });
+    const response = await apiClient.get<{ items: ApiNeedsItemResponse[] }>(
+      `${this.basePath}/${communityId}/health/needs/items?${params}`
+    );
+
+    // Return items as-is since they already match our types
+    return response.items;
+  }
+
+  async getAggregatedNeeds(communityId: string): Promise<import('@/types/health.types').AggregatedNeedsData[]> {
+    const response = await apiClient.get<import('@/types/health.types').AggregatedNeedsData[]>(
+      `${this.basePath}/${communityId}/health/needs/aggregated`
+    );
+
+    // Response is an array of aggregated data groups
+    return response;
+  }
+
+  async getAggregatedWealth(communityId: string): Promise<import('@/types/health.types').AggregatedWealthData[]> {
+    const response = await apiClient.get<import('@/types/health.types').AggregatedWealthData[]>(
+      `${this.basePath}/${communityId}/health/wealth/aggregated`
+    );
+
+    // Response is an array of aggregated wealth items
+    return response;
   }
 }
 

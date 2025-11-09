@@ -66,6 +66,10 @@ export const communities = pgTable('communities', {
   minTrustForForumModeration: jsonb('min_trust_for_forum_moderation').default({ type: 'number', value: 30 }),
   minTrustToViewForum: jsonb('min_trust_to_view_forum').default({ type: 'number', value: 0 }),
 
+  // Needs System Configuration
+  minTrustForNeeds: jsonb('min_trust_for_needs').default({ type: 'number', value: 5 }),
+  minTrustToViewNeeds: jsonb('min_trust_to_view_needs').default({ type: 'number', value: 0 }),
+
   createdBy: text('created_by').references(() => appUsers.id),
   createdAt: timestamp('created_at').defaultNow(),
   deletedAt: timestamp('deleted_at'),

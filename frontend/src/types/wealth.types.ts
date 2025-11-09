@@ -3,11 +3,13 @@ import type { Item } from './items.types';
 export type WealthDurationType = 'timebound' | 'unlimited';
 export type WealthDistributionType = 'request_based' | 'unit_based';
 export type WealthStatus = 'active' | 'fulfilled' | 'expired' | 'cancelled';
+export type RecurrentFrequency = 'weekly' | 'monthly';
+export type SharingTarget = 'community' | 'council' | 'pool';
 
 export interface Wealth {
   id: string;
   communityId: string;
-  createdBy: string; // creator/owner user id
+  createdBy: string; // creator/owner user id (can be council ID for pool distributions)
   title: string;
   description?: string;
   image?: string; // filename returned by /api/v1/images
@@ -20,6 +22,18 @@ export interface Wealth {
   status: WealthStatus;
   itemId: string; // NEW: mandatory reference to Item
   item?: Item; // NEW: populated item data
+  // Pool integration fields
+  sharingTarget?: SharingTarget; // 'community', 'council', or 'pool'
+  targetPoolId?: string; // Set when sharingTarget='pool' (contribution to pool)
+  targetCouncilId?: string; // Set when sharingTarget='council' (contribution to council)
+  sourcePoolId?: string; // Set when distributed from a pool
+  sourcePoolName?: string; // Pool name for display
+  // Recurrent fields for services
+  isRecurrent?: boolean;
+  recurrentFrequency?: RecurrentFrequency;
+  recurrentReplenishValue?: number;
+  lastReplenishedAt?: string; // ISO date string
+  nextReplenishmentDate?: string; // ISO date string
   createdAt: string; // ISO date string
   updatedAt?: string; // ISO date string
 }
@@ -35,11 +49,19 @@ export interface CreateWealthDto {
   image?: string; // optional filename to associate to wealth
   durationType: WealthDurationType;
   endDate?: string; // required if durationType === 'timebound'
-  distributionType: WealthDistributionType;
-  unitsAvailable?: number; // required if distributionType === 'unit_based'
+  distributionType?: WealthDistributionType; // Optional: backend defaults to 'unit_based'
+  unitsAvailable?: number; // required, defaults to 1
   maxUnitsPerUser?: number;
   automationEnabled?: boolean;
   itemId: string; // NEW: mandatory reference to Item
+  // Pool integration fields
+  sharingTarget?: SharingTarget;
+  targetPoolId?: string;
+  targetCouncilId?: string;
+  // Recurrent fields (only for services)
+  isRecurrent?: boolean;
+  recurrentFrequency?: RecurrentFrequency;
+  recurrentReplenishValue?: number;
 }
 
 /**
@@ -57,6 +79,10 @@ export interface UpdateWealthDto {
   automationEnabled?: boolean;
   status?: WealthStatus;
   itemId?: string; // NEW: optional for updates
+  // Recurrent fields (only for services)
+  isRecurrent?: boolean;
+  recurrentFrequency?: RecurrentFrequency;
+  recurrentReplenishValue?: number;
 }
 
 /**

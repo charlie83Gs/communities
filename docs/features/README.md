@@ -25,6 +25,7 @@ This directory contains detailed documentation for each feature of the community
 9. [FT-09: Analytics & Statistics](./09-analytics-statistics.md) - Community health metrics and reports (Status: Planned)
 12. [FT-12: Configuration](./12-configuration.md) - Per-community settings and thresholds (Status: Implemented)
 13. [FT-13: Security & Access Control](./13-security-access-control.md) - OpenFGA-based authorization (Status: Implemented)
+14. [FT-14: Audit Log](./14-audit-log.md) - Immutable audit trail and activity tracking (Status: Partial)
 
 ## Implementation Status Legend
 - **Implemented**: Core tables exist, feature is functional

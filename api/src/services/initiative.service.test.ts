@@ -201,7 +201,12 @@ describe('InitiativeService', () => {
 
       expect(result).toBeDefined();
       expect(result.id).toBe(INITIATIVE_ID);
-      expect(mockOpenFGAService.checkAccess).toHaveBeenCalledWith(USER_ID, 'council', COUNCIL_ID, 'can_manage');
+      expect(mockOpenFGAService.checkAccess).toHaveBeenCalledWith(
+        USER_ID,
+        'council',
+        COUNCIL_ID,
+        'can_manage'
+      );
     });
 
     it('should allow admin to create initiative', async () => {
@@ -233,7 +238,12 @@ describe('InitiativeService', () => {
       );
 
       expect(result).toBeDefined();
-      expect(mockOpenFGAService.checkAccess).toHaveBeenCalledWith(USER_ID, 'community', COMMUNITY_ID, 'admin');
+      expect(mockOpenFGAService.checkAccess).toHaveBeenCalledWith(
+        USER_ID,
+        'community',
+        COMMUNITY_ID,
+        'admin'
+      );
     });
 
     it('should reject non-manager from creating initiative', async () => {
@@ -325,7 +335,12 @@ describe('InitiativeService', () => {
       expect(result).toBeDefined();
       expect(result.total).toBe(1);
       expect(result.initiatives.length).toBe(1);
-      expect(mockOpenFGAService.checkAccess).toHaveBeenCalledWith(USER_ID, 'community', COMMUNITY_ID, 'can_read');
+      expect(mockOpenFGAService.checkAccess).toHaveBeenCalledWith(
+        USER_ID,
+        'community',
+        COMMUNITY_ID,
+        'can_read'
+      );
     });
 
     it('should reject non-member from listing initiatives', async () => {
@@ -374,7 +389,12 @@ describe('InitiativeService', () => {
 
       expect(result).toBeDefined();
       expect(result.id).toBe(INITIATIVE_ID);
-      expect(mockOpenFGAService.checkAccess).toHaveBeenCalledWith(USER_ID, 'community', COMMUNITY_ID, 'can_read');
+      expect(mockOpenFGAService.checkAccess).toHaveBeenCalledWith(
+        USER_ID,
+        'community',
+        COMMUNITY_ID,
+        'can_read'
+      );
     });
 
     it('should reject non-member from getting initiative', async () => {
@@ -436,7 +456,12 @@ describe('InitiativeService', () => {
       );
 
       expect(result).toBeDefined();
-      expect(mockOpenFGAService.checkAccess).toHaveBeenCalledWith(USER_ID, 'council', COUNCIL_ID, 'can_manage');
+      expect(mockOpenFGAService.checkAccess).toHaveBeenCalledWith(
+        USER_ID,
+        'council',
+        COUNCIL_ID,
+        'can_manage'
+      );
     });
 
     it('should reject non-manager from updating initiative', async () => {

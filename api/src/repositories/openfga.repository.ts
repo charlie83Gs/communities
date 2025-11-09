@@ -288,10 +288,9 @@ export class OpenFGARepository {
     await this.ensureInitialized();
 
     try {
-      const response = await this.client.read({
-        // Cast request body due to SDK minor type differences
-        tuple_key: pattern,
-      } as any);
+      // Pass pattern directly to SDK - SDK expects { user?, relation?, object? }
+      // NOT wrapped in tuple_key (that's the REST API format, SDK abstracts it)
+      const response = await this.client.read(pattern);
 
       return response.tuples || [];
     } catch (error) {

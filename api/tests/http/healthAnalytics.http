@@ -49,6 +49,17 @@ Authorization: {{authToken}}
 ### Get Wealth Items - Unauthorized (no token)
 GET {{baseUrl}}/communities/{{communityId}}/health/wealth/items
 
+### Get Aggregated Wealth - Current active shares
+GET {{baseUrl}}/communities/{{communityId}}/health/wealth/aggregated
+Authorization: {{authToken}}
+
+### Get Aggregated Wealth - Unauthorized (no token)
+GET {{baseUrl}}/communities/{{communityId}}/health/wealth/aggregated
+
+### Get Aggregated Wealth - Non-existent Community
+GET {{baseUrl}}/communities/00000000-0000-0000-0000-000000000000/health/wealth/aggregated
+Authorization: {{authToken}}
+
 ### ==============================================
 ### TRUST ANALYTICS
 ### ==============================================
@@ -81,6 +92,63 @@ GET {{baseUrl}}/communities/{{communityId}}/health/trust/distribution
 
 ### Get Trust Distribution - Non-existent Community
 GET {{baseUrl}}/communities/00000000-0000-0000-0000-000000000000/health/trust/distribution
+Authorization: {{authToken}}
+
+### ==============================================
+### NEEDS ANALYTICS
+### ==============================================
+
+### Get Needs Overview - Default (30 days)
+GET {{baseUrl}}/communities/{{communityId}}/health/needs/overview
+Authorization: {{authToken}}
+
+### Get Needs Overview - 7 Days
+GET {{baseUrl}}/communities/{{communityId}}/health/needs/overview?timeRange=7d
+Authorization: {{authToken}}
+
+### Get Needs Overview - 90 Days
+GET {{baseUrl}}/communities/{{communityId}}/health/needs/overview?timeRange=90d
+Authorization: {{authToken}}
+
+### Get Needs Overview - 1 Year
+GET {{baseUrl}}/communities/{{communityId}}/health/needs/overview?timeRange=1y
+Authorization: {{authToken}}
+
+### Get Needs Overview - Unauthorized (no token)
+GET {{baseUrl}}/communities/{{communityId}}/health/needs/overview
+
+### Get Needs Overview - Non-existent Community
+GET {{baseUrl}}/communities/00000000-0000-0000-0000-000000000000/health/needs/overview
+Authorization: {{authToken}}
+
+### Get Needs Items - Default (30 days)
+GET {{baseUrl}}/communities/{{communityId}}/health/needs/items
+Authorization: {{authToken}}
+
+### Get Needs Items - 7 Days
+GET {{baseUrl}}/communities/{{communityId}}/health/needs/items?timeRange=7d
+Authorization: {{authToken}}
+
+### Get Needs Items - 90 Days
+GET {{baseUrl}}/communities/{{communityId}}/health/needs/items?timeRange=90d
+Authorization: {{authToken}}
+
+### Get Needs Items - 1 Year
+GET {{baseUrl}}/communities/{{communityId}}/health/needs/items?timeRange=1y
+Authorization: {{authToken}}
+
+### Get Needs Items - Unauthorized (no token)
+GET {{baseUrl}}/communities/{{communityId}}/health/needs/items
+
+### Get Aggregated Needs - All recurrence patterns
+GET {{baseUrl}}/communities/{{communityId}}/health/needs/aggregated
+Authorization: {{authToken}}
+
+### Get Aggregated Needs - Unauthorized (no token)
+GET {{baseUrl}}/communities/{{communityId}}/health/needs/aggregated
+
+### Get Aggregated Needs - Non-existent Community
+GET {{baseUrl}}/communities/00000000-0000-0000-0000-000000000000/health/needs/aggregated
 Authorization: {{authToken}}
 
 ### ==============================================
@@ -138,6 +206,34 @@ Authorization: {{authToken}}
 #           },
 #           ...
 #         ]
+#       },
+#       ...
+#     ]
+#   }
+# }
+
+# Aggregated Wealth Response Example:
+# {
+#   "status": "success",
+#   "data": {
+#     "data": [
+#       {
+#         "itemId": "123e4567-e89b-12d3-a456-426614174001",
+#         "itemName": "Carrots",
+#         "categoryName": "Objects",
+#         "activeShares": 5,
+#         "totalValuePoints": 15.00,
+#         "sharerCount": 3,
+#         "totalQuantity": 50
+#       },
+#       {
+#         "itemId": "123e4567-e89b-12d3-a456-426614174002",
+#         "itemName": "Mobility Assistance",
+#         "categoryName": "Services",
+#         "activeShares": 3,
+#         "totalValuePoints": 30.00,
+#         "sharerCount": 2,
+#         "totalQuantity": 15
 #       },
 #       ...
 #     ]
@@ -207,4 +303,119 @@ Authorization: {{authToken}}
 # {
 #   "status": "error",
 #   "message": "Community not found"
+# }
+
+# Needs Overview Response Example:
+# {
+#   "status": "success",
+#   "data": {
+#     "totalActiveNeeds": 15,
+#     "totalActiveWants": 8,
+#     "activeMembers": 12,
+#     "activeCouncils": 3,
+#     "objectsVsServices": {
+#       "objects": 10,
+#       "services": 5
+#     },
+#     "timeSeriesData": [
+#       {
+#         "date": "2025-11-01",
+#         "needs": 3,
+#         "wants": 1
+#       },
+#       ...
+#     ]
+#   }
+# }
+
+# Needs Items Response Example:
+# {
+#   "status": "success",
+#   "data": {
+#     "items": [
+#       {
+#         "categoryName": "Objects",
+#         "itemName": "Carrots",
+#         "priority": "need",
+#         "recurrence": "weekly",
+#         "totalUnitsNeeded": 25,
+#         "memberCount": 5,
+#         "source": "member"
+#       },
+#       {
+#         "categoryName": "Services",
+#         "itemName": "Mobility Assistance",
+#         "priority": "need",
+#         "recurrence": "daily",
+#         "totalUnitsNeeded": 10,
+#         "memberCount": 3,
+#         "source": "both"
+#       },
+#       ...
+#     ]
+#   }
+# }
+
+# Aggregated Needs Response Example:
+# {
+#   "status": "success",
+#   "data": {
+#     "data": [
+#       {
+#         "recurrence": "one-time",
+#         "items": [
+#           {
+#             "itemId": "123e4567-e89b-12d3-a456-426614174001",
+#             "itemName": "Moving Assistance",
+#             "categoryName": "Services",
+#             "needsTotal": 5,
+#             "wantsTotal": 2,
+#             "totalUnits": 7,
+#             "participantCount": 4
+#           }
+#         ]
+#       },
+#       {
+#         "recurrence": "daily",
+#         "items": [
+#           {
+#             "itemId": "123e4567-e89b-12d3-a456-426614174002",
+#             "itemName": "Mobility Assistance",
+#             "categoryName": "Services",
+#             "needsTotal": 10,
+#             "wantsTotal": 0,
+#             "totalUnits": 10,
+#             "participantCount": 3
+#           },
+#           {
+#             "itemId": "123e4567-e89b-12d3-a456-426614174003",
+#             "itemName": "Bread",
+#             "categoryName": "Objects",
+#             "needsTotal": 8,
+#             "wantsTotal": 2,
+#             "totalUnits": 10,
+#             "participantCount": 5
+#           }
+#         ]
+#       },
+#       {
+#         "recurrence": "weekly",
+#         "items": [
+#           {
+#             "itemId": "123e4567-e89b-12d3-a456-426614174004",
+#             "itemName": "Carrots",
+#             "categoryName": "Objects",
+#             "needsTotal": 20,
+#             "wantsTotal": 5,
+#             "totalUnits": 25,
+#             "participantCount": 5
+#           }
+#         ]
+#       },
+#       {
+#         "recurrence": "monthly",
+#         "items": []
+#       }
+#     ]
+#   }
 # }

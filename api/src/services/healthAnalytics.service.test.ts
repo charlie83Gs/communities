@@ -123,7 +123,9 @@ describe('HealthAnalyticsService', () => {
 
       await expect(
         healthAnalyticsService.getWealthOverview(VALID_COMM_ID, VALID_USER_ID, '30d')
-      ).rejects.toThrow('Forbidden: requires admin role, analytics_viewer role, or sufficient trust score');
+      ).rejects.toThrow(
+        'Forbidden: requires admin role, analytics_viewer role, or sufficient trust score'
+      );
 
       expect(mockOpenFGAService.checkAccess).toHaveBeenCalledWith(
         VALID_USER_ID,

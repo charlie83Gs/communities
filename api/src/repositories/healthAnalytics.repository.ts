@@ -1,6 +1,6 @@
 import { db as realDb } from '../db/index';
-import { wealth, wealthRequests, trustHistory, items } from '../db/schema';
-import { eq, and, gte, sql, desc, count } from 'drizzle-orm';
+import { wealth, wealthRequests, trustHistory, items, needs, councilNeeds } from '../db/schema';
+import { eq, and, gte, sql, desc, count, isNull } from 'drizzle-orm';
 
 export type TimeRange = '7d' | '30d' | '90d' | '1y';
 
@@ -45,6 +45,55 @@ export interface TrustDistributionData {
   minScore: number;
   maxScore: number;
   userCount: number;
+}
+
+export interface NeedsOverviewData {
+  totalActiveNeeds: number;
+  totalActiveWants: number;
+  activeMembers: number;
+  activeCouncils: number;
+  objectsVsServices: {
+    objects: number;
+    services: number;
+  };
+  timeSeriesData: Array<{
+    date: string;
+    needs: number;
+    wants: number;
+  }>;
+}
+
+export interface NeedsItemData {
+  categoryName: string;
+  itemName: string;
+  priority: 'need' | 'want';
+  recurrence: 'one-time' | 'daily' | 'weekly' | 'monthly';
+  totalUnitsNeeded: number;
+  memberCount: number;
+  source: 'member' | 'council' | 'both';
+}
+
+export interface AggregatedNeedsData {
+  recurrence: 'one-time' | 'daily' | 'weekly' | 'monthly';
+  items: Array<{
+    itemId: string;
+    itemName: string;
+    categoryName: string;
+    needsTotal: number;
+    wantsTotal: number;
+    totalUnits: number;
+    participantCount: number;
+  }>;
+}
+
+export interface AggregatedWealthData {
+  itemId: string;
+  itemName: string;
+  categoryName: string;
+  activeShares: number;
+  totalValuePoints: number;
+  sharerCount: number;
+  totalQuantity: number;
 }
 
 export class HealthAnalyticsRepository {
@@ -406,6 +455,385 @@ export class HealthAnalyticsRepository {
     });
 
     return distribution;
+  }
+
+  /**
+   * Get needs overview statistics
+   */
+  async getNeedsOverview(
+    communityId: string,
+    timeRange: TimeRange = '30d'
+  ): Promise<NeedsOverviewData> {
+    const dateCutoff = this.getDateCutoff(timeRange);
+    const dateCutoffStr = dateCutoff.toISOString();
+
+    // Count active needs (priority='need')
+    const activeNeedsResult = await this.db
+      .select({ count: count() })
+      .from(needs)
+      .where(
+        and(
+          eq(needs.communityId, communityId),
+          eq(needs.status, 'active'),
+          eq(needs.priority, 'need'),
+          isNull(needs.deletedAt)
+        )
+      );
+
+    const totalActiveNeeds = activeNeedsResult[0]?.count || 0;
+
+    // Count active wants (priority='want')
+    const activeWantsResult = await this.db
+      .select({ count: count() })
+      .from(needs)
+      .where(
+        and(
+          eq(needs.communityId, communityId),
+          eq(needs.status, 'active'),
+          eq(needs.priority, 'want'),
+          isNull(needs.deletedAt)
+        )
+      );
+
+    const totalActiveWants = activeWantsResult[0]?.count || 0;
+
+    // Count active members who have published needs
+    const activeMembersResult = await this.db
+      .selectDistinct({ createdBy: needs.createdBy })
+      .from(needs)
+      .where(
+        and(eq(needs.communityId, communityId), eq(needs.status, 'active'), isNull(needs.deletedAt))
+      );
+
+    const activeMembers = activeMembersResult.length;
+
+    // Count active councils who have published needs
+    const activeCouncilsResult = await this.db
+      .selectDistinct({ councilId: councilNeeds.councilId })
+      .from(councilNeeds)
+      .where(
+        and(
+          eq(councilNeeds.communityId, communityId),
+          eq(councilNeeds.status, 'active'),
+          isNull(councilNeeds.deletedAt)
+        )
+      );
+
+    const activeCouncils = activeCouncilsResult.length;
+
+    // Get objects vs services breakdown
+    const objectsVsServicesResult = await this.db.execute<{
+      objects: string;
+      services: string;
+    }>(sql`
+      SELECT
+        COUNT(CASE WHEN i.kind = 'object' THEN 1 END)::text AS objects,
+        COUNT(CASE WHEN i.kind = 'service' THEN 1 END)::text AS services
+      FROM (
+        SELECT DISTINCT n.item_id
+        FROM ${needs} n
+        WHERE n.community_id = ${communityId}
+          AND n.status = 'active'
+          AND n.deleted_at IS NULL
+        UNION
+        SELECT DISTINCT cn.item_id
+        FROM ${councilNeeds} cn
+        WHERE cn.community_id = ${communityId}
+          AND cn.status = 'active'
+          AND cn.deleted_at IS NULL
+      ) active_items
+      JOIN ${items} i ON i.id = active_items.item_id
+    `);
+
+    const objectsVsServices = {
+      objects: parseInt((objectsVsServicesResult as any[])[0]?.objects || '0', 10),
+      services: parseInt((objectsVsServicesResult as any[])[0]?.services || '0', 10),
+    };
+
+    // Get time series data - needs and wants created per day
+    const timeSeriesResult = await this.db.execute<{
+      date: string;
+      needs: string;
+      wants: string;
+    }>(sql`
+      WITH date_series AS (
+        SELECT generate_series(
+          ${dateCutoffStr}::timestamp,
+          CURRENT_TIMESTAMP,
+          '1 day'::interval
+        )::date AS date
+      ),
+      needs_per_day AS (
+        SELECT
+          DATE(created_at) AS date,
+          COUNT(CASE WHEN priority = 'need' THEN 1 END) AS needs,
+          COUNT(CASE WHEN priority = 'want' THEN 1 END) AS wants
+        FROM (
+          SELECT created_at, priority FROM ${needs}
+          WHERE community_id = ${communityId}
+            AND created_at >= ${dateCutoffStr}::timestamp
+          UNION ALL
+          SELECT created_at, priority FROM ${councilNeeds}
+          WHERE community_id = ${communityId}
+            AND created_at >= ${dateCutoffStr}::timestamp
+        ) all_needs
+        GROUP BY DATE(created_at)
+      )
+      SELECT
+        ds.date::text,
+        COALESCE(npd.needs, 0)::text AS needs,
+        COALESCE(npd.wants, 0)::text AS wants
+      FROM date_series ds
+      LEFT JOIN needs_per_day npd ON ds.date = npd.date
+      ORDER BY ds.date
+    `);
+
+    const timeSeriesData = (timeSeriesResult as any[]).map((row) => ({
+      date: row.date,
+      needs: parseInt(row.needs, 10),
+      wants: parseInt(row.wants, 10),
+    }));
+
+    return {
+      totalActiveNeeds,
+      totalActiveWants,
+      activeMembers,
+      activeCouncils,
+      objectsVsServices,
+      timeSeriesData,
+    };
+  }
+
+  /**
+   * Get needs items with aggregation
+   */
+  async getNeedsItems(communityId: string, timeRange: TimeRange = '30d'): Promise<NeedsItemData[]> {
+    // Get member needs aggregation
+    const memberNeedsResult = await this.db.execute<{
+      item_id: string;
+      item_name: string;
+      item_kind: string;
+      priority: string;
+      recurrence: string | null;
+      is_recurring: boolean;
+      total_units_needed: string;
+      member_count: string;
+    }>(sql`
+      SELECT
+        n.item_id,
+        i.name AS item_name,
+        i.kind AS item_kind,
+        n.priority,
+        n.recurrence,
+        n.is_recurring,
+        SUM(n.units_needed)::text AS total_units_needed,
+        COUNT(DISTINCT n.created_by)::text AS member_count
+      FROM ${needs} n
+      JOIN ${items} i ON n.item_id = i.id
+      WHERE n.community_id = ${communityId}
+        AND n.status = 'active'
+        AND n.deleted_at IS NULL
+      GROUP BY n.item_id, i.name, i.kind, n.priority, n.recurrence, n.is_recurring
+    `);
+
+    // Get council needs aggregation
+    const councilNeedsResult = await this.db.execute<{
+      item_id: string;
+      item_name: string;
+      item_kind: string;
+      priority: string;
+      recurrence: string | null;
+      is_recurring: boolean;
+      total_units_needed: string;
+      member_count: string;
+    }>(sql`
+      SELECT
+        cn.item_id,
+        i.name AS item_name,
+        i.kind AS item_kind,
+        cn.priority,
+        cn.recurrence,
+        cn.is_recurring,
+        SUM(cn.units_needed)::text AS total_units_needed,
+        COUNT(DISTINCT cn.council_id)::text AS member_count
+      FROM ${councilNeeds} cn
+      JOIN ${items} i ON cn.item_id = i.id
+      WHERE cn.community_id = ${communityId}
+        AND cn.status = 'active'
+        AND cn.deleted_at IS NULL
+      GROUP BY cn.item_id, i.name, i.kind, cn.priority, cn.recurrence, cn.is_recurring
+    `);
+
+    // Merge results by item_id + priority + recurrence
+    const mergedMap = new Map<string, NeedsItemData>();
+
+    for (const row of memberNeedsResult as any[]) {
+      // Transform NULL recurrence to 'one-time' in JavaScript
+      const recurrence = row.is_recurring && row.recurrence ? row.recurrence : 'one-time';
+      const key = `${row.item_id}-${row.priority}-${recurrence}`;
+      mergedMap.set(key, {
+        categoryName: row.item_kind === 'object' ? 'Objects' : 'Services',
+        itemName: row.item_name,
+        priority: row.priority as 'need' | 'want',
+        recurrence: recurrence as 'one-time' | 'daily' | 'weekly' | 'monthly',
+        totalUnitsNeeded: parseInt(row.total_units_needed, 10),
+        memberCount: parseInt(row.member_count, 10),
+        source: 'member',
+      });
+    }
+
+    for (const row of councilNeedsResult as any[]) {
+      // Transform NULL recurrence to 'one-time' in JavaScript
+      const recurrence = row.is_recurring && row.recurrence ? row.recurrence : 'one-time';
+      const key = `${row.item_id}-${row.priority}-${recurrence}`;
+      const existing = mergedMap.get(key);
+
+      if (existing) {
+        // Both member and council have this need
+        existing.totalUnitsNeeded += parseInt(row.total_units_needed, 10);
+        existing.memberCount += parseInt(row.member_count, 10);
+        existing.source = 'both';
+      } else {
+        mergedMap.set(key, {
+          categoryName: row.item_kind === 'object' ? 'Objects' : 'Services',
+          itemName: row.item_name,
+          priority: row.priority as 'need' | 'want',
+          recurrence: recurrence as 'one-time' | 'daily' | 'weekly' | 'monthly',
+          totalUnitsNeeded: parseInt(row.total_units_needed, 10),
+          memberCount: parseInt(row.member_count, 10),
+          source: 'council',
+        });
+      }
+    }
+
+    return Array.from(mergedMap.values());
+  }
+
+  /**
+   * Get aggregated needs by recurrence pattern
+   * Returns total units needed per item, grouped by recurrence
+   */
+  async getAggregatedNeeds(communityId: string): Promise<AggregatedNeedsData[]> {
+    // Query both needs and council_needs tables, combining them with UNION
+    const aggregatedResult = await this.db.execute<{
+      recurrence_pattern: string | null;
+      item_id: string;
+      item_name: string;
+      item_kind: string;
+      needs_total: string;
+      wants_total: string;
+      total_units: string;
+      participant_count: string;
+    }>(sql`
+      WITH combined_needs AS (
+        SELECT
+          item_id,
+          priority,
+          units_needed,
+          created_by as participant_id,
+          recurrence as recurrence_pattern
+        FROM ${needs}
+        WHERE community_id = ${communityId}
+          AND status = 'active'
+          AND deleted_at IS NULL
+
+        UNION ALL
+
+        SELECT
+          item_id,
+          priority,
+          units_needed,
+          CONCAT('council_', council_id) as participant_id,
+          recurrence as recurrence_pattern
+        FROM ${councilNeeds}
+        WHERE community_id = ${communityId}
+          AND status = 'active'
+          AND deleted_at IS NULL
+      )
+      SELECT
+        recurrence_pattern,
+        cn.item_id,
+        i.name as item_name,
+        i.kind as item_kind,
+        SUM(CASE WHEN priority = 'need' THEN units_needed ELSE 0 END)::text as needs_total,
+        SUM(CASE WHEN priority = 'want' THEN units_needed ELSE 0 END)::text as wants_total,
+        SUM(units_needed)::text as total_units,
+        COUNT(DISTINCT participant_id)::text as participant_count
+      FROM combined_needs cn
+      JOIN ${items} i ON cn.item_id = i.id
+      GROUP BY recurrence_pattern, cn.item_id, i.name, i.kind
+      ORDER BY recurrence_pattern, SUM(units_needed) DESC
+    `);
+
+    // Transform flat results into grouped structure (4 recurrence groups)
+    const recurrenceGroups = ['one-time', 'daily', 'weekly', 'monthly'] as const;
+    const groupedData: AggregatedNeedsData[] = recurrenceGroups.map((recurrence) => ({
+      recurrence,
+      items: [],
+    }));
+
+    // Populate groups with data
+    for (const row of aggregatedResult as any[]) {
+      // Transform NULL recurrence to 'one-time' in JavaScript
+      const recurrence = row.recurrence_pattern || 'one-time';
+      const groupIndex = recurrenceGroups.indexOf(
+        recurrence as 'one-time' | 'daily' | 'weekly' | 'monthly'
+      );
+      if (groupIndex !== -1) {
+        groupedData[groupIndex].items.push({
+          itemId: row.item_id,
+          itemName: row.item_name,
+          categoryName: row.item_kind === 'object' ? 'Objects' : 'Services',
+          needsTotal: parseInt(row.needs_total, 10),
+          wantsTotal: parseInt(row.wants_total, 10),
+          totalUnits: parseInt(row.total_units, 10),
+          participantCount: parseInt(row.participant_count, 10),
+        });
+      }
+    }
+
+    return groupedData;
+  }
+
+  /**
+   * Get aggregated wealth shares by item
+   * Returns total active shares per item
+   */
+  async getAggregatedWealth(communityId: string): Promise<AggregatedWealthData[]> {
+    const aggregatedResult = await this.db.execute<{
+      item_id: string;
+      item_name: string;
+      item_kind: string;
+      active_shares: string;
+      total_value_points: string;
+      sharer_count: string;
+      total_quantity: string;
+    }>(sql`
+      SELECT
+        w.item_id,
+        i.name as item_name,
+        i.kind as item_kind,
+        COUNT(w.id)::text as active_shares,
+        SUM(i.wealth_value * COALESCE(w.units_available, 1))::text as total_value_points,
+        COUNT(DISTINCT w.created_by)::text as sharer_count,
+        SUM(COALESCE(w.units_available, 1))::text as total_quantity
+      FROM ${wealth} w
+      INNER JOIN ${items} i ON w.item_id = i.id
+      WHERE w.community_id = ${communityId}
+        AND w.status = 'active'
+      GROUP BY w.item_id, i.name, i.kind
+      ORDER BY COUNT(w.id) DESC
+    `);
+
+    return (aggregatedResult as any[]).map((row) => ({
+      itemId: row.item_id,
+      itemName: row.item_name,
+      categoryName: row.item_kind === 'object' ? 'Objects' : 'Services',
+      activeShares: parseInt(row.active_shares, 10),
+      totalValuePoints: parseFloat(row.total_value_points || '0'),
+      sharerCount: parseInt(row.sharer_count, 10),
+      totalQuantity: parseInt(row.total_quantity, 10),
+    }));
   }
 }
 

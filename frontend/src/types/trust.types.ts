@@ -52,6 +52,10 @@ export interface TrustSummary {
   // Analytics permissions
   canViewAnalytics: boolean;
 
+  // Needs permissions
+  canViewNeeds: boolean;
+  canPublishNeeds: boolean;
+
   // Legacy field for backward compatibility
   canAccessWealth?: boolean;
 }

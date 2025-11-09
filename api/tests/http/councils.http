@@ -16,6 +16,11 @@ Authorization: {{authToken}}
 GET {{baseUrl}}/communities/{{communityId}}/councils?page=1&limit=20&sortBy=trustScore&order=desc
 Authorization: {{authToken}}
 
+### Get councils managed by current user
+# Returns only councils where the authenticated user is a manager
+GET {{baseUrl}}/communities/{{communityId}}/councils/managed
+Authorization: {{authToken}}
+
 ### Get council details
 GET {{baseUrl}}/communities/{{communityId}}/councils/{{councilId}}
 Authorization: {{authToken}}

@@ -286,7 +286,7 @@ export class InviteService {
       await trustViewRepository.upsertZero(invite.communityId, userId);
       logger.info('[InviteService] Initialized trust to 0 for new member', {
         userId,
-        communityId: invite.communityId
+        communityId: invite.communityId,
       });
     } catch (error) {
       logger.error('[InviteService] Failed to initialize trust for new member:', error);
@@ -325,7 +325,7 @@ export class InviteService {
         logger.info('[InviteService] Synced trust-based permissions for new member', {
           userId,
           communityId: invite.communityId,
-          trustScore: 0
+          trustScore: 0,
         });
       }
     } catch (error) {
@@ -375,7 +375,7 @@ export class InviteService {
       await trustViewRepository.upsertZero(invite.communityId, userId);
       logger.info('[InviteService] Initialized trust to 0 for new member', {
         userId,
-        communityId: invite.communityId
+        communityId: invite.communityId,
       });
     } catch (error) {
       logger.error('[InviteService] Failed to initialize trust for new member:', error);
@@ -414,7 +414,7 @@ export class InviteService {
         logger.info('[InviteService] Synced trust-based permissions for new member', {
           userId,
           communityId: invite.communityId,
-          trustScore: 0
+          trustScore: 0,
         });
       }
     } catch (error) {

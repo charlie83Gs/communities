@@ -23,6 +23,7 @@ export const CreateCommunityForm: Component<CreateCommunityFormProps> = (props) 
     // Action thresholds
     minTrustToAwardTrust: { type: 'number', value: 15 },
     minTrustForWealth: { type: 'number', value: 10 },
+    minTrustForNeeds: { type: 'number', value: 5 },
     minTrustForDisputes: { type: 'number', value: 20 },
     minTrustForPolls: { type: 'number', value: 15 },
     minTrustForPoolCreation: { type: 'number', value: 20 },
@@ -35,6 +36,7 @@ export const CreateCommunityForm: Component<CreateCommunityFormProps> = (props) 
     // Viewer thresholds (new)
     minTrustToViewTrust: { type: 'number', value: 0 },
     minTrustToViewWealth: { type: 'number', value: 0 },
+    minTrustToViewNeeds: { type: 'number', value: 0 },
     minTrustToViewItems: { type: 'number', value: 0 },
     minTrustToViewDisputes: { type: 'number', value: 0 },
     minTrustToViewPolls: { type: 'number', value: 0 },
@@ -112,6 +114,19 @@ export const CreateCommunityForm: Component<CreateCommunityFormProps> = (props) 
                   return (req && typeof req === 'object' && 'value' in req ? req.value : 0).toString();
                 })()}
                 onInput={(e) => updateTrustRequirement('minTrustToViewWealth', parseInt(e.currentTarget.value) || 0)}
+                placeholder="0"
+              />
+
+              <Input
+                label={t('minTrustToViewNeedsLabel')}
+                type="number"
+                min="0"
+                required
+                value={(() => {
+                  const req = formData().minTrustToViewNeeds;
+                  return (req && typeof req === 'object' && 'value' in req ? req.value : 0).toString();
+                })()}
+                onInput={(e) => updateTrustRequirement('minTrustToViewNeeds', parseInt(e.currentTarget.value) || 0)}
                 placeholder="0"
               />
 
@@ -224,6 +239,19 @@ export const CreateCommunityForm: Component<CreateCommunityFormProps> = (props) 
                 })()}
                 onInput={(e) => updateTrustRequirement('minTrustForWealth', parseInt(e.currentTarget.value) || 10)}
                 placeholder="10"
+              />
+
+              <Input
+                label={t('minTrustForNeedsLabel')}
+                type="number"
+                min="0"
+                required
+                value={(() => {
+                  const req = formData().minTrustForNeeds;
+                  return (req && typeof req === 'object' && 'value' in req ? req.value : 5).toString();
+                })()}
+                onInput={(e) => updateTrustRequirement('minTrustForNeeds', parseInt(e.currentTarget.value) || 5)}
+                placeholder="5"
               />
 
               <Input

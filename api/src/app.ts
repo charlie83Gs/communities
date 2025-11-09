@@ -25,6 +25,9 @@ import pollRoutes from '@api/routes/poll.routes';
 import healthAnalyticsRoutes from '@api/routes/healthAnalytics.routes';
 import councilRoutes from '@api/routes/council.routes';
 import initiativeRoutes from '@api/routes/initiative.routes';
+import needsRoutes from '@api/routes/needs.routes';
+import communityEventsRoutes from '@api/routes/communityEvents.routes';
+import poolsRoutes from '@api/routes/pools.routes';
 // Keycloak authentication routes
 import authRoutes from '@api/routes/auth.routes';
 
@@ -174,6 +177,12 @@ app.use('/api/v1/communities', pollRoutes);
 app.use('/api/v1/communities', healthAnalyticsRoutes);
 app.use('/api/v1/communities', councilRoutes);
 app.use('/api/v1/communities', initiativeRoutes);
+// Needs routes - consolidated at /api/v1/needs (includes both member and council needs)
+app.use('/api/v1/needs', needsRoutes);
+// Community events routes
+app.use('/api/v1/communities', communityEventsRoutes);
+// Pools routes
+app.use('/api/v1', poolsRoutes);
 
 // Swagger docs
 app.use('/openapi/docs', swaggerUi.serve, swaggerUi.setup(specs));

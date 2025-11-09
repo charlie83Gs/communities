@@ -2,15 +2,15 @@
 id: FT-04
 title: Community Wealth & Resource Sharing
 status: partial
-version: 1.0
-last_updated: 2025-01-06
+version: 1.1
+last_updated: 2025-11-08
 related_features: [FT-01, FT-02, FT-03, FT-05, FT-06]
 ---
 
 # Community Wealth & Resource Sharing
 
 ## Overview
-The wealth system enables members to share products, services, and resources with the community, councils, or pools without monetary transactions.
+The wealth system enables members to share products, services, and resources with the community, councils, or pools without monetary transactions. All wealth sharing is unit-based, with support for recurrent replenishment of services.
 
 ## Wealth Sharing
 
@@ -23,6 +23,27 @@ The wealth system enables members to share products, services, and resources wit
 - Access is trust-gated: admins configure the minimum trust score required
 - Wealth publications support comments
 - Members with sufficient trust can publish wealth items
+
+## Wealth Types
+All wealth items are unit-based and categorized as either:
+1. **Objects**: Physical items (e.g., tools, food, materials)
+   - Units are typically single items or quantities
+   - No recurrent replenishment
+2. **Services**: Skills, time, or service offerings (e.g., tutoring, repairs, consultations)
+   - Units are typically hours or sessions
+   - Support for recurrent replenishment (weekly or monthly)
+
+## Recurrent Wealth (Services)
+- **Purpose**: Allow members to offer ongoing services that replenish automatically
+- **Configuration**:
+  - **Frequency**: Weekly or Monthly
+  - **Replenish Value**: Number of units to add on each cycle
+  - **Example**: "10 hours of electrical engineering services, replenishing 10 hours every month"
+- **Automation**: A daily job runs to replenish units for any wealth items due for replenishment
+- **Use Cases**:
+  - Professional services (consulting, tutoring, design)
+  - Regular maintenance services
+  - Recurring time commitments
 
 ## Trust-Capped Wealth
 - **Purpose**: Allow members to restrict valuable or sensitive resources to highly trusted members only
@@ -46,12 +67,14 @@ Wealth items are organized hierarchically for easy browsing:
 
 ### Filtering
 Users can filter available resources by:
+- **Type**: Filter by object or service
 - Category/Subcategory
 - Expiration date (available now, available this week, etc.)
 - Location (if configured)
 - Sharing type (public, council, pool)
 - Trust requirement (items I can access, all items, items requiring 20+, etc.)
 - Availability status (available, pending, fulfilled)
+- Recurrent status (recurrent services only)
 
 ## Wealth Requests
 - Members and councils can request publicly shared wealth items
@@ -82,9 +105,18 @@ Available when delivery of accepted wealth is not completed.
 ## Related Database Tables
 
 ### Implemented
-- `items` - Standardized resource/service names
-- `wealth` - Shared resources and services (includes status, duration, distribution types)
+- `items` - Standardized resource/service names (includes `kind` enum: 'object' | 'service')
+- `wealth` - Shared resources and services (unit-based only, includes recurrent fields)
+  - `distributionType` - Removed 'request_based', all items are 'unit_based'
+  - `unitsAvailable` - Required for all wealth items (default: 1)
+  - `maxUnitsPerUser` - Optional limit per requester
+  - `isRecurrent` - Boolean flag for recurrent services
+  - `recurrentFrequency` - Enum: 'weekly' | 'monthly' (only if isRecurrent)
+  - `recurrentReplenishValue` - Number of units to add on replenishment
+  - `lastReplenishedAt` - Timestamp of last replenishment
+  - `nextReplenishmentDate` - Calculated next replenishment date
 - `wealth_requests` - Requests for publicly shared wealth items
+  - `unitsRequested` - Required for all requests (default: 1)
 - `wealth_comments` - Comments on wealth
 
 ### Planned
