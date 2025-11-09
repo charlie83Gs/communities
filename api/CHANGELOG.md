@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.1](https://github.com/charlie83Gs/communities/compare/communities-api-v1.4.0...communities-api-v1.4.1) (2025-11-09)
+
+
+### Bug Fixes
+
+* **api:** skip OpenFGA migrations in production environment ([a0d8d59](https://github.com/charlie83Gs/communities/commit/a0d8d590b50f208830e641ae12a6c3bb837f5c95))
+
 ## [1.4.0](https://github.com/charlie83Gs/communities/compare/communities-api-v1.3.1...communities-api-v1.4.0) (2025-11-09)
 
 
