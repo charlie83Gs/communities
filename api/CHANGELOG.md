@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.0](https://github.com/charlie83Gs/communities/compare/communities-api-v1.3.1...communities-api-v1.4.0) (2025-11-09)
+
+
+### Features
+
+* **api:** migrate all services to use OpenFGA repository pattern ([87dab2d](https://github.com/charlie83Gs/communities/commit/87dab2d8052829ef4b883aa2e09fdb9645bae653))
+* implement pools, needs, councils, and community events systems ([cebeed1](https://github.com/charlie83Gs/communities/commit/cebeed1edf17e45a1060b7cda0f7f2fb017b9439))
+
 ## [1.3.1](https://github.com/charlie83Gs/communities/compare/communities-api-v1.3.0...communities-api-v1.3.1) (2025-11-07)
 
 
