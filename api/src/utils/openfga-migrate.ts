@@ -9,6 +9,12 @@ import postgres from 'postgres';
  * @throws Error if migrations fail
  */
 export async function runOpenFGAMigrations(): Promise<void> {
+  // Skip migrations in production/K8s environments where OpenFGA is managed separately
+  if (process.env.SKIP_OPENFGA_MIGRATIONS === 'true' || process.env.NODE_ENV === 'production') {
+    console.log('[OpenFGA Migrations] Skipping migrations (managed externally)');
+    return;
+  }
+
   // Default to Docker network hostname, but allow override for local dev
   const datastoreUri =
     process.env.OPENFGA_DATASTORE_URI ||
