@@ -27,6 +27,8 @@ spec:
           env:
             - name: NODE_ENV
               value: "production"
+            - name: SKIP_OPENFGA_MIGRATIONS
+              value: "true"
             - name: PORT
               value: "3000"
             - name: DATABASE_URL
