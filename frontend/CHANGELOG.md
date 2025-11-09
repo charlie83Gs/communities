@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/charlie83Gs/communities/compare/communities-frontend-v1.2.0...communities-frontend-v1.2.1) (2025-11-09)
+
+
+### Bug Fixes
+
+* **frontend:** configure production URLs as Docker build args for Vite ([42fccf6](https://github.com/charlie83Gs/communities/commit/42fccf6bee39c6ef8f4cc23888dda7b1021524e9))
+
 ## [1.2.0](https://github.com/charlie83Gs/communities/compare/communities-frontend-v1.1.0...communities-frontend-v1.2.0) (2025-11-09)
 
 
