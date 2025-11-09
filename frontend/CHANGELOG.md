@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.0](https://github.com/charlie83Gs/communities/compare/communities-frontend-v1.1.0...communities-frontend-v1.2.0) (2025-11-09)
+
+
+### Features
+
+* **frontend:** add comprehensive trust level configuration UI ([d74afbb](https://github.com/charlie83Gs/communities/commit/d74afbb5227379f458fa5e5831f1cbaa4b9f5b48))
+* implement pools, needs, councils, and community events systems ([cebeed1](https://github.com/charlie83Gs/communities/commit/cebeed1edf17e45a1060b7cda0f7f2fb017b9439))
+
 ## [1.1.0](https://github.com/charlie83Gs/communities/compare/communities-frontend-v1.0.0...communities-frontend-v1.1.0) (2025-11-07)
 
 
