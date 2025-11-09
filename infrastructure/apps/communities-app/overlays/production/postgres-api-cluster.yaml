@@ -25,8 +25,9 @@ spec:
     initdb:
       database: api_db
       owner: api_user
-      secret:
-        name: postgres-api-credentials
+      encoding: UTF8
+      localeCType: C
+      localeCollate: C
 
   storage:
     size: 50Gi
