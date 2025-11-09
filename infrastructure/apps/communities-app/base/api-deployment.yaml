@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
         - name: api
-          image: ghcr.io/charlie83gs/communities-api:1.4.0 # {"$imagepolicy": "flux-system:communities-api"}
+          image: ghcr.io/charlie83gs/communities-api:latest # {"$imagepolicy": "flux-system:communities-api"}
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
