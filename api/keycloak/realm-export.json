@@ -46,31 +46,9 @@
   "passwordPolicy": "length(8) and digits(1) and lowerCase(1) and upperCase(1) and specialChars(1)",
   "clients": [
     {
-      "clientId": "share-app-backend",
-      "name": "Share App Backend API",
-      "description": "Confidential client for backend API server",
-      "enabled": true,
-      "clientAuthenticatorType": "client-secret",
-      "secret": "your-client-secret-change-in-production",
-      "redirectUris": [],
-      "webOrigins": [],
-      "publicClient": false,
-      "protocol": "openid-connect",
-      "attributes": {
-        "access.token.lifespan": "300",
-        "client.secret.creation.time": "1730000000"
-      },
-      "fullScopeAllowed": true,
-      "serviceAccountsEnabled": true,
-      "directAccessGrantsEnabled": true,
-      "standardFlowEnabled": false,
-      "implicitFlowEnabled": false,
-      "authorizationServicesEnabled": false
-    },
-    {
-      "clientId": "share-app-frontend",
-      "name": "Share App Frontend SPA",
-      "description": "Public client for frontend single-page application",
+      "clientId": "communities-app",
+      "name": "Communities App",
+      "description": "Public client for Communities application (frontend and API)",
       "enabled": true,
       "publicClient": true,
       "redirectUris": [
@@ -80,6 +58,7 @@
       "webOrigins": [
         "http://localhost:5000",
         "http://localhost:3001",
+        "http://localhost:3000",
         "+"
       ],
       "protocol": "openid-connect",
@@ -92,7 +71,7 @@
       "fullScopeAllowed": true,
       "standardFlowEnabled": true,
       "implicitFlowEnabled": false,
-      "directAccessGrantsEnabled": false,
+      "directAccessGrantsEnabled": true,
       "serviceAccountsEnabled": false,
       "authorizationServicesEnabled": false
     }
@@ -116,17 +95,7 @@
     ]
   },
   "defaultRoles": ["user"],
-  "users": [
-    {
-      "username": "service-account-share-app-backend",
-      "enabled": true,
-      "emailVerified": false,
-      "serviceAccountClientId": "share-app-backend",
-      "clientRoles": {
-        "realm-management": ["manage-users", "view-users", "query-users", "query-groups"]
-      }
-    }
-  ],
+  "users": [],
   "groups": [],
   "requiredActions": [
     {
