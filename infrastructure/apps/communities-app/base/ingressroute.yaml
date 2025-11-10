@@ -16,7 +16,7 @@ spec:
   entryPoints:
     - web
   routes:
-    - match: Host(`api.plv.it.com`)
+    - match: Host(`api.communities.plv.it.com`)
       kind: Rule
       services:
         - name: communities-api
@@ -32,7 +32,7 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`api.plv.it.com`)
+    - match: Host(`api.communities.plv.it.com`)
       kind: Rule
       services:
         - name: communities-api

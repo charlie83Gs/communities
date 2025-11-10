@@ -107,7 +107,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            VITE_API_URL=https://api.plv.it.com
+            VITE_API_URL=https://api.communities.plv.it.com
             VITE_KEYCLOAK_URL=https://auth.plv.it.com
             VITE_KEYCLOAK_REALM=share-app
             VITE_KEYCLOAK_CLIENT_ID=communities-app

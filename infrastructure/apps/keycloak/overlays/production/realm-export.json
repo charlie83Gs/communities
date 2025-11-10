@@ -8,7 +8,7 @@
   "registrationAllowed": true,
   "registrationEmailAsUsername": false,
   "rememberMe": true,
-  "verifyEmail": false,
+  "verifyEmail": true,
   "loginWithEmailAllowed": true,
   "duplicateEmailsAllowed": false,
   "resetPasswordAllowed": true,
@@ -57,7 +57,7 @@
       ],
       "webOrigins": [
         "https://communities.plv.it.com",
-        "https://api.plv.it.com",
+        "https://api.communities.plv.it.com",
         "+"
       ],
       "protocol": "openid-connect",
@@ -101,8 +101,8 @@
       "alias": "VERIFY_EMAIL",
       "name": "Verify Email",
       "providerId": "VERIFY_EMAIL",
-      "enabled": false,
-      "defaultAction": false,
+      "enabled": true,
+      "defaultAction": true,
       "priority": 50,
       "config": {}
     },
@@ -125,7 +125,17 @@
       "config": {}
     }
   ],
-  "smtpServer": {},
+  "smtpServer": {
+    "host": "smtp.sendgrid.net",
+    "port": "587",
+    "from": "noreply@communities.plv.it.com",
+    "fromDisplayName": "Communities App",
+    "ssl": "false",
+    "starttls": "true",
+    "auth": "true",
+    "user": "apikey",
+    "password": "${vault.smtp.password}"
+  },
   "eventsEnabled": true,
   "eventsListeners": ["jboss-logging"],
   "enabledEventTypes": ["LOGIN", "LOGIN_ERROR", "LOGOUT", "REGISTER"],

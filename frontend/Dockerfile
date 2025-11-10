@@ -4,7 +4,7 @@ FROM oven/bun:1 AS builder
 WORKDIR /app
 
 # Accept build arguments for Vite environment variables
-ARG VITE_API_URL=https://api.plv.it.com
+ARG VITE_API_URL=https://api.communities.plv.it.com
 ARG VITE_KEYCLOAK_URL=https://auth.plv.it.com
 ARG VITE_KEYCLOAK_REALM=share-app
 ARG VITE_KEYCLOAK_CLIENT_ID=communities-app
