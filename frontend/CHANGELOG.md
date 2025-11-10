@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.2](https://github.com/charlie83Gs/communities/compare/communities-frontend-v1.2.1...communities-frontend-v1.2.2) (2025-11-10)
+
+
+### Bug Fixes
+
+* **config:** update API domain to api.communities.plv.it.com ([1b311db](https://github.com/charlie83Gs/communities/commit/1b311db661aa8c75a4358227b415efc564d18f0a))
+* **frontend:** trigger rebuild with updated API URL configuration ([9dea5ed](https://github.com/charlie83Gs/communities/commit/9dea5ed81bbbc210065e7e9b2964ef88ba1ef468))
+
 ## [1.2.1](https://github.com/charlie83Gs/communities/compare/communities-frontend-v1.2.0...communities-frontend-v1.2.1) (2025-11-09)
 
 
