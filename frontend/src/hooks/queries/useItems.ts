@@ -20,6 +20,8 @@ export const useSearchItems = (
     queryKey: ['items', 'search', communityId(), query(), kind()],
     queryFn: () => itemsService.searchItems(communityId(), query(), kind()),
     enabled: !!communityId(),
+    placeholderData: (previousData) => previousData, // Keep previous data while fetching new results
+    staleTime: 30000, // Cache results for 30 seconds to reduce unnecessary refetches
   }));
 };
 

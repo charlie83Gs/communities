@@ -4,6 +4,7 @@ import type { ItemKind } from '@/types/items.types';
 import { Badge } from '@/components/common/Badge';
 import { Button } from '@/components/common/Button';
 import { ItemCreateForm } from './ItemCreateForm';
+import { createDebouncedSignal } from '@/utils/debounce';
 
 interface ItemSelectorProps {
   communityId: string;
@@ -15,13 +16,14 @@ interface ItemSelectorProps {
 }
 
 export const ItemSelector: Component<ItemSelectorProps> = (props) => {
-  const [searchQuery, setSearchQuery] = createSignal('');
+  const [displayQuery, debouncedQuery, setSearchQuery] = createDebouncedSignal('', 300);
   const [isCreating, setIsCreating] = createSignal(false);
   const [isDropdownOpen, setIsDropdownOpen] = createSignal(false);
+  let searchInputRef: HTMLInputElement | undefined;
 
   const items = useSearchItems(
     () => props.communityId,
-    () => searchQuery(),
+    () => debouncedQuery(),
     () => props.kind
   );
 
@@ -32,7 +34,7 @@ export const ItemSelector: Component<ItemSelectorProps> = (props) => {
 
   const filteredItems = createMemo(() => {
     if (!items.data) return [];
-    const query = searchQuery().toLowerCase();
+    const query = displayQuery().toLowerCase();
     if (!query) return items.data;
     return items.data.filter((item) =>
       item.name.toLowerCase().includes(query)
@@ -81,20 +83,18 @@ export const ItemSelector: Component<ItemSelectorProps> = (props) => {
             <div class="absolute z-10 mt-1 w-full bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-600 rounded-md shadow-lg max-h-60 overflow-auto">
               <div class="p-2 border-b border-stone-200 dark:border-stone-700">
                 <input
+                  ref={searchInputRef}
                   type="text"
                   class="w-full px-3 py-2 border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-700 text-stone-900 dark:text-stone-100 rounded-md text-sm focus:ring-2 focus:ring-ocean-500 focus:border-ocean-500"
                   placeholder="Search items..."
-                  value={searchQuery()}
+                  value={displayQuery()}
                   onInput={(e) => setSearchQuery((e.target as HTMLInputElement).value)}
                   onClick={(e) => e.stopPropagation()}
+                  autofocus
                 />
               </div>
 
-              <Show when={items.isLoading}>
-                <div class="p-4 text-center text-sm text-stone-500 dark:text-stone-400">Loading...</div>
-              </Show>
-
-              <Show when={!items.isLoading && filteredItems().length === 0}>
+              <Show when={filteredItems().length === 0 && !items.isLoading}>
                 <div class="p-4 text-center text-sm text-stone-500 dark:text-stone-400">No items found</div>
               </Show>
 
@@ -111,6 +111,10 @@ export const ItemSelector: Component<ItemSelectorProps> = (props) => {
                   </div>
                 )}
               </For>
+
+              <Show when={items.isLoading && items.isFetching}>
+                <div class="p-2 text-center text-xs text-stone-400 dark:text-stone-500">Searching...</div>
+              </Show>
 
               <Show when={props.canManageItems}>
                 <div class="p-2 border-t border-stone-200 dark:border-stone-700">
