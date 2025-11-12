@@ -40,6 +40,10 @@ spec:
               value: "https://auth.plv.it.com"
             - name: KEYCLOAK_REALM
               value: "share-app"
+            - name: KEYCLOAK_ISSUER
+              value: "https://auth.plv.it.com/realms/share-app"
+            - name: KEYCLOAK_JWKS_URI
+              value: "http://keycloak-keycloak-keycloakx-http.keycloak.svc.cluster.local/realms/share-app/protocol/openid-connect/certs"
             - name: API_DOMAIN
               value: "https://api.communities.plv.it.com"
             - name: WEBSITE_DOMAIN
