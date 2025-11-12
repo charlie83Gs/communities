@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.2](https://github.com/charlie83Gs/communities/compare/communities-api-v1.5.1...communities-api-v1.5.2) (2025-11-12)
+
+
+### Bug Fixes
+
+* **api:** restore BASE_ROLES import that was incorrectly prefixed ([83fa2fe](https://github.com/charlie83Gs/communities/commit/83fa2fe068d16c5813b3a7110fbac68186603f61))
+
 ## [1.5.1](https://github.com/charlie83Gs/communities/compare/communities-api-v1.5.0...communities-api-v1.5.1) (2025-11-12)
 
 
