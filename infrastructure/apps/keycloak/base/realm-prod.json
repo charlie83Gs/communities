@@ -155,15 +155,15 @@
     }
   ],
   "smtpServer": {
-    "host": "smtp.yourdomain.com",
+    "host": "smtp.sendgrid.net",
     "port": "587",
-    "from": "noreply@yourdomain.com",
+    "from": "noreply@communities.plv.it.com",
     "fromDisplayName": "Communities App",
     "ssl": "false",
     "starttls": "true",
     "auth": "true",
-    "user": "CHANGE_ME",
-    "password": "CHANGE_ME"
+    "user": "apikey",
+    "password": "${env.SENDGRID_API_KEY}"
   },
   "eventsEnabled": true,
   "eventsListeners": ["jboss-logging"],

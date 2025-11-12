@@ -1,7 +1,5 @@
-import {
-  openFGARepository as defaultRepository,
-  OpenFGARepository,
-} from '../repositories/openfga.repository';
+import { OpenFGARepository } from '../repositories/openfga.repository';
+import { initializeOpenFGA } from '../utils/openfga-init';
 import {
   BASE_ROLES,
   FEATURE_ROLES,
@@ -39,17 +37,29 @@ import {
  * - Specialized helpers for common patterns (base roles, feature roles, trust sync)
  */
 export class OpenFGAService {
-  private repository: OpenFGARepository;
+  private repository: OpenFGARepository | null = null;
 
-  constructor(repository: OpenFGARepository = defaultRepository) {
-    this.repository = repository;
+  constructor(repository?: OpenFGARepository) {
+    this.repository = repository || null;
   }
 
   /**
    * Initialize OpenFGA
+   * Creates store, authorization model, and initializes the repository
    */
   async initialize(): Promise<void> {
-    await this.repository.initialize();
+    const config = await initializeOpenFGA();
+    this.repository = new OpenFGARepository(config.client);
+  }
+
+  /**
+   * Ensure repository is initialized
+   */
+  private ensureRepository(): OpenFGARepository {
+    if (!this.repository) {
+      throw new Error('[OpenFGA Service] Not initialized. Call initialize() first.');
+    }
+    return this.repository;
   }
 
   // ========================================
@@ -92,7 +102,7 @@ export class OpenFGAService {
       // Map resource type
       const fgaType = mapResourceType(objectType);
 
-      return await this.repository.check({
+      return await this.ensureRepository().check({
         user: `user:${userId}`,
         relation: mappedRelation,
         object: `${fgaType}:${objectId}`,
@@ -107,7 +117,7 @@ export class OpenFGAService {
    * Use for low-level checks where you need exact control
    */
   async check(params: { user: string; relation: string; object: string }): Promise<boolean> {
-    return await this.repository.check(params);
+    return await this.ensureRepository().check(params);
   }
 
   /**
@@ -133,7 +143,7 @@ export class OpenFGAService {
         ? relation
         : mapActionToPermission(relation);
 
-      return await this.repository.listObjects({
+      return await this.ensureRepository().listObjects({
         user: `user:${userId}`,
         relation: mappedRelation,
         type: fgaType,
@@ -206,7 +216,7 @@ export class OpenFGAService {
       // Handle mutually exclusive relations (e.g., base roles)
       if (options.mutuallyExclusive && options.mutuallyExclusive.length > 0) {
         // Step 1: Read current state to check for conflicts
-        const existingTuples = await this.repository.readTuples({
+        const existingTuples = await this.ensureRepository().readTuples({
           user: subjectStr,
           object: `${fgaObjectType}:${objectId}`,
         });
@@ -222,7 +232,7 @@ export class OpenFGAService {
             `[OpenFGA Service] Removing ${conflictingRelations.length} conflicting relations before assigning "${relation}" to ${subjectStr} on ${fgaObjectType}:${objectId}`
           );
 
-          await this.repository.write(
+          await this.ensureRepository().write(
             undefined,
             conflictingRelations.map((t) => ({
               user: t.key.user,
@@ -235,7 +245,7 @@ export class OpenFGAService {
         }
 
         // Step 3: Write the desired relation (idempotent - won't fail if already exists)
-        await this.repository.write([
+        await this.ensureRepository().write([
           {
             user: subjectStr,
             relation,
@@ -249,7 +259,7 @@ export class OpenFGAService {
 
         // Step 4: Verify final state if verification not skipped
         if (!options.skipVerification) {
-          const hasRelation = await this.repository.check({
+          const hasRelation = await this.ensureRepository().check({
             user: subjectStr,
             relation: relation,
             object: `${fgaObjectType}:${objectId}`,
@@ -267,7 +277,7 @@ export class OpenFGAService {
         );
       } else {
         // Simple assignment (no mutual exclusivity)
-        await this.repository.write([
+        await this.ensureRepository().write([
           {
             user: subjectStr,
             relation,
@@ -322,7 +332,7 @@ export class OpenFGAService {
         object: `${fgaObjectType}:${objectId}`,
       }));
 
-      await this.repository.write(undefined, deletes);
+      await this.ensureRepository().write(undefined, deletes);
 
       console.log(
         `[OpenFGA Service] Successfully revoked relation(s) "${relations.join(', ')}" from ${subjectStr} on ${fgaObjectType}:${objectId}`
@@ -417,7 +427,7 @@ export class OpenFGAService {
 
     for (const role of BASE_ROLES) {
       try {
-        const hasRole = await this.repository.check({
+        const hasRole = await this.ensureRepository().check({
           user: `user:${userId}`,
           relation: role,
           object: `${fgaType}:${resourceId}`,
@@ -454,7 +464,7 @@ export class OpenFGAService {
 
     try {
       for (const role of BASE_ROLES) {
-        const tuples = await this.repository.readTuples({
+        const tuples = await this.ensureRepository().readTuples({
           object: `${fgaType}:${resourceId}`,
           relation: role,
         });
@@ -552,7 +562,7 @@ export class OpenFGAService {
         const shouldHaveRole = trustScore >= minTrust;
 
         // Read current state
-        const hasRole = await this.repository.check({
+        const hasRole = await this.ensureRepository().check({
           user: `user:${userId}`,
           relation: trustRole,
           object: `community:${communityId}`,
@@ -577,7 +587,7 @@ export class OpenFGAService {
 
       // Batch write changes
       if (writes.length > 0 || deletes.length > 0) {
-        await this.repository.write(
+        await this.ensureRepository().write(
           writes.length > 0 ? writes : undefined,
           deletes.length > 0 ? deletes : undefined
         );
@@ -616,7 +626,7 @@ export class OpenFGAService {
   async getInviteRoleMetadata(inviteId: string): Promise<BaseRole | null> {
     try {
       for (const role of BASE_ROLES) {
-        const hasGrant = await this.repository.check({
+        const hasGrant = await this.ensureRepository().check({
           user: `user:metadata`,
           relation: `grants_${role}`,
           object: `invite:${inviteId}`,
@@ -645,7 +655,7 @@ export class OpenFGAService {
         object: `invite:${inviteId}`,
       }));
 
-      await this.repository.write(undefined, deletes);
+      await this.ensureRepository().write(undefined, deletes);
     } catch (error) {
       // Ignore errors - metadata might not exist
       console.debug('[OpenFGA Service] No invite metadata to delete:', error);
@@ -674,7 +684,7 @@ export class OpenFGAService {
       const fgaChildType = mapResourceType(childType);
       const fgaParentType = mapResourceType(parentType);
 
-      await this.repository.write([
+      await this.ensureRepository().write([
         {
           user: `${fgaParentType}:${parentId}`,
           relation: relation,
@@ -700,7 +710,7 @@ export class OpenFGAService {
       const fgaChildType = mapResourceType(childType);
       const fgaParentType = mapResourceType(parentType);
 
-      await this.repository.write(undefined, [
+      await this.ensureRepository().write(undefined, [
         {
           user: `${fgaParentType}:${parentId}`,
           relation: relation,
@@ -724,7 +734,7 @@ export class OpenFGAService {
     deletes: Array<{ user: string; relation: string; object: string }>
   ): Promise<void> {
     try {
-      await this.repository.write(writes, deletes);
+      await this.ensureRepository().write(writes, deletes);
     } catch (error) {
       console.error('[OpenFGA Service] Failed to batch write:', error);
       throw error;
@@ -739,7 +749,7 @@ export class OpenFGAService {
     relation?: string;
     object?: string;
   }): Promise<Array<{ key: { user?: string; relation: string; object: string } }>> {
-    return await this.repository.readTuples(pattern);
+    return await this.ensureRepository().readTuples(pattern);
   }
 }
 

@@ -1,4 +1,5 @@
 export * from './app_users.schema';
+export * from './appConfig.schema';
 export * from './communities.schema';
 export * from './communityUserInvites.schema';
 export * from './communityLinkInvites.schema';
