@@ -1,6 +1,6 @@
 {
   "name": "api",
-  "version": "1.4.1",
+  "version": "1.5.0",
   "description": "Express.js API with TypeScript, Keycloak, Drizzle, and OpenFGA",
   "main": "src/server.ts",
   "type": "module",
