@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.3](https://github.com/charlie83Gs/communities/compare/communities-api-v1.5.2...communities-api-v1.5.3) (2025-11-12)
+
+
+### Bug Fixes
+
+* **api:** resolve all 59 failing unit tests ([c7459b6](https://github.com/charlie83Gs/communities/commit/c7459b6c04c4f4cb40644fa1d0aeef1e1487bc87))
+
 ## [1.5.2](https://github.com/charlie83Gs/communities/compare/communities-api-v1.5.1...communities-api-v1.5.2) (2025-11-12)
 
 
