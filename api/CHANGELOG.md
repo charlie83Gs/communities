@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.1](https://github.com/charlie83Gs/communities/compare/communities-api-v1.5.0...communities-api-v1.5.1) (2025-11-12)
+
+
+### Bug Fixes
+
+* **api:** resolve all ESLint warnings to enable clean CI builds ([4fda367](https://github.com/charlie83Gs/communities/commit/4fda367e3e8cfaf92e251a616cc2fa3c5b39377e))
+
 ## [1.5.0](https://github.com/charlie83Gs/communities/compare/communities-api-v1.4.1...communities-api-v1.5.0) (2025-11-12)
 
 
