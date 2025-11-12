@@ -1,7 +1,7 @@
 import { OpenFGARepository } from '../repositories/openfga.repository';
 import { initializeOpenFGA } from '../utils/openfga-init';
 import {
-  BASE_ROLES as _BASE_ROLES,
+  BASE_ROLES,
   FEATURE_ROLES as _FEATURE_ROLES,
   TRUST_ROLES as _TRUST_ROLES,
   PERMISSIONS as _PERMISSIONS,
