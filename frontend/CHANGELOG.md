@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.3.0](https://github.com/charlie83Gs/communities/compare/communities-frontend-v1.2.2...communities-frontend-v1.3.0) (2025-11-12)
+
+
+### Features
+
+* **frontend:** improve Keycloak integration with best practices ([c6638a0](https://github.com/charlie83Gs/communities/commit/c6638a0d6142db3dddd71d7db0183888c1947877))
+
+
+### Bug Fixes
+
+* **frontend:** rename keycloak-routes.ts to .tsx for JSX support ([53edf20](https://github.com/charlie83Gs/communities/commit/53edf20efae0ed7684aa260d21bb080c9478ecb4))
+* **frontend:** resolve all TypeScript errors blocking CI ([13f1c6c](https://github.com/charlie83Gs/communities/commit/13f1c6c411f3bd5db387c7553a0d993b2f2467ea))
+
 ## [1.2.2](https://github.com/charlie83Gs/communities/compare/communities-frontend-v1.2.1...communities-frontend-v1.2.2) (2025-11-10)
 
 
