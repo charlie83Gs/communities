@@ -9,6 +9,84 @@ For the frontend folder always to use the solid.js agent
 
 You can parallelize tasks that you consider adequate starting both the solid.js and express agent at the same time. But pass an agreement as part of the agent prompts, so if there is an api change for example the frontend agent builds for the params and return values that the backend will actually return.
 
+## Package Manager - Bun Only
+
+**CRITICAL:** This is a Bun project. ALWAYS use `bun` or `bunx` commands, NEVER use `npm`, `npx`, `yarn`, or `pnpm`.
+
+### Common Command Examples
+
+#### API (Backend - ./api)
+```bash
+# Install dependencies
+bun install
+
+# Install a new package
+bun add <package-name>
+bun add -d <package-name>  # dev dependency
+
+# Run scripts
+bun run dev
+bun run build
+bun run start
+
+# Run tests
+bun test
+bun test --watch
+bun test <specific-test-file>
+
+# Type checking
+bunx tsc --noEmit
+
+# Linting
+bun run lint
+bun run lint:fix
+
+# Database migrations (Drizzle ORM)
+bun run drizzle-kit generate
+bun run drizzle-kit migrate
+bun run drizzle-kit studio
+```
+
+#### Frontend (./frontend)
+```bash
+# Install dependencies
+bun install
+
+# Install a new package
+bun add <package-name>
+bun add -d <package-name>  # dev dependency
+
+# Run scripts
+bun run dev
+bun run build
+bun run preview
+
+# Type checking
+bunx tsc --noEmit
+
+# Linting
+bun run lint
+bun run lint:fix
+```
+
+#### Global Tools
+```bash
+# Execute packages without installing (like npx)
+bunx <command>
+
+# Examples:
+bunx tsc --noEmit
+bunx drizzle-kit generate
+bunx prettier --write .
+```
+
+### Why Bun?
+- Bun is a fast all-in-one JavaScript runtime and toolkit
+- Drop-in replacement for Node.js with built-in bundler, test runner, and package manager
+- This project uses Bun for both backend (API) and frontend
+- Package manager is faster than npm/yarn/pnpm
+- Compatible with npm packages but uses bun.lockb instead of package-lock.json
+
 ## Feature Documentation Requirements
 
 **CRITICAL:** Before implementing or modifying any feature, you MUST:
