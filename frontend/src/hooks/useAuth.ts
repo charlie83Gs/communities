@@ -1,4 +1,5 @@
 import { onCleanup } from 'solid-js';
+import { useNavigate } from '@solidjs/router';
 import { useQueryClient } from '@tanstack/solid-query';
 import { authStore, setAuthStore } from '@/stores/auth.store';
 import { usersService } from '@/services/api/users.service';
@@ -8,6 +9,9 @@ import type { User } from '@/types/user.types';
 let __authChecking = false;
 
 export const useAuth = () => {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
   const checkSession = async () => {
     if (__authChecking) return;
     __authChecking = true;
@@ -81,19 +85,20 @@ export const useAuth = () => {
 
   const logout = async () => {
     try {
-      // Clear all cached queries to prevent data leakage between users
-      // Access queryClient lazily only when needed (during logout)
-      try {
-        const queryClient = useQueryClient();
-        queryClient.clear();
-      } catch (error) {
-        // QueryClient might not be available in all contexts, which is fine
-        console.warn('QueryClient not available during logout:', error);
-      }
+      // STEP 1: Navigate to homepage FIRST (before any auth state changes)
+      // This gets us out of any protected route before AuthGuard can react
+      navigate('/', { replace: true });
 
+      // STEP 2: Wait a tick for navigation to settle
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      // STEP 3: Clear all cached queries to prevent data leakage between users
+      queryClient.clear();
+
+      // STEP 4: Set auth state to unauthenticated
       setAuthStore({ user: null, isAuthenticated: false, isLoading: false });
 
-      // Redirect to Keycloak logout
+      // STEP 5: Redirect to Keycloak logout
       await keycloakService.logout(window.location.origin);
     } catch (error) {
       console.error('Logout failed:', error);
