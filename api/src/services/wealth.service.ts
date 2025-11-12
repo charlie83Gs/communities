@@ -409,7 +409,7 @@ export class WealthService {
     }
 
     if (wealthItem.distributionType === 'unit_based') {
-      if (unitsRequested == null || unitsRequested <= 0) {
+      if (unitsRequested === null || unitsRequested === undefined || unitsRequested <= 0) {
         throw new AppError('unitsRequested must be a positive integer for unit_based wealth', 400);
       }
       if ((wealthItem.unitsAvailable ?? 0) < unitsRequested) {
