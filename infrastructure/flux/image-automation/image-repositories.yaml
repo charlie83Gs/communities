@@ -8,8 +8,8 @@ metadata:
 spec:
   image: ghcr.io/charlie83gs/communities-api
   interval: 5m
-  # For public GHCR, no secret needed
-  # For private, reference imagePullSecrets: ghcr-credentials
+  secretRef:
+    name: ghcr-credentials
 ---
 # ImageRepository for communities-frontend
 apiVersion: image.toolkit.fluxcd.io/v1beta2
@@ -20,5 +20,5 @@ metadata:
 spec:
   image: ghcr.io/charlie83gs/communities-frontend
   interval: 5m
-  # For public GHCR, no secret needed
-  # For private, reference imagePullSecrets: ghcr-credentials
+  secretRef:
+    name: ghcr-credentials

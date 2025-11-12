@@ -50,10 +50,12 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository_owner }}/communities-api
           tags: |
-            type=semver,pattern={{version}},value=${{ needs.release-please.outputs.api-tag-name }}
-            type=semver,pattern={{major}}.{{minor}},value=${{ needs.release-please.outputs.api-tag-name }}
-            type=semver,pattern={{major}},value=${{ needs.release-please.outputs.api-tag-name }}
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
             type=raw,value=latest
+          flavor: |
+            latest=false
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
@@ -93,10 +95,12 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository_owner }}/communities-frontend
           tags: |
-            type=semver,pattern={{version}},value=${{ needs.release-please.outputs.frontend-tag-name }}
-            type=semver,pattern={{major}}.{{minor}},value=${{ needs.release-please.outputs.frontend-tag-name }}
-            type=semver,pattern={{major}},value=${{ needs.release-please.outputs.frontend-tag-name }}
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
             type=raw,value=latest
+          flavor: |
+            latest=false
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
