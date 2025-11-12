@@ -1,4 +1,4 @@
-import { Component, For, Show, createSignal, createMemo } from 'solid-js';
+import { Component, For, Show, createSignal, createMemo, batch } from 'solid-js';
 import { Button } from '@/components/common/Button';
 import { CredentialedImage } from '@/components/common/CredentialedImage';
 import { makeTranslator } from '@/i18n/makeTranslator';
@@ -6,6 +6,7 @@ import { trustGrantsManagerDict } from './TrustGrantsManager.i18n';
 import { useCommunityMembersQuery } from '@/hooks/queries/useCommunityMembersQuery';
 import { useCommunityTrustUsersQuery } from '@/hooks/queries/useCommunityTrustUsersQuery';
 import { useAdminGrantsQuery, useSetAdminGrantMutation, useDeleteAdminGrantMutation } from '@/hooks/queries/useTrust';
+import { createDebouncedSignal } from '@/utils/debounce';
 import type { CommunityMember } from '@/types/community.types';
 import type { TrustView, AdminTrustGrant } from '@/types/trust.types';
 
@@ -32,7 +33,7 @@ export const TrustGrantsManager: Component<TrustGrantsManagerProps> = (props) =>
   const setGrantMutation = useSetAdminGrantMutation();
   const deleteGrantMutation = useDeleteAdminGrantMutation();
 
-  const [searchTerm, setSearchTerm] = createSignal('');
+  const [displaySearchTerm, debouncedSearchTerm, setSearchTerm] = createDebouncedSignal('', 300);
   const [sortField, setSortField] = createSignal<SortField>('name');
   const [pendingChanges, setPendingChanges] = createSignal<Record<string, number>>({});
   const [successMessage, setSuccessMessage] = createSignal<string | null>(null);
@@ -70,8 +71,8 @@ export const TrustGrantsManager: Component<TrustGrantsManagerProps> = (props) =>
   const filteredAndSortedMembers = createMemo(() => {
     let result = membersWithTrust();
 
-    // Filter by search term
-    const search = searchTerm().toLowerCase();
+    // Filter by search term (using debounced value)
+    const search = debouncedSearchTerm().toLowerCase();
     if (search) {
       result = result.filter((m) => {
         const name = m.displayName?.toLowerCase() || '';
@@ -100,12 +101,14 @@ export const TrustGrantsManager: Component<TrustGrantsManagerProps> = (props) =>
   });
 
   const handleGrantChange = (userId: string, value: string) => {
-    const numValue = parseInt(value, 10);
-    if (isNaN(numValue) || numValue < 0) {
-      setPendingChanges({ ...pendingChanges(), [userId]: 0 });
-    } else {
-      setPendingChanges({ ...pendingChanges(), [userId]: numValue });
-    }
+    batch(() => {
+      const numValue = parseInt(value, 10);
+      if (isNaN(numValue) || numValue < 0) {
+        setPendingChanges({ ...pendingChanges(), [userId]: 0 });
+      } else {
+        setPendingChanges({ ...pendingChanges(), [userId]: numValue });
+      }
+    });
   };
 
   const handleSaveGrant = async (userId: string) => {
@@ -187,7 +190,7 @@ export const TrustGrantsManager: Component<TrustGrantsManagerProps> = (props) =>
         <input
           type="text"
           placeholder={t('searchPlaceholder')}
-          value={searchTerm()}
+          value={displaySearchTerm()}
           onInput={(e) => setSearchTerm(e.currentTarget.value)}
           class="flex-1 px-4 py-2 border border-stone-300 dark:border-stone-600 rounded bg-white dark:bg-stone-700 text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-ocean-500 dark:focus:ring-ocean-400"
         />

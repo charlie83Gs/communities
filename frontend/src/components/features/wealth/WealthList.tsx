@@ -4,6 +4,7 @@ import { Button } from '@/components/common/Button';
 import { Input } from '@/components/common/Input';
 import { WealthCard } from '@/components/features/wealth/WealthCard';
 import { useSearchWealthQuery } from '@/hooks/queries/useSearchWealthQuery';
+import { createDebouncedSignal } from '@/utils/debounce';
 import type { WealthDistributionType, WealthDurationType, WealthStatus } from '@/types/wealth.types';
 import { makeTranslator } from '@/i18n/makeTranslator';
 import { wealthListDict } from '@/components/features/wealth/WealthList.i18n';
@@ -16,7 +17,7 @@ export const WealthList: Component<WealthListProps> = (props) => {
   const t = makeTranslator(wealthListDict, 'wealthList');
 
   // Filters and controls
-  const [q, setQ] = createSignal<string>('');
+  const [displayQ, debouncedQ, setQ] = createDebouncedSignal<string>('', 300);
   const [advancedSearch, setAdvancedSearch] = createSignal<boolean>(false);
   const [durationType, setDurationType] = createSignal<WealthDurationType | ''>('');
   const [distributionType, setDistributionType] = createSignal<WealthDistributionType | ''>('');
@@ -28,12 +29,12 @@ export const WealthList: Component<WealthListProps> = (props) => {
 
   // Reset page to 1 when filters (except page/limit) change
   const resetOnFilterChange = () => setPage(1);
-  const resetters = createMemo(() => [q(), durationType(), distributionType(), status(), endDateAfter(), endDateBefore()]);
+  const resetters = createMemo(() => [debouncedQ(), durationType(), distributionType(), status(), endDateAfter(), endDateBefore()]);
   on(resetters, resetOnFilterChange);
 
   // Build params for search endpoint
   const params = createMemo(() => ({
-    q: q() ?? '',
+    q: debouncedQ() ?? '',
     communityId: props.communityId,
     durationType: (durationType() || undefined) as WealthDurationType | undefined,
     distributionType: (distributionType() || undefined) as WealthDistributionType | undefined,
@@ -69,7 +70,7 @@ export const WealthList: Component<WealthListProps> = (props) => {
               <label class="block text-sm mb-1">{t('filters.searchLabel')}</label>
               <Input
                 placeholder={t('filters.searchPlaceholder')}
-                value={q()}
+                value={displayQ()}
                 onInput={(e) => setQ((e.currentTarget as HTMLInputElement).value)}
               />
             </div>

@@ -7,6 +7,7 @@ import { useCommunityMembersQuery } from '@/hooks/queries/useCommunityMembersQue
 import { useCommunityUserInvitesQuery } from '@/hooks/queries/useCommunityUserInvitesQuery';
 import { makeTranslator } from '@/i18n/makeTranslator';
 import { inviteUserFormDict } from './InviteUserForm.i18n';
+import { createDebouncedSignal } from '@/utils/debounce';
 import type { CreateUserInviteDto } from '@/types/community.types';
 import type { SearchUser } from '@/types/user.types';
 
@@ -18,12 +19,12 @@ interface InviteUserFormProps {
 export const InviteUserForm: Component<InviteUserFormProps> = (props) => {
   const t = makeTranslator(inviteUserFormDict, 'inviteUserForm');
 
-  const [searchQuery, setSearchQuery] = createSignal<string>('');
+  const [displayQuery, debouncedQuery, setSearchQuery] = createDebouncedSignal<string>('', 300);
   const [selectedUser, setSelectedUser] = createSignal<SearchUser | null>(null);
   const [role, setRole] = createSignal<'member' | 'admin'>('member');
   const inviteMutation = useInviteUserMutation();
 
-  const searchQueryResult = useSearchUsersQuery(() => ({ q: searchQuery() }));
+  const searchQueryResult = useSearchUsersQuery(() => ({ q: debouncedQuery() }));
   const membersQuery = useCommunityMembersQuery(() => props.communityId);
   const invitesQuery = useCommunityUserInvitesQuery(() => props.communityId);
 
@@ -37,7 +38,7 @@ export const InviteUserForm: Component<InviteUserFormProps> = (props) => {
 
   const handleUserSelect = (user: SearchUser) => {
     setSelectedUser(user);
-    setSearchQuery(user.displayName); // Populate input with displayName
+    // Note: We don't populate the input to avoid confusion with debounced search
   };
 
   // Check if the selected user already has the selected role as a member
@@ -117,10 +118,10 @@ export const InviteUserForm: Component<InviteUserFormProps> = (props) => {
       <div class="space-y-3 relative">
         <Input
           placeholder={t('searchPlaceholder')}
-          value={searchQuery()}
+          value={displayQuery()}
           onInput={handleSearchInput}
         />
-        <Show when={searchQuery() && !selectedUser()}>
+        <Show when={displayQuery() && !selectedUser()}>
           <div class="absolute z-10 w-full bg-white dark:bg-stone-700 border border-stone-200 dark:border-stone-600 rounded mt-1 max-h-60 overflow-y-auto">
             <Show when={searchQueryResult.isLoading}>
               <div class="p-2 text-stone-500 dark:text-stone-400 text-sm">{t('searching')}</div>

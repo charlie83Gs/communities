@@ -4,6 +4,7 @@ import { Button } from '@/components/common/Button';
 import { Input } from '@/components/common/Input';
 import { CommunityCard } from './CommunityCard';
 import { useSearchCommunitiesQuery } from '@/hooks/queries/useSearchCommunitiesQuery';
+import { createDebouncedSignal } from '@/utils/debounce';
 import { makeTranslator } from '@/i18n/makeTranslator';
 import { communityListDict } from './CommunityList.i18n';
 
@@ -15,14 +16,14 @@ export const CommunityList: Component<CommunityListProps> = (props) => {
   const t = makeTranslator(communityListDict, 'communityList');
 
   // Filters and controls
-  const [q, setQ] = createSignal<string>('');
+  const [displayQ, debouncedQ, setQ] = createDebouncedSignal<string>('', 300);
   const [advancedSearch, setAdvancedSearch] = createSignal<boolean>(false);
   const [page, setPage] = createSignal<number>(1);
   const [limit, setLimit] = createSignal<number>(12);
 
   // Reset page to 1 when filters (except page/limit) change
   const resetOnFilterChange = () => setPage(1);
-  const resetters = createMemo(() => [q()]);
+  const resetters = createMemo(() => [debouncedQ()]);
   on(resetters, resetOnFilterChange);
 
   // Build params for search endpoint
@@ -32,7 +33,7 @@ export const CommunityList: Component<CommunityListProps> = (props) => {
       limit: limit(),
     };
 
-    if (q()) p.q = q();
+    if (debouncedQ()) p.q = debouncedQ();
 
     return p;
   });
@@ -62,7 +63,7 @@ export const CommunityList: Component<CommunityListProps> = (props) => {
               <label class="block text-sm mb-1">{t('searchLabel')}</label>
               <Input
                 placeholder={t('searchPlaceholder')}
-                value={q()}
+                value={displayQ()}
                 onInput={(e) => setQ((e.currentTarget as HTMLInputElement).value)}
               />
             </div>

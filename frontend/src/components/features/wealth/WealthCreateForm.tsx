@@ -11,7 +11,6 @@ import { CredentialedImage } from '@/components/common/CredentialedImage';
 import { ItemSelector } from '@/components/features/items/ItemSelector';
 import { makeTranslator } from '@/i18n/makeTranslator';
 import { wealthCreateFormDict } from '@/components/features/wealth/WealthCreateForm.i18n';
-import { useSearchItems } from '@/hooks/queries/useItems';
 
 interface WealthCreateFormProps {
   communityId: string;
@@ -46,23 +45,10 @@ export const WealthCreateForm: Component<WealthCreateFormProps> = (props) => {
 
   const [error, setError] = createSignal<string | null>(null);
 
-  // Query all items to get the selected item's kind
-  const items = useSearchItems(
-    () => props.communityId,
-    () => '',
-    () => itemTypeFilter() === 'all' ? undefined : (itemTypeFilter() as 'object' | 'service')
-  );
-
-  // Get the selected item's kind
-  const selectedItemKind = createMemo<ItemKind | undefined>(() => {
-    const id = itemId();
-    if (!id || !items.data) return undefined;
-    const item = items.data.find(i => i.id === id);
-    return item?.kind;
-  });
-
+  // Track whether selected item is a service based on the filter
+  // ItemSelector handles the actual item filtering internally
   const isTimebound = createMemo(() => durationType() === 'timebound');
-  const isService = createMemo(() => selectedItemKind() === 'service');
+  const isService = createMemo(() => itemTypeFilter() === 'service');
 
   const createMutation = useCreateWealthMutation();
 
