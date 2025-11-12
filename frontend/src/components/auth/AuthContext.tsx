@@ -17,7 +17,7 @@ export interface AuthContextType {
   login: (redirectUri?: string) => Promise<void>;
   logout: (redirectUri?: string) => Promise<void>;
   register: (redirectUri?: string) => Promise<void>;
-  refreshToken: () => Promise<boolean>;
+  ensureTokenValidity: (minValidity?: number) => Promise<boolean>;
   hasRole: (role: string) => boolean;
   getToken: () => string | undefined;
   getAccountUrl: () => string;
@@ -59,29 +59,10 @@ export const AuthProvider: ParentComponent = (props) => {
     setUser(currentUser);
   };
 
-  // Setup token refresh interval with proper cleanup
-  const setupTokenRefresh = () => {
-    if (!authenticated()) return;
-
-    const intervalId = setInterval(() => {
-      void keycloakService.refreshToken().then((refreshed) => {
-        if (refreshed) {
-          updateUser();
-        }
-      });
-    }, 30000); // Check every 30 seconds
-
-    // Cleanup interval when component unmounts or auth state changes
-    onCleanup(() => {
-      clearInterval(intervalId);
-    });
-  };
-
-  // Initialize user and token refresh when authenticated
+  // Initialize user when authenticated
   const initializeAuth = () => {
     if (authenticated()) {
       updateUser();
-      setupTokenRefresh();
     }
   };
 
@@ -101,8 +82,8 @@ export const AuthProvider: ParentComponent = (props) => {
     register: async (redirectUri?: string) => {
       await keycloakService.register(redirectUri);
     },
-    refreshToken: async () => {
-      const refreshed = await keycloakService.refreshToken();
+    ensureTokenValidity: async (minValidity?: number) => {
+      const refreshed = await keycloakService.ensureTokenValidity(minValidity);
       if (refreshed) {
         updateUser();
       }
