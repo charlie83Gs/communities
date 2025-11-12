@@ -33,6 +33,7 @@ export const ForumThreadList: Component<ForumThreadListProps> = (props) => {
 
   const threadsQuery = useForumThreadsQuery(() => props.communityId, () => props.categoryId, params);
   const createThreadMutation = useCreateThreadMutation();
+  const trustSummaryQuery = useMyTrustSummaryQuery(() => props.communityId);
 
   const canCreateThread = createMemo(() => canCreateThreads());
 

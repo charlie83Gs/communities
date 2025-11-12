@@ -1,7 +1,7 @@
 import { Component, JSX, splitProps } from 'solid-js';
 
 export interface ButtonProps extends JSX.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'danger';
+  variant?: 'primary' | 'secondary' | 'danger' | 'success';
   size?: 'sm' | 'md' | 'lg';
   loading?: boolean;
 }
@@ -14,6 +14,7 @@ export const Button: Component<ButtonProps> = (props) => {
     primary: 'bg-ocean-600 text-white hover:bg-ocean-700 focus:ring-ocean-500',
     secondary: 'bg-white text-stone-700 hover:bg-stone-50 border-stone-300 focus:ring-ocean-500',
     danger: 'bg-danger-600 text-white hover:bg-danger-700 focus:ring-danger-500',
+    success: 'bg-success-600 text-white hover:bg-success-700 focus:ring-success-500',
   };
   const sizes = {
     sm: 'px-2 py-1 text-xs',

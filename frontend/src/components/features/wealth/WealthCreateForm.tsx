@@ -50,7 +50,7 @@ export const WealthCreateForm: Component<WealthCreateFormProps> = (props) => {
   const items = useSearchItems(
     () => props.communityId,
     () => '',
-    () => itemTypeFilter() === 'all' ? undefined : itemTypeFilter()
+    () => itemTypeFilter() === 'all' ? undefined : (itemTypeFilter() as 'object' | 'service')
   );
 
   // Get the selected item's kind
@@ -218,7 +218,7 @@ export const WealthCreateForm: Component<WealthCreateFormProps> = (props) => {
             <ItemSelector
               communityId={props.communityId}
               selectedItemId={itemId()}
-              kind={itemTypeFilter() === 'all' ? undefined : itemTypeFilter()}
+              kind={itemTypeFilter() === 'all' ? undefined : (itemTypeFilter() as 'object' | 'service')}
               canManageItems={props.canManageItems ?? false}
               onChange={setItemId}
               error={!itemId() && error() ? 'Item is required' : undefined}

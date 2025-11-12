@@ -117,7 +117,7 @@ class KeycloakService {
 
     await this.keycloak!.login({
       redirectUri: options?.redirectUri || window.location.origin,
-      prompt: options?.prompt,
+      prompt: options?.prompt as 'none' | 'login' | undefined,
       maxAge: options?.maxAge,
       loginHint: options?.loginHint,
       scope: options?.scope,
@@ -156,18 +156,18 @@ class KeycloakService {
       return null;
     }
 
-    const tokenParsed = this.keycloak.tokenParsed;
-    const realmAccess = tokenParsed?.realm_access || {};
-    const resourceAccess = tokenParsed?.resource_access || {};
+    const tokenParsed = this.keycloak.tokenParsed as Record<string, unknown> | undefined;
+    const realmAccess = (tokenParsed?.realm_access as { roles?: string[] }) || {};
+    const resourceAccess = (tokenParsed?.resource_access as Record<string, { roles?: string[] }>) || {};
     const clientId = this.keycloak.clientId || '';
     const clientAccess = resourceAccess[clientId] || {};
 
     return {
-      id: tokenParsed?.sub || '',
-      email: tokenParsed?.email || '',
-      username: tokenParsed?.preferred_username || '',
-      firstName: tokenParsed?.given_name,
-      lastName: tokenParsed?.family_name,
+      id: (tokenParsed?.sub as string) || '',
+      email: (tokenParsed?.email as string) || '',
+      username: (tokenParsed?.preferred_username as string) || '',
+      firstName: tokenParsed?.given_name as string | undefined,
+      lastName: tokenParsed?.family_name as string | undefined,
       roles: [...(realmAccess.roles || []), ...(clientAccess.roles || [])],
     };
   }

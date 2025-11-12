@@ -80,7 +80,7 @@ class InitiativesService {
   async deleteInitiative(
     communityId: string,
     initiativeId: string
-  ): Promise<{ success: boolean }> {
+  ): Promise<void> {
     return apiClient.delete(`${this.basePath}/${communityId}/initiatives/${initiativeId}`);
   }
 
@@ -100,7 +100,7 @@ class InitiativesService {
    * Remove vote from initiative
    * DELETE /api/v1/communities/:communityId/initiatives/:initiativeId/vote
    */
-  async removeVote(communityId: string, initiativeId: string): Promise<Initiative> {
+  async removeVote(communityId: string, initiativeId: string): Promise<void> {
     return apiClient.delete(`${this.basePath}/${communityId}/initiatives/${initiativeId}/vote`);
   }
 

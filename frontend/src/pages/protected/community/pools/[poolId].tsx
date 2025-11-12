@@ -326,8 +326,8 @@ const PoolDetailsPage: Component = () => {
             inventory={inventory.data || []}
             members={members.data?.map((m) => ({
               id: m.userId,
-              username: m.username || '',
-              displayName: m.displayName,
+              username: m.displayName || m.email || m.userId,
+              displayName: m.displayName || undefined,
             })) || []}
             isOpen={showDistributeModal()}
             onClose={() => setShowDistributeModal(false)}

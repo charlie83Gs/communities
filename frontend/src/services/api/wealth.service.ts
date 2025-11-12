@@ -37,7 +37,6 @@ class WealthService {
     // q is required by API, default to empty string if not provided to broaden search
     search.set('q', params.q ?? '');
     if (params.communityId) search.set('communityId', params.communityId);
-    if (params.type) search.set('type', params.type);
     if (params.durationType) search.set('durationType', params.durationType);
     if (params.distributionType) search.set('distributionType', params.distributionType);
     if (params.status) search.set('status', params.status);

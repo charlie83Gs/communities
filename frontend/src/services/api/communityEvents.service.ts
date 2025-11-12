@@ -19,8 +19,7 @@ class CommunityEventsService {
     const queryString = queryParams.toString();
     const url = `${this.basePath}/${communityId}/events${queryString ? `?${queryString}` : ''}`;
 
-    const response = await apiClient.get<CommunityEvent[]>(url);
-    return response.data;
+    return apiClient.get(url);
   }
 
   /**
@@ -39,8 +38,7 @@ class CommunityEventsService {
     const queryString = queryParams.toString();
     const url = `${this.basePath}/${communityId}/events/user/${targetUserId}${queryString ? `?${queryString}` : ''}`;
 
-    const response = await apiClient.get<CommunityEvent[]>(url);
-    return response.data;
+    return apiClient.get(url);
   }
 }
 

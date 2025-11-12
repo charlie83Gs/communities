@@ -78,7 +78,7 @@ class HealthService {
 
   async getWealthOverview(communityId: string, range: TimeRange = '30d'): Promise<WealthHealthData['overview']> {
     const params = new URLSearchParams({ range });
-    const response = await apiClient.get<ApiWealthOverviewResponse>(
+    const response: ApiWealthOverviewResponse = await apiClient.get(
       `${this.basePath}/${communityId}/health/wealth/overview?${params}`
     );
 
@@ -88,32 +88,32 @@ class HealthService {
       totalShares: response.totalShares,
       activeCategories: response.activeCategories,
       timeSeries: {
-        shares: response.timeSeriesData.map(d => ({ date: d.date, value: d.shares })),
-        requests: response.timeSeriesData.map(d => ({ date: d.date, value: d.requests })),
-        fulfilled: response.timeSeriesData.map(d => ({ date: d.date, value: d.fulfilled })),
+        shares: response.timeSeriesData.map((d: { date: string; shares: number }) => ({ date: d.date, value: d.shares })),
+        requests: response.timeSeriesData.map((d: { date: string; requests: number }) => ({ date: d.date, value: d.requests })),
+        fulfilled: response.timeSeriesData.map((d: { date: string; fulfilled: number }) => ({ date: d.date, value: d.fulfilled })),
       },
     };
   }
 
   async getWealthItems(communityId: string, range: TimeRange = '30d'): Promise<WealthHealthData['items']> {
     const params = new URLSearchParams({ range });
-    const response = await apiClient.get<{ items: ApiWealthItemResponse[] }>(
+    const response: { items: ApiWealthItemResponse[] } = await apiClient.get(
       `${this.basePath}/${communityId}/health/wealth/items?${params}`
     );
 
     // Transform API response to match frontend types
-    return response.items.map(item => ({
+    return response.items.map((item: ApiWealthItemResponse) => ({
       category: item.categoryName,
       subcategory: item.subcategoryName,
       shareCount: item.shareCount,
       valuePoints: item.valuePoints,
-      trend: item.trend.map(t => t.count), // Extract just the count values
+      trend: item.trend.map((t: { date: string; count: number }) => t.count), // Extract just the count values
     }));
   }
 
   async getTrustOverview(communityId: string, range: TimeRange = '30d'): Promise<TrustHealthData['overview']> {
     const params = new URLSearchParams({ range });
-    const response = await apiClient.get<ApiTrustOverviewResponse>(
+    const response: ApiTrustOverviewResponse = await apiClient.get(
       `${this.basePath}/${communityId}/health/trust/overview?${params}`
     );
 
@@ -123,20 +123,20 @@ class HealthService {
       averageTrust: response.averageTrust,
       trustPerDay: response.trustPerDay,
       timeSeries: {
-        awarded: response.timeSeriesData.map(d => ({ date: d.date, value: d.trustAwarded })),
-        removed: response.timeSeriesData.map(d => ({ date: d.date, value: d.trustRemoved })),
-        net: response.timeSeriesData.map(d => ({ date: d.date, value: d.netTrust })),
+        awarded: response.timeSeriesData.map((d: { date: string; trustAwarded: number }) => ({ date: d.date, value: d.trustAwarded })),
+        removed: response.timeSeriesData.map((d: { date: string; trustRemoved: number }) => ({ date: d.date, value: d.trustRemoved })),
+        net: response.timeSeriesData.map((d: { date: string; netTrust: number }) => ({ date: d.date, value: d.netTrust })),
       },
     };
   }
 
   async getTrustDistribution(communityId: string): Promise<TrustHealthData['distribution']> {
-    const response = await apiClient.get<ApiTrustDistributionResponse>(
+    const response: ApiTrustDistributionResponse = await apiClient.get(
       `${this.basePath}/${communityId}/health/trust/distribution`
     );
 
     // Transform API response to match frontend types
-    return response.distribution.map(item => ({
+    return response.distribution.map((item: { trustLevel: string; minScore: number; maxScore: number; userCount: number }) => ({
       levelName: item.trustLevel,
       scoreRange: item.maxScore === 999999
         ? `${item.minScore}+`
@@ -147,7 +147,7 @@ class HealthService {
 
   async getNeedsOverview(communityId: string, range: TimeRange = '30d'): Promise<NeedsHealthData['overview']> {
     const params = new URLSearchParams({ timeRange: range });
-    const response = await apiClient.get<ApiNeedsOverviewResponse>(
+    const response: ApiNeedsOverviewResponse = await apiClient.get(
       `${this.basePath}/${communityId}/health/needs/overview?${params}`
     );
 
@@ -159,15 +159,15 @@ class HealthService {
       activeCouncils: response.activeCouncils,
       objectsVsServices: response.objectsVsServices,
       timeSeries: {
-        needs: response.timeSeriesData.map(d => ({ date: d.date, value: d.needs })),
-        wants: response.timeSeriesData.map(d => ({ date: d.date, value: d.wants })),
+        needs: response.timeSeriesData.map((d: { date: string; needs: number }) => ({ date: d.date, value: d.needs })),
+        wants: response.timeSeriesData.map((d: { date: string; wants: number }) => ({ date: d.date, value: d.wants })),
       },
     };
   }
 
   async getNeedsItems(communityId: string, range: TimeRange = '30d'): Promise<NeedsHealthData['items']> {
     const params = new URLSearchParams({ timeRange: range });
-    const response = await apiClient.get<{ items: ApiNeedsItemResponse[] }>(
+    const response: { items: ApiNeedsItemResponse[] } = await apiClient.get(
       `${this.basePath}/${communityId}/health/needs/items?${params}`
     );
 
@@ -176,21 +176,15 @@ class HealthService {
   }
 
   async getAggregatedNeeds(communityId: string): Promise<import('@/types/health.types').AggregatedNeedsData[]> {
-    const response = await apiClient.get<import('@/types/health.types').AggregatedNeedsData[]>(
+    return apiClient.get(
       `${this.basePath}/${communityId}/health/needs/aggregated`
     );
-
-    // Response is an array of aggregated data groups
-    return response;
   }
 
   async getAggregatedWealth(communityId: string): Promise<import('@/types/health.types').AggregatedWealthData[]> {
-    const response = await apiClient.get<import('@/types/health.types').AggregatedWealthData[]>(
+    return apiClient.get(
       `${this.basePath}/${communityId}/health/wealth/aggregated`
     );
-
-    // Response is an array of aggregated wealth items
-    return response;
   }
 }
 

@@ -79,7 +79,7 @@ class CouncilsService {
    * Delete a council
    * DELETE /api/v1/communities/:communityId/councils/:councilId
    */
-  async deleteCouncil(communityId: string, councilId: string): Promise<{ success: boolean }> {
+  async deleteCouncil(communityId: string, councilId: string): Promise<void> {
     return apiClient.delete(`${this.basePath}/${communityId}/councils/${councilId}`);
   }
 
@@ -111,7 +111,7 @@ class CouncilsService {
   async removeTrust(
     communityId: string,
     councilId: string
-  ): Promise<RemoveCouncilTrustResponse> {
+  ): Promise<void> {
     return apiClient.delete(`${this.basePath}/${communityId}/councils/${councilId}/trust`);
   }
 
@@ -137,7 +137,7 @@ class CouncilsService {
     communityId: string,
     councilId: string,
     userId: string
-  ): Promise<RemoveCouncilManagerResponse> {
+  ): Promise<void> {
     return apiClient.delete(
       `${this.basePath}/${communityId}/councils/${councilId}/managers/${userId}`
     );

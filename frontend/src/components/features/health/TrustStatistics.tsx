@@ -181,9 +181,9 @@ export const TrustStatistics: Component<TrustStatisticsProps> = (props) => {
                   }
                 >
                   <For each={distributionQuery.data}>
-                    {(level) => {
+                    {(level: { levelName: string; scoreRange: string; userCount: number }) => {
                       const totalUsers = distributionQuery.data!.reduce(
-                        (sum, l) => sum + l.userCount,
+                        (sum: number, l: { userCount: number }) => sum + l.userCount,
                         0
                       );
                       const percentage = totalUsers > 0

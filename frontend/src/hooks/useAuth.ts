@@ -49,7 +49,7 @@ export const useAuth = () => {
     }
   };
 
-  const signUp = async (email: string, password: string, username: string, displayName: string) => {
+  const signUp = async (email?: string, password?: string, username?: string, displayName?: string) => {
     try {
       // Redirect to Keycloak registration page
       // Note: Keycloak doesn't support direct API signup from frontend
@@ -62,7 +62,7 @@ export const useAuth = () => {
     }
   };
 
-  const login = async (email: string, password: string) => {
+  const login = async (email?: string, password?: string) => {
     try {
       // Redirect to Keycloak login page
       // Note: With standard OIDC flow, we don't handle credentials directly

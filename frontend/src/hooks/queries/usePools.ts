@@ -2,8 +2,6 @@ import {
   createQuery,
   createMutation,
   useQueryClient,
-  type CreateQueryResult,
-  type CreateMutationResult,
 } from '@tanstack/solid-query';
 import { Accessor } from 'solid-js';
 import { poolsService } from '@/services/api/pools.service';
@@ -27,7 +25,7 @@ import type { Wealth } from '@/types/wealth.types';
 export const usePools = (
   communityId: Accessor<string | undefined>,
   filters?: Accessor<{ councilId?: string; itemId?: string } | undefined>
-): CreateQueryResult<Pool[], Error> => {
+) => {
   return createQuery(() => ({
     queryKey: ['communities', communityId(), 'pools', filters?.()],
     queryFn: () => poolsService.listPools(communityId()!, filters?.()),
@@ -43,7 +41,7 @@ export const usePools = (
 export const usePool = (
   communityId: Accessor<string | undefined>,
   poolId: Accessor<string | undefined>
-): CreateQueryResult<Pool, Error> => {
+) => {
   return createQuery(() => ({
     queryKey: ['communities', communityId(), 'pools', poolId()],
     queryFn: () => poolsService.getPool(communityId()!, poolId()!),
@@ -59,7 +57,7 @@ export const usePool = (
 export const usePoolInventory = (
   communityId: Accessor<string | undefined>,
   poolId: Accessor<string | undefined>
-): CreateQueryResult<PoolInventoryItem[], Error> => {
+) => {
   return createQuery(() => ({
     queryKey: ['communities', communityId(), 'pools', poolId(), 'inventory'],
     queryFn: () => poolsService.getInventory(communityId()!, poolId()!),
@@ -75,7 +73,7 @@ export const usePoolInventory = (
 export const usePendingContributions = (
   communityId: Accessor<string | undefined>,
   poolId: Accessor<string | undefined>
-): CreateQueryResult<PendingContribution[], Error> => {
+) => {
   return createQuery(() => ({
     queryKey: ['communities', communityId(), 'pools', poolId(), 'contributions', 'pending'],
     queryFn: () => poolsService.listPendingContributions(communityId()!, poolId()!),
@@ -92,7 +90,7 @@ export const usePoolDistributions = (
   communityId: Accessor<string | undefined>,
   poolId: Accessor<string | undefined>,
   params?: Accessor<{ limit?: number; offset?: number } | undefined>
-): CreateQueryResult<PoolDistribution[], Error> => {
+) => {
   return createQuery(() => ({
     queryKey: ['communities', communityId(), 'pools', poolId(), 'distributions', params?.()],
     queryFn: () => poolsService.listDistributions(communityId()!, poolId()!, params?.()),
@@ -114,7 +112,7 @@ export const useNeedsPreview = (
     maxUnitsPerUser?: number;
     selectedUserIds?: string[];
   } | undefined>
-): CreateQueryResult<NeedPreview[], Error> => {
+) => {
   return createQuery(() => ({
     queryKey: ['communities', communityId(), 'pools', poolId(), 'needs-preview', params()],
     queryFn: () => poolsService.previewNeeds(communityId()!, poolId()!, params()!),
@@ -127,15 +125,11 @@ export const useNeedsPreview = (
 /**
  * Mutation: Create a new pool
  */
-export const useCreatePool = (): CreateMutationResult<
-  Pool,
-  Error,
-  { communityId: string; councilId: string; dto: CreatePoolRequest }
-> => {
+export const useCreatePool = () => {
   const queryClient = useQueryClient();
 
   return createMutation(() => ({
-    mutationFn: ({ communityId, councilId, dto }) =>
+    mutationFn: ({ communityId, councilId, dto }: { communityId: string; councilId: string; dto: CreatePoolRequest }) =>
       poolsService.createPool(communityId, councilId, dto),
     onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({
@@ -149,15 +143,11 @@ export const useCreatePool = (): CreateMutationResult<
 /**
  * Mutation: Update pool settings
  */
-export const useUpdatePool = (): CreateMutationResult<
-  Pool,
-  Error,
-  { communityId: string; poolId: string; dto: UpdatePoolRequest }
-> => {
+export const useUpdatePool = () => {
   const queryClient = useQueryClient();
 
   return createMutation(() => ({
-    mutationFn: ({ communityId, poolId, dto }) =>
+    mutationFn: ({ communityId, poolId, dto }: { communityId: string; poolId: string; dto: UpdatePoolRequest }) =>
       poolsService.updatePool(communityId, poolId, dto),
     onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({
@@ -174,15 +164,12 @@ export const useUpdatePool = (): CreateMutationResult<
 /**
  * Mutation: Delete a pool
  */
-export const useDeletePool = (): CreateMutationResult<
-  void,
-  Error,
-  { communityId: string; poolId: string }
-> => {
+export const useDeletePool = () => {
   const queryClient = useQueryClient();
 
   return createMutation(() => ({
-    mutationFn: ({ communityId, poolId }) => poolsService.deletePool(communityId, poolId),
+    mutationFn: ({ communityId, poolId }: { communityId: string; poolId: string }) =>
+      poolsService.deletePool(communityId, poolId),
     onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({
         queryKey: ['communities', variables.communityId, 'pools'],
@@ -198,15 +185,11 @@ export const useDeletePool = (): CreateMutationResult<
 /**
  * Mutation: Contribute to pool (creates wealth share)
  */
-export const useContributeToPool = (): CreateMutationResult<
-  Wealth,
-  Error,
-  { communityId: string; poolId: string; dto: ContributeToPoolRequest }
-> => {
+export const useContributeToPool = () => {
   const queryClient = useQueryClient();
 
   return createMutation(() => ({
-    mutationFn: ({ communityId, poolId, dto }) =>
+    mutationFn: ({ communityId, poolId, dto }: { communityId: string; poolId: string; dto: ContributeToPoolRequest }) =>
       poolsService.contributeToPool(communityId, poolId, dto),
     onSuccess: (_data, variables) => {
       // Invalidate pending contributions
@@ -226,15 +209,11 @@ export const useContributeToPool = (): CreateMutationResult<
 /**
  * Mutation: Confirm contribution
  */
-export const useConfirmContribution = (): CreateMutationResult<
-  void,
-  Error,
-  { communityId: string; poolId: string; wealthId: string }
-> => {
+export const useConfirmContribution = () => {
   const queryClient = useQueryClient();
 
   return createMutation(() => ({
-    mutationFn: ({ communityId, poolId, wealthId }) =>
+    mutationFn: ({ communityId, poolId, wealthId }: { communityId: string; poolId: string; wealthId: string }) =>
       poolsService.confirmContribution(communityId, poolId, wealthId),
     onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({
@@ -258,15 +237,11 @@ export const useConfirmContribution = (): CreateMutationResult<
 /**
  * Mutation: Reject contribution
  */
-export const useRejectContribution = (): CreateMutationResult<
-  void,
-  Error,
-  { communityId: string; poolId: string; wealthId: string }
-> => {
+export const useRejectContribution = () => {
   const queryClient = useQueryClient();
 
   return createMutation(() => ({
-    mutationFn: ({ communityId, poolId, wealthId }) =>
+    mutationFn: ({ communityId, poolId, wealthId }: { communityId: string; poolId: string; wealthId: string }) =>
       poolsService.rejectContribution(communityId, poolId, wealthId),
     onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({
@@ -284,15 +259,11 @@ export const useRejectContribution = (): CreateMutationResult<
 /**
  * Mutation: Manual distribution from pool
  */
-export const useManualDistribute = (): CreateMutationResult<
-  Wealth,
-  Error,
-  { communityId: string; poolId: string; dto: ManualDistributeRequest }
-> => {
+export const useManualDistribute = () => {
   const queryClient = useQueryClient();
 
   return createMutation(() => ({
-    mutationFn: ({ communityId, poolId, dto }) =>
+    mutationFn: ({ communityId, poolId, dto }: { communityId: string; poolId: string; dto: ManualDistributeRequest }) =>
       poolsService.distributeManually(communityId, poolId, dto),
     onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({
@@ -316,15 +287,11 @@ export const useManualDistribute = (): CreateMutationResult<
 /**
  * Mutation: Mass distribution from pool
  */
-export const useMassDistribute = (): CreateMutationResult<
-  Wealth[],
-  Error,
-  { communityId: string; poolId: string; dto: MassDistributeRequest }
-> => {
+export const useMassDistribute = () => {
   const queryClient = useQueryClient();
 
   return createMutation(() => ({
-    mutationFn: ({ communityId, poolId, dto }) =>
+    mutationFn: ({ communityId, poolId, dto }: { communityId: string; poolId: string; dto: MassDistributeRequest }) =>
       poolsService.distributeMass(communityId, poolId, dto),
     onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({

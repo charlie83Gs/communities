@@ -30,11 +30,11 @@ export const NeedsStatistics: Component<NeedsStatisticsProps> = (props) => {
   );
 
   const currentRecurrenceData = createMemo(() => {
-    return aggregatedQuery.data?.find(g => g.recurrence === selectedRecurrence());
+    return aggregatedQuery.data?.find((g: { recurrence: string }) => g.recurrence === selectedRecurrence());
   });
 
   const getRecurrenceCount = (recurrence: 'one-time' | 'daily' | 'weekly' | 'monthly') => {
-    return aggregatedQuery.data?.find(g => g.recurrence === recurrence)?.items.length || 0;
+    return aggregatedQuery.data?.find((g: { recurrence: string; items: unknown[] }) => g.recurrence === recurrence)?.items.length || 0;
   };
 
   const getRowClass = (item: { needsTotal: number; wantsTotal: number }) => {

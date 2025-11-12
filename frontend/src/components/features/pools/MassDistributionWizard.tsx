@@ -51,15 +51,15 @@ export const MassDistributionWizard: Component<MassDistributionWizardProps> = (p
   const totalNeeded = createMemo(() => {
     if (!needsPreview.data) return 0;
     return needsPreview.data
-      .filter((n) => n.priority === 'need')
-      .reduce((sum, n) => sum + n.unitsNeeded, 0);
+      .filter((n: { priority: string }) => n.priority === 'need')
+      .reduce((sum: number, n: { unitsNeeded: number }) => sum + n.unitsNeeded, 0);
   });
 
   const totalWanted = createMemo(() => {
     if (!needsPreview.data) return 0;
     return needsPreview.data
-      .filter((n) => n.priority === 'want')
-      .reduce((sum, n) => sum + n.unitsNeeded, 0);
+      .filter((n: { priority: string }) => n.priority === 'want')
+      .reduce((sum: number, n: { unitsNeeded: number }) => sum + n.unitsNeeded, 0);
   });
 
   const resetForm = () => {

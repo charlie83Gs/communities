@@ -8,7 +8,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/solid-query';
 import { Router } from '@solidjs/router';
 
 import KeycloakApp from './keycloak-app';
-import { keycloakRoutes } from './keycloak-routes.tsx';
+import { keycloakRoutes } from './keycloak-routes';
 
 const queryClient = new QueryClient({
   defaultOptions: {

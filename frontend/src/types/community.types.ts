@@ -2,6 +2,10 @@ export interface Community {
   id: string;
   name: string;
   description: string | null;
+  locationRestricted?: boolean;
+  country?: string;
+  stateProvince?: string;
+  city?: string;
   minTrustToAwardTrust: TrustRequirement;
   minTrustForWealth: TrustRequirement;
   minTrustForDisputes: TrustRequirement | null;
@@ -14,7 +18,9 @@ export interface Community {
   minTrustForFlagging: TrustRequirement | null;
   minTrustForFlagReview: TrustRequirement | null;
   minTrustForHealthAnalytics: TrustRequirement | null;
+  minTrustForNeeds: TrustRequirement | null;
   minTrustToViewTrust: TrustRequirement | null;
+  minTrustToViewNeeds: TrustRequirement | null;
   minTrustToViewWealth: TrustRequirement | null;
   minTrustToViewItems: TrustRequirement | null;
   minTrustToViewDisputes: TrustRequirement | null;
@@ -42,7 +48,9 @@ export interface CreateCommunityDto {
   minTrustForFlagging?: TrustRequirement;
   minTrustForFlagReview?: TrustRequirement;
   minTrustForHealthAnalytics?: TrustRequirement;
+  minTrustForNeeds?: TrustRequirement;
   minTrustToViewTrust?: TrustRequirement;
+  minTrustToViewNeeds?: TrustRequirement;
   minTrustToViewWealth?: TrustRequirement;
   minTrustToViewItems?: TrustRequirement;
   minTrustToViewDisputes?: TrustRequirement;
@@ -67,7 +75,9 @@ export interface UpdateCommunityDto {
   minTrustForFlagging?: TrustRequirement;
   minTrustForFlagReview?: TrustRequirement;
   minTrustForHealthAnalytics?: TrustRequirement;
+  minTrustForNeeds?: TrustRequirement;
   minTrustToViewTrust?: TrustRequirement;
+  minTrustToViewNeeds?: TrustRequirement;
   minTrustToViewWealth?: TrustRequirement;
   minTrustToViewItems?: TrustRequirement;
   minTrustToViewDisputes?: TrustRequirement;
@@ -124,6 +134,10 @@ export interface CommunityMember {
 }
 export interface SearchCommunitiesParams {
   q?: string;
+  locationRestricted?: boolean;
+  country?: string;
+  stateProvince?: string;
+  city?: string;
   page: number;
   limit: number;
 }
