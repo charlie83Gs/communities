@@ -1,8 +1,6 @@
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import { PoolsService } from './pools.service';
 
-const poolsService = new PoolsService();
-
 // Mock repositories
 const mockPoolsRepository = {
   create: mock(() => Promise.resolve(testPool)),
@@ -53,6 +51,8 @@ const mockOpenFGAService = {
   checkAccess: mock(() => Promise.resolve(true)),
   createRelationship: mock(() => Promise.resolve()),
 };
+
+let poolsService: PoolsService;
 
 // Test data
 const testPool = {
@@ -187,14 +187,16 @@ describe('PoolsService', () => {
     mockItemsRepository.findById.mockResolvedValue(testItem);
     mockOpenFGAService.checkAccess.mockResolvedValue(true);
 
-    // Inject mocks (in real implementation, use dependency injection)
-    (poolsService as any).poolsRepository = mockPoolsRepository;
-    (poolsService as any).councilRepository = mockCouncilRepository;
-    (poolsService as any).itemsRepository = mockItemsRepository;
-    (poolsService as any).wealthRepository = mockWealthRepository;
-    (poolsService as any).needsRepository = mockNeedsRepository;
-    (poolsService as any).appUserRepository = mockAppUserRepository;
-    (poolsService as any).openFGAService = mockOpenFGAService;
+    // Create service instance with mock dependencies
+    poolsService = new PoolsService(
+      mockPoolsRepository as any,
+      mockWealthRepository as any,
+      mockNeedsRepository as any,
+      mockCouncilRepository as any,
+      mockItemsRepository as any,
+      mockAppUserRepository as any,
+      mockOpenFGAService as any
+    );
   });
 
   describe('createPool', () => {
@@ -370,6 +372,7 @@ describe('PoolsService', () => {
       mockPoolsRepository.decrementInventory.mockResolvedValue(true);
       mockWealthRepository.createWealth.mockResolvedValue(testWealth);
       mockWealthRepository.createWealthRequest.mockResolvedValue(testWealthRequest);
+      mockAppUserRepository.findById.mockResolvedValue(testUser);
 
       const result = await poolsService.distributeFromPool(
         'pool-123',
@@ -393,6 +396,7 @@ describe('PoolsService', () => {
 
     it('should throw error if insufficient inventory', async () => {
       mockPoolsRepository.getInventoryForItem.mockResolvedValue(2);
+      mockAppUserRepository.findById.mockResolvedValue(testUser);
 
       await expect(
         poolsService.distributeFromPool(

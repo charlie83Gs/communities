@@ -150,7 +150,7 @@ describe('Forum Posts', () => {
         forumTestData.post({ content: 'Updated content' })
       );
       mockMemberRepo.getUserRole.mockResolvedValue('member');
-      mockOpenFGA.check.mockResolvedValue(false); // Not admin/manager
+      mockOpenFGA.checkAccess.mockResolvedValue(false); // Not admin/manager
 
       const result = await forumService.updatePost('post-123', { content: 'Updated content' }, 'user-123');
 
@@ -161,7 +161,7 @@ describe('Forum Posts', () => {
     });
 
     it('should update any post as admin', async () => {
-      mockOpenFGA.check.mockResolvedValue(true); // Admin
+      mockOpenFGA.checkAccess.mockResolvedValue(true); // Admin
       mockForumRepo.findCategoryById.mockResolvedValue(forumTestData.category());
       mockForumRepo.findThreadById.mockResolvedValue(forumTestData.thread());
       mockForumRepo.findPostById.mockResolvedValue(forumTestData.post({ authorId: 'user-other' }));
@@ -176,11 +176,7 @@ describe('Forum Posts', () => {
     });
 
     it('should update any post as forum manager', async () => {
-      mockOpenFGA.check.mockImplementation(async (params: any) => {
-        if (params.relation === 'admin') return false;
-        if (params.relation === 'forum_manager') return true;
-        return false;
-      });
+      mockOpenFGA.checkAccess.mockResolvedValue(true);
       mockForumRepo.findCategoryById.mockResolvedValue(forumTestData.category());
       mockForumRepo.findThreadById.mockResolvedValue(forumTestData.thread());
       mockForumRepo.findPostById.mockResolvedValue(forumTestData.post({ authorId: 'user-other' }));
@@ -195,7 +191,7 @@ describe('Forum Posts', () => {
     });
 
     it('should fail to update other users post without permissions', async () => {
-      mockOpenFGA.check.mockResolvedValue(false);
+      mockOpenFGA.checkAccess.mockResolvedValue(false);
       mockForumRepo.findCategoryById.mockResolvedValue(forumTestData.category());
       mockForumRepo.findThreadById.mockResolvedValue(forumTestData.thread());
       mockForumRepo.findPostById.mockResolvedValue(forumTestData.post({ authorId: 'user-other' }));
@@ -233,7 +229,7 @@ describe('Forum Posts', () => {
       mockForumRepo.findThreadById.mockResolvedValue(forumTestData.thread());
       mockForumRepo.findPostById.mockResolvedValue(forumTestData.post({ authorId: 'user-123' }));
       mockMemberRepo.getUserRole.mockResolvedValue('member');
-      mockOpenFGA.check.mockResolvedValue(false);
+      mockOpenFGA.checkAccess.mockResolvedValue(false);
 
       await forumService.deletePost('post-123', 'user-123');
 
@@ -241,7 +237,7 @@ describe('Forum Posts', () => {
     });
 
     it('should delete any post as admin', async () => {
-      mockOpenFGA.check.mockResolvedValue(true); // Admin
+      mockOpenFGA.checkAccess.mockResolvedValue(true); // Admin
       mockForumRepo.findCategoryById.mockResolvedValue(forumTestData.category());
       mockForumRepo.findThreadById.mockResolvedValue(forumTestData.thread());
       mockForumRepo.findPostById.mockResolvedValue(forumTestData.post({ authorId: 'user-other' }));
@@ -253,11 +249,7 @@ describe('Forum Posts', () => {
     });
 
     it('should delete any post as forum manager', async () => {
-      mockOpenFGA.check.mockImplementation(async (params: any) => {
-        if (params.relation === 'admin') return false;
-        if (params.relation === 'forum_manager') return true;
-        return false;
-      });
+      mockOpenFGA.checkAccess.mockResolvedValue(true);
       mockForumRepo.findCategoryById.mockResolvedValue(forumTestData.category());
       mockForumRepo.findThreadById.mockResolvedValue(forumTestData.thread());
       mockForumRepo.findPostById.mockResolvedValue(forumTestData.post({ authorId: 'user-other' }));
@@ -269,7 +261,7 @@ describe('Forum Posts', () => {
     });
 
     it('should fail to delete other users post without permissions', async () => {
-      mockOpenFGA.check.mockResolvedValue(false);
+      mockOpenFGA.checkAccess.mockResolvedValue(false);
       mockForumRepo.findCategoryById.mockResolvedValue(forumTestData.category());
       mockForumRepo.findThreadById.mockResolvedValue(forumTestData.thread());
       mockForumRepo.findPostById.mockResolvedValue(forumTestData.post({ authorId: 'user-other' }));

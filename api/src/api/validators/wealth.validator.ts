@@ -47,7 +47,7 @@ export const updateWealthSchema = z.object({
     description: z.string().optional().nullable(),
     image: z.string().max(255).optional().nullable(),
     endDate: z.string().datetime().or(z.date()).optional().nullable(),
-    unitsAvailable: z.number().int().positive().optional(),
+    unitsAvailable: z.number().int().nonnegative().optional(), // Allow 0 for updates (depleted)
     maxUnitsPerUser: z.number().int().positive().optional(),
     // Recurrent fields (for updating recurrent settings)
     recurrentFrequency: recurrentFrequency.optional().nullable(),

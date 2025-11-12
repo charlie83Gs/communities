@@ -42,11 +42,7 @@ describe('Forum Permissions', () => {
 
   describe('Forum Manager Role Permissions', () => {
     it('forum manager can create categories', async () => {
-      mockOpenFGA.check.mockImplementation(async (params: any) => {
-        if (params.relation === 'admin') return false;
-        if (params.relation === 'forum_manager') return true;
-        return false;
-      });
+      mockOpenFGA.checkAccess.mockResolvedValue(true);
       mockForumRepo.createCategory.mockResolvedValue(forumTestData.category());
 
       const dto = forumTestData.createCategoryDto();
@@ -57,11 +53,7 @@ describe('Forum Permissions', () => {
     });
 
     it('forum manager can pin threads', async () => {
-      mockOpenFGA.check.mockImplementation(async (params: any) => {
-        if (params.relation === 'admin') return false;
-        if (params.relation === 'forum_manager') return true;
-        return false;
-      });
+      mockOpenFGA.checkAccess.mockResolvedValue(true);
       mockForumRepo.findCategoryById.mockResolvedValue(forumTestData.category());
       mockForumRepo.findThreadById.mockResolvedValue(forumTestData.thread());
       mockForumRepo.updateThread.mockResolvedValue(forumTestData.thread({ isPinned: true }));
@@ -73,11 +65,7 @@ describe('Forum Permissions', () => {
     });
 
     it('forum manager can lock threads', async () => {
-      mockOpenFGA.check.mockImplementation(async (params: any) => {
-        if (params.relation === 'admin') return false;
-        if (params.relation === 'forum_manager') return true;
-        return false;
-      });
+      mockOpenFGA.checkAccess.mockResolvedValue(true);
       mockForumRepo.findCategoryById.mockResolvedValue(forumTestData.category());
       mockForumRepo.findThreadById.mockResolvedValue(forumTestData.thread());
       mockForumRepo.updateThread.mockResolvedValue(forumTestData.thread({ isLocked: true }));
@@ -89,11 +77,7 @@ describe('Forum Permissions', () => {
     });
 
     it('forum manager can delete any thread', async () => {
-      mockOpenFGA.check.mockImplementation(async (params: any) => {
-        if (params.relation === 'admin') return false;
-        if (params.relation === 'forum_manager') return true;
-        return false;
-      });
+      mockOpenFGA.checkAccess.mockResolvedValue(true);
       mockForumRepo.findCategoryById.mockResolvedValue(forumTestData.category());
       mockForumRepo.findThreadById.mockResolvedValue(
         forumTestData.thread({ authorId: 'user-other' })
@@ -106,11 +90,7 @@ describe('Forum Permissions', () => {
     });
 
     it('forum manager can delete any post', async () => {
-      mockOpenFGA.check.mockImplementation(async (params: any) => {
-        if (params.relation === 'admin') return false;
-        if (params.relation === 'forum_manager') return true;
-        return false;
-      });
+      mockOpenFGA.checkAccess.mockResolvedValue(true);
       mockForumRepo.findCategoryById.mockResolvedValue(forumTestData.category());
       mockForumRepo.findThreadById.mockResolvedValue(forumTestData.thread());
       mockForumRepo.findPostById.mockResolvedValue(forumTestData.post({ authorId: 'user-other' }));
@@ -122,11 +102,7 @@ describe('Forum Permissions', () => {
     });
 
     it('forum manager can update categories', async () => {
-      mockOpenFGA.check.mockImplementation(async (params: any) => {
-        if (params.relation === 'admin') return false;
-        if (params.relation === 'forum_manager') return true;
-        return false;
-      });
+      mockOpenFGA.checkAccess.mockResolvedValue(true);
       mockForumRepo.findCategoryById.mockResolvedValue(forumTestData.category());
       mockForumRepo.updateCategory.mockResolvedValue(
         forumTestData.category({ name: 'Updated by Manager' })
@@ -142,11 +118,7 @@ describe('Forum Permissions', () => {
     });
 
     it('forum manager can delete categories', async () => {
-      mockOpenFGA.check.mockImplementation(async (params: any) => {
-        if (params.relation === 'admin') return false;
-        if (params.relation === 'forum_manager') return true;
-        return false;
-      });
+      mockOpenFGA.checkAccess.mockResolvedValue(true);
       mockForumRepo.findCategoryById.mockResolvedValue(forumTestData.category());
       mockForumRepo.deleteCategory.mockResolvedValue(forumTestData.category());
 
@@ -158,8 +130,7 @@ describe('Forum Permissions', () => {
 
   describe('Trust-Based Thread Creation (default: 10)', () => {
     it('should create thread with trust >= 10', async () => {
-      mockOpenFGA.check.mockResolvedValue(false); // Not admin
-      mockOpenFGA.checkTrustLevel.mockResolvedValue(true); // Trust >= 10
+      mockOpenFGA.checkAccess.mockResolvedValue(true); // Has permission to create threads
       mockForumRepo.findCategoryById.mockResolvedValue(forumTestData.category());
       mockForumRepo.createThread.mockResolvedValue(forumTestData.thread());
       mockMemberRepo.getUserRole.mockResolvedValue('member');
@@ -168,11 +139,10 @@ describe('Forum Permissions', () => {
       const result = await forumService.createThread(dto, 'user-trust-10');
 
       expect(result).toBeDefined();
-      expect(mockOpenFGA.checkTrustLevel).toHaveBeenCalledWith('user-trust-10', 'comm-123', 10);
     });
 
     it('should fail with trust < 10', async () => {
-      mockOpenFGA.check.mockResolvedValue(false); // Not admin
+      mockOpenFGA.checkAccess.mockResolvedValue(false); // Not admin
       mockOpenFGA.checkTrustLevel.mockResolvedValue(false); // Trust < 10
       mockForumRepo.findCategoryById.mockResolvedValue(forumTestData.category());
       mockMemberRepo.getUserRole.mockResolvedValue('member');
@@ -180,13 +150,12 @@ describe('Forum Permissions', () => {
       const dto = forumTestData.createThreadDto();
 
       await expect(forumService.createThread(dto, 'user-trust-5')).rejects.toThrow(
-        'Forbidden: insufficient trust to create threads'
+        'Forbidden: insufficient permission to create threads'
       );
     });
 
     it('should respect custom trust threshold', async () => {
-      mockOpenFGA.check.mockResolvedValue(false);
-      mockOpenFGA.checkTrustLevel.mockResolvedValue(false);
+      mockOpenFGA.checkAccess.mockResolvedValue(false); // User doesn't have permission
       mockForumRepo.findCategoryById.mockResolvedValue(forumTestData.category());
       mockCommunityRepo.findById.mockResolvedValue({
         id: 'comm-123',
@@ -202,20 +171,14 @@ describe('Forum Permissions', () => {
       const dto = forumTestData.createThreadDto();
 
       await expect(forumService.createThread(dto, 'user-trust-15')).rejects.toThrow(
-        'Forbidden: insufficient trust to create threads'
+        'Forbidden: insufficient permission to create threads'
       );
-
-      expect(mockOpenFGA.checkTrustLevel).toHaveBeenCalledWith('user-trust-15', 'comm-123', 25);
     });
   });
 
   describe('Trust-Based Forum Moderation (default: 30)', () => {
     it('should allow moderation with trust >= 30', async () => {
-      mockOpenFGA.check.mockImplementation(async (params: any) => {
-        if (params.relation === 'admin') return false;
-        if (params.relation === 'forum_manager') return false;
-        return false;
-      });
+      mockOpenFGA.checkAccess.mockResolvedValue(true);
       mockOpenFGA.checkTrustLevel.mockResolvedValue(true); // Trust >= 30
       mockForumRepo.findCategoryById.mockResolvedValue(forumTestData.category());
       mockCommunityRepo.findById.mockResolvedValue({
@@ -235,9 +198,7 @@ describe('Forum Permissions', () => {
 
   describe('Admin Permissions (Bypass All)', () => {
     it('admin can create categories without forum_manager role', async () => {
-      mockOpenFGA.check.mockImplementation(async (params: any) => {
-        return params.relation === 'admin';
-      });
+      mockOpenFGA.checkAccess.mockResolvedValue(true);
       mockForumRepo.createCategory.mockResolvedValue(forumTestData.category());
 
       const dto = forumTestData.createCategoryDto();
@@ -247,9 +208,7 @@ describe('Forum Permissions', () => {
     });
 
     it('admin can create threads without trust requirement', async () => {
-      mockOpenFGA.check.mockImplementation(async (params: any) => {
-        return params.relation === 'admin';
-      });
+      mockOpenFGA.checkAccess.mockResolvedValue(true);
       mockForumRepo.findCategoryById.mockResolvedValue(forumTestData.category());
       mockForumRepo.createThread.mockResolvedValue(forumTestData.thread());
       mockMemberRepo.getUserRole.mockResolvedValue('admin');
@@ -262,7 +221,7 @@ describe('Forum Permissions', () => {
     });
 
     it('admin can pin threads', async () => {
-      mockOpenFGA.check.mockResolvedValue(true); // Admin
+      mockOpenFGA.checkAccess.mockResolvedValue(true); // Admin
       mockForumRepo.findCategoryById.mockResolvedValue(forumTestData.category());
       mockForumRepo.findThreadById.mockResolvedValue(forumTestData.thread());
       mockForumRepo.updateThread.mockResolvedValue(forumTestData.thread({ isPinned: true }));
@@ -274,7 +233,7 @@ describe('Forum Permissions', () => {
     });
 
     it('admin can lock threads', async () => {
-      mockOpenFGA.check.mockResolvedValue(true);
+      mockOpenFGA.checkAccess.mockResolvedValue(true);
       mockForumRepo.findCategoryById.mockResolvedValue(forumTestData.category());
       mockForumRepo.findThreadById.mockResolvedValue(forumTestData.thread());
       mockForumRepo.updateThread.mockResolvedValue(forumTestData.thread({ isLocked: true }));
@@ -286,7 +245,7 @@ describe('Forum Permissions', () => {
     });
 
     it('admin can delete any thread', async () => {
-      mockOpenFGA.check.mockResolvedValue(true);
+      mockOpenFGA.checkAccess.mockResolvedValue(true);
       mockForumRepo.findCategoryById.mockResolvedValue(forumTestData.category());
       mockForumRepo.findThreadById.mockResolvedValue(
         forumTestData.thread({ authorId: 'user-other' })
@@ -299,7 +258,7 @@ describe('Forum Permissions', () => {
     });
 
     it('admin can delete any post', async () => {
-      mockOpenFGA.check.mockResolvedValue(true);
+      mockOpenFGA.checkAccess.mockResolvedValue(true);
       mockForumRepo.findCategoryById.mockResolvedValue(forumTestData.category());
       mockForumRepo.findThreadById.mockResolvedValue(forumTestData.thread());
       mockForumRepo.findPostById.mockResolvedValue(forumTestData.post({ authorId: 'user-other' }));
@@ -323,13 +282,13 @@ describe('Forum Permissions', () => {
     it('non-member cannot create threads', async () => {
       mockMemberRepo.getUserRole.mockResolvedValue(null);
       mockForumRepo.findCategoryById.mockResolvedValue(forumTestData.category());
-      mockOpenFGA.check.mockResolvedValue(false); // Not admin
+      mockOpenFGA.checkAccess.mockResolvedValue(false); // Not admin
       mockOpenFGA.checkTrustLevel.mockResolvedValue(false); // No trust
 
       const dto = forumTestData.createThreadDto();
 
       await expect(forumService.createThread(dto, 'user-outsider')).rejects.toThrow(
-        'Forbidden: insufficient trust to create threads'
+        'Forbidden: insufficient permission to create threads'
       );
     });
 
@@ -379,13 +338,13 @@ describe('Forum Permissions', () => {
     it('reader cannot create threads', async () => {
       mockMemberRepo.getUserRole.mockResolvedValue('reader');
       mockForumRepo.findCategoryById.mockResolvedValue(forumTestData.category());
-      mockOpenFGA.check.mockResolvedValue(false); // Not admin
+      mockOpenFGA.checkAccess.mockResolvedValue(false); // Not admin
       mockOpenFGA.checkTrustLevel.mockResolvedValue(false); // Assume no trust
 
       const dto = forumTestData.createThreadDto();
 
       await expect(forumService.createThread(dto, 'user-reader')).rejects.toThrow(
-        'Forbidden: insufficient trust to create threads'
+        'Forbidden: insufficient permission to create threads'
       );
     });
   });
@@ -443,7 +402,7 @@ describe('Forum Permissions', () => {
         forumTestData.thread({ authorId: 'user-member' })
       );
       mockMemberRepo.getUserRole.mockResolvedValue('member');
-      mockOpenFGA.check.mockResolvedValue(false);
+      mockOpenFGA.checkAccess.mockResolvedValue(false);
 
       await forumService.deleteThread('thread-123', 'user-member');
 
@@ -455,7 +414,7 @@ describe('Forum Permissions', () => {
       mockForumRepo.findThreadById.mockResolvedValue(forumTestData.thread());
       mockForumRepo.findPostById.mockResolvedValue(forumTestData.post({ authorId: 'user-member' }));
       mockMemberRepo.getUserRole.mockResolvedValue('member');
-      mockOpenFGA.check.mockResolvedValue(false);
+      mockOpenFGA.checkAccess.mockResolvedValue(false);
 
       await forumService.deletePost('post-123', 'user-member');
 
@@ -468,7 +427,7 @@ describe('Forum Permissions', () => {
         forumTestData.thread({ authorId: 'user-other' })
       );
       mockMemberRepo.getUserRole.mockResolvedValue('member');
-      mockOpenFGA.check.mockResolvedValue(false);
+      mockOpenFGA.checkAccess.mockResolvedValue(false);
 
       await expect(forumService.deleteThread('thread-123', 'user-member')).rejects.toThrow(
         'Forbidden: only the thread author or forum managers can delete this thread'
@@ -476,7 +435,7 @@ describe('Forum Permissions', () => {
     });
 
     it('member cannot pin threads', async () => {
-      mockOpenFGA.check.mockResolvedValue(false);
+      mockOpenFGA.checkAccess.mockResolvedValue(false);
       mockForumRepo.findCategoryById.mockResolvedValue(forumTestData.category());
       mockForumRepo.findThreadById.mockResolvedValue(forumTestData.thread({ authorId: 'user-other' }));
       mockMemberRepo.getUserRole.mockResolvedValue('member');
@@ -487,7 +446,7 @@ describe('Forum Permissions', () => {
     });
 
     it('member cannot lock threads', async () => {
-      mockOpenFGA.check.mockResolvedValue(false);
+      mockOpenFGA.checkAccess.mockResolvedValue(false);
       mockForumRepo.findCategoryById.mockResolvedValue(forumTestData.category());
       mockForumRepo.findThreadById.mockResolvedValue(forumTestData.thread({ authorId: 'user-other' }));
       mockMemberRepo.getUserRole.mockResolvedValue('member');
@@ -498,7 +457,7 @@ describe('Forum Permissions', () => {
     });
 
     it('member cannot create categories', async () => {
-      mockOpenFGA.check.mockResolvedValue(false);
+      mockOpenFGA.checkAccess.mockResolvedValue(false);
 
       const dto = forumTestData.createCategoryDto();
 

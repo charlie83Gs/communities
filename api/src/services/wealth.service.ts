@@ -96,6 +96,14 @@ export class WealthService {
       throw new AppError('endDate is required for timebound wealth', 400);
     }
 
+    // Validate unitsAvailable (distribution is always unit_based)
+    if (dto.unitsAvailable === undefined || dto.unitsAvailable === null) {
+      throw new AppError('unitsAvailable must be a positive integer', 400);
+    }
+    if (!Number.isInteger(dto.unitsAvailable) || dto.unitsAvailable < 1) {
+      throw new AppError('unitsAvailable must be a positive integer', 400);
+    }
+
     // Validate recurrent settings
     if (dto.isRecurrent) {
       if (!dto.recurrentFrequency || !dto.recurrentReplenishValue) {

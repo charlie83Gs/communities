@@ -298,7 +298,7 @@ describe('ForumRepository', () => {
         mockDb.offset.mockReturnValueOnce(mockDb);
         mockDb.then.mockImplementationOnce((resolve) => resolve([]));
 
-        const _result = await forumRepository.findThreadsByCategory('category-123', {
+        const result = await forumRepository.findThreadsByCategory('category-123', {
           limit: 10,
           offset: 20,
         });

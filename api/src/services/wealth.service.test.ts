@@ -115,7 +115,7 @@ describe('WealthService', () => {
           itemId: 'item-123',
           title: 'Test Wealth',
           durationType: 'unlimited',
-          distributionType: 'request_based',
+          unitsAvailable: 10,
         },
         'user-123'
       );

@@ -194,11 +194,7 @@ describe('Forum Categories', () => {
     });
 
     it('should update category as forum manager', async () => {
-      mockOpenFGA.check.mockImplementation(async (params: any) => {
-        if (params.relation === 'admin') return false;
-        if (params.relation === 'forum_manager') return true;
-        return false;
-      });
+      mockOpenFGA.checkAccess.mockResolvedValue(true);
       mockForumRepo.findCategoryById.mockResolvedValue(forumTestData.category());
       mockForumRepo.updateCategory.mockResolvedValue(forumTestData.category({ displayOrder: 5 }));
 
@@ -243,11 +239,7 @@ describe('Forum Categories', () => {
     });
 
     it('should delete category as forum manager', async () => {
-      mockOpenFGA.check.mockImplementation(async (params: any) => {
-        if (params.relation === 'admin') return false;
-        if (params.relation === 'forum_manager') return true;
-        return false;
-      });
+      mockOpenFGA.checkAccess.mockResolvedValue(true);
       mockForumRepo.findCategoryById.mockResolvedValue(forumTestData.category());
       mockForumRepo.deleteCategory.mockResolvedValue(forumTestData.category());
 

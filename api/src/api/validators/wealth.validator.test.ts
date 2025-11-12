@@ -270,23 +270,8 @@ describe('Wealth Validators', () => {
       expect(res.status).toHaveBeenCalledWith(400);
     });
 
-    it('should fail with invalid distributionType', () => {
-      const req = createMockRequest({
-        body: {
-          communityId: '123e4567-e89b-12d3-a456-426614174000',
-          itemId: '223e4567-e89b-12d3-a456-426614174001',
-          title: 'Test Wealth',
-          durationType: 'unlimited',
-          distributionType: 'invalid',
-        },
-      });
-      const res = createMockResponse();
-      const next = createMockNext();
-
-      validateCreateWealth(req, res, next);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-    });
+    // Note: distributionType is not validated because it's always hardcoded to 'unit_based' in the service
+    // The field is not accepted as input in the schema
 
     it('should pass with Date object for endDate', () => {
       const req = createMockRequest({
