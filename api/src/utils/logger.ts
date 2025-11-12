@@ -14,7 +14,9 @@ const consoleFormat = winston.format.combine(
   winston.format.colorize(),
   winston.format.timestamp(),
   winston.format.errors({ stack: true }),
+
   winston.format.printf((info) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { timestamp, level, message, ...meta } = info as any;
     const metaStr = Object.keys(meta).length ? ` ${JSON.stringify(meta)}` : '';
     return `${timestamp} ${level}: ${message}${metaStr}`;

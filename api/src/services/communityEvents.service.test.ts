@@ -5,7 +5,6 @@ import type { CommunityEventsRepository } from '../repositories/communityEvents.
 describe('CommunityEventsService', () => {
   let service: CommunityEventsService;
   let mockRepository: CommunityEventsRepository;
-  let mockCommunityMemberRepository: any;
 
   beforeEach(() => {
     // Mock repository

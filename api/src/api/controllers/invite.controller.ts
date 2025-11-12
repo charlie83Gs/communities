@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import type { CommunityRole } from '@/services/invite.service';
 /**
  * @swagger
  * components:
@@ -146,7 +147,7 @@ export class InviteController {
     try {
       const requesterId = (req as any).user?.id;
       const { communityId } = req.params as { communityId: string };
-      const { invitedUserId, role } = req.body as { invitedUserId: string; role: string };
+      const { invitedUserId, role } = req.body as { invitedUserId: string; role: CommunityRole };
       console.log(`[InviteController] Creating user invite: communityId=${communityId}, invitedUserId=${invitedUserId}, role=${role}, requesterId=${requesterId}`);
       const invite = await inviteService.createUserInvite(
         { communityId, invitedUserId, role },
@@ -248,7 +249,7 @@ export class InviteController {
     try {
       const requesterId = (req as any).user?.id;
       const { communityId } = req.params as { communityId: string };
-      const { role, title, expiresAt } = req.body as { role: string; title?: string; expiresAt: string };
+      const { role, title, expiresAt } = req.body as { role: CommunityRole; title?: string; expiresAt: string };
       const invite = await inviteService.createLinkInvite(
         { communityId, role, title, expiresAt },
         requesterId

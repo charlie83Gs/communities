@@ -43,7 +43,7 @@ describe('TrustLevelRepository', () => {
     // Reset all mocks and setup default chains
     setupMockDbChains(mockDb);
     // Instantiate repository with the per-test mock DB
-    trustLevelRepository = new TrustLevelRepository(mockDb as any);
+    trustLevelRepository = new TrustLevelRepository(mockDb);
   });
 
   afterEach(() => {

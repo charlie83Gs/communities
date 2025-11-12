@@ -3,11 +3,11 @@ import {
   needs,
   councilNeeds,
   needPriorityEnum,
-  needRecurrenceEnum,
+  _needRecurrenceEnum,
   needStatusEnum,
 } from '@db/schema/needs.schema';
 import { items } from '@db/schema/items.schema';
-import { and, desc, eq, isNull, sql, count as drizzleCount, inArray } from 'drizzle-orm';
+import { and, desc, eq, isNull, sql } from 'drizzle-orm';
 
 export type NeedRecord = typeof needs.$inferSelect;
 export type CreateNeedInput = typeof needs.$inferInsert;

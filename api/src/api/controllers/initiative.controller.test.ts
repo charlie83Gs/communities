@@ -10,18 +10,18 @@ import {
 // Mock the service
 const mockInitiativeService = {
   createInitiative: mock(() => Promise.resolve({ id: 'init-123', title: 'Community Garden' })),
-  listInitiatives: mock(() => Promise.resolve({ initiatives: [], total: 0 })),
+  listInitiatives: mock(() => Promise.resolve({ initiatives: [] as any[], total: 0 })),
   getInitiative: mock(() => Promise.resolve({ id: 'init-123', title: 'Community Garden' })),
   updateInitiative: mock(() => Promise.resolve({ id: 'init-123', title: 'Updated Initiative' })),
   deleteInitiative: mock(() => Promise.resolve()),
   voteOnInitiative: mock(() => Promise.resolve({ success: true })),
   removeVote: mock(() => Promise.resolve({ success: true })),
   createReport: mock(() => Promise.resolve({ id: 'report-123' })),
-  listReports: mock(() => Promise.resolve([])),
+  listReports: mock(() => Promise.resolve([] as any[])),
   createComment: mock(() => Promise.resolve({ id: 'comment-123' })),
-  listComments: mock(() => Promise.resolve([])),
+  listComments: mock(() => Promise.resolve([] as any[])),
   createReportComment: mock(() => Promise.resolve({ id: 'comment-123' })),
-  listReportComments: mock(() => Promise.resolve([])),
+  listReportComments: mock(() => Promise.resolve([] as any[])),
 };
 
 describe('InitiativeController', () => {
@@ -319,7 +319,7 @@ describe('InitiativeController', () => {
       const res = createMockResponse();
       const next = createMockNext();
 
-      const reports = [{ id: 'report-123' }];
+      const reports = [{ id: 'report-123' }] as any[];
       mockInitiativeService.listReports.mockResolvedValue(reports);
 
       await initiativeController.listReports(req, res, next);
@@ -387,7 +387,7 @@ describe('InitiativeController', () => {
       const res = createMockResponse();
       const next = createMockNext();
 
-      const comments = [{ id: 'comment-123' }];
+      const comments = [{ id: 'comment-123' }] as any[];
       mockInitiativeService.listComments.mockResolvedValue(comments);
 
       await initiativeController.listComments(req, res, next);

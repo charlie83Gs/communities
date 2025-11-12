@@ -120,7 +120,9 @@ export class KeycloakUserService {
       // Keycloak returns 201 with Location header
       if (response.status === 201) {
         // Prefer Location header to extract the actual Keycloak user id
+
         const location: string | undefined =
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (response.headers as any)?.location || (response as any)?.headers?.get?.('location');
         if (location) {
           // Example: http://localhost:8081/admin/realms/share-app/users/3d6c5f7b-3a07-44f4-8f5e-8a7f0b0d2a63
@@ -129,10 +131,10 @@ export class KeycloakUserService {
           try {
             const createdUser = await this.getUserById(kcId);
             return createdUser;
-          } catch (e) {
+          } catch (_error) {
             console.warn(
               '[Keycloak] Failed to fetch user by Location id, will fallback to username lookup',
-              e
+              _error
             );
           }
         }
@@ -153,6 +155,7 @@ export class KeycloakUserService {
       }
 
       throw new Error('Failed to create user');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       console.error('[Keycloak] Error creating user:');
       console.error('  Status:', error.response?.status);

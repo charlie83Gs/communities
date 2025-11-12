@@ -3,7 +3,7 @@ import { wealthCommentService } from '@/services/wealthComment.service';
 import { wealthCommentRepository } from '@/repositories/wealthComment.repository';
 import { wealthRepository } from '@/repositories/wealth.repository';
 import { openFGAService } from './openfga.service';
-import { AppError } from '@/utils/errors';
+
 import { testData } from '../../tests/helpers/testUtils';
 
 const mockWealthCommentRepository = {
@@ -184,7 +184,7 @@ describe('WealthCommentService', () => {
         authorId: 'user-123',
       });
 
-      const result = await wealthCommentService.deleteComment('comment-123', 'user-123');
+      const _result = await wealthCommentService.deleteComment('comment-123', 'user-123');
 
       expect(mockWealthCommentRepository.delete).toHaveBeenCalledWith('comment-123');
     });

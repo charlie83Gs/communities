@@ -26,7 +26,7 @@ describe('ItemsRepository', () => {
     // Reset all mocks and setup default chains
     setupMockDbChains(mockDb);
     // Instantiate repository with the per-test mock DB
-    itemsRepository = new ItemsRepository(mockDb as any);
+    itemsRepository = new ItemsRepository(mockDb);
   });
 
   afterEach(() => {
@@ -109,7 +109,7 @@ describe('ItemsRepository', () => {
     });
 
     it('should exclude deleted items', async () => {
-      const deletedItem = { ...testItem, deletedAt: new Date() };
+      const _deletedItem = { ...testItem, deletedAt: new Date() };
       mockDb.where.mockResolvedValue([]);
 
       const result = await itemsRepository.findByName('comm-123', 'hammer');
@@ -150,7 +150,7 @@ describe('ItemsRepository', () => {
       const deletedItem = { ...testItem, deletedAt: new Date(), wealthCount: 0 };
       mockDb.orderBy.mockResolvedValue([deletedItem]);
 
-      const result = await itemsRepository.listByCommunity('comm-123', true);
+      const _result = await itemsRepository.listByCommunity('comm-123', true);
 
       expect(mockDb.where).toHaveBeenCalled();
     });

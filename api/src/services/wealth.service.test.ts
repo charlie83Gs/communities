@@ -4,7 +4,7 @@ import { wealthRepository } from '@/repositories/wealth.repository';
 import { communityMemberRepository } from '@/repositories/communityMember.repository';
 import { appUserRepository } from '@/repositories/appUser.repository';
 import { openFGAService } from './openfga.service';
-import { AppError } from '@/utils/errors';
+
 import { testData } from '../../tests/helpers/testUtils';
 
 // Mock repositories
@@ -250,7 +250,7 @@ describe('WealthService', () => {
         title: 'Updated',
       });
 
-      const result = await wealthService.updateWealth(
+      const _result = await wealthService.updateWealth(
         'wealth-123',
         { title: 'Updated' },
         'user-123'
@@ -619,7 +619,7 @@ describe('WealthService', () => {
         total: 1,
       });
 
-      const result = await wealthService.searchWealth('user-123', {
+      const _result = await wealthService.searchWealth('user-123', {
         communityId: 'comm-123',
         durationType: 'timebound',
         distributionType: 'unit_based',
@@ -966,7 +966,7 @@ describe('WealthService', () => {
         },
       ]);
 
-      const result = await wealthService.listRequestsByUser('user-123', ['accepted']);
+      const _result = await wealthService.listRequestsByUser('user-123', ['accepted']);
 
       expect(mockWealthRepository.listRequestsByUser).toHaveBeenCalledWith('user-123', [
         'accepted',

@@ -9,7 +9,7 @@ import {
 
 // Mock the service
 const mockForumService = {
-  listCategories: mock(() => Promise.resolve([])),
+  listCategories: mock(() => Promise.resolve([] as any[])),
   createCategory: mock(() => Promise.resolve({ id: 'cat-123', name: 'General' })),
   updateCategory: mock(() => Promise.resolve({ id: 'cat-123', name: 'Updated' })),
   deleteCategory: mock(() => Promise.resolve()),
@@ -46,7 +46,7 @@ describe('ForumController', () => {
       const res = createMockResponse();
       const next = createMockNext();
 
-      const categories = [{ id: 'cat-123', name: 'General' }];
+      const categories = [{ id: 'cat-123', name: 'General' }] as any[];
       mockForumService.listCategories.mockResolvedValue(categories);
 
       await forumController.listCategories(req, res, next);

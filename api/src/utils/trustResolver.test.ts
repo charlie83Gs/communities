@@ -5,7 +5,6 @@ import {
   validateTrustRequirement,
 } from './trustResolver';
 import { trustLevelRepository } from '../repositories/trustLevel.repository';
-import { AppError } from './errors';
 
 // Mock trustLevelRepository
 const mockFindByName = mock(() => Promise.resolve(null));
@@ -13,6 +12,7 @@ const mockFindByName = mock(() => Promise.resolve(null));
 describe('trustResolver', () => {
   beforeEach(() => {
     mockFindByName.mockReset();
+
     (trustLevelRepository.findByName as any) = mockFindByName;
   });
 

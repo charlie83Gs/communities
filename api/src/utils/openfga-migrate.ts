@@ -70,7 +70,6 @@ export async function runOpenFGAMigrations(): Promise<void> {
 
       // Run migrations using the openfga migrate command via exec
       const { spawn } = await import('child_process');
-      const { promisify } = await import('util');
 
       // Use docker to run the migration
       const dockerNetwork = 'api_app_network';

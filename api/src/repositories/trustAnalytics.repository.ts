@@ -1,5 +1,5 @@
 import { db as realDb } from '../db/index';
-import { eq, and, gte, lte, desc, asc, sql } from 'drizzle-orm';
+import { eq, and, gte, lte, asc, sql } from 'drizzle-orm';
 import { trustHistory } from '../db/schema/trustHistory.schema';
 import { communities } from '../db/schema/communities.schema';
 import { appUsers } from '../db/schema/app_users.schema';

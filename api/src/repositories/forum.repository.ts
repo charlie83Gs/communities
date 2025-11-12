@@ -1,6 +1,6 @@
 import { db as realDb } from '@db/index';
 import { forumCategories, forumThreads, forumPosts, forumVotes, forumThreadTags } from '@db/schema';
-import { eq, and, desc, sql, inArray } from 'drizzle-orm';
+import { eq, and, desc, sql } from 'drizzle-orm';
 
 export type ForumCategoryRecord = typeof forumCategories.$inferSelect;
 export type ForumThreadRecord = typeof forumThreads.$inferSelect;
@@ -49,9 +49,9 @@ export type CreateVoteDto = {
 };
 
 export class ForumRepository {
-  private db: any;
+  private db: DbClient;
 
-  constructor(db: any) {
+  constructor(db: DbClient) {
     this.db = db;
   }
 
@@ -172,6 +172,7 @@ export class ForumRepository {
       .offset(offset);
 
     // Apply sorting
+
     if (sort === 'newest') {
       query = query.orderBy(desc(forumThreads.createdAt)) as any;
     } else if (sort === 'popular') {

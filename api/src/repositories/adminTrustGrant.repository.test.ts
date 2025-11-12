@@ -19,7 +19,7 @@ describe('AdminTrustGrantRepository', () => {
     // Reset all mocks and setup default chains
     setupMockDbChains(mockDb);
     // Instantiate repository with the per-test mock DB
-    adminTrustGrantRepository = new AdminTrustGrantRepository(mockDb as any);
+    adminTrustGrantRepository = new AdminTrustGrantRepository(mockDb);
   });
 
   afterEach(() => {
@@ -76,7 +76,7 @@ describe('AdminTrustGrantRepository', () => {
       mockDb.returning.mockResolvedValueOnce([initialGrant]);
       mockDb.returning.mockResolvedValueOnce([updatedGrant]);
 
-      const initial = await adminTrustGrantRepository.upsertGrant(
+      const _initial = await adminTrustGrantRepository.upsertGrant(
         testCommunityId,
         adminUserId,
         testUserId1,

@@ -14,9 +14,9 @@ export type Council = {
 };
 
 export class CouncilsRepository {
-  private db: any;
+  private db: DbClient;
 
-  constructor(db: any) {
+  constructor(db: DbClient) {
     this.db = db;
   }
 

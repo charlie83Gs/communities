@@ -33,7 +33,7 @@ const testInventory = [
 describe('PoolsRepository', () => {
   beforeEach(() => {
     setupMockDbChains(mockDb);
-    poolsRepository = new PoolsRepository(mockDb as any);
+    poolsRepository = new PoolsRepository(mockDb);
   });
 
   describe('create', () => {

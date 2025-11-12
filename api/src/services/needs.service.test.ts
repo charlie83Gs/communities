@@ -1,10 +1,9 @@
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import { NeedsService } from '@/services/needs.service';
-import { needsRepository, NeedsRepository } from '@/repositories/needs.repository';
+import { needsRepository } from '@/repositories/needs.repository';
 import { councilRepository } from '@/repositories/council.repository';
 import { itemsRepository } from '@/repositories/items.repository';
 import { openFGAService } from './openfga.service';
-import { AppError } from '@/utils/errors';
 
 // Mock repositories and services
 const mockNeedsRepository = {

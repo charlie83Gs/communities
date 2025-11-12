@@ -2,11 +2,11 @@ import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import { itemsController } from '@/api/controllers/items.controller';
 import { itemsService } from '@/services/items.service';
 import { AppError } from '@/utils/errors';
+
 import {
   createMockAuthenticatedRequest,
   createMockResponse,
   createMockNext,
-  getNextError,
 } from '../../../tests/helpers/testUtils';
 import type { Item } from '@db/schema';
 
@@ -567,7 +567,7 @@ describe('ItemsController', () => {
 
     it('should handle invalid communityId type', async () => {
       const req = createMockAuthenticatedRequest('user-123', {
-        query: { communityId: 123 }, // Invalid type
+        query: { communityId: 123 as any }, // Invalid type
       });
       const res = createMockResponse();
       const next = createMockNext();

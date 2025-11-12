@@ -43,7 +43,7 @@ describe('InitiativeRepository', () => {
     // Reset all mocks and setup default chains
     setupMockDbChains(mockDb);
     // Instantiate repository with the per-test mock DB
-    initiativeRepository = new InitiativeRepository(mockDb as any);
+    initiativeRepository = new InitiativeRepository(mockDb);
   });
 
   afterEach(() => {
@@ -152,7 +152,7 @@ describe('InitiativeRepository', () => {
       // Query 2: Count query (no user votes query since no initiatives)
       mockDb.where.mockResolvedValueOnce([{ count: 0 }]);
 
-      const result = await initiativeRepository.findByCouncil('council-123', 'user-123', {
+      const _result = await initiativeRepository.findByCouncil('council-123', 'user-123', {
         page: 2,
         limit: 10,
       });

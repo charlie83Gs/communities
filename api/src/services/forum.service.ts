@@ -9,9 +9,7 @@ import {
   UpdateThreadDto,
   CreatePostDto,
   UpdatePostDto,
-  CreateVoteDto,
 } from '@repositories/forum.repository';
-import { communityRepository } from '@repositories/community.repository';
 import { communityMemberRepository } from '@repositories/communityMember.repository';
 import { appUserRepository } from '@repositories/appUser.repository';
 import { openFGAService } from './openfga.service';

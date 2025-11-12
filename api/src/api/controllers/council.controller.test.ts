@@ -9,7 +9,7 @@ import {
 
 // Mock the service
 const mockCouncilService = {
-  listCouncils: mock(() => Promise.resolve([])),
+  listCouncils: mock(() => Promise.resolve([] as any[])),
   getCouncil: mock(() => Promise.resolve({ id: 'council-123', name: 'Food Council' })),
   createCouncil: mock(() => Promise.resolve({ id: 'council-123', name: 'Food Council' })),
   updateCouncil: mock(() => Promise.resolve({ id: 'council-123', name: 'Updated Council' })),
@@ -19,8 +19,8 @@ const mockCouncilService = {
   getTrustStatus: mock(() => Promise.resolve({ trustScore: 15, userHasTrusted: true })),
   addManager: mock(() => Promise.resolve({ success: true })),
   removeManager: mock(() => Promise.resolve({ success: true })),
-  getInventory: mock(() => Promise.resolve([])),
-  getTransactions: mock(() => Promise.resolve({ transactions: [], total: 0 })),
+  getInventory: mock(() => Promise.resolve([] as any[])),
+  getTransactions: mock(() => Promise.resolve({ transactions: [] as any[], total: 0 })),
 };
 
 describe('CouncilController', () => {
@@ -43,7 +43,7 @@ describe('CouncilController', () => {
       const res = createMockResponse();
       const next = createMockNext();
 
-      const councils = [{ id: 'council-123', name: 'Food Council' }];
+      const councils = [{ id: 'council-123', name: 'Food Council' }] as any[];
       mockCouncilService.listCouncils.mockResolvedValue(councils);
 
       await councilController.list(req, res, next);
@@ -388,7 +388,7 @@ describe('CouncilController', () => {
       const res = createMockResponse();
       const next = createMockNext();
 
-      const inventory = [{ itemId: 'item-123', quantity: 5 }];
+      const inventory = [{ itemId: 'item-123', quantity: 5 }] as any[];
       mockCouncilService.getInventory.mockResolvedValue(inventory);
 
       await councilController.getInventory(req, res, next);

@@ -5,7 +5,7 @@ import { communityMemberRepository } from '@/repositories/communityMember.reposi
 import { appUserRepository } from '@repositories/appUser.repository';
 import { trustViewRepository } from '@/repositories/trustView.repository';
 import { openFGAService } from '@/services/openfga.service';
-import { AppError } from '@/utils/errors';
+
 import { testData } from '../../tests/helpers/testUtils';
 
 // Mock repositories

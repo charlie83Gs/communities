@@ -200,10 +200,12 @@ export class PoolsService {
   /**
    * Contribute to pool (creates wealth share with targetPoolId)
    */
+
   async contributeToPool(
     poolId: string,
     data: ContributeToPoolRequest,
     userId: string
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ): Promise<any> {
     // 1. Verify pool exists
     const pool = await poolsRepository.findById(poolId);
@@ -277,6 +279,7 @@ export class PoolsService {
 
     // 4. Transform to response format with user names
     const contributions = await Promise.all(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       wealthRecords.map(async (wealth: any) => {
         // Get contributor info
         const contributor = await appUserRepository.findById(wealth.createdBy);
@@ -366,10 +369,12 @@ export class PoolsService {
   /**
    * Distribute from pool manually (council managers only)
    */
+
   async distributeFromPool(
     poolId: string,
     data: DistributeFromPoolRequest,
     userId: string
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ): Promise<any> {
     // 1. Verify pool exists
     const pool = await poolsRepository.findById(poolId);
@@ -620,6 +625,7 @@ export class PoolsService {
 
     // 4. Transform to response format with user names
     const distributions = await Promise.all(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       wealthRecords.map(async (wealth: any) => {
         // Get recipient info from wealth request
         const recipientId = wealth.wealthRequest?.requesterId;
@@ -650,6 +656,7 @@ export class PoolsService {
   /**
    * Get pool inventory
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async getPoolInventory(poolId: string, userId: string): Promise<any[]> {
     const pool = await poolsRepository.findById(poolId);
     if (!pool || pool.deletedAt) {
@@ -673,7 +680,7 @@ export class PoolsService {
   /**
    * Helper: Get pool with full details
    */
-  private async getPoolWithDetails(poolId: string, userId: string): Promise<PoolResponse> {
+  private async getPoolWithDetails(poolId: string, _userId: string): Promise<PoolResponse> {
     const poolWithDetails = await poolsRepository.findByIdWithDetails(poolId);
     if (!poolWithDetails) {
       throw new AppError('Pool not found', 404);

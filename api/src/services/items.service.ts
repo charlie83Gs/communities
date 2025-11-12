@@ -1,8 +1,4 @@
-import {
-  itemsRepository,
-  CreateItemDto as RepoCreateItemDto,
-  UpdateItemDto as RepoUpdateItemDto,
-} from '@repositories/items.repository';
+import { itemsRepository } from '@repositories/items.repository';
 import { communityMemberRepository } from '@repositories/communityMember.repository';
 import { communityRepository } from '@repositories/community.repository';
 import { AppError } from '@utils/errors';

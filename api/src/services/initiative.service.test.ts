@@ -360,7 +360,7 @@ describe('InitiativeService', () => {
         total: 50,
       });
 
-      const result = await initiativeService.listInitiatives(COUNCIL_ID, USER_ID, {
+      const _result = await initiativeService.listInitiatives(COUNCIL_ID, USER_ID, {
         page: 2,
         limit: 10,
       });

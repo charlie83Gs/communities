@@ -1,4 +1,6 @@
 import { db as realDb } from '../db';
+
+type DbClient = typeof realDb;
 import {
   initiatives,
   initiativeReports,
@@ -14,9 +16,9 @@ import {
 } from '../types/initiative.types';
 
 export class InitiativeRepository {
-  private db: any;
+  private db: DbClient;
 
-  constructor(db: any) {
+  constructor(db: DbClient) {
     this.db = db;
   }
 

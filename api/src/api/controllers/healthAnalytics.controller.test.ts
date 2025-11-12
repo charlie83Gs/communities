@@ -10,9 +10,9 @@ import {
 // Mock the service
 const mockHealthAnalyticsService = {
   getWealthOverview: mock(() => Promise.resolve({ totalShares: 0, activeRequests: 0, fulfilledRequests: 0 })),
-  getWealthItems: mock(() => Promise.resolve({ items: [], total: 0 })),
+  getWealthItems: mock(() => Promise.resolve({ items: [] as any[], total: 0 })),
   getTrustOverview: mock(() => Promise.resolve({ averageTrust: 0, totalAwards: 0 })),
-  getTrustDistribution: mock(() => Promise.resolve({ distribution: [] })),
+  getTrustDistribution: mock(() => Promise.resolve({ distribution: [] as any[] })),
 };
 
 describe('HealthAnalyticsController', () => {
@@ -145,7 +145,7 @@ describe('HealthAnalyticsController', () => {
           { range: '0-10', count: 20 },
           { range: '11-20', count: 15 },
           { range: '21-30', count: 10 },
-        ],
+        ] as any[],
       };
       mockHealthAnalyticsService.getTrustDistribution.mockResolvedValue(distribution);
 

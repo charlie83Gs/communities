@@ -31,7 +31,7 @@ describe('CommunityMemberRepository', () => {
     mockOpenFGAService.removeBaseRole.mockResolvedValue(undefined);
 
     // Instantiate repository with the per-test mock openFGAService
-    communityMemberRepository = new CommunityMemberRepository(mockOpenFGAService as any);
+    communityMemberRepository = new CommunityMemberRepository(mockOpenFGAService);
   });
 
   describe('Type Validation', () => {

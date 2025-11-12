@@ -42,7 +42,7 @@ describe('InviteRepository', () => {
     // Reset all mocks and setup default chains
     setupMockDbChains(mockDb);
     // Instantiate repository with the per-test mock DB
-    inviteRepository = new InviteRepository(mockDb as any);
+    inviteRepository = new InviteRepository(mockDb);
   });
 
   afterEach(() => {
@@ -373,7 +373,7 @@ describe('InviteRepository', () => {
         const mockResult = { rowCount: 2 };
         mockDb.where.mockResolvedValue(mockResult);
 
-        const result = await inviteRepository.expirePastDueLinkInvites();
+        const _result = await inviteRepository.expirePastDueLinkInvites();
 
         expect(mockDb.update).toHaveBeenCalled();
       });

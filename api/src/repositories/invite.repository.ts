@@ -22,9 +22,9 @@ export type CreateLinkInviteInput = {
 };
 
 export class InviteRepository {
-  private db: any;
+  private db: DbClient;
 
-  constructor(db: any) {
+  constructor(db: DbClient) {
     this.db = db;
   }
   async createUserInvite(input: CreateUserInviteInput): Promise<UserInviteRecord> {

@@ -239,7 +239,7 @@ describe('HealthAnalyticsService', () => {
         },
       ]);
 
-      const result = await healthAnalyticsService.getWealthItems(
+      const _result = await healthAnalyticsService.getWealthItems(
         VALID_COMM_ID,
         VALID_USER_ID,
         '30d'

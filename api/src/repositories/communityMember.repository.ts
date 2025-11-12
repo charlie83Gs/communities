@@ -1,5 +1,7 @@
 import { openFGAService as realOpenFGAService } from '../services/openfga.service';
 
+type OpenFGAService = typeof realOpenFGAService;
+
 /**
  * CommunityMemberRepository
  *
@@ -7,9 +9,9 @@ import { openFGAService as realOpenFGAService } from '../services/openfga.servic
  * All role assignments and checks are performed via OpenFGA.
  */
 export class CommunityMemberRepository {
-  private openFGAService: any;
+  private openFGAService: OpenFGAService;
 
-  constructor(openFGAService: any) {
+  constructor(openFGAService: OpenFGAService) {
     this.openFGAService = openFGAService;
   }
 

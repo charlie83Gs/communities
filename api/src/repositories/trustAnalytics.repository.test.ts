@@ -14,13 +14,12 @@ describe('TrustAnalyticsRepository', () => {
   const testUserId1 = 'testUserId1';
   const testUserId2 = 'testUserId2';
   const testUserId3 = 'testUserId3';
-  const adminUserId = 'adminUserId';
 
   beforeEach(() => {
     // Reset all mocks and setup default chains
     setupMockDbChains(mockDb);
     // Instantiate repository with the per-test mock DB
-    trustAnalyticsRepository = new TrustAnalyticsRepository(mockDb as any);
+    trustAnalyticsRepository = new TrustAnalyticsRepository(mockDb);
   });
 
   afterEach(() => {

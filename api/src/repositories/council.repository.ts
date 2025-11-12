@@ -8,7 +8,7 @@ import {
   councilInventory,
   councilTransactions,
 } from '../db/schema';
-import { eq, and, desc, asc, isNull, sql, count } from 'drizzle-orm';
+import { eq, and, desc, asc, isNull, count } from 'drizzle-orm';
 
 export type CreateCouncilDto = {
   communityId: string;
@@ -22,10 +22,12 @@ export type UpdateCouncilDto = {
   description?: string;
 };
 
-export class CouncilRepository {
-  private db: any;
+type DbClient = typeof realDb;
 
-  constructor(db: any) {
+export class CouncilRepository {
+  private db: DbClient;
+
+  constructor(db: DbClient) {
     this.db = db;
   }
 

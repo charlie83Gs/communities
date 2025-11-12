@@ -160,7 +160,9 @@ export class TrustService {
       trustEventRepository.listByUserB(communityId, userId, limit, offset),
     ]);
     // merge and sort desc by createdAt
+
     const merged = [...a, ...b].sort(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (x: any, y: any) => new Date(y.createdAt).getTime() - new Date(x.createdAt).getTime()
     );
     return merged.slice(0, limit);
@@ -179,6 +181,7 @@ export class TrustService {
         userId,
         points: 0,
         updatedAt: new Date(),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         id: undefined as any,
       }
     );
@@ -320,6 +323,7 @@ export class TrustService {
       communityId,
       type: 'share_redeemed',
       entityType: params.entityType ?? 'share',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       entityId: (params.entityId as any) ?? null,
       actorUserId: params.actorUserId ?? null,
       subjectUserIdA: giverUserId,

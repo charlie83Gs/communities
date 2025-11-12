@@ -65,7 +65,7 @@ describe('ForumService - Permission Checks', () => {
   const validUserId = '550e8400-e29b-41d4-a716-446655440002';
   const validCategoryId = '550e8400-e29b-41d4-a716-446655440003';
   const validThreadId = '550e8400-e29b-41d4-a716-446655440004';
-  const validPostId = '550e8400-e29b-41d4-a716-446655440005';
+  const _validPostId = '550e8400-e29b-41d4-a716-446655440005';
 
   beforeEach(() => {
     // Reset all mocks

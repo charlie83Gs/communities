@@ -42,7 +42,7 @@ describe('CouncilRepository', () => {
     // Reset all mocks and setup default chains
     setupMockDbChains(mockDb);
     // Instantiate repository with the per-test mock DB
-    councilRepository = new CouncilRepository(mockDb as any);
+    councilRepository = new CouncilRepository(mockDb);
   });
 
   afterEach(() => {
@@ -133,7 +133,7 @@ describe('CouncilRepository', () => {
       // Second .where() - count query, resolves
       mockDb.where.mockResolvedValueOnce([{ count: 0 }]);
 
-      const result = await councilRepository.findByCommunityId('comm-123', {
+      const _result = await councilRepository.findByCommunityId('comm-123', {
         page: 2,
         limit: 10,
       });
@@ -489,7 +489,7 @@ describe('CouncilRepository', () => {
         mockDb.where.mockReturnValueOnce(mockDb);
         mockDb.then.mockImplementationOnce((resolve) => resolve([{ count: 0 }]));
 
-        const result = await councilRepository.getTransactions('council-123', {
+        const _result = await councilRepository.getTransactions('council-123', {
           page: 2,
           limit: 10,
         });

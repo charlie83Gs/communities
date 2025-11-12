@@ -37,9 +37,9 @@ export interface ItemWithCount {
 }
 
 export class ItemsRepository {
-  private db: any;
+  private db: DbClient;
 
-  constructor(db: any) {
+  constructor(db: DbClient) {
     this.db = db;
   }
 

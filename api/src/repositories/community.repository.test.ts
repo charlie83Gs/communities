@@ -1,9 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, mock } from 'bun:test';
 import { CommunityRepository } from '@/repositories/community.repository';
-import type {
-  CommunitySearchFilters,
-  CommunitySearchResult,
-} from '@/repositories/community.repository';
+import type { CommunitySearchFilters } from '@/repositories/community.repository';
 import type { CreateCommunityDto, UpdateCommunityDto, Community } from '@/types/community.types';
 import { createThenableMockDb, setupMockDbChains } from '../../tests/helpers/mockDb';
 
@@ -60,7 +57,7 @@ describe('CommunityRepository', () => {
     });
 
     // Instantiate repository with the per-test mock DB
-    communityRepository = new CommunityRepository(mockDb as any);
+    communityRepository = new CommunityRepository(mockDb);
   });
 
   afterEach(() => {

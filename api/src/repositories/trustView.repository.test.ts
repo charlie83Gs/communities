@@ -52,7 +52,7 @@ describe('TrustViewRepository', () => {
     mockGetGrantAmount.mockResolvedValue(0);
 
     // Instantiate repository with the per-test mock DB
-    trustViewRepository = new TrustViewRepository(mockDb as any);
+    trustViewRepository = new TrustViewRepository(mockDb);
   });
 
   describe('get', () => {

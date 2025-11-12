@@ -16,10 +16,12 @@ export type CommunitySearchResult = {
   total: number;
 };
 
-export class CommunityRepository {
-  private db: any;
+type DbClient = typeof realDb;
 
-  constructor(db: any) {
+export class CommunityRepository {
+  private db: DbClient;
+
+  constructor(db: DbClient) {
     this.db = db;
   }
 
@@ -82,7 +84,9 @@ export class CommunityRepository {
   // These checks are now performed via OpenFGA in the communityMemberRepository
 
   async search(filters: CommunitySearchFilters): Promise<CommunitySearchResult> {
-    const whereParts: any[] = [isNull(communities.deletedAt)];
+    const whereParts: ReturnType<typeof eq | typeof or | typeof isNull | typeof inArray>[] = [
+      isNull(communities.deletedAt),
+    ];
 
     // Text search on name and description
     if (filters.q && filters.q.trim().length > 0) {
@@ -97,7 +101,7 @@ export class CommunityRepository {
     } else {
       // No accessible communities - return empty result
       // Use a constant impossible UUID to ensure no rows match
-      whereParts.push(eq(communities.id, sql`'00000000-0000-0000-0000-000000000000'::uuid` as any));
+      whereParts.push(eq(communities.id, sql`'00000000-0000-0000-0000-000000000000'::uuid`));
     }
 
     const where = and(...whereParts);

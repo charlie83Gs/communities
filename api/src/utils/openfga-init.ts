@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { OpenFgaClient, CredentialsMethod } from '@openfga/sdk';
 import { authorizationModel } from '../config/openfga.model';
 import { configService } from '../config/runtime/config.service';

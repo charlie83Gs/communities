@@ -352,6 +352,7 @@ export class WealthService {
       unitsAvailable: patch.unitsAvailable,
       maxUnitsPerUser: patch.maxUnitsPerUser,
       automationEnabled: patch.automationEnabled,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       status: patch.status as any,
     });
 
@@ -560,6 +561,7 @@ export class WealthService {
     statuses?: Array<'pending' | 'accepted' | 'rejected' | 'cancelled' | 'fulfilled'>
   ): Promise<WealthRequestRecord[]> {
     // A user can view their own requests across all wealth; no further checks needed
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const requests = await wealthRepository.listRequestsByUser(userId, statuses as any);
     return requests.map((r) => ({
       ...r,
@@ -576,6 +578,7 @@ export class WealthService {
     })[]
   > {
     // Get all requests for wealth items owned by this user
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const requests = await wealthRepository.listIncomingRequestsByOwner(userId, statuses as any);
 
     // Fetch requester details and wealth details for each request

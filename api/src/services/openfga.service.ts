@@ -1,20 +1,20 @@
 import { OpenFGARepository } from '../repositories/openfga.repository';
 import { initializeOpenFGA } from '../utils/openfga-init';
 import {
-  BASE_ROLES,
-  FEATURE_ROLES,
-  TRUST_ROLES,
-  PERMISSIONS,
-  SUBJECT_TYPES,
+  BASE_ROLES as _BASE_ROLES,
+  FEATURE_ROLES as _FEATURE_ROLES,
+  TRUST_ROLES as _TRUST_ROLES,
+  PERMISSIONS as _PERMISSIONS,
+  SUBJECT_TYPES as _SUBJECT_TYPES,
   BaseRole,
   FeatureRole,
-  TrustRole,
-  Permission,
+  TrustRole as _TrustRole,
+  Permission as _Permission,
   SubjectType,
   isBaseRole,
   isFeatureRole,
   isTrustRole,
-  isPermission,
+  isPermission as _isPermission,
   mapResourceType,
   mapActionToPermission,
 } from '../config/openfga.constants';

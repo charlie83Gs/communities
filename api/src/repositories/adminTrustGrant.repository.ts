@@ -2,10 +2,12 @@ import { db as realDb } from '../db/index';
 import { and, eq } from 'drizzle-orm';
 import { adminTrustGrants } from '../db/schema/adminTrustGrant.schema';
 
-export class AdminTrustGrantRepository {
-  private db: any;
+type DbClient = typeof realDb;
 
-  constructor(db: any) {
+export class AdminTrustGrantRepository {
+  private db: DbClient;
+
+  constructor(db: DbClient) {
     this.db = db;
   }
 

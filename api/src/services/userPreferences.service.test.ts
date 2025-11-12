@@ -2,8 +2,6 @@ import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import { userPreferencesService } from '@/services/userPreferences.service';
 import { appUserRepository } from '@repositories/appUser.repository';
 import { imagesService } from '@/services/images.service';
-import { AppError } from '@/utils/errors';
-import { testData } from '../../tests/helpers/testUtils';
 
 const mockAppUserRepository = {
   findById: mock(() =>
@@ -181,7 +179,7 @@ describe('UserPreferencesService', () => {
         updatedAt: new Date(),
       });
 
-      const result = await userPreferencesService.updatePreferences('user-123', {
+      const _result = await userPreferencesService.updatePreferences('user-123', {
         description: 'New description only',
       });
 

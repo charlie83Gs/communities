@@ -4,7 +4,7 @@ import { itemsRepository } from '@/repositories/items.repository';
 import { communityMemberRepository } from '@/repositories/communityMember.repository';
 import { communityRepository } from '@/repositories/community.repository';
 import { openFGAService } from '@/services/openfga.service';
-import { AppError } from '@/utils/errors';
+
 import type { Item } from '@db/schema';
 
 // Test data
@@ -142,7 +142,7 @@ describe('ItemsService', () => {
         { ...mockItem, deletedAt: new Date() },
       ]);
 
-      const result = await itemsService.listItems('comm-123', 'user-123', true);
+      const _result = await itemsService.listItems('comm-123', 'user-123', true);
 
       expect(mockItemsRepository.listByCommunity).toHaveBeenCalledWith('comm-123', true);
     });
@@ -505,7 +505,7 @@ describe('ItemsService', () => {
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
       mockItemsRepository.search.mockResolvedValue([mockItem]);
 
-      const result = await itemsService.searchItems('comm-123', 'user-123', undefined, 'object');
+      const _result = await itemsService.searchItems('comm-123', 'user-123', undefined, 'object');
 
       expect(mockItemsRepository.search).toHaveBeenCalledWith('comm-123', undefined, 'object');
     });
@@ -514,7 +514,7 @@ describe('ItemsService', () => {
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
       mockItemsRepository.search.mockResolvedValue([mockItem]);
 
-      const result = await itemsService.searchItems('comm-123', 'user-123', 'fresh', 'object');
+      const _result = await itemsService.searchItems('comm-123', 'user-123', 'fresh', 'object');
 
       expect(mockItemsRepository.search).toHaveBeenCalledWith('comm-123', 'fresh', 'object');
     });

@@ -46,7 +46,7 @@ describe('TrustAwardRepository', () => {
     // Reset all mocks and setup default chains
     setupMockDbChains(mockDb);
     // Instantiate repository with the per-test mock DB
-    trustAwardRepository = new TrustAwardRepository(mockDb as any);
+    trustAwardRepository = new TrustAwardRepository(mockDb);
   });
 
   afterEach(() => {

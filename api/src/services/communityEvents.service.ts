@@ -33,6 +33,7 @@ export class CommunityEventsService {
     eventType: CommunityEventType;
     entityType: CommunityEntityType;
     entityId: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     metadata?: Record<string, any>;
   }) {
     try {

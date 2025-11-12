@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import { inviteService } from '@/services/invite.service';
 import { inviteRepository } from '@/repositories/invite.repository';
 import { openFGAService } from './openfga.service';
-import { AppError } from '@/utils/errors';
+
 import { appUserRepository } from '@/repositories/appUser.repository';
 
 // Mock repositories and services

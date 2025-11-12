@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { TrustRequirement, TrustRequirementResolution } from '../types/trustLevel.types';
 import { trustLevelRepository } from '../repositories/trustLevel.repository';
 import { AppError } from './errors';

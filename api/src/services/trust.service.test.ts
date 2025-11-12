@@ -9,7 +9,6 @@ import { adminTrustGrantRepository } from '@/repositories/adminTrustGrant.reposi
 import { trustHistoryRepository } from '@/repositories/trustHistory.repository';
 import { trustLevelRepository } from '@/repositories/trustLevel.repository';
 import { openFGAService } from '@/services/openfga.service';
-import { AppError } from '@/utils/errors';
 
 // Mock repositories
 const mockCommunityRepository = {

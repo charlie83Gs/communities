@@ -43,7 +43,7 @@ describe('AppUserRepository', () => {
     // Reset all mocks and setup default chains
     setupMockDbChains(mockDb);
     // Instantiate repository with the per-test mock DB
-    appUserRepository = new AppUserRepository(mockDb as any);
+    appUserRepository = new AppUserRepository(mockDb);
   });
 
   afterEach(() => {
@@ -611,7 +611,9 @@ describe('AppUserRepository', () => {
       };
 
       // TypeScript should prevent these at compile time
+
       expect((input as any).id).toBeUndefined();
+
       expect((input as any).createdAt).toBeUndefined();
     });
   });

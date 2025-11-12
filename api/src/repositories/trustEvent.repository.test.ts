@@ -20,7 +20,7 @@ describe('TrustEventRepository', () => {
     // Reset all mocks and setup default chains
     setupMockDbChains(mockDb);
     // Instantiate repository with the per-test mock DB
-    trustEventRepository = new TrustEventRepository(mockDb as any);
+    trustEventRepository = new TrustEventRepository(mockDb);
   });
 
   afterEach(() => {

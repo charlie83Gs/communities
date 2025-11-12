@@ -1,10 +1,5 @@
 import { randomBytes } from 'crypto';
-import {
-  inviteRepository,
-  type InviteRecord,
-  type UserInviteRecord,
-  type LinkInviteRecord,
-} from '@/repositories/invite.repository';
+import { inviteRepository, type InviteRecord } from '@/repositories/invite.repository';
 import { openFGAService } from './openfga.service';
 import { AppError } from '@/utils/errors';
 import { appUserRepository } from '@/repositories/appUser.repository';
@@ -31,10 +26,6 @@ export type CreateLinkInviteDto = {
 
 function now(): Date {
   return new Date();
-}
-
-function secondsFromNow(sec: number): Date {
-  return new Date(Date.now() + sec * 1000);
 }
 
 function generateSecret(bytes: number = 24): string {
@@ -279,6 +270,7 @@ export class InviteService {
     }
 
     // Assign role via OpenFGA
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await openFGAService.assignBaseRole(userId, 'community', invite.communityId, role as any);
 
     // Initialize trust to 0 for new member
@@ -368,6 +360,7 @@ export class InviteService {
     }
 
     // Assign role via OpenFGA
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await openFGAService.assignBaseRole(userId, 'community', invite.communityId, role as any);
 
     // Initialize trust to 0 for new member

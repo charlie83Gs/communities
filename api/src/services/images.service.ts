@@ -38,7 +38,7 @@ export class ImagesService {
    * Save an image buffer to disk after processing with sharp (resize + convert to webp).
    * Returns metadata about the stored file.
    */
-  async save(buffer: Buffer, originalMime?: string): Promise<SavedImage> {
+  async save(buffer: Buffer, _originalMime?: string): Promise<SavedImage> {
     if (!buffer || buffer.length === 0) {
       throw new AppError('Empty image payload', 400);
     }

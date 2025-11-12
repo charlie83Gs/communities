@@ -3,12 +3,10 @@ import {
   wealth,
   wealthRequests,
   wealthStatusEnum,
-  wealthDistributionTypeEnum,
   wealthRequestStatusEnum,
-  recurrentFrequencyEnum,
 } from '@db/schema/wealth.schema';
 import { items } from '@db/schema/items.schema';
-import { and, desc, eq, inArray, ilike, or, gte, lte, sql } from 'drizzle-orm';
+import { and, eq, inArray, ilike, or, gte, lte, desc, sql } from 'drizzle-orm';
 
 export type WealthRecord = typeof wealth.$inferSelect;
 export type CreateWealthInput = typeof wealth.$inferInsert;

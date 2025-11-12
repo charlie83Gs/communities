@@ -23,7 +23,7 @@ describe('HealthAnalyticsRepository', () => {
     // Reset all mocks and setup default chains
     setupMockDbChains(mockDb);
     // Instantiate repository with the per-test mock DB
-    healthAnalyticsRepository = new HealthAnalyticsRepository(mockDb as any);
+    healthAnalyticsRepository = new HealthAnalyticsRepository(mockDb);
   });
 
   afterEach(() => {

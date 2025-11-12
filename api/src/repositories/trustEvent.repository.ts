@@ -33,9 +33,13 @@ export class TrustEventRepository {
         communityId: params.communityId,
         type: params.type,
         entityType: params.entityType ?? null,
+
         entityId: params.entityId ?? (null as any),
+
         actorUserId: params.actorUserId ?? (null as any),
+
         subjectUserIdA: params.subjectUserIdA ?? (null as any),
+
         subjectUserIdB: params.subjectUserIdB ?? (null as any),
         pointsDeltaA: params.pointsDeltaA ?? 0,
         pointsDeltaB: params.pointsDeltaB ?? 0,

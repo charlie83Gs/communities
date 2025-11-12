@@ -1,6 +1,6 @@
 import { db as realDb } from '../db/index';
 import { wealth, wealthRequests, trustHistory, items, needs, councilNeeds } from '../db/schema';
-import { eq, and, gte, sql, desc, count, isNull } from 'drizzle-orm';
+import { eq, and, gte, sql, count, isNull } from 'drizzle-orm';
 
 export type TimeRange = '7d' | '30d' | '90d' | '1y';
 
@@ -97,9 +97,9 @@ export interface AggregatedWealthData {
 }
 
 export class HealthAnalyticsRepository {
-  private db: any;
+  private db: DbClient;
 
-  constructor(db: any) {
+  constructor(db: DbClient) {
     this.db = db;
   }
 
@@ -302,6 +302,7 @@ export class HealthAnalyticsRepository {
         itemName: item.item_name,
         shareCount: parseInt(item.share_count, 10),
         valuePoints: parseFloat(item.value_points || '0'),
+
         trend: (trendResult as any[]).map((row) => ({
           date: row.date,
           count: parseInt(row.count, 10),
@@ -547,6 +548,7 @@ export class HealthAnalyticsRepository {
 
     const objectsVsServices = {
       objects: parseInt((objectsVsServicesResult as any[])[0]?.objects || '0', 10),
+
       services: parseInt((objectsVsServicesResult as any[])[0]?.services || '0', 10),
     };
 
@@ -607,7 +609,10 @@ export class HealthAnalyticsRepository {
   /**
    * Get needs items with aggregation
    */
-  async getNeedsItems(communityId: string, timeRange: TimeRange = '30d'): Promise<NeedsItemData[]> {
+  async getNeedsItems(
+    communityId: string,
+    _timeRange: TimeRange = '30d'
+  ): Promise<NeedsItemData[]> {
     // Get member needs aggregation
     const memberNeedsResult = await this.db.execute<{
       item_id: string;
@@ -773,6 +778,7 @@ export class HealthAnalyticsRepository {
     }));
 
     // Populate groups with data
+
     for (const row of aggregatedResult as any[]) {
       // Transform NULL recurrence to 'one-time' in JavaScript
       const recurrence = row.recurrence_pattern || 'one-time';

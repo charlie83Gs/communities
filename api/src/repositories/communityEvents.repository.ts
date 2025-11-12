@@ -33,15 +33,17 @@ export type CommunityEntityType =
   | 'council'
   | 'trust_award';
 
+type DbClient = typeof realDb;
+
 /**
  * CommunityEventsRepository
  * - Records community activity events
  * - Lists events by community for activity feeds and analytics
  */
 export class CommunityEventsRepository {
-  private db: any;
+  private db: DbClient;
 
-  constructor(db: any) {
+  constructor(db: DbClient) {
     this.db = db;
   }
 
@@ -54,7 +56,7 @@ export class CommunityEventsRepository {
     eventType: CommunityEventType;
     entityType: CommunityEntityType;
     entityId: string;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
   }) {
     const [row] = await this.db
       .insert(communityEvents)

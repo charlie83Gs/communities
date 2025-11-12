@@ -53,7 +53,7 @@ describe('ForumRepository', () => {
     // Reset all mocks and setup default chains
     setupMockDbChains(mockDb);
     // Instantiate repository with the per-test mock DB
-    forumRepository = new ForumRepository(mockDb as any);
+    forumRepository = new ForumRepository(mockDb);
   });
 
   afterEach(() => {
@@ -259,7 +259,7 @@ describe('ForumRepository', () => {
         mockDb.offset.mockReturnValueOnce(mockDb);
         mockDb.then.mockImplementationOnce((resolve) => resolve([]));
 
-        const result = await forumRepository.findThreadsByCategory('category-123', {
+        const _result = await forumRepository.findThreadsByCategory('category-123', {
           sort: 'newest',
         });
 
@@ -272,7 +272,7 @@ describe('ForumRepository', () => {
         mockDb.offset.mockReturnValueOnce(mockDb);
         mockDb.then.mockImplementationOnce((resolve) => resolve([]));
 
-        const result = await forumRepository.findThreadsByCategory('category-123', {
+        const _result = await forumRepository.findThreadsByCategory('category-123', {
           sort: 'popular',
         });
 
@@ -285,7 +285,7 @@ describe('ForumRepository', () => {
         mockDb.offset.mockReturnValueOnce(mockDb);
         mockDb.then.mockImplementationOnce((resolve) => resolve([]));
 
-        const result = await forumRepository.findThreadsByCategory('category-123', {
+        const _result = await forumRepository.findThreadsByCategory('category-123', {
           sort: 'mostUpvoted',
         });
 
@@ -298,7 +298,7 @@ describe('ForumRepository', () => {
         mockDb.offset.mockReturnValueOnce(mockDb);
         mockDb.then.mockImplementationOnce((resolve) => resolve([]));
 
-        const result = await forumRepository.findThreadsByCategory('category-123', {
+        const _result = await forumRepository.findThreadsByCategory('category-123', {
           limit: 10,
           offset: 20,
         });
@@ -449,7 +449,7 @@ describe('ForumRepository', () => {
         mockDb.offset.mockReturnValueOnce(mockDb);
         mockDb.then.mockImplementationOnce((resolve) => resolve([]));
 
-        const result = await forumRepository.findPostsByThread('thread-123', {
+        const _result = await forumRepository.findPostsByThread('thread-123', {
           limit: 25,
           offset: 50,
         });

@@ -37,7 +37,7 @@ export class ItemsController {
    */
   async list(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const userId = req.user?.id;
+      const userId = req.user?.id!;
       const { communityId, includeDeleted } = req.query;
 
       const items = await itemsService.listItems(
@@ -80,7 +80,7 @@ export class ItemsController {
    */
   async getById(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const userId = req.user?.id;
+      const userId = req.user?.id!;
       const { id } = req.params;
 
       const item = await itemsService.getItemById(id, userId);
@@ -147,9 +147,9 @@ export class ItemsController {
    *       404:
    *         description: Community not found
    */
-  async create(req: Request, res: Response, next: NextFunction) {
+  async create(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id!;
       const item = await itemsService.createItem(req.body, userId);
 
       return ApiResponse.created(res, item, 'Item created successfully');
@@ -213,9 +213,9 @@ export class ItemsController {
    *       404:
    *         description: Item not found
    */
-  async update(req: Request, res: Response, next: NextFunction) {
+  async update(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id!;
       const { id } = req.params;
 
       const item = await itemsService.updateItem(id, req.body, userId);
@@ -254,9 +254,9 @@ export class ItemsController {
    *       404:
    *         description: Item not found
    */
-  async delete(req: Request, res: Response, next: NextFunction) {
+  async delete(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id!;
       const { id } = req.params;
 
       await itemsService.deleteItem(id, userId);
@@ -304,9 +304,9 @@ export class ItemsController {
    *       403:
    *         description: Forbidden - not a community member
    */
-  async search(req: Request, res: Response, next: NextFunction) {
+  async search(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id!;
       const { communityId, query, kind } = req.query;
 
       const items = await itemsService.searchItems(
@@ -354,9 +354,9 @@ export class ItemsController {
    *       401:
    *         description: Unauthorized
    */
-  async canManage(req: Request, res: Response, next: NextFunction) {
+  async canManage(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id!;
       const { communityId } = req.query;
 
       if (!communityId || typeof communityId !== 'string') {

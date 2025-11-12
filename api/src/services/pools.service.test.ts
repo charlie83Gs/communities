@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import { PoolsService } from './pools.service';
-import { AppError } from '@utils/errors';
 
 const poolsService = new PoolsService();
 
