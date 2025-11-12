@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.1](https://github.com/charlie83Gs/communities/compare/communities-frontend-v1.3.0...communities-frontend-v1.3.1) (2025-11-12)
+
+
+### Bug Fixes
+
+* **frontend:** resolve logout redirect loop to login page ([cfe9f81](https://github.com/charlie83Gs/communities/commit/cfe9f817ba248dec5967f99cc535f4a179923e65))
+
 ## [1.3.0](https://github.com/charlie83Gs/communities/compare/communities-frontend-v1.2.2...communities-frontend-v1.3.0) (2025-11-12)
 
 
