@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.5.0](https://github.com/charlie83Gs/communities/compare/communities-api-v1.4.1...communities-api-v1.5.0) (2025-11-12)
+
+
+### Features
+
+* **config:** implement database-backed runtime configuration system ([406f634](https://github.com/charlie83Gs/communities/commit/406f6341392fda16961a0e25fbf86a2f145af1e7))
+
+
+### Bug Fixes
+
+* **api:** replace == with === in wealth service lint error ([1b01ab8](https://github.com/charlie83Gs/communities/commit/1b01ab8cd38ffe12d5e6366c05ff20d9f3e29da7))
+* **keycloak:** use 'communities-app' as client ID and consolidate clients ([967df3a](https://github.com/charlie83Gs/communities/commit/967df3ad92b6e47b29710d1cb915455819c7ceb2))
+
 ## [1.4.1](https://github.com/charlie83Gs/communities/compare/communities-api-v1.4.0...communities-api-v1.4.1) (2025-11-09)
 
 
