@@ -319,11 +319,6 @@ export class ItemsService {
       );
     }
 
-    // Prevent deletion of default items
-    if (item.isDefault) {
-      throw new AppError('Cannot delete default items', 400);
-    }
-
     // Check if item has active wealth references
     const hasActiveReferences = await itemsRepository.hasActiveWealthReferences(itemId);
     if (hasActiveReferences) {

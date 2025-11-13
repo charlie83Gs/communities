@@ -499,14 +499,19 @@ describe('ItemsService', () => {
       );
     });
 
-    it('should throw 400 if item is default', async () => {
+    it('should allow deletion of default items', async () => {
       mockItemsRepository.findById.mockResolvedValue(mockDefaultItem);
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
       mockOpenFGAService.checkAccess.mockResolvedValue(true);
+      mockItemsRepository.hasActiveWealthReferences.mockResolvedValue(false);
+      mockItemsRepository.softDelete.mockResolvedValue({
+        ...mockDefaultItem,
+        deletedAt: new Date(),
+      });
 
-      await expect(itemsService.deleteItem('item-default', 'user-123')).rejects.toThrow(
-        'Cannot delete default items'
-      );
+      await itemsService.deleteItem('item-default', 'user-123');
+
+      expect(mockItemsRepository.softDelete).toHaveBeenCalledWith('item-default');
     });
 
     it('should throw 400 if item has active wealth references', async () => {

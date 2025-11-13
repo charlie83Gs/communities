@@ -2,8 +2,8 @@
 id: FT-04
 title: Community Wealth & Resource Sharing
 status: partial
-version: 1.2
-last_updated: 2025-11-12
+version: 1.3
+last_updated: 2025-01-12
 related_features: [FT-01, FT-02, FT-03, FT-05, FT-06]
 ---
 
@@ -56,7 +56,7 @@ All wealth items are unit-based and categorized as either:
 ## Resource Discovery
 
 ### Default Item Catalog
-Communities are initialized with 400+ default items across 22 categories to provide a comprehensive starting point for wealth sharing:
+Communities are initialized with 400+ default items across 22 categories to provide a comprehensive starting point for wealth sharing. These items are **starter templates** that communities can freely edit or delete to match their specific needs - they are not restricted in any way:
 
 #### Objects (329 items)
 - **Fresh Produce (85+ items)**: Both general categories (Vegetables, Fruits) and specific items (Tomatoes, Potatoes, Carrots, Spinach, Apples, Oranges, etc.)
@@ -91,7 +91,7 @@ Communities are initialized with 400+ default items across 22 categories to prov
 - **Flexible categorization**: Items can be found by browsing categories or searching by name
 
 ### Custom Items
-Communities can create custom items beyond the default catalog to meet specific needs
+Communities can create custom items beyond the default catalog to meet specific needs. The `isDefault` flag in the database is purely for tracking which items were auto-created during community initialization - it does not restrict editing or deletion in any way
 
 ### Expiration Dates
 - Members can set time limits on their shares
