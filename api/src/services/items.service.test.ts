@@ -147,7 +147,7 @@ describe('ItemsService', () => {
         { ...mockItem, deletedAt: new Date() },
       ]);
 
-      const _result = await itemsService.listItems('comm-123', 'user-123', 'en', true);
+      await itemsService.listItems('comm-123', 'user-123', 'en', true);
 
       expect(mockItemsRepository.listByCommunity).toHaveBeenCalledWith('comm-123', true);
     });
@@ -541,13 +541,7 @@ describe('ItemsService', () => {
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
       mockItemsRepository.search.mockResolvedValue([mockItem]);
 
-      const _result = await itemsService.searchItems(
-        'comm-123',
-        'user-123',
-        'en',
-        undefined,
-        'object'
-      );
+      await itemsService.searchItems('comm-123', 'user-123', 'en', undefined, 'object');
 
       expect(mockItemsRepository.search).toHaveBeenCalledWith(
         'comm-123',
@@ -561,13 +555,7 @@ describe('ItemsService', () => {
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
       mockItemsRepository.search.mockResolvedValue([mockItem]);
 
-      const _result = await itemsService.searchItems(
-        'comm-123',
-        'user-123',
-        'es',
-        'fresh',
-        'object'
-      );
+      await itemsService.searchItems('comm-123', 'user-123', 'es', 'fresh', 'object');
 
       expect(mockItemsRepository.search).toHaveBeenCalledWith('comm-123', 'es', 'fresh', 'object');
     });

@@ -164,7 +164,7 @@ describe('UserPreferencesService', () => {
         updatedAt: new Date(),
       } as any);
 
-      const _result = await userPreferencesService.updatePreferences('user-123', {
+      await userPreferencesService.updatePreferences('user-123', {
         description: 'New description only',
       });
 
