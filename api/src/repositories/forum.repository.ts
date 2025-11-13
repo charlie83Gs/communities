@@ -1,4 +1,6 @@
 import { db as realDb } from '@db/index';
+type DbClient = typeof realDb;
+
 import { forumCategories, forumThreads, forumPosts, forumVotes, forumThreadTags } from '@db/schema';
 import { eq, and, desc, sql } from 'drizzle-orm';
 

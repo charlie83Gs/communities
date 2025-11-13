@@ -149,7 +149,7 @@ app.use('/api/', limiter);
  *       500:
  *         description: Internal server error
  */
-app.get('/health', (req: Request, res: Response) => {
+app.get('/health', (_req: Request, res: Response) => {
   res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
@@ -188,13 +188,13 @@ app.use('/api/v1', poolsRoutes);
 app.use('/openapi/docs', swaggerUi.serve, swaggerUi.setup(specs));
 
 // Swagger JSON endpoint
-app.get('/openapi/json', (req: Request, res: Response) => {
+app.get('/openapi/json', (_req: Request, res: Response) => {
   res.setHeader('Content-Type', 'application/json');
   res.send(specs);
 });
 
 // 404 handler
-app.use((req: Request, res: Response, next: NextFunction) => {
+app.use((_req: Request, res: Response) => {
   res.status(404).json({ error: 'Route not found' });
 });
 

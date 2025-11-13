@@ -33,7 +33,7 @@ export const validateGetTrustTimeline = (req: Request, res: Response, next: Next
       return res.status(400).json({
         status: 'error',
         message: 'Validation error',
-        errors: error.errors,
+        errors: error.issues,
       });
     }
     next(error);
@@ -52,7 +52,7 @@ export const validateGetTrustSummary = (req: Request, res: Response, next: NextF
       return res.status(400).json({
         status: 'error',
         message: 'Validation error',
-        errors: error.errors,
+        errors: error.issues,
       });
     }
     next(error);

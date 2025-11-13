@@ -1,4 +1,6 @@
 import { db as realDb } from '@db/index';
+type DbClient = typeof realDb;
+
 import { items, wealth } from '@db/schema';
 import { eq, and, isNull, ilike, sql, or } from 'drizzle-orm';
 

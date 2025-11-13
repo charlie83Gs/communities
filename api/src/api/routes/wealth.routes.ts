@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { verifyToken, verifyTokenOptional } from '../middleware/auth.middleware';
+import { verifyToken } from '../middleware/auth.middleware';
 import { wealthController } from '@api/controllers/wealth.controller';
 import {
   validateCreateWealth,

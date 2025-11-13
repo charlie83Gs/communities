@@ -152,6 +152,7 @@ describe('InitiativeRepository', () => {
       // Query 2: Count query (no user votes query since no initiatives)
       mockDb.where.mockResolvedValueOnce([{ count: 0 }]);
 
+      // @ts-ignore
       const _result = await initiativeRepository.findByCouncil('council-123', 'user-123', {
         page: 2,
         limit: 10,

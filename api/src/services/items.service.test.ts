@@ -148,7 +148,7 @@ describe('ItemsService', () => {
     });
 
     it('should throw 403 if user is not a member', async () => {
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
+      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null as any);
 
       await expect(itemsService.listItems('comm-123', 'user-123', false)).rejects.toThrow(
         'You must be a member of this community to access items'
@@ -176,7 +176,7 @@ describe('ItemsService', () => {
     });
 
     it('should throw 404 if item not found', async () => {
-      mockItemsRepository.findById.mockResolvedValue(null);
+      mockItemsRepository.findById.mockResolvedValue(null as any);
 
       await expect(itemsService.getItemById('item-123', 'user-123')).rejects.toThrow(
         'Item not found'
@@ -185,7 +185,7 @@ describe('ItemsService', () => {
 
     it('should throw 403 if user is not community member', async () => {
       mockItemsRepository.findById.mockResolvedValue(mockItem);
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
+      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null as any);
 
       await expect(itemsService.getItemById('item-123', 'user-123')).rejects.toThrow(
         'You must be a member of this community to access items'
@@ -206,7 +206,7 @@ describe('ItemsService', () => {
       mockCommunityRepository.findById.mockResolvedValue(mockCommunity);
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
       mockOpenFGAService.checkAccess.mockResolvedValue(true);
-      mockItemsRepository.findByName.mockResolvedValue(null);
+      mockItemsRepository.findByName.mockResolvedValue(null as any);
       mockItemsRepository.create.mockResolvedValue(mockItem);
 
       const result = await itemsService.createItem(createDto, 'user-123');
@@ -223,7 +223,7 @@ describe('ItemsService', () => {
     });
 
     it('should throw 404 if community not found', async () => {
-      mockCommunityRepository.findById.mockResolvedValue(null);
+      mockCommunityRepository.findById.mockResolvedValue(null as any);
 
       await expect(itemsService.createItem(createDto, 'user-123')).rejects.toThrow(
         'Community not found'
@@ -232,7 +232,7 @@ describe('ItemsService', () => {
 
     it('should throw 403 if user is not a member', async () => {
       mockCommunityRepository.findById.mockResolvedValue(mockCommunity);
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
+      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null as any);
 
       await expect(itemsService.createItem(createDto, 'user-123')).rejects.toThrow(
         'You must be a member of this community to access items'
@@ -253,7 +253,7 @@ describe('ItemsService', () => {
       mockCommunityRepository.findById.mockResolvedValue(mockCommunity);
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
       mockOpenFGAService.checkAccess.mockResolvedValue(true);
-      mockItemsRepository.findByName.mockResolvedValue(mockItem);
+      mockItemsRepository.findByName.mockResolvedValue(mockItem as any);
 
       await expect(itemsService.createItem(createDto, 'user-123')).rejects.toThrow(
         'An item with the name "Tomatoes" already exists in this community'
@@ -264,7 +264,7 @@ describe('ItemsService', () => {
       mockCommunityRepository.findById.mockResolvedValue(mockCommunity);
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
       mockOpenFGAService.checkAccess.mockResolvedValue(true);
-      mockItemsRepository.findByName.mockResolvedValue(null);
+      mockItemsRepository.findByName.mockResolvedValue(null as any);
 
       await expect(
         itemsService.createItem({ ...createDto, name: '   ' }, 'user-123')
@@ -275,7 +275,7 @@ describe('ItemsService', () => {
       mockCommunityRepository.findById.mockResolvedValue(mockCommunity);
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
       mockOpenFGAService.checkAccess.mockResolvedValue(true);
-      mockItemsRepository.findByName.mockResolvedValue(null);
+      mockItemsRepository.findByName.mockResolvedValue(null as any);
 
       await expect(
         itemsService.createItem({ ...createDto, name: 'a'.repeat(201) }, 'user-123')
@@ -286,7 +286,7 @@ describe('ItemsService', () => {
       mockCommunityRepository.findById.mockResolvedValue(mockCommunity);
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
       mockOpenFGAService.checkAccess.mockResolvedValue(true);
-      mockItemsRepository.findByName.mockResolvedValue(null);
+      mockItemsRepository.findByName.mockResolvedValue(null as any);
       mockItemsRepository.create.mockResolvedValue(mockItem);
 
       await itemsService.createItem(
@@ -319,7 +319,7 @@ describe('ItemsService', () => {
       mockItemsRepository.findById.mockResolvedValue(mockItem);
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
       mockOpenFGAService.checkAccess.mockResolvedValue(true);
-      mockItemsRepository.findByName.mockResolvedValue(null);
+      mockItemsRepository.findByName.mockResolvedValue(null as any);
       mockItemsRepository.update.mockResolvedValue({
         ...mockItem,
         ...updateDto,
@@ -337,7 +337,7 @@ describe('ItemsService', () => {
     });
 
     it('should throw 404 if item not found', async () => {
-      mockItemsRepository.findById.mockResolvedValue(null);
+      mockItemsRepository.findById.mockResolvedValue(null as any);
 
       await expect(itemsService.updateItem('item-123', updateDto, 'user-123')).rejects.toThrow(
         'Item not found'
@@ -372,7 +372,7 @@ describe('ItemsService', () => {
       mockItemsRepository.findByName.mockResolvedValue({
         ...mockItem,
         id: 'other-item',
-      });
+      } as any);
 
       await expect(
         itemsService.updateItem('item-123', { name: 'Existing Name' }, 'user-123')
@@ -415,7 +415,7 @@ describe('ItemsService', () => {
       mockItemsRepository.findById.mockResolvedValue(mockItem);
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
       mockOpenFGAService.checkAccess.mockResolvedValue(true);
-      mockItemsRepository.update.mockResolvedValue(null);
+      mockItemsRepository.update.mockResolvedValue(null as any);
 
       await expect(itemsService.updateItem('item-123', updateDto, 'user-123')).rejects.toThrow(
         'Failed to update item'
@@ -440,7 +440,7 @@ describe('ItemsService', () => {
     });
 
     it('should throw 404 if item not found', async () => {
-      mockItemsRepository.findById.mockResolvedValue(null);
+      mockItemsRepository.findById.mockResolvedValue(null as any);
 
       await expect(itemsService.deleteItem('item-123', 'user-123')).rejects.toThrow(
         'Item not found'
@@ -520,7 +520,7 @@ describe('ItemsService', () => {
     });
 
     it('should throw 403 if user is not a member', async () => {
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
+      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null as any);
 
       await expect(
         itemsService.searchItems('comm-123', 'user-123', 'test', undefined)
@@ -530,7 +530,7 @@ describe('ItemsService', () => {
 
   describe('ensureDefaultItem', () => {
     it('should create all default items for new community', async () => {
-      mockItemsRepository.findByName.mockResolvedValue(null); // No existing items
+      mockItemsRepository.findByName.mockResolvedValue(null as any); // No existing items
       mockItemsRepository.create.mockResolvedValue(mockDefaultItem);
 
       const result = await itemsService.ensureDefaultItem('comm-123', 'user-123');
@@ -586,8 +586,8 @@ describe('ItemsService', () => {
 
     it('should skip creating items that already exist', async () => {
       mockItemsRepository.findByName
-        .mockResolvedValueOnce(mockDefaultItem) // First item exists
-        .mockResolvedValue(null); // Rest don't exist
+        .mockResolvedValueOnce(mockDefaultItem as any) // First item exists
+        .mockResolvedValue(null as any); // Rest don't exist
       mockItemsRepository.create.mockResolvedValue(mockDefaultItem);
 
       await itemsService.ensureDefaultItem('comm-123', 'user-123');
@@ -602,7 +602,7 @@ describe('ItemsService', () => {
         name: 'Fresh Vegetables (kg)',
         wealthValue: '5',
       };
-      mockItemsRepository.findByName.mockResolvedValue(null);
+      mockItemsRepository.findByName.mockResolvedValue(null as any);
       mockItemsRepository.create
         .mockResolvedValueOnce(firstItem)
         .mockResolvedValue(mockDefaultItem);

@@ -373,6 +373,7 @@ describe('InviteRepository', () => {
         const mockResult = { rowCount: 2 };
         mockDb.where.mockResolvedValue(mockResult);
 
+        // @ts-ignore
         const _result = await inviteRepository.expirePastDueLinkInvites();
 
         expect(mockDb.update).toHaveBeenCalled();

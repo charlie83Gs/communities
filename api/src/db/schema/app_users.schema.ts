@@ -1,4 +1,4 @@
-import { pgTable, timestamp, uuid, text, varchar } from 'drizzle-orm/pg-core';
+import { pgTable, timestamp, text, varchar } from 'drizzle-orm/pg-core';
 
 /**
  * App Users table

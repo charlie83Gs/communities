@@ -151,8 +151,8 @@ describe('TrustHistoryRepository', () => {
       expect(history).toHaveLength(2);
       expect(history[0]).toEqual(testAwardRecord);
       expect(history[1]).toEqual(testRemoveRecord);
-      expect(history.every((h) => h.toUserId === testUserId2)).toBe(true);
-      expect(history.every((h) => h.communityId === testCommunityId)).toBe(true);
+      expect(history.every((h: any) => h.toUserId === testUserId2)).toBe(true);
+      expect(history.every((h: any) => h.communityId === testCommunityId)).toBe(true);
     });
 
     test('should respect limit parameter', async () => {
@@ -203,9 +203,9 @@ describe('TrustHistoryRepository', () => {
       const history = await trustHistoryRepository.getHistoryForUser(testCommunityId, testUserId2);
 
       expect(history).toHaveLength(3);
-      expect(history.some((h) => h.action === 'award')).toBe(true);
-      expect(history.some((h) => h.action === 'remove')).toBe(true);
-      expect(history.some((h) => h.action === 'admin_grant')).toBe(true);
+      expect(history.some((h: any) => h.action === 'award')).toBe(true);
+      expect(history.some((h: any) => h.action === 'remove')).toBe(true);
+      expect(history.some((h: any) => h.action === 'admin_grant')).toBe(true);
     });
   });
 
@@ -231,7 +231,7 @@ describe('TrustHistoryRepository', () => {
       const history = await trustHistoryRepository.getHistoryForCommunity(testCommunityId);
 
       expect(history).toHaveLength(3);
-      expect(history.every((h) => h.communityId === testCommunityId)).toBe(true);
+      expect(history.every((h: any) => h.communityId === testCommunityId)).toBe(true);
     });
 
     test('should respect limit parameter', async () => {
@@ -274,7 +274,7 @@ describe('TrustHistoryRepository', () => {
       const history = await trustHistoryRepository.getHistoryForUserAllCommunities(testUserId2);
 
       expect(history).toHaveLength(2);
-      expect(history.every((h) => h.toUserId === testUserId2)).toBe(true);
+      expect(history.every((h: any) => h.toUserId === testUserId2)).toBe(true);
     });
 
     test('should respect limit parameter', async () => {
@@ -312,9 +312,9 @@ describe('TrustHistoryRepository', () => {
       const history = await trustHistoryRepository.getHistoryForUserAllCommunities(testUserId2);
 
       expect(history).toHaveLength(3);
-      expect(history.some((h) => h.action === 'award')).toBe(true);
-      expect(history.some((h) => h.action === 'remove')).toBe(true);
-      expect(history.some((h) => h.action === 'admin_grant')).toBe(true);
+      expect(history.some((h: any) => h.action === 'award')).toBe(true);
+      expect(history.some((h: any) => h.action === 'remove')).toBe(true);
+      expect(history.some((h: any) => h.action === 'admin_grant')).toBe(true);
     });
   });
 });

@@ -395,7 +395,7 @@ describe('TrustEventRepository', () => {
       const events = await trustEventRepository.listByCommunity(testCommunityId, 100, 0);
 
       expect(events).toHaveLength(3);
-      expect(events.every((e) => e.communityId === testCommunityId)).toBe(true);
+      expect(events.every((e: any) => e.communityId === testCommunityId)).toBe(true);
     });
 
     test('should respect limit parameter', async () => {
@@ -458,7 +458,7 @@ describe('TrustEventRepository', () => {
       const events = await trustEventRepository.listByUserAllCommunities(testUserId1, 50, 0);
 
       expect(events.length).toBeGreaterThanOrEqual(1);
-      expect(events.some((e) => e.communityId === testCommunityId)).toBe(true);
+      expect(events.some((e: any) => e.communityId === testCommunityId)).toBe(true);
     });
 
     test('should return events where user is A or B', async () => {

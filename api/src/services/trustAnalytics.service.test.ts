@@ -65,7 +65,7 @@ describe('TrustAnalyticsService', () => {
           cumulativeScore: 8,
         },
       ];
-      mockTrustAnalyticsRepository.getTrustTimeline.mockResolvedValue(timeline);
+      mockTrustAnalyticsRepository.getTrustTimeline.mockResolvedValue(timeline as any);
 
       const result = await trustAnalyticsService.getMyTrustTimeline(VALID_USER_ID, {
         communityId: VALID_COMM_ID,
@@ -125,7 +125,7 @@ describe('TrustAnalyticsService', () => {
       });
 
       expect(result).toBeDefined();
-      expect(result.currentScore).toBe(15);
+      expect((result as any).currentScore).toBe(15);
       expect(mockTrustAnalyticsRepository.getTrustSummary).toHaveBeenCalledWith(VALID_USER_ID, {
         communityId: VALID_COMM_ID,
       });

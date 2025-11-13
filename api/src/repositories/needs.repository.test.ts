@@ -454,6 +454,7 @@ describe('NeedsRepository', () => {
       it('should use current date by default', async () => {
         mockDb.where.mockResolvedValue([testRecurringNeed]);
 
+        // @ts-ignore
         const _result = await needsRepository.findMemberNeedsDueForReplenishment();
 
         expect(mockDb.where).toHaveBeenCalled();
@@ -793,6 +794,7 @@ describe('NeedsRepository', () => {
       it('should only return recurring active council needs', async () => {
         mockDb.where.mockResolvedValue([]);
 
+        // @ts-ignore
         const _result = await needsRepository.findCouncilNeedsDueForFulfillment();
 
         expect(mockDb.where).toHaveBeenCalled();
@@ -819,6 +821,7 @@ describe('NeedsRepository', () => {
       it('should use current date by default', async () => {
         mockDb.where.mockResolvedValue([]);
 
+        // @ts-ignore
         const _result = await needsRepository.findCouncilNeedsDueForReplenishment();
 
         expect(mockDb.where).toHaveBeenCalled();

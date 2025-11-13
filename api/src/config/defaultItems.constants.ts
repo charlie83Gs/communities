@@ -22,7 +22,11 @@ import { PACKAGED_FOOD } from './defaultItems/packagedFood';
 import { BEVERAGES } from './defaultItems/beverages';
 import { OBJECTS_OTHER } from './defaultItems/objectsOther';
 import { SERVICES } from './defaultItems/services';
-import type { DefaultItemTemplate, SupportedLanguage, DefaultItemTranslation } from './defaultItems/types';
+import type {
+  DefaultItemTemplate,
+  SupportedLanguage,
+  DefaultItemTranslation,
+} from './defaultItems/types';
 import { DEFAULT_ITEM_LANGUAGE } from './defaultItems/types';
 
 // Re-export types

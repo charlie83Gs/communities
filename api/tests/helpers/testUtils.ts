@@ -15,7 +15,7 @@ export function createMockRequest(overrides: Partial<Request> = {}): Request {
     body: {},
     query: {},
     headers: {},
-    get: mock((header: string) => ''),
+    get: mock((_header: string) => ''),
     ...overrides,
   } as Request;
 }
@@ -41,7 +41,7 @@ export function createMockAuthenticatedRequest(
     body: {},
     query: {},
     headers: {},
-    get: mock((header: string) => ''),
+    get: mock((_header: string) => ''),
     ...overrides,
   } as AuthenticatedRequest;
 }
@@ -51,10 +51,10 @@ export function createMockAuthenticatedRequest(
  */
 export function createMockResponse(): Response {
   const res = {} as Response;
-  res.status = mock((code: number) => res);
-  res.json = mock((data: any) => res);
-  res.send = mock((data: any) => res);
-  res.setHeader = mock((name: string, value: string) => res);
+  res.status = mock((_code: number) => res);
+  res.json = mock((_data: any) => res);
+  res.send = mock((_data: any) => res);
+  res.setHeader = mock((_name: string, _value: string) => res);
   res.end = mock(() => res);
   return res;
 }

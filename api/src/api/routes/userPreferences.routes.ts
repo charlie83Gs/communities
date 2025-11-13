@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import multer from 'multer';
-import { verifyToken, verifyTokenOptional } from '../middleware/auth.middleware';
+import { verifyToken } from '../middleware/auth.middleware';
 import { validateUpdatePreferences, validateUploadProfileImage } from '../validators/userPreferences.validator';
 import { getPreferences, updatePreferences, uploadProfileImage } from '../controllers/userPreferences.controller';
 

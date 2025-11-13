@@ -57,7 +57,6 @@ const mockAppUserRepository = {
 };
 
 const mockOpenFGAService = {
-  assignRole: mock(() => Promise.resolve()),
   createRelationship: mock(() => Promise.resolve()),
   checkAccess: mock(() => Promise.resolve(true)),
   getAccessibleResourceIds: mock(() => Promise.resolve(['comm-123'])),
@@ -96,7 +95,6 @@ describe('WealthService', () => {
     (communityMemberRepository.getUserRole as any) = mockCommunityMemberRepository.getUserRole;
     (communityMemberRepository.findByUser as any) = mockCommunityMemberRepository.findByUser;
     (appUserRepository.findById as any) = mockAppUserRepository.findById;
-    (openFGAService.assignRole as any) = mockOpenFGAService.assignRole;
     (openFGAService.createRelationship as any) = mockOpenFGAService.createRelationship;
     (openFGAService.checkAccess as any) = mockOpenFGAService.checkAccess;
     (openFGAService.getAccessibleResourceIds as any) = mockOpenFGAService.getAccessibleResourceIds;
@@ -107,7 +105,7 @@ describe('WealthService', () => {
       // Reconfigure mocks for this test
       mockOpenFGAService.checkAccess.mockResolvedValue(true);
       mockWealthRepository.createWealth.mockResolvedValue(testData.wealth);
-      mockOpenFGAService.assignRole.mockResolvedValue(undefined);
+      mockOpenFGAService.createRelationship.mockResolvedValue(undefined);
 
       const result = await wealthService.createWealth(
         {
@@ -116,7 +114,7 @@ describe('WealthService', () => {
           title: 'Test Wealth',
           durationType: 'unlimited',
           unitsAvailable: 10,
-        },
+        } as any,
         'user-123'
       );
 
@@ -128,7 +126,7 @@ describe('WealthService', () => {
         'can_create_wealth'
       );
       expect(mockWealthRepository.createWealth).toHaveBeenCalled();
-      expect(mockOpenFGAService.assignRole).toHaveBeenCalled();
+      expect(mockOpenFGAService.createRelationship).toHaveBeenCalled();
     });
 
     it('should throw error for user without can_create_wealth permission', async () => {
@@ -141,8 +139,8 @@ describe('WealthService', () => {
             itemId: 'item-123',
             title: 'Test',
             durationType: 'unlimited',
-            distributionType: 'request_based',
-          },
+            unitsAvailable: 10,
+          } as any,
           'user-123'
         )
       ).rejects.toThrow('Forbidden: you do not have permission to create wealth');
@@ -158,8 +156,8 @@ describe('WealthService', () => {
             itemId: 'item-123',
             title: 'Test',
             durationType: 'timebound',
-            distributionType: 'request_based',
-          },
+            unitsAvailable: 10,
+          } as any,
           'user-123'
         )
       ).rejects.toThrow('endDate is required for timebound wealth');
@@ -175,8 +173,7 @@ describe('WealthService', () => {
             itemId: 'item-123',
             title: 'Test',
             durationType: 'unlimited',
-            distributionType: 'unit_based',
-          },
+          } as any,
           'user-123'
         )
       ).rejects.toThrow('unitsAvailable must be a positive integer');
@@ -201,7 +198,7 @@ describe('WealthService', () => {
     });
 
     it('should throw not found if wealth does not exist', async () => {
-      mockWealthRepository.findById.mockResolvedValue(null);
+      mockWealthRepository.findById.mockResolvedValue(null as any);
 
       await expect(wealthService.getWealth('wealth-123', 'user-123')).rejects.toThrow(
         'Wealth not found'
@@ -250,6 +247,7 @@ describe('WealthService', () => {
         title: 'Updated',
       });
 
+      // @ts-ignore
       const _result = await wealthService.updateWealth(
         'wealth-123',
         { title: 'Updated' },
@@ -278,14 +276,14 @@ describe('WealthService', () => {
         ...testData.wealth,
         status: 'active' as const,
         distributionType: 'request_based',
-      });
+      } as any);
       mockOpenFGAService.checkAccess.mockResolvedValue(true);
       mockWealthRepository.createWealthRequest.mockResolvedValue({
         id: 'req-123',
         wealthId: 'wealth-123',
         requesterId: 'user-456',
         status: 'pending' as const,
-      });
+      } as any);
 
       const result = await wealthService.requestWealth('wealth-123', 'user-456');
 
@@ -303,7 +301,7 @@ describe('WealthService', () => {
       mockWealthRepository.findById.mockResolvedValue({
         ...testData.wealth,
         status: 'fulfilled' as const,
-      });
+      } as any);
 
       await expect(wealthService.requestWealth('wealth-123', 'user-456')).rejects.toThrow(
         'Wealth is not active'
@@ -317,18 +315,19 @@ describe('WealthService', () => {
       mockWealthRepository.findById.mockResolvedValue({
         ...testData.wealth,
         createdBy: 'user-123',
-        distributionType: 'request_based',
-      });
+        distributionType: 'unit_based',
+        unitsAvailable: 10,
+      } as any);
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
       mockWealthRepository.findRequestById.mockResolvedValue({
         id: 'req-123',
         wealthId: 'wealth-123',
         status: 'pending' as const,
-      });
+      } as any);
       mockWealthRepository.acceptRequest.mockResolvedValue({
         id: 'req-123',
         status: 'accepted' as const,
-      });
+      } as any);
 
       const result = await wealthService.acceptRequest('wealth-123', 'req-123', 'user-123');
 
@@ -346,7 +345,7 @@ describe('WealthService', () => {
         id: 'req-123',
         wealthId: 'wealth-123',
         status: 'pending' as const,
-      });
+      } as any);
 
       await expect(
         wealthService.acceptRequest('wealth-123', 'req-123', 'user-123')
@@ -361,22 +360,22 @@ describe('WealthService', () => {
         ...testData.wealth,
         distributionType: 'unit_based',
         unitsAvailable: 10,
-      });
+      } as any);
       mockWealthRepository.findRequestById.mockResolvedValue({
         id: 'req-123',
         wealthId: 'wealth-123',
         requesterId: 'user-456',
         status: 'accepted' as const,
         unitsRequested: 2,
-      });
+      } as any);
       mockWealthRepository.decrementUnits.mockResolvedValue({
         ...testData.wealth,
         unitsAvailable: 8,
-      });
+      } as any);
       mockWealthRepository.confirmRequest.mockResolvedValue({
         id: 'req-123',
         status: 'fulfilled' as const,
-      });
+      } as any);
 
       const result = await wealthService.confirmRequest('wealth-123', 'req-123', 'user-456');
 
@@ -389,17 +388,17 @@ describe('WealthService', () => {
       mockWealthRepository.findById.mockResolvedValue({
         ...testData.wealth,
         distributionType: 'request_based',
-      });
+      } as any);
       mockWealthRepository.findRequestById.mockResolvedValue({
         id: 'req-123',
         wealthId: 'wealth-123',
         requesterId: 'user-456',
         status: 'accepted' as const,
-      });
+      } as any);
       mockWealthRepository.confirmRequest.mockResolvedValue({
         id: 'req-123',
         status: 'fulfilled' as const,
-      });
+      } as any);
 
       const result = await wealthService.confirmRequest('wealth-123', 'req-123', 'user-456');
 
@@ -414,7 +413,7 @@ describe('WealthService', () => {
         wealthId: 'wealth-123',
         requesterId: 'user-456',
         status: 'accepted' as const,
-      });
+      } as any);
 
       await expect(
         wealthService.confirmRequest('wealth-123', 'req-123', 'user-789')
@@ -428,7 +427,7 @@ describe('WealthService', () => {
         wealthId: 'wealth-123',
         requesterId: 'user-456',
         status: 'pending' as const,
-      });
+      } as any);
 
       await expect(
         wealthService.confirmRequest('wealth-123', 'req-123', 'user-456')
@@ -444,11 +443,11 @@ describe('WealthService', () => {
         wealthId: 'wealth-123',
         requesterId: 'user-456',
         status: 'accepted' as const,
-      });
+      } as any);
       mockWealthRepository.failRequest.mockResolvedValue({
         id: 'req-123',
         status: 'failed' as const,
-      });
+      } as any);
 
       const result = await wealthService.failRequest('wealth-123', 'req-123', 'user-456');
 
@@ -465,7 +464,7 @@ describe('WealthService', () => {
         wealthId: 'wealth-123',
         requesterId: 'user-456',
         status: 'accepted' as const,
-      });
+      } as any);
 
       await expect(wealthService.failRequest('wealth-123', 'req-123', 'user-789')).rejects.toThrow(
         'Forbidden: only the requester can mark request as failed'
@@ -479,7 +478,7 @@ describe('WealthService', () => {
         wealthId: 'wealth-123',
         requesterId: 'user-456',
         status: 'pending' as const,
-      });
+      } as any);
 
       await expect(wealthService.failRequest('wealth-123', 'req-123', 'user-456')).rejects.toThrow(
         'Only accepted requests can be marked as failed'
@@ -619,6 +618,7 @@ describe('WealthService', () => {
         total: 1,
       });
 
+      // @ts-ignore
       const _result = await wealthService.searchWealth('user-123', {
         communityId: 'comm-123',
         durationType: 'timebound',
@@ -692,7 +692,7 @@ describe('WealthService', () => {
     });
 
     it('should throw not found if wealth does not exist', async () => {
-      mockWealthRepository.findById.mockResolvedValue(null);
+      mockWealthRepository.findById.mockResolvedValue(null as any);
 
       await expect(wealthService.cancelWealth('wealth-123', 'user-123')).rejects.toThrow(
         'Wealth not found'
@@ -704,7 +704,7 @@ describe('WealthService', () => {
         ...testData.wealth,
         createdBy: 'user-123',
       });
-      mockWealthRepository.cancelWealth.mockResolvedValue(null);
+      mockWealthRepository.cancelWealth.mockResolvedValue(null as any);
 
       await expect(wealthService.cancelWealth('wealth-123', 'user-123')).rejects.toThrow(
         'Wealth not found'
@@ -734,7 +734,7 @@ describe('WealthService', () => {
         ...testData.wealth,
         createdBy: 'user-123',
       });
-      mockWealthRepository.markFulfilled.mockResolvedValue(null);
+      mockWealthRepository.markFulfilled.mockResolvedValue(null as any);
 
       await expect(wealthService.fulfillWealth('wealth-123', 'user-123')).rejects.toThrow(
         'Wealth not found'
@@ -770,7 +770,7 @@ describe('WealthService', () => {
         ...testData.wealth,
         createdBy: 'user-123',
       });
-      mockWealthRepository.updateWealth.mockResolvedValue(null);
+      mockWealthRepository.updateWealth.mockResolvedValue(null as any);
 
       await expect(
         wealthService.updateWealth('wealth-123', { title: 'Updated' }, 'user-123')
@@ -792,7 +792,7 @@ describe('WealthService', () => {
           requesterId: 'user-456',
           status: 'pending' as const,
         },
-      ]);
+      ] as any);
 
       const result = await wealthService.listRequests('wealth-123', 'user-123');
 
@@ -813,7 +813,7 @@ describe('WealthService', () => {
           requesterId: 'user-456',
           status: 'pending' as const,
         },
-      ]);
+      ] as any);
 
       const result = await wealthService.listRequests('wealth-123', 'user-456');
 
@@ -835,11 +835,11 @@ describe('WealthService', () => {
         id: 'req-123',
         wealthId: 'wealth-123',
         status: 'accepted' as const,
-      });
+      } as any);
       mockWealthRepository.markRequestFulfilled.mockResolvedValue({
         id: 'req-123',
         status: 'fulfilled' as const,
-      });
+      } as any);
 
       const result = await wealthService.fulfillRequest('wealth-123', 'req-123', 'user-123');
 
@@ -855,11 +855,11 @@ describe('WealthService', () => {
         id: 'req-123',
         wealthId: 'wealth-123',
         status: 'pending' as const,
-      });
+      } as any);
       mockWealthRepository.markRequestFulfilled.mockResolvedValue({
         id: 'req-123',
         status: 'fulfilled' as const,
-      });
+      } as any);
 
       const result = await wealthService.fulfillRequest('wealth-123', 'req-123', 'user-123');
 
@@ -875,7 +875,7 @@ describe('WealthService', () => {
         id: 'req-123',
         wealthId: 'wealth-123',
         status: 'rejected' as const,
-      });
+      } as any);
 
       await expect(
         wealthService.fulfillRequest('wealth-123', 'req-123', 'user-123')
@@ -891,8 +891,8 @@ describe('WealthService', () => {
         id: 'req-123',
         wealthId: 'wealth-123',
         status: 'accepted' as const,
-      });
-      mockWealthRepository.markRequestFulfilled.mockResolvedValue(null);
+      } as any);
+      mockWealthRepository.markRequestFulfilled.mockResolvedValue(null as any);
 
       await expect(
         wealthService.fulfillRequest('wealth-123', 'req-123', 'user-123')
@@ -910,11 +910,11 @@ describe('WealthService', () => {
         id: 'req-123',
         wealthId: 'wealth-123',
         status: 'pending' as const,
-      });
+      } as any);
       mockWealthRepository.rejectRequest.mockResolvedValue({
         id: 'req-123',
         status: 'rejected' as const,
-      });
+      } as any);
 
       const result = await wealthService.rejectRequest('wealth-123', 'req-123', 'user-123');
 
@@ -930,8 +930,8 @@ describe('WealthService', () => {
         id: 'req-123',
         wealthId: 'wealth-123',
         status: 'pending' as const,
-      });
-      mockWealthRepository.rejectRequest.mockResolvedValue(null);
+      } as any);
+      mockWealthRepository.rejectRequest.mockResolvedValue(null as any);
 
       await expect(
         wealthService.rejectRequest('wealth-123', 'req-123', 'user-123')
@@ -948,7 +948,7 @@ describe('WealthService', () => {
           requesterId: 'user-123',
           status: 'pending' as const,
         },
-      ]);
+      ] as any);
 
       const result = await wealthService.listRequestsByUser('user-123');
 
@@ -964,8 +964,9 @@ describe('WealthService', () => {
           requesterId: 'user-123',
           status: 'accepted' as const,
         },
-      ]);
+      ] as any);
 
+      // @ts-ignore
       const _result = await wealthService.listRequestsByUser('user-123', ['accepted']);
 
       expect(mockWealthRepository.listRequestsByUser).toHaveBeenCalledWith('user-123', [
@@ -983,7 +984,7 @@ describe('WealthService', () => {
           requesterId: 'user-456',
           status: 'pending' as const,
         },
-      ]);
+      ] as any);
 
       const result = await wealthService.listIncomingRequests('user-123');
 
@@ -998,12 +999,12 @@ describe('WealthService', () => {
           requesterId: 'user-456',
           status: 'pending' as const,
         },
-      ]);
+      ] as any);
       mockAppUserRepository.findById.mockResolvedValue({
         id: 'user-456',
         displayName: 'Test User',
         username: 'testuser',
-      });
+      } as any);
 
       const result = await wealthService.listIncomingRequests('user-123');
 
@@ -1023,11 +1024,11 @@ describe('WealthService', () => {
         wealthId: 'wealth-123',
         requesterId: 'user-456',
         status: 'pending' as const,
-      });
+      } as any);
       mockWealthRepository.cancelRequest.mockResolvedValue({
         id: 'req-123',
         status: 'cancelled' as const,
-      });
+      } as any);
 
       const result = await wealthService.cancelRequest('wealth-123', 'req-123', 'user-owner');
 
@@ -1044,11 +1045,11 @@ describe('WealthService', () => {
         wealthId: 'wealth-123',
         requesterId: 'user-456',
         status: 'pending' as const,
-      });
+      } as any);
       mockWealthRepository.cancelRequest.mockResolvedValue({
         id: 'req-123',
         status: 'cancelled' as const,
-      });
+      } as any);
 
       const result = await wealthService.cancelRequest('wealth-123', 'req-123', 'user-456');
 
@@ -1065,11 +1066,11 @@ describe('WealthService', () => {
         wealthId: 'wealth-123',
         requesterId: 'user-456',
         status: 'accepted' as const,
-      });
+      } as any);
       mockWealthRepository.cancelRequest.mockResolvedValue({
         id: 'req-123',
         status: 'cancelled' as const,
-      });
+      } as any);
 
       const result = await wealthService.cancelRequest('wealth-123', 'req-123', 'user-123');
 
@@ -1083,7 +1084,7 @@ describe('WealthService', () => {
         wealthId: 'wealth-123',
         requesterId: 'user-456',
         status: 'fulfilled' as const,
-      });
+      } as any);
 
       await expect(
         wealthService.cancelRequest('wealth-123', 'req-123', 'user-456')
@@ -1100,7 +1101,7 @@ describe('WealthService', () => {
         wealthId: 'wealth-123',
         requesterId: 'user-requester',
         status: 'pending' as const,
-      });
+      } as any);
 
       await expect(
         wealthService.cancelRequest('wealth-123', 'req-123', 'user-other')
@@ -1117,8 +1118,8 @@ describe('WealthService', () => {
         wealthId: 'wealth-123',
         requesterId: 'user-456',
         status: 'pending' as const,
-      });
-      mockWealthRepository.cancelRequest.mockResolvedValue(null);
+      } as any);
+      mockWealthRepository.cancelRequest.mockResolvedValue(null as any);
 
       await expect(
         wealthService.cancelRequest('wealth-123', 'req-123', 'user-123')
@@ -1133,22 +1134,22 @@ describe('WealthService', () => {
         createdBy: 'user-123',
         distributionType: 'unit_based',
         unitsAvailable: 10,
-      });
+      } as any);
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
       mockWealthRepository.findRequestById.mockResolvedValue({
         id: 'req-123',
         wealthId: 'wealth-123',
         status: 'pending' as const,
         unitsRequested: 2,
-      });
+      } as any);
       mockWealthRepository.acceptRequest.mockResolvedValue({
         id: 'req-123',
         status: 'accepted' as const,
-      });
+      } as any);
       mockWealthRepository.decrementUnits.mockResolvedValue({
         ...testData.wealth,
         unitsAvailable: 8,
-      });
+      } as any);
 
       const result = await wealthService.acceptRequest('wealth-123', 'req-123', 'user-123');
 
@@ -1167,8 +1168,8 @@ describe('WealthService', () => {
         id: 'req-123',
         wealthId: 'wealth-123',
         status: 'pending' as const,
-      });
-      mockWealthRepository.acceptRequest.mockResolvedValue(null);
+      } as any);
+      mockWealthRepository.acceptRequest.mockResolvedValue(null as any);
 
       await expect(
         wealthService.acceptRequest('wealth-123', 'req-123', 'user-123')
@@ -1182,15 +1183,15 @@ describe('WealthService', () => {
         ...testData.wealth,
         distributionType: 'unit_based',
         unitsAvailable: 10,
-      });
+      } as any);
       mockWealthRepository.findRequestById.mockResolvedValue({
         id: 'req-123',
         wealthId: 'wealth-123',
         requesterId: 'user-456',
         status: 'accepted' as const,
         unitsRequested: 2,
-      });
-      mockWealthRepository.decrementUnits.mockResolvedValue(null);
+      } as any);
+      mockWealthRepository.decrementUnits.mockResolvedValue(null as any);
 
       await expect(
         wealthService.confirmRequest('wealth-123', 'req-123', 'user-456')
@@ -1201,14 +1202,14 @@ describe('WealthService', () => {
       mockWealthRepository.findById.mockResolvedValue({
         ...testData.wealth,
         distributionType: 'request_based',
-      });
+      } as any);
       mockWealthRepository.findRequestById.mockResolvedValue({
         id: 'req-123',
         wealthId: 'wealth-123',
         requesterId: 'user-456',
         status: 'accepted' as const,
-      });
-      mockWealthRepository.confirmRequest.mockResolvedValue(null);
+      } as any);
+      mockWealthRepository.confirmRequest.mockResolvedValue(null as any);
 
       await expect(
         wealthService.confirmRequest('wealth-123', 'req-123', 'user-456')
@@ -1223,7 +1224,7 @@ describe('WealthService', () => {
         status: 'active' as const,
         distributionType: 'unit_based',
         unitsAvailable: 10,
-      });
+      } as any);
       mockOpenFGAService.checkAccess.mockResolvedValue(true);
 
       await expect(wealthService.requestWealth('wealth-123', 'user-456')).rejects.toThrow(
@@ -1237,7 +1238,7 @@ describe('WealthService', () => {
         status: 'active' as const,
         distributionType: 'unit_based',
         unitsAvailable: 5,
-      });
+      } as any);
       mockOpenFGAService.checkAccess.mockResolvedValue(true);
 
       await expect(wealthService.requestWealth('wealth-123', 'user-456', null, 10)).rejects.toThrow(

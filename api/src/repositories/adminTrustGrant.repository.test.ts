@@ -76,12 +76,7 @@ describe('AdminTrustGrantRepository', () => {
       mockDb.returning.mockResolvedValueOnce([initialGrant]);
       mockDb.returning.mockResolvedValueOnce([updatedGrant]);
 
-      const _initial = await adminTrustGrantRepository.upsertGrant(
-        testCommunityId,
-        adminUserId,
-        testUserId1,
-        10
-      );
+      await adminTrustGrantRepository.upsertGrant(testCommunityId, adminUserId, testUserId1, 10);
 
       const updated = await adminTrustGrantRepository.upsertGrant(
         testCommunityId,

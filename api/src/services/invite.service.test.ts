@@ -384,7 +384,7 @@ describe('InviteService', () => {
     });
 
     it('should throw error if invite not found', async () => {
-      mockInviteRepository.findInviteById.mockResolvedValue(null);
+      mockInviteRepository.findInviteById.mockResolvedValue(null as any);
 
       await expect(inviteService.cancelInvite('invite-123', 'user-123')).rejects.toThrow(
         'Invite not found'
@@ -520,7 +520,7 @@ describe('InviteService', () => {
 
       const result = await inviteService.redeemUserInvite('invite-123', 'user-456');
 
-      expect(result.status).toBe('redeemed');
+      expect(result?.status).toBe('redeemed');
       expect(mockOpenFGAService.assignBaseRole).toHaveBeenCalledWith(
         'user-456',
         'community',
@@ -531,7 +531,7 @@ describe('InviteService', () => {
     });
 
     it('should throw error if invite not found', async () => {
-      mockInviteRepository.findUserInviteById.mockResolvedValue(null);
+      mockInviteRepository.findUserInviteById.mockResolvedValue(null as any);
 
       await expect(inviteService.redeemUserInvite('invite-123', 'user-456')).rejects.toThrow(
         'Invite not found'
@@ -599,7 +599,7 @@ describe('InviteService', () => {
 
       const result = await inviteService.redeemLinkInviteBySecret('secret-123', 'user-456');
 
-      expect(result.status).toBe('redeemed');
+      expect(result?.status).toBe('redeemed');
       expect(mockOpenFGAService.assignBaseRole).toHaveBeenCalledWith(
         'user-456',
         'community',
@@ -609,7 +609,7 @@ describe('InviteService', () => {
     });
 
     it('should throw error if invite not found', async () => {
-      mockInviteRepository.findBySecret.mockResolvedValue(null);
+      mockInviteRepository.findBySecret.mockResolvedValue(null as any);
 
       await expect(
         inviteService.redeemLinkInviteBySecret('secret-123', 'user-456')

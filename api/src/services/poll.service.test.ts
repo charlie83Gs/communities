@@ -19,7 +19,7 @@
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import { pollService } from '@/services/poll.service';
 import { openFGAService } from './openfga.service';
-import type { CreatePollDto } from '@types/poll.types';
+import type { CreatePollDto } from '../types/poll.types';
 
 // Mock OpenFGA service
 const mockOpenFGAService = {

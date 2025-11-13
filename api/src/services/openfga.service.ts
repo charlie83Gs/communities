@@ -234,11 +234,13 @@ export class OpenFGAService {
 
           await this.ensureRepository().write(
             undefined,
-            conflictingRelations.map((t) => ({
-              user: t.key.user,
-              relation: t.key.relation,
-              object: t.key.object,
-            }))
+            conflictingRelations
+              .filter((t) => t.key.user !== undefined)
+              .map((t) => ({
+                user: t.key.user!,
+                relation: t.key.relation,
+                object: t.key.object,
+              }))
           );
 
           console.log(`[OpenFGA Service] Successfully removed conflicting relations`);

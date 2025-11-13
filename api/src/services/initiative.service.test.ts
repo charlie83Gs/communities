@@ -173,12 +173,15 @@ describe('InitiativeService', () => {
   describe('createInitiative', () => {
     it('should allow council manager to create initiative', async () => {
       // Mock: user is council member (can_manage on council)
-      mockOpenFGAService.checkAccess.mockImplementation(
-        (userId: string, objectType: string, objectId: string, relation: string) => {
-          if (objectType === 'council' && relation === 'can_manage') return Promise.resolve(true);
-          return Promise.resolve(false);
-        }
-      );
+      mockOpenFGAService.checkAccess.mockImplementation(((
+        _userId: string,
+        objectType: string,
+        _objectId: string,
+        relation: string
+      ) => {
+        if (objectType === 'council' && relation === 'can_manage') return Promise.resolve(true);
+        return Promise.resolve(false);
+      }) as any);
       mockInitiativeRepository.create.mockResolvedValue({
         id: INITIATIVE_ID,
         title: 'Community Garden',
@@ -211,12 +214,15 @@ describe('InitiativeService', () => {
 
     it('should allow admin to create initiative', async () => {
       // Mock: user is community admin
-      mockOpenFGAService.checkAccess.mockImplementation(
-        (userId: string, objectType: string, objectId: string, relation: string) => {
-          if (objectType === 'community' && relation === 'admin') return Promise.resolve(true);
-          return Promise.resolve(false);
-        }
-      );
+      mockOpenFGAService.checkAccess.mockImplementation(((
+        _userId: string,
+        objectType: string,
+        _objectId: string,
+        relation: string
+      ) => {
+        if (objectType === 'community' && relation === 'admin') return Promise.resolve(true);
+        return Promise.resolve(false);
+      }) as any);
       mockInitiativeRepository.create.mockResolvedValue({
         id: INITIATIVE_ID,
         title: 'Community Garden',
@@ -295,7 +301,7 @@ describe('InitiativeService', () => {
     });
 
     it('should handle non-existent council', async () => {
-      mockCouncilRepository.findById.mockResolvedValue(null);
+      mockCouncilRepository.findById.mockResolvedValue(null as any);
 
       await expect(
         initiativeService.createInitiative(
@@ -322,8 +328,8 @@ describe('InitiativeService', () => {
             upvotes: 5,
             downvotes: 1,
             userVote: null,
-          },
-        ],
+          } as any,
+        ] as any,
         total: 1,
       });
 
@@ -383,7 +389,7 @@ describe('InitiativeService', () => {
         communityId: COMMUNITY_ID,
         upvotes: 5,
         downvotes: 1,
-      });
+      } as any);
 
       const result = await initiativeService.getInitiative(INITIATIVE_ID, USER_ID);
 
@@ -401,7 +407,7 @@ describe('InitiativeService', () => {
       mockInitiativeRepository.findById.mockResolvedValue({
         id: INITIATIVE_ID,
         communityId: COMMUNITY_ID,
-      });
+      } as any);
       // Mock: user cannot read community
       mockOpenFGAService.checkAccess.mockResolvedValue(false);
 
@@ -411,7 +417,7 @@ describe('InitiativeService', () => {
     });
 
     it('should handle non-existent initiative', async () => {
-      mockInitiativeRepository.findById.mockResolvedValue(null);
+      mockInitiativeRepository.findById.mockResolvedValue(null as any);
 
       await expect(initiativeService.getInitiative(INITIATIVE_ID, USER_ID)).rejects.toThrow(
         'Initiative not found'
@@ -427,7 +433,7 @@ describe('InitiativeService', () => {
           id: INITIATIVE_ID,
           councilId: COUNCIL_ID,
           communityId: COMMUNITY_ID,
-        })
+        } as any)
         // Second call to findById after update
         .mockResolvedValueOnce({
           id: INITIATIVE_ID,
@@ -436,14 +442,17 @@ describe('InitiativeService', () => {
           communityId: COMMUNITY_ID,
           upvotes: 0,
           downvotes: 0,
-        });
+        } as any);
       // Mock: user can manage council
-      mockOpenFGAService.checkAccess.mockImplementation(
-        (userId: string, objectType: string, objectId: string, relation: string) => {
-          if (objectType === 'council' && relation === 'can_manage') return Promise.resolve(true);
-          return Promise.resolve(false);
-        }
-      );
+      mockOpenFGAService.checkAccess.mockImplementation(((
+        _userId: string,
+        objectType: string,
+        _objectId: string,
+        relation: string
+      ) => {
+        if (objectType === 'council' && relation === 'can_manage') return Promise.resolve(true);
+        return Promise.resolve(false);
+      }) as any);
       mockInitiativeRepository.update.mockResolvedValue({
         id: INITIATIVE_ID,
         title: 'Updated Initiative',
@@ -469,7 +478,7 @@ describe('InitiativeService', () => {
         id: INITIATIVE_ID,
         councilId: COUNCIL_ID,
         communityId: COMMUNITY_ID,
-      });
+      } as any);
       // Mock: user has no permissions
       mockOpenFGAService.checkAccess.mockResolvedValue(false);
 
@@ -485,7 +494,7 @@ describe('InitiativeService', () => {
         id: INITIATIVE_ID,
         councilId: COUNCIL_ID,
         communityId: COMMUNITY_ID,
-      });
+      } as any);
       // Mock: user can manage council
       mockOpenFGAService.checkAccess.mockResolvedValue(true);
       mockInitiativeRepository.delete.mockResolvedValue(undefined);
@@ -501,7 +510,7 @@ describe('InitiativeService', () => {
         id: INITIATIVE_ID,
         councilId: COUNCIL_ID,
         communityId: COMMUNITY_ID,
-      });
+      } as any);
       // Mock: user has no permissions
       mockOpenFGAService.checkAccess.mockResolvedValue(false);
 
@@ -516,7 +525,7 @@ describe('InitiativeService', () => {
       mockInitiativeRepository.findById.mockResolvedValue({
         id: INITIATIVE_ID,
         communityId: COMMUNITY_ID,
-      });
+      } as any);
       // Mock: user can read community
       mockOpenFGAService.checkAccess.mockResolvedValue(true);
       mockInitiativeRepository.vote.mockResolvedValue(undefined);
@@ -525,7 +534,7 @@ describe('InitiativeService', () => {
         upvotes: 1,
         downvotes: 0,
         userVote: 'upvote',
-      });
+      } as any);
 
       const result = await initiativeService.voteOnInitiative(INITIATIVE_ID, 'upvote', USER_ID);
 
@@ -537,7 +546,7 @@ describe('InitiativeService', () => {
       mockInitiativeRepository.findById.mockResolvedValue({
         id: INITIATIVE_ID,
         communityId: COMMUNITY_ID,
-      });
+      } as any);
       // Mock: user cannot read community
       mockOpenFGAService.checkAccess.mockResolvedValue(false);
 
@@ -550,7 +559,7 @@ describe('InitiativeService', () => {
       mockInitiativeRepository.findById.mockResolvedValue({
         id: INITIATIVE_ID,
         communityId: COMMUNITY_ID,
-      });
+      } as any);
       // Mock: user can read community
       mockOpenFGAService.checkAccess.mockResolvedValue(true);
       mockInitiativeRepository.removeVote.mockResolvedValue(undefined);
@@ -559,7 +568,7 @@ describe('InitiativeService', () => {
         upvotes: 0,
         downvotes: 0,
         userVote: null,
-      });
+      } as any);
 
       const result = await initiativeService.removeVote(INITIATIVE_ID, USER_ID);
 
@@ -574,7 +583,7 @@ describe('InitiativeService', () => {
         id: INITIATIVE_ID,
         councilId: COUNCIL_ID,
         communityId: COMMUNITY_ID,
-      });
+      } as any);
       // Mock: user can manage council
       mockOpenFGAService.checkAccess.mockResolvedValue(true);
       mockInitiativeRepository.createReport.mockResolvedValue({
@@ -602,7 +611,7 @@ describe('InitiativeService', () => {
         id: INITIATIVE_ID,
         councilId: COUNCIL_ID,
         communityId: COMMUNITY_ID,
-      });
+      } as any);
       // Mock: user has no permissions
       mockOpenFGAService.checkAccess.mockResolvedValue(false);
 
@@ -622,11 +631,11 @@ describe('InitiativeService', () => {
       mockInitiativeRepository.findById.mockResolvedValue({
         id: INITIATIVE_ID,
         communityId: COMMUNITY_ID,
-      });
+      } as any);
       // Mock: user can read community
       mockOpenFGAService.checkAccess.mockResolvedValue(true);
       mockInitiativeRepository.findReportsByInitiative.mockResolvedValue({
-        reports: [{ id: REPORT_ID }],
+        reports: [{ id: REPORT_ID } as any] as any,
         total: 1,
       });
 
@@ -643,7 +652,7 @@ describe('InitiativeService', () => {
       mockInitiativeRepository.findById.mockResolvedValue({
         id: INITIATIVE_ID,
         communityId: COMMUNITY_ID,
-      });
+      } as any);
       // Mock: user can read community
       mockOpenFGAService.checkAccess.mockResolvedValue(true);
       mockInitiativeRepository.createComment.mockResolvedValue({
@@ -651,8 +660,7 @@ describe('InitiativeService', () => {
         initiativeId: INITIATIVE_ID,
         content: 'Great initiative!',
         authorId: USER_ID,
-        createdAt: new Date(),
-      });
+      } as any);
 
       const result = await initiativeService.createComment(
         INITIATIVE_ID,
@@ -668,7 +676,7 @@ describe('InitiativeService', () => {
       mockInitiativeRepository.findById.mockResolvedValue({
         id: INITIATIVE_ID,
         communityId: COMMUNITY_ID,
-      });
+      } as any);
       // Mock: user cannot read community
       mockOpenFGAService.checkAccess.mockResolvedValue(false);
 
@@ -681,7 +689,7 @@ describe('InitiativeService', () => {
       mockInitiativeRepository.findById.mockResolvedValue({
         id: INITIATIVE_ID,
         communityId: COMMUNITY_ID,
-      });
+      } as any);
       // Mock: user can read community
       mockOpenFGAService.checkAccess.mockResolvedValue(true);
       mockInitiativeRepository.findCommentsByInitiative.mockResolvedValue({
@@ -690,8 +698,8 @@ describe('InitiativeService', () => {
             id: '550e8400-e29b-41d4-a716-446655440006',
             authorId: USER_ID,
             content: 'Great!',
-          },
-        ],
+          } as any,
+        ] as any,
         total: 1,
       });
 
@@ -706,7 +714,7 @@ describe('InitiativeService', () => {
       mockInitiativeRepository.findById.mockResolvedValue({
         id: INITIATIVE_ID,
         communityId: COMMUNITY_ID,
-      });
+      } as any);
       // Mock: user can read community
       mockOpenFGAService.checkAccess.mockResolvedValue(true);
 
@@ -725,7 +733,7 @@ describe('InitiativeService', () => {
       mockInitiativeRepository.findById.mockResolvedValue({
         id: INITIATIVE_ID,
         communityId: COMMUNITY_ID,
-      });
+      } as any);
       // Mock: user can read community
       mockOpenFGAService.checkAccess.mockResolvedValue(true);
       mockInitiativeRepository.createReportComment.mockResolvedValue({
@@ -733,8 +741,7 @@ describe('InitiativeService', () => {
         reportId: REPORT_ID,
         content: 'Good report!',
         authorId: USER_ID,
-        createdAt: new Date(),
-      });
+      } as any);
 
       const result = await initiativeService.createReportComment(
         REPORT_ID,
@@ -754,7 +761,7 @@ describe('InitiativeService', () => {
       mockInitiativeRepository.findById.mockResolvedValue({
         id: INITIATIVE_ID,
         communityId: COMMUNITY_ID,
-      });
+      } as any);
       // Mock: user can read community
       mockOpenFGAService.checkAccess.mockResolvedValue(true);
       mockInitiativeRepository.findCommentsByReport.mockResolvedValue({
@@ -763,8 +770,8 @@ describe('InitiativeService', () => {
             id: '550e8400-e29b-41d4-a716-446655440007',
             authorId: USER_ID,
             content: 'Great!',
-          },
-        ],
+          } as any,
+        ] as any,
         total: 1,
       });
 

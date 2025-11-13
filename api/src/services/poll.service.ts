@@ -10,7 +10,7 @@ import type {
   PollResult,
   ListPollsQuery,
   PollOption,
-} from '@types/poll.types';
+} from '../types/poll.types';
 
 export class PollService {
   /**

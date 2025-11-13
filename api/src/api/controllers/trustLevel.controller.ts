@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { trustLevelService } from '../../services/trustLevel.service';
 import { ApiResponse } from '../../utils/response';
-import logger from '../../utils/logger';
 
 /**
  * @swagger

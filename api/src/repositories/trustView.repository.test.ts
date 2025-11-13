@@ -362,8 +362,8 @@ describe('TrustViewRepository', () => {
 
       expect(views).toHaveLength(2);
 
-      const user1View = views.find((v) => v.userId === testUserId1);
-      const user2View = views.find((v) => v.userId === testUserId2);
+      const user1View = views.find((v: any) => v.userId === testUserId1);
+      const user2View = views.find((v: any) => v.userId === testUserId2);
 
       expect(user1View?.points).toBe(2);
       expect(Number(user1View?.peerAwards)).toBe(2);
@@ -414,9 +414,9 @@ describe('TrustViewRepository', () => {
       const views = await trustViewRepository.listByUser(testUserId1);
 
       expect(views).toHaveLength(2);
-      expect(views.every((v) => v.userId === testUserId1)).toBe(true);
-      expect(views.some((v) => v.communityId === testCommunityId1)).toBe(true);
-      expect(views.some((v) => v.communityId === testCommunityId2)).toBe(true);
+      expect(views.every((v: any) => v.userId === testUserId1)).toBe(true);
+      expect(views.some((v: any) => v.communityId === testCommunityId1)).toBe(true);
+      expect(views.some((v: any) => v.communityId === testCommunityId2)).toBe(true);
     });
 
     test('should respect limit parameter', async () => {
@@ -456,7 +456,7 @@ describe('TrustViewRepository', () => {
       const result = await trustViewRepository.getAllForCommunity(testCommunityId1);
 
       expect(result).toHaveLength(3);
-      expect(result.every((v) => v.communityId === testCommunityId1)).toBe(true);
+      expect(result.every((v: any) => v.communityId === testCommunityId1)).toBe(true);
     });
   });
 

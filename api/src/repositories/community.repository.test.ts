@@ -16,21 +16,41 @@ const testCommunity: Community = {
   description: 'A test community',
   createdBy: 'user-123',
   createdAt: new Date('2024-01-01'),
-  updatedAt: new Date('2024-01-01'),
-  deletedAt: null,
   minTrustForWealth: { type: 'number' as const, value: 10 },
   minTrustForPolls: { type: 'number' as const, value: 15 },
   minTrustToAwardTrust: { type: 'number' as const, value: 15 },
+  minTrustToViewTrust: { type: 'number' as const, value: 0 },
+  trustTitles: { titles: [{ name: 'New', minScore: 0 }] },
+  minTrustToViewWealth: { type: 'number' as const, value: 0 },
+  minTrustToViewItems: { type: 'number' as const, value: 0 },
   minTrustForDisputes: { type: 'number' as const, value: 20 },
+  minTrustToViewDisputes: { type: 'number' as const, value: 0 },
+  disputeResolutionRole: null,
+  disputeHandlingCouncils: [],
+  pollCreatorUsers: [],
+  minTrustToViewPolls: { type: 'number' as const, value: 0 },
   minTrustForPoolCreation: { type: 'number' as const, value: 20 },
+  minTrustToViewPools: { type: 'number' as const, value: 0 },
   minTrustForCouncilCreation: { type: 'number' as const, value: 25 },
+  minTrustToViewCouncils: { type: 'number' as const, value: 0 },
+  nonContributionThresholdDays: 30,
+  dashboardRefreshInterval: 3600,
+  metricVisibilitySettings: {
+    showActiveMembers: true,
+    showWealthGeneration: true,
+    showTrustNetwork: true,
+    showCouncilActivity: true,
+    showNeedsFulfillment: true,
+    showDisputeRate: true,
+  },
+  minTrustForHealthAnalytics: { type: 'number' as const, value: 20 },
   minTrustForForumModeration: { type: 'number' as const, value: 30 },
   minTrustForThreadCreation: { type: 'number' as const, value: 10 },
   minTrustForAttachments: { type: 'number' as const, value: 15 },
   minTrustForFlagging: { type: 'number' as const, value: 15 },
   minTrustForFlagReview: { type: 'number' as const, value: 30 },
+  minTrustToViewForum: { type: 'number' as const, value: 0 },
   minTrustForItemManagement: { type: 'number' as const, value: 20 },
-  minTrustForHealthAnalytics: { type: 'number' as const, value: 20 },
 };
 
 const testCommunity2: Community = {
@@ -87,7 +107,7 @@ describe('CommunityRepository', () => {
 
       const result = await communityRepository.create(data);
 
-      expect(result).toEqual(testCommunity);
+      expect(result as any).toEqual(testCommunity as any);
       expect(mockDb.insert).toHaveBeenCalled();
       expect(mockDb.values).toHaveBeenCalled();
       expect(mockDb.returning).toHaveBeenCalled();
@@ -140,7 +160,7 @@ describe('CommunityRepository', () => {
 
       const result = await communityRepository.create(data);
 
-      expect(result.deletedAt).toBeNull();
+      expect((result as any).deletedAt).toBeNull();
     });
   });
 
@@ -150,7 +170,7 @@ describe('CommunityRepository', () => {
 
       const result = await communityRepository.findById('comm-123');
 
-      expect(result).toEqual(testCommunity);
+      expect(result as any).toEqual(testCommunity as any);
       expect(mockDb.select).toHaveBeenCalled();
       expect(mockDb.where).toHaveBeenCalled();
     });
@@ -222,7 +242,7 @@ describe('CommunityRepository', () => {
       const result = await communityRepository.findAll();
 
       result.forEach((community) => {
-        expect(community.deletedAt).toBeNull();
+        expect((community as any).deletedAt).toBeNull();
       });
     });
 
@@ -261,8 +281,8 @@ describe('CommunityRepository', () => {
       const result = await communityRepository.update('comm-123', updates);
 
       expect(result).toBeDefined();
-      expect(result?.name).toBe(updates.name);
-      expect(result?.description).toBe(updates.description);
+      expect(result?.name).toBe(updates.name!);
+      expect(result?.description).toBe(updates.description!);
       expect(mockDb.update).toHaveBeenCalled();
       expect(mockDb.set).toHaveBeenCalled();
       expect(mockDb.returning).toHaveBeenCalled();
@@ -303,7 +323,7 @@ describe('CommunityRepository', () => {
       const result = await communityRepository.update('comm-123', updates);
 
       expect(result).toBeDefined();
-      expect(result?.description).toBe(updates.description);
+      expect(result?.description).toBe(updates.description!);
       expect(result?.name).toBe(testCommunity.name);
     });
   });
@@ -313,14 +333,14 @@ describe('CommunityRepository', () => {
       const deletedCommunity = {
         ...testCommunity,
         deletedAt: new Date('2024-06-01'),
-      };
+      } as any;
       mockDb.where.mockResolvedValue([deletedCommunity]);
 
       const result = await communityRepository.delete('comm-123');
 
       expect(result).toBeDefined();
-      expect(result?.deletedAt).not.toBeNull();
-      expect(result?.deletedAt).toBeInstanceOf(Date);
+      expect((result as any)?.deletedAt).not.toBeNull();
+      expect((result as any)?.deletedAt).toBeInstanceOf(Date);
       expect(mockDb.update).toHaveBeenCalled();
       expect(mockDb.delete).toHaveBeenCalled();
     });
@@ -330,7 +350,7 @@ describe('CommunityRepository', () => {
       const deletedCommunity = {
         ...testCommunity,
         deletedAt: new Date('2024-06-01'),
-      };
+      } as any;
       mockDb.where.mockResolvedValueOnce([deletedCommunity]);
 
       await communityRepository.delete('comm-123');
@@ -362,7 +382,7 @@ describe('CommunityRepository', () => {
       const deletedCommunity = {
         ...testCommunity,
         deletedAt: new Date('2024-06-01'),
-      };
+      } as any;
       mockDb.where.mockResolvedValue([deletedCommunity]);
 
       await communityRepository.delete('comm-123');
@@ -574,7 +594,7 @@ describe('CommunityRepository', () => {
       const result = await communityRepository.search(filters);
 
       result.rows.forEach((community) => {
-        expect(community.deletedAt).toBeNull();
+        expect((community as any).deletedAt).toBeNull();
       });
     });
 

@@ -10,16 +10,16 @@ import {
 
 // Mock the services
 const mockPollService = {
-  listPolls: mock(() => Promise.resolve([])),
-  getPollById: mock(() => Promise.resolve({ poll: {}, options: [], userVote: null, results: [] })),
-  createPoll: mock(() => Promise.resolve({ id: 'poll-123' })),
+  listPolls: mock(() => Promise.resolve([] as any[])),
+  getPollById: mock(() => Promise.resolve({ poll: {} as any, options: [] as any[], userVote: null, results: [] as any[] })),
+  createPoll: mock(() => Promise.resolve({ id: 'poll-123' } as any)),
   vote: mock(() => Promise.resolve()),
-  closePoll: mock(() => Promise.resolve({ id: 'poll-123', status: 'closed' })),
+  closePoll: mock(() => Promise.resolve({ id: 'poll-123', status: 'closed' } as any)),
 };
 
 const mockWealthCommentService = {
-  createComment: mock(() => Promise.resolve({ id: 'comment-123' })),
-  getCommentsByWealthId: mock(() => Promise.resolve([])),
+  createComment: mock(() => Promise.resolve({ id: 'comment-123' } as any)),
+  getCommentsByWealthId: mock(() => Promise.resolve([] as any[])),
 };
 
 describe('PollController', () => {

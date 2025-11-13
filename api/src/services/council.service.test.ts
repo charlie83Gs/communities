@@ -119,7 +119,7 @@ describe('CouncilService', () => {
           communityId: validCommunityId,
           name: 'Food Council',
           description: 'Manages food resources in the community',
-        },
+        } as any,
         validUserId
       );
 
@@ -144,7 +144,7 @@ describe('CouncilService', () => {
             communityId: validCommunityId,
             name: 'Food Council',
             description: 'Manages food resources',
-          },
+          } as any,
           validUserId
         )
       ).rejects.toThrow('Forbidden');
@@ -167,7 +167,7 @@ describe('CouncilService', () => {
             communityId: validCommunityId,
             name: 'AB', // Too short
             description: 'Valid description here for testing',
-          },
+          } as any,
           validUserId
         )
       ).rejects.toThrow('Council name must be between 3 and 100 characters');
@@ -200,7 +200,7 @@ describe('CouncilService', () => {
     });
 
     it('should reject non-member from listing councils', async () => {
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
+      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null as any);
 
       await expect(councilService.listCouncils(validCommunityId, validUserId)).rejects.toThrow(
         'Forbidden'
@@ -238,7 +238,7 @@ describe('CouncilService', () => {
         createdBy: validUserId,
         createdAt: new Date(),
       });
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
+      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null as any);
 
       await expect(councilService.getCouncil(validCouncilId, validUserId)).rejects.toThrow(
         'Forbidden'
@@ -246,7 +246,7 @@ describe('CouncilService', () => {
     });
 
     it('should handle non-existent council', async () => {
-      mockCouncilRepository.findById.mockResolvedValue(null);
+      mockCouncilRepository.findById.mockResolvedValue(null as any);
 
       await expect(councilService.getCouncil(validCouncilId, validUserId)).rejects.toThrow(
         'Council not found'
@@ -394,7 +394,7 @@ describe('CouncilService', () => {
         createdBy: validUserId,
         createdAt: new Date(),
       });
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
+      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null as any);
 
       await expect(councilService.awardTrust(validCouncilId, validUserId)).rejects.toThrow(
         'Forbidden'

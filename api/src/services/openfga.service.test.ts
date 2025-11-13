@@ -4,13 +4,13 @@ import { OpenFGARepository } from '@/repositories/openfga.repository';
 
 // Mock OpenFGA repository
 const mockRepository = {
-  initialize: mock(() => Promise.resolve()),
-  ensureInitialized: mock(() => Promise.resolve()),
-  check: mock(() => Promise.resolve(true)),
-  read: mock(() => Promise.resolve({ tuples: [] })),
-  readTuples: mock(() => Promise.resolve([])),
-  write: mock(() => Promise.resolve()),
-  listObjects: mock(() => Promise.resolve([])),
+  initialize: mock(() => Promise.resolve()) as any,
+  ensureInitialized: mock(() => Promise.resolve()) as any,
+  check: mock(() => Promise.resolve(true)) as any,
+  read: mock(() => Promise.resolve({ tuples: [] })) as any,
+  readTuples: mock(() => Promise.resolve([])) as any,
+  write: mock(() => Promise.resolve()) as any,
+  listObjects: mock(() => Promise.resolve([])) as any,
 } as unknown as OpenFGARepository;
 
 describe('OpenFGAService', () => {
@@ -25,10 +25,10 @@ describe('OpenFGAService', () => {
     });
 
     // Set default mock responses
-    mockRepository.check.mockResolvedValue(true);
-    mockRepository.readTuples.mockResolvedValue([]);
-    mockRepository.write.mockResolvedValue(undefined);
-    mockRepository.listObjects.mockResolvedValue([]);
+    (mockRepository.check as any).mockResolvedValue(true);
+    (mockRepository.readTuples as any).mockResolvedValue([]);
+    (mockRepository.write as any).mockResolvedValue(undefined);
+    (mockRepository.listObjects as any).mockResolvedValue([]);
 
     // Create service instance with mock repository
     service = new OpenFGAService(mockRepository);
@@ -36,7 +36,7 @@ describe('OpenFGAService', () => {
 
   describe('checkAccess', () => {
     it('should check if user can perform action on resource', async () => {
-      mockRepository.check.mockResolvedValue(true);
+      (mockRepository.check as any).mockResolvedValue(true);
 
       const result = await service.checkAccess('user-123', 'communities', 'comm-123', 'read');
 
@@ -49,7 +49,7 @@ describe('OpenFGAService', () => {
     });
 
     it('should map actions to permissions', async () => {
-      mockRepository.check.mockResolvedValue(true);
+      (mockRepository.check as any).mockResolvedValue(true);
 
       await service.checkAccess('user-123', 'communities', 'comm-123', 'update');
 
@@ -61,7 +61,7 @@ describe('OpenFGAService', () => {
     });
 
     it('should return false on error', async () => {
-      mockRepository.check.mockRejectedValue(new Error('OpenFGA error'));
+      (mockRepository.check as any).mockRejectedValue(new Error('OpenFGA error'));
 
       const result = await service.checkAccess('user-123', 'communities', 'comm-123', 'read');
 
@@ -71,7 +71,7 @@ describe('OpenFGAService', () => {
 
   describe('getUserBaseRole', () => {
     it('should return highest privilege role', async () => {
-      mockRepository.check
+      (mockRepository.check as any)
         .mockResolvedValueOnce(false) // admin
         .mockResolvedValueOnce(true); // member
 
@@ -81,7 +81,7 @@ describe('OpenFGAService', () => {
     });
 
     it('should return null if no role found', async () => {
-      mockRepository.check.mockResolvedValue(false);
+      (mockRepository.check as any).mockResolvedValue(false);
 
       const result = await service.getUserBaseRole('user-123', 'communities', 'comm-123');
 
@@ -89,7 +89,7 @@ describe('OpenFGAService', () => {
     });
 
     it('should return all roles when returnAll is true', async () => {
-      mockRepository.check
+      (mockRepository.check as any)
         .mockResolvedValueOnce(true) // admin
         .mockResolvedValueOnce(false); // member
 
@@ -104,7 +104,7 @@ describe('OpenFGAService', () => {
   describe('getBaseRolesForResource', () => {
     it('should return all users with base roles for a resource', async () => {
       // Mock responses for each base role check
-      mockRepository.readTuples
+      (mockRepository.readTuples as any)
         .mockResolvedValueOnce([
           // admin role
           {
@@ -141,7 +141,7 @@ describe('OpenFGAService', () => {
     });
 
     it('should return empty array if no roles', async () => {
-      mockRepository.readTuples.mockResolvedValue([]);
+      (mockRepository.readTuples as any).mockResolvedValue([]);
 
       const result = await service.getBaseRolesForResource('communities', 'comm-123');
 
@@ -152,9 +152,9 @@ describe('OpenFGAService', () => {
   describe('assignBaseRole', () => {
     it('should assign base role to user', async () => {
       // Mock reading existing tuples (none found)
-      mockRepository.readTuples.mockResolvedValue([]);
+      (mockRepository.readTuples as any).mockResolvedValue([]);
       // Mock verification check
-      mockRepository.check.mockResolvedValue(true);
+      (mockRepository.check as any).mockResolvedValue(true);
 
       await service.assignBaseRole('user-123', 'communities', 'comm-123', 'member');
 
@@ -163,7 +163,7 @@ describe('OpenFGAService', () => {
 
     it('should be idempotent when role already exists', async () => {
       // Mock existing tuple with the same role
-      mockRepository.readTuples.mockResolvedValue([
+      (mockRepository.readTuples as any).mockResolvedValue([
         {
           key: {
             user: 'user:user-123',
@@ -188,7 +188,7 @@ describe('OpenFGAService', () => {
 
     it('should replace conflicting base roles', async () => {
       // User currently has admin role
-      mockRepository.readTuples.mockResolvedValue([
+      (mockRepository.readTuples as any).mockResolvedValue([
         {
           key: {
             user: 'user:user-123',
@@ -197,7 +197,7 @@ describe('OpenFGAService', () => {
           },
         },
       ]);
-      mockRepository.check.mockResolvedValue(true);
+      (mockRepository.check as any).mockResolvedValue(true);
 
       await service.assignBaseRole('user-123', 'communities', 'comm-123', 'member');
 
@@ -233,10 +233,10 @@ describe('OpenFGAService', () => {
   describe('removeBaseRole', () => {
     it('should remove only existing base role tuples for user', async () => {
       // Mock getUserBaseRole to return only 'member' role
-      mockRepository.check.mockImplementation(async ({ relation }) => {
+      (mockRepository.check as any).mockImplementation(async ({ relation }: any) => {
         return relation === 'member'; // User only has 'member' role
       });
-      mockRepository.write.mockResolvedValue(undefined);
+      (mockRepository.write as any).mockResolvedValue(undefined);
 
       await service.removeBaseRole('user-123', 'communities', 'comm-123');
 
@@ -252,8 +252,8 @@ describe('OpenFGAService', () => {
 
     it('should do nothing if user has no base roles', async () => {
       // Mock getUserBaseRole to return no roles
-      mockRepository.check.mockResolvedValue(false);
-      mockRepository.write.mockResolvedValue(undefined);
+      (mockRepository.check as any).mockResolvedValue(false);
+      (mockRepository.write as any).mockResolvedValue(undefined);
 
       await service.removeBaseRole('user-123', 'communities', 'comm-123');
 
@@ -263,8 +263,8 @@ describe('OpenFGAService', () => {
 
     it('should remove multiple base roles if user has them', async () => {
       // Mock getUserBaseRole to return both roles (edge case, but possible)
-      mockRepository.check.mockResolvedValue(true);
-      mockRepository.write.mockResolvedValue(undefined);
+      (mockRepository.check as any).mockResolvedValue(true);
+      (mockRepository.write as any).mockResolvedValue(undefined);
 
       await service.removeBaseRole('user-123', 'communities', 'comm-123');
 
@@ -354,7 +354,7 @@ describe('OpenFGAService', () => {
 
   describe('getInviteRoleMetadata', () => {
     it('should retrieve invite role metadata', async () => {
-      mockRepository.check
+      (mockRepository.check as any)
         .mockResolvedValueOnce(false) // admin
         .mockResolvedValueOnce(true); // member
 
@@ -364,7 +364,7 @@ describe('OpenFGAService', () => {
     });
 
     it('should return null if no metadata found', async () => {
-      mockRepository.check.mockResolvedValue(false);
+      (mockRepository.check as any).mockResolvedValue(false);
 
       const result = await service.getInviteRoleMetadata('invite-123');
 
@@ -398,7 +398,7 @@ describe('OpenFGAService', () => {
   describe('syncTrustRoles', () => {
     it('should grant trust roles when trust score meets threshold', async () => {
       // User doesn't have the trust role yet
-      mockRepository.check.mockResolvedValue(false);
+      (mockRepository.check as any).mockResolvedValue(false);
 
       const thresholds = {
         trust_forum_manager: 30,
@@ -427,7 +427,7 @@ describe('OpenFGAService', () => {
 
     it('should revoke trust roles when trust score falls below threshold', async () => {
       // User has the trust role
-      mockRepository.check.mockResolvedValue(true);
+      (mockRepository.check as any).mockResolvedValue(true);
 
       const thresholds = {
         trust_forum_manager: 30,
@@ -463,7 +463,7 @@ describe('OpenFGAService', () => {
 
     it('should handle no changes needed', async () => {
       // User already has correct trust roles
-      mockRepository.check.mockResolvedValue(true);
+      (mockRepository.check as any).mockResolvedValue(true);
 
       const thresholds = {
         trust_forum_manager: 30,
@@ -478,7 +478,7 @@ describe('OpenFGAService', () => {
 
   describe('getAccessibleResourceIds', () => {
     it('should return array of resource IDs user can access', async () => {
-      mockRepository.listObjects.mockResolvedValue(['comm-123', 'comm-456']);
+      (mockRepository.listObjects as any).mockResolvedValue(['comm-123', 'comm-456']);
 
       const result = await service.getAccessibleResourceIds('user-123', 'communities', 'read');
 
@@ -491,7 +491,7 @@ describe('OpenFGAService', () => {
     });
 
     it('should return empty array on error', async () => {
-      mockRepository.listObjects.mockRejectedValue(new Error('OpenFGA error'));
+      (mockRepository.listObjects as any).mockRejectedValue(new Error('OpenFGA error'));
 
       const result = await service.getAccessibleResourceIds('user-123', 'communities', 'read');
 

@@ -153,7 +153,7 @@ export class WealthService {
 
     // Assign creator a per-resource role on this wealth (so we can use OpenFGA if needed)
     try {
-      await openFGAService.assignRole(userId, 'wealth', wealthItem.id, 'admin');
+      await openFGAService.assignBaseRole(userId, 'wealth', wealthItem.id, 'admin');
     } catch {
       // non-fatal
     }

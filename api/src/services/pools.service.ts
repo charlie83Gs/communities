@@ -358,7 +358,11 @@ export class PoolsService {
     await this.wealthRepository.markFulfilled(wealthId);
 
     // 5. Increment pool inventory
-    await this.poolsRepository.incrementInventory(poolId, wealth.itemId, wealth.unitsAvailable ?? 1);
+    await this.poolsRepository.incrementInventory(
+      poolId,
+      wealth.itemId,
+      wealth.unitsAvailable ?? 1
+    );
   }
 
   /**

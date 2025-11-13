@@ -573,20 +573,13 @@ export class UsersController {
       // Get all trust views for this user (across all communities)
       const trustViews = await trustViewRepository.listByUser(userId, 100, 0);
 
-      // Get community names
-      const communityIds = trustViews.map(tv => tv.communityId);
-      const communityRecords = await db
-        .select({ id: communities.id, name: communities.name })
-        .from(communities)
-        .where(eq(communities.id, communityIds[0])); // Need to handle multiple IDs properly
-
       // Better approach: fetch all history and calculate stats
       const allHistory = await trustHistoryRepository.getHistoryForUserAllCommunities(userId, 1000, 0);
 
       // Calculate stats
-      const awardsReceived = allHistory.filter(h => h.action === 'award' || h.action === 'admin_grant').length;
-      const awardsRemoved = allHistory.filter(h => h.action === 'remove').length;
-      const totalTrust = trustViews.reduce((sum, tv) => sum + tv.points, 0);
+      const awardsReceived = allHistory.filter((h: any) => h.action === 'award' || h.action === 'admin_grant').length;
+      const awardsRemoved = allHistory.filter((h: any) => h.action === 'remove').length;
+      const totalTrust = trustViews.reduce((sum: any, tv: any) => sum + tv.points, 0);
 
       // Build community breakdown
       const communityMap = new Map<string, { name: string; points: number }>();

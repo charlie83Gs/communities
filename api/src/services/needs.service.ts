@@ -1,4 +1,4 @@
-import { needsRepository } from '@repositories/needs.repository';
+import { needsRepository, NeedsRepository } from '@repositories/needs.repository';
 import { councilRepository } from '@repositories/council.repository';
 import { itemsRepository } from '@repositories/items.repository';
 import { AppError } from '@utils/errors';
@@ -10,7 +10,7 @@ import {
   CreateCouncilNeedDto,
   UpdateCouncilNeedDto,
   CommunityNeedsAggregation,
-} from '@types/needs.types';
+} from '../types/needs.types';
 import type {
   NeedRecord,
   CouncilNeedRecord,

@@ -1,9 +1,13 @@
-import { Component, createSignal, Show } from 'solid-js';
+import { Component, createSignal, Show, For, createMemo } from 'solid-js';
 import { useUpdateItemMutation } from '@/hooks/queries/useItems';
-import type { Item, ItemKind } from '@/types/items.types';
+import type { Item, ItemKind, ItemTranslations } from '@/types/items.types';
 import { Card } from '@/components/common/Card';
 import { Button } from '@/components/common/Button';
 import { Input } from '@/components/common/Input';
+import { makeTranslator } from '@/i18n/makeTranslator';
+import { itemsDict } from './items.i18n';
+import type { Locale } from '@/stores/i18n.store';
+import { i18nLocale } from '@/stores/i18n.store';
 
 interface ItemEditFormProps {
   item: Item;
@@ -11,9 +15,12 @@ interface ItemEditFormProps {
   onCancel: () => void;
 }
 
+const languages: Locale[] = ['en', 'es', 'hi'];
+
 export const ItemEditForm: Component<ItemEditFormProps> = (props) => {
-  const [name, setName] = createSignal(props.item.name);
-  const [description, setDescription] = createSignal(props.item.description || '');
+  const t = makeTranslator(itemsDict, 'items.editForm');
+  const [activeTab, setActiveTab] = createSignal<Locale>(i18nLocale.locale());
+  const [translations, setTranslations] = createSignal<ItemTranslations>(props.item.translations || {});
   const [kind, setKind] = createSignal<ItemKind>(props.item.kind);
   const [wealthValue, setWealthValue] = createSignal(props.item.wealthValue);
   const [error, setError] = createSignal<string | null>(null);
@@ -22,31 +29,45 @@ export const ItemEditForm: Component<ItemEditFormProps> = (props) => {
 
   const isDefault = () => props.item.isDefault;
 
+  const filledLanguagesCount = createMemo(() => {
+    const trans = translations();
+    return languages.filter(lang => trans[lang]?.name?.trim()).length;
+  });
+
   const validateWealthValue = (value: string): string | null => {
     if (!value || value.trim() === '') {
-      return 'Wealth value is required';
+      return t('errors.wealthValueRequired', 'Wealth value is required');
     }
 
-    // Check pattern /^\d+(\.\d{1,2})?$/
     const pattern = /^\d+(\.\d{1,2})?$/;
     if (!pattern.test(value)) {
-      return 'Please enter a valid number (max 2 decimal places)';
+      return t('errors.wealthValueInvalid', 'Please enter a valid number (max 2 decimal places)');
     }
 
     const numValue = parseFloat(value);
     if (isNaN(numValue)) {
-      return 'Please enter a valid number';
+      return t('errors.wealthValueInvalid', 'Please enter a valid number');
     }
 
     if (numValue <= 0) {
-      return 'Wealth value must be greater than 0';
+      return t('errors.wealthValuePositive', 'Wealth value must be greater than 0');
     }
 
     if (numValue > 10000) {
-      return 'Wealth value cannot exceed 10,000';
+      return t('errors.wealthValueMax', 'Wealth value cannot exceed 10,000');
     }
 
     return null;
+  };
+
+  const setTranslationField = (lang: Locale, field: 'name' | 'description', value: string) => {
+    setTranslations(prev => ({
+      ...prev,
+      [lang]: {
+        ...prev[lang],
+        [field]: value,
+      },
+    }));
   };
 
   const onSubmit = async (e: Event) => {
@@ -54,18 +75,24 @@ export const ItemEditForm: Component<ItemEditFormProps> = (props) => {
     setError(null);
 
     if (isDefault()) {
-      setError('Cannot edit default items');
+      setError(t('errors.cannotEditDefault'));
       return;
     }
 
-    if (!name().trim()) {
-      setError('Name is required');
+    const trans = translations();
+    const hasAnyLanguage = languages.some(lang => trans[lang]?.name?.trim());
+
+    if (!hasAnyLanguage) {
+      setError(t('errors.atLeastOneLanguage', 'At least one language must be provided'));
       return;
     }
 
-    if (name().trim().length > 200) {
-      setError('Name must be 200 characters or less');
-      return;
+    // Check name length for each filled language
+    for (const lang of languages) {
+      if (trans[lang]?.name && trans[lang]!.name.length > 200) {
+        setError(t('errors.nameTooLong', 'Name must be 200 characters or less'));
+        return;
+      }
     }
 
     const wealthValidationError = validateWealthValue(wealthValue());
@@ -75,11 +102,21 @@ export const ItemEditForm: Component<ItemEditFormProps> = (props) => {
     }
 
     try {
+      // Clean up translations - only send languages that have names
+      const cleanedTranslations: ItemTranslations = {};
+      for (const lang of languages) {
+        if (trans[lang]?.name?.trim()) {
+          cleanedTranslations[lang] = {
+            name: trans[lang]!.name.trim(),
+            description: trans[lang]?.description?.trim() || undefined,
+          };
+        }
+      }
+
       const result = await updateMutation.mutateAsync({
         id: props.item.id,
         data: {
-          name: name().trim(),
-          description: description().trim() || undefined,
+          translations: cleanedTranslations,
           kind: kind(),
           wealthValue: wealthValue(),
         },
@@ -94,11 +131,18 @@ export const ItemEditForm: Component<ItemEditFormProps> = (props) => {
   return (
     <Card class="p-4">
       <form onSubmit={onSubmit} class="space-y-4">
-        <h3 class="text-lg font-semibold">Edit Item</h3>
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-semibold">{t('title')}</h3>
+          <Show when={!isDefault()}>
+            <span class="text-sm text-stone-500">
+              {filledLanguagesCount()}/3 {t('hints.filledLanguages', 'languages filled')}
+            </span>
+          </Show>
+        </div>
 
         <Show when={isDefault()}>
           <div class="bg-warning-100 text-warning-800 px-4 py-2 rounded-md text-sm">
-            This is a default item and cannot be edited.
+            {t('defaultItemWarning')}
           </div>
         </Show>
 
@@ -106,44 +150,93 @@ export const ItemEditForm: Component<ItemEditFormProps> = (props) => {
           <div class="text-danger-600 text-sm">{error()}</div>
         </Show>
 
-        <Input
-          label="Name"
-          placeholder="e.g., Carrots, Car Repair Service"
-          value={name()}
-          onInput={(e) => setName((e.target as HTMLInputElement).value)}
-          disabled={isDefault()}
-          required
-        />
+        {/* Language Tabs */}
+        <Show when={!isDefault()}>
+          <div>
+            <label class="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-2">
+              {t('labels.translations', 'Translations')}
+            </label>
+            <div class="flex gap-2 mb-3 border-b border-stone-200 dark:border-stone-700">
+              <For each={languages}>
+                {(lang) => {
+                  const isFilled = () => !!translations()[lang]?.name?.trim();
+                  const isActive = () => activeTab() === lang;
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab(lang)}
+                      class={`px-4 py-2 text-sm font-medium transition-colors relative ${
+                        isActive()
+                          ? 'text-ocean-600 dark:text-ocean-400'
+                          : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200'
+                      }`}
+                    >
+                      {t(`languageTabs.${lang}`, lang.toUpperCase())}
+                      <Show when={isFilled()}>
+                        <span class="ml-1 text-success-600">✓</span>
+                      </Show>
+                      <Show when={isActive()}>
+                        <div class="absolute bottom-0 left-0 right-0 h-0.5 bg-ocean-600 dark:bg-ocean-400" />
+                      </Show>
+                    </button>
+                  );
+                }}
+              </For>
+            </div>
+
+            <p class="text-xs text-stone-500 dark:text-stone-400 mb-3">
+              {t('hints.atLeastOne', 'At least one language must be filled')}
+            </p>
+
+            {/* Translation Fields for Active Tab */}
+            <For each={languages}>
+              {(lang) => (
+                <Show when={activeTab() === lang}>
+                  <div class="space-y-3">
+                    <Input
+                      label={t('labels.name', 'Name')}
+                      placeholder={t('placeholders.name', 'e.g., Carrots, Car Repair Service')}
+                      value={translations()[lang]?.name || ''}
+                      onInput={(e) => setTranslationField(lang, 'name', (e.target as HTMLInputElement).value)}
+                    />
+                    <div>
+                      <label class="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">
+                        {t('labels.description', 'Description')}
+                      </label>
+                      <textarea
+                        class="w-full px-3 py-2 border border-stone-300 dark:border-stone-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ocean-500 focus:border-ocean-500 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100"
+                        rows={3}
+                        placeholder={t('placeholders.description', 'Optional description')}
+                        value={translations()[lang]?.description || ''}
+                        onInput={(e) => setTranslationField(lang, 'description', (e.target as HTMLTextAreaElement).value)}
+                      />
+                    </div>
+                  </div>
+                </Show>
+              )}
+            </For>
+          </div>
+        </Show>
 
         <div>
-          <label class="block text-sm font-medium text-stone-700 mb-1">Description</label>
-          <textarea
-            class="w-full px-3 py-2 border border-stone-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ocean-500 focus:border-ocean-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            rows={3}
-            placeholder="Optional description"
-            value={description()}
-            onInput={(e) => setDescription((e.target as HTMLTextAreaElement).value)}
-            disabled={isDefault()}
-          />
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium text-stone-700 mb-1">Kind</label>
+          <label class="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">
+            {t('labels.kind', 'Kind')}
+          </label>
           <select
-            class="w-full px-3 py-2 border border-stone-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ocean-500 focus:border-ocean-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            class="w-full px-3 py-2 border border-stone-300 dark:border-stone-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ocean-500 focus:border-ocean-500 disabled:opacity-50 disabled:cursor-not-allowed bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100"
             value={kind()}
             onChange={(e) => setKind((e.target as HTMLSelectElement).value as ItemKind)}
             disabled={isDefault()}
           >
-            <option value="object">Object</option>
-            <option value="service">Service</option>
+            <option value="object">{t('kindOptions.object', 'Object')}</option>
+            <option value="service">{t('kindOptions.service', 'Service')}</option>
           </select>
         </div>
 
         <div>
           <label class="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">
             <span class="flex items-center gap-1">
-              <span>Wealth Value</span>
+              <span>{t('labels.wealthValue', 'Wealth Value')}</span>
               <span class="text-lg">📊</span>
             </span>
           </label>
@@ -161,18 +254,18 @@ export const ItemEditForm: Component<ItemEditFormProps> = (props) => {
             required
           />
           <p class="text-xs text-stone-500 dark:text-stone-400 mt-1">
-            Numeric value for community wealth statistics (0.01 - 10,000, max 2 decimal places)
+            {t('hints.wealthValue', 'Numeric value for community wealth statistics (0.01 - 10,000, max 2 decimal places)')}
           </p>
         </div>
 
         <div class="flex gap-2">
           <Show when={!isDefault()}>
             <Button type="submit" disabled={updateMutation.isPending}>
-              {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
+              {updateMutation.isPending ? t('buttons.saving') : t('buttons.save')}
             </Button>
           </Show>
           <Button type="button" variant="secondary" onClick={props.onCancel}>
-            {isDefault() ? 'Close' : 'Cancel'}
+            {isDefault() ? t('buttons.close') : t('buttons.cancel')}
           </Button>
         </div>
       </form>

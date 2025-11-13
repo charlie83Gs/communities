@@ -82,16 +82,13 @@ describe('UserPreferencesService', () => {
       const result = await userPreferencesService.getPreferences('user-123');
 
       expect(result.displayName).toBe('Test User');
-      expect(result.country).toBe('USA');
-      expect(result.stateProvince).toBe('CA');
-      expect(result.city).toBe('San Francisco');
       expect(result.description).toBe('Test description');
       expect(result.profileImage).toBe('image.webp');
       expect(mockAppUserRepository.findById).toHaveBeenCalledWith('user-123');
     });
 
     it('should throw error if user not found', async () => {
-      mockAppUserRepository.findById.mockResolvedValue(undefined);
+      mockAppUserRepository.findById.mockResolvedValue(undefined as any);
 
       await expect(userPreferencesService.getPreferences('user-123')).rejects.toThrow(
         'User not found'
@@ -104,20 +101,16 @@ describe('UserPreferencesService', () => {
         email: 'test@example.com',
         username: 'testuser',
         displayName: null,
-        country: null,
-        stateProvince: null,
-        city: null,
         description: null,
         profileImage: null,
         lastSeenAt: null,
         createdAt: new Date(),
         updatedAt: new Date(),
-      });
+      } as any);
 
       const result = await userPreferencesService.getPreferences('user-123');
 
       expect(result.displayName).toBeUndefined();
-      expect(result.country).toBeUndefined();
       expect(result.profileImage).toBeUndefined();
     });
   });
@@ -130,20 +123,15 @@ describe('UserPreferencesService', () => {
         email: 'test@example.com',
         username: 'testuser',
         displayName: 'Updated User',
-        country: 'Canada',
-        stateProvince: 'CA',
-        city: 'Toronto',
         description: 'Test description',
         profileImage: 'image.webp',
         lastSeenAt: null,
         createdAt: new Date(),
         updatedAt: new Date(),
-      });
+      } as any);
 
       const updateData = {
         displayName: 'Updated User',
-        country: 'Canada',
-        city: 'Toronto',
       };
 
       const result = await userPreferencesService.updatePreferences('user-123', updateData);
@@ -153,7 +141,7 @@ describe('UserPreferencesService', () => {
     });
 
     it('should throw error if user not found', async () => {
-      mockAppUserRepository.update.mockResolvedValue(undefined);
+      mockAppUserRepository.update.mockResolvedValue(undefined as any);
 
       await expect(
         userPreferencesService.updatePreferences('user-123', {
@@ -169,15 +157,12 @@ describe('UserPreferencesService', () => {
         email: 'test@example.com',
         username: 'testuser',
         displayName: 'Test User',
-        country: 'USA',
-        stateProvince: 'CA',
-        city: 'San Francisco',
         description: 'New description only',
         profileImage: 'image.webp',
         lastSeenAt: null,
         createdAt: new Date(),
         updatedAt: new Date(),
-      });
+      } as any);
 
       const _result = await userPreferencesService.updatePreferences('user-123', {
         description: 'New description only',
@@ -197,15 +182,12 @@ describe('UserPreferencesService', () => {
         email: 'test@example.com',
         username: 'testuser',
         displayName: 'Test User',
-        country: null,
-        stateProvince: null,
-        city: null,
         description: null,
         profileImage: null,
         lastSeenAt: null,
         createdAt: new Date(),
         updatedAt: new Date(),
-      });
+      } as any);
       mockImagesService.save.mockResolvedValue({
         id: 'img-123',
         filename: 'new-image.webp',
@@ -219,15 +201,12 @@ describe('UserPreferencesService', () => {
         email: 'test@example.com',
         username: 'testuser',
         displayName: 'Test User',
-        country: null,
-        stateProvince: null,
-        city: null,
         description: null,
         profileImage: 'new-image.webp',
         lastSeenAt: null,
         createdAt: new Date(),
         updatedAt: new Date(),
-      });
+      } as any);
 
       const buffer = Buffer.from('fake-image-data');
 
@@ -245,7 +224,7 @@ describe('UserPreferencesService', () => {
     });
 
     it('should throw error if user not found', async () => {
-      mockAppUserRepository.findById.mockResolvedValue(undefined);
+      mockAppUserRepository.findById.mockResolvedValue(undefined as any);
       const buffer = Buffer.from('fake-image-data');
 
       await expect(
@@ -260,15 +239,12 @@ describe('UserPreferencesService', () => {
         email: 'test@example.com',
         username: 'testuser',
         displayName: 'Test User',
-        country: null,
-        stateProvince: null,
-        city: null,
         description: null,
         profileImage: null,
         lastSeenAt: null,
         createdAt: new Date(),
         updatedAt: new Date(),
-      });
+      } as any);
       mockImagesService.save.mockRejectedValue(new Error('Image processing failed'));
 
       const buffer = Buffer.from('fake-image-data');

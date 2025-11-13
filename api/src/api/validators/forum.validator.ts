@@ -142,7 +142,7 @@ function validate(schema: z.ZodSchema) {
         return res.status(400).json({
           status: 'error',
           message: 'Validation error',
-          errors: error.errors,
+          errors: error.issues,
         });
       }
       next(error);

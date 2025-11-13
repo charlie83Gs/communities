@@ -94,7 +94,7 @@ describe('ForumRepository', () => {
     describe('findCategoryById', () => {
       it('should find category by id', async () => {
         mockDb.where.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve([testCategory]));
+        mockDb.then.mockImplementationOnce((resolve: any) => resolve([testCategory]));
 
         const result = await forumRepository.findCategoryById('category-123');
 
@@ -105,7 +105,7 @@ describe('ForumRepository', () => {
 
       it('should return undefined if not found', async () => {
         mockDb.where.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve([]));
+        mockDb.then.mockImplementationOnce((resolve: any) => resolve([]));
 
         const result = await forumRepository.findCategoryById('nonexistent');
 
@@ -116,7 +116,7 @@ describe('ForumRepository', () => {
     describe('findCategoriesByCommunity', () => {
       it('should find all categories for a community', async () => {
         mockDb.orderBy.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve([testCategory]));
+        mockDb.then.mockImplementationOnce((resolve: any) => resolve([testCategory]));
 
         const result = await forumRepository.findCategoriesByCommunity('comm-123');
 
@@ -128,7 +128,7 @@ describe('ForumRepository', () => {
 
       it('should return empty array if no categories', async () => {
         mockDb.orderBy.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve([]));
+        mockDb.then.mockImplementationOnce((resolve: any) => resolve([]));
 
         const result = await forumRepository.findCategoriesByCommunity('comm-123');
 
@@ -195,7 +195,7 @@ describe('ForumRepository', () => {
       it('should create thread with tags', async () => {
         mockDb.returning.mockResolvedValueOnce([testThread]);
         mockDb.values.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve([]));
+        mockDb.then.mockImplementationOnce((resolve: any) => resolve([]));
 
         const result = await forumRepository.createThread({
           categoryId: 'category-123',
@@ -213,7 +213,7 @@ describe('ForumRepository', () => {
     describe('findThreadById', () => {
       it('should find thread by id', async () => {
         mockDb.where.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve([testThread]));
+        mockDb.then.mockImplementationOnce((resolve: any) => resolve([testThread]));
 
         const result = await forumRepository.findThreadById('thread-123');
 
@@ -222,7 +222,7 @@ describe('ForumRepository', () => {
 
       it('should return undefined if not found', async () => {
         mockDb.where.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve([]));
+        mockDb.then.mockImplementationOnce((resolve: any) => resolve([]));
 
         const result = await forumRepository.findThreadById('nonexistent');
 
@@ -233,9 +233,9 @@ describe('ForumRepository', () => {
     describe('findThreadsByCategory', () => {
       it('should find threads by category with defaults', async () => {
         mockDb.where.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve([{ count: 1 }]));
+        mockDb.then.mockImplementationOnce((resolve: any) => resolve([{ count: 1 }]));
         mockDb.offset.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) =>
+        mockDb.then.mockImplementationOnce((resolve: any) =>
           resolve([
             {
               thread: testThread,
@@ -255,10 +255,11 @@ describe('ForumRepository', () => {
 
       it('should sort by newest', async () => {
         mockDb.where.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve([{ count: 0 }]));
+        mockDb.then.mockImplementationOnce((resolve: any) => resolve([{ count: 0 }]));
         mockDb.offset.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve([]));
+        mockDb.then.mockImplementationOnce((resolve: any) => resolve([]));
 
+        // @ts-ignore
         const _result = await forumRepository.findThreadsByCategory('category-123', {
           sort: 'newest',
         });
@@ -268,10 +269,11 @@ describe('ForumRepository', () => {
 
       it('should sort by popular', async () => {
         mockDb.where.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve([{ count: 0 }]));
+        mockDb.then.mockImplementationOnce((resolve: any) => resolve([{ count: 0 }]));
         mockDb.offset.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve([]));
+        mockDb.then.mockImplementationOnce((resolve: any) => resolve([]));
 
+        // @ts-ignore
         const _result = await forumRepository.findThreadsByCategory('category-123', {
           sort: 'popular',
         });
@@ -281,10 +283,11 @@ describe('ForumRepository', () => {
 
       it('should sort by most upvoted', async () => {
         mockDb.where.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve([{ count: 0 }]));
+        mockDb.then.mockImplementationOnce((resolve: any) => resolve([{ count: 0 }]));
         mockDb.offset.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve([]));
+        mockDb.then.mockImplementationOnce((resolve: any) => resolve([]));
 
+        // @ts-ignore
         const _result = await forumRepository.findThreadsByCategory('category-123', {
           sort: 'mostUpvoted',
         });
@@ -294,9 +297,9 @@ describe('ForumRepository', () => {
 
       it('should handle pagination', async () => {
         mockDb.where.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve([{ count: 50 }]));
+        mockDb.then.mockImplementationOnce((resolve: any) => resolve([{ count: 50 }]));
         mockDb.offset.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve([]));
+        mockDb.then.mockImplementationOnce((resolve: any) => resolve([]));
 
         const result = await forumRepository.findThreadsByCategory('category-123', {
           limit: 10,
@@ -373,7 +376,7 @@ describe('ForumRepository', () => {
     describe('getThreadTags', () => {
       it('should get tags for thread', async () => {
         mockDb.where.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) =>
+        mockDb.then.mockImplementationOnce((resolve: any) =>
           resolve([
             { threadId: 'thread-123', tag: 'question' },
             { threadId: 'thread-123', tag: 'help' },
@@ -387,7 +390,7 @@ describe('ForumRepository', () => {
 
       it('should return empty array if no tags', async () => {
         mockDb.where.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve([]));
+        mockDb.then.mockImplementationOnce((resolve: any) => resolve([]));
 
         const result = await forumRepository.getThreadTags('thread-123');
 
@@ -416,7 +419,7 @@ describe('ForumRepository', () => {
     describe('findPostById', () => {
       it('should find post by id', async () => {
         mockDb.where.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve([testPost]));
+        mockDb.then.mockImplementationOnce((resolve: any) => resolve([testPost]));
 
         const result = await forumRepository.findPostById('post-123');
 
@@ -425,7 +428,7 @@ describe('ForumRepository', () => {
 
       it('should return undefined if not found', async () => {
         mockDb.where.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve([]));
+        mockDb.then.mockImplementationOnce((resolve: any) => resolve([]));
 
         const result = await forumRepository.findPostById('nonexistent');
 
@@ -436,7 +439,7 @@ describe('ForumRepository', () => {
     describe('findPostsByThread', () => {
       it('should find posts by thread', async () => {
         mockDb.offset.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve([testPost]));
+        mockDb.then.mockImplementationOnce((resolve: any) => resolve([testPost]));
 
         const result = await forumRepository.findPostsByThread('thread-123');
 
@@ -447,8 +450,9 @@ describe('ForumRepository', () => {
 
       it('should handle pagination', async () => {
         mockDb.offset.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve([]));
+        mockDb.then.mockImplementationOnce((resolve: any) => resolve([]));
 
+        // @ts-ignore
         const _result = await forumRepository.findPostsByThread('thread-123', {
           limit: 25,
           offset: 50,
@@ -460,7 +464,7 @@ describe('ForumRepository', () => {
 
       it('should return empty array if no posts', async () => {
         mockDb.offset.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve([]));
+        mockDb.then.mockImplementationOnce((resolve: any) => resolve([]));
 
         const result = await forumRepository.findPostsByThread('thread-123');
 
@@ -508,7 +512,7 @@ describe('ForumRepository', () => {
     describe('createOrUpdateVote', () => {
       it('should create new vote for thread', async () => {
         mockDb.where.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve([]));
+        mockDb.then.mockImplementationOnce((resolve: any) => resolve([]));
         mockDb.returning.mockResolvedValue([testVote]);
 
         const result = await forumRepository.createOrUpdateVote({
@@ -524,7 +528,7 @@ describe('ForumRepository', () => {
       it('should create new vote for post', async () => {
         const postVote = { ...testVote, threadId: null, postId: 'post-123' };
         mockDb.where.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve([]));
+        mockDb.then.mockImplementationOnce((resolve: any) => resolve([]));
         mockDb.returning.mockResolvedValue([postVote]);
 
         const result = await forumRepository.createOrUpdateVote({
@@ -541,7 +545,7 @@ describe('ForumRepository', () => {
         const updatedVote = { ...existingVote, voteType: 'down' as const };
 
         mockDb.where.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve([existingVote]));
+        mockDb.then.mockImplementationOnce((resolve: any) => resolve([existingVote]));
         mockDb.returning.mockResolvedValue([updatedVote]);
 
         const result = await forumRepository.createOrUpdateVote({
@@ -558,7 +562,7 @@ describe('ForumRepository', () => {
     describe('removeVote', () => {
       it('should remove vote from thread', async () => {
         mockDb.where.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve(undefined));
+        mockDb.then.mockImplementationOnce((resolve: any) => resolve(undefined));
 
         await forumRepository.removeVote('user-789', 'thread-123');
 
@@ -568,7 +572,7 @@ describe('ForumRepository', () => {
 
       it('should remove vote from post', async () => {
         mockDb.where.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve(undefined));
+        mockDb.then.mockImplementationOnce((resolve: any) => resolve(undefined));
 
         await forumRepository.removeVote('user-789', undefined, 'post-123');
 
@@ -580,7 +584,9 @@ describe('ForumRepository', () => {
     describe('getVoteCounts', () => {
       it('should get vote counts for thread', async () => {
         mockDb.where.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve([{ upvotes: 10, downvotes: 2 }]));
+        mockDb.then.mockImplementationOnce((resolve: any) =>
+          resolve([{ upvotes: 10, downvotes: 2 }])
+        );
 
         const result = await forumRepository.getVoteCounts('thread-123');
 
@@ -590,7 +596,9 @@ describe('ForumRepository', () => {
 
       it('should get vote counts for post', async () => {
         mockDb.where.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve([{ upvotes: 5, downvotes: 1 }]));
+        mockDb.then.mockImplementationOnce((resolve: any) =>
+          resolve([{ upvotes: 5, downvotes: 1 }])
+        );
 
         const result = await forumRepository.getVoteCounts(undefined, 'post-123');
 
@@ -600,7 +608,7 @@ describe('ForumRepository', () => {
 
       it('should return zero counts if no votes', async () => {
         mockDb.where.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve([]));
+        mockDb.then.mockImplementationOnce((resolve: any) => resolve([]));
 
         const result = await forumRepository.getVoteCounts('thread-123');
 
@@ -612,7 +620,7 @@ describe('ForumRepository', () => {
     describe('getUserVote', () => {
       it('should get user vote for thread', async () => {
         mockDb.where.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve([testVote]));
+        mockDb.then.mockImplementationOnce((resolve: any) => resolve([testVote]));
 
         const result = await forumRepository.getUserVote('user-789', 'thread-123');
 
@@ -622,7 +630,7 @@ describe('ForumRepository', () => {
       it('should get user vote for post', async () => {
         const postVote = { ...testVote, threadId: null, postId: 'post-123' };
         mockDb.where.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve([postVote]));
+        mockDb.then.mockImplementationOnce((resolve: any) => resolve([postVote]));
 
         const result = await forumRepository.getUserVote('user-789', undefined, 'post-123');
 
@@ -631,7 +639,7 @@ describe('ForumRepository', () => {
 
       it('should return undefined if no vote', async () => {
         mockDb.where.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve([]));
+        mockDb.then.mockImplementationOnce((resolve: any) => resolve([]));
 
         const result = await forumRepository.getUserVote('user-789', 'thread-123');
 
@@ -644,7 +652,7 @@ describe('ForumRepository', () => {
     describe('getCategoryStats', () => {
       it('should get category statistics', async () => {
         mockDb.where.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) =>
+        mockDb.then.mockImplementationOnce((resolve: any) =>
           resolve([
             {
               threadCount: 15,
@@ -661,7 +669,7 @@ describe('ForumRepository', () => {
 
       it('should return zeros if no threads', async () => {
         mockDb.where.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve([]));
+        mockDb.then.mockImplementationOnce((resolve: any) => resolve([]));
 
         const result = await forumRepository.getCategoryStats('category-123');
 
@@ -673,7 +681,7 @@ describe('ForumRepository', () => {
     describe('getThreadStats', () => {
       it('should get thread statistics', async () => {
         mockDb.where.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) =>
+        mockDb.then.mockImplementationOnce((resolve: any) =>
           resolve([
             {
               postCount: 25,
@@ -682,7 +690,9 @@ describe('ForumRepository', () => {
           ])
         );
         mockDb.where.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve([{ upvotes: 12, downvotes: 3 }]));
+        mockDb.then.mockImplementationOnce((resolve: any) =>
+          resolve([{ upvotes: 12, downvotes: 3 }])
+        );
 
         const result = await forumRepository.getThreadStats('thread-123');
 
@@ -694,9 +704,9 @@ describe('ForumRepository', () => {
 
       it('should return zeros if no posts or votes', async () => {
         mockDb.where.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve([]));
+        mockDb.then.mockImplementationOnce((resolve: any) => resolve([]));
         mockDb.where.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve([]));
+        mockDb.then.mockImplementationOnce((resolve: any) => resolve([]));
 
         const result = await forumRepository.getThreadStats('thread-123');
 

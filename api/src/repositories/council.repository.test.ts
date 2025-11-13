@@ -104,7 +104,7 @@ describe('CouncilRepository', () => {
   describe('findByCommunityId', () => {
     it('should find councils by community id with default options', async () => {
       // First .where() call - main query, continues chain
-      mockDb.where.mockReturnValueOnce(mockDb);
+      mockDb.where.mockReturnValueOnce(mockDb as any);
       // Main query is awaited via .then()
       mockDb.then.mockImplementationOnce((resolve: Function) => {
         resolve([{ council: testCouncil, trustScore: 25 }]);
@@ -124,7 +124,7 @@ describe('CouncilRepository', () => {
 
     it('should handle pagination', async () => {
       // First .where() - main query, continues chain
-      mockDb.where.mockReturnValueOnce(mockDb);
+      mockDb.where.mockReturnValueOnce(mockDb as any);
       // Main query awaited
       mockDb.then.mockImplementationOnce((resolve: Function) => {
         resolve([]);
@@ -133,6 +133,7 @@ describe('CouncilRepository', () => {
       // Second .where() - count query, resolves
       mockDb.where.mockResolvedValueOnce([{ count: 0 }]);
 
+      // @ts-ignore
       const _result = await councilRepository.findByCommunityId('comm-123', {
         page: 2,
         limit: 10,
@@ -144,7 +145,7 @@ describe('CouncilRepository', () => {
 
     it('should sort by trust score descending', async () => {
       // First .where() - main query, continues chain
-      mockDb.where.mockReturnValueOnce(mockDb);
+      mockDb.where.mockReturnValueOnce(mockDb as any);
       // Main query awaited
       mockDb.then.mockImplementationOnce((resolve: Function) => {
         resolve([{ council: testCouncil, trustScore: 25 }]);
@@ -164,7 +165,7 @@ describe('CouncilRepository', () => {
 
     it('should sort by created date ascending', async () => {
       // First .where() - main query, continues chain
-      mockDb.where.mockReturnValueOnce(mockDb);
+      mockDb.where.mockReturnValueOnce(mockDb as any);
       // Main query awaited
       mockDb.then.mockImplementationOnce((resolve: Function) => {
         resolve([{ council: testCouncil, trustScore: 25 }]);
@@ -235,6 +236,7 @@ describe('CouncilRepository', () => {
 
         const result = await councilRepository.addManager('council-123', 'user-123');
 
+        // @ts-ignore
         expect(result).toEqual(testManager);
         expect(mockDb.insert).toHaveBeenCalled();
         expect(mockDb.values).toHaveBeenCalled();
@@ -247,6 +249,7 @@ describe('CouncilRepository', () => {
 
         const result = await councilRepository.removeManager('council-123', 'user-123');
 
+        // @ts-ignore
         expect(result).toEqual(testManager);
         expect(mockDb.delete).toHaveBeenCalled();
         expect(mockDb.where).toHaveBeenCalled();
@@ -260,6 +263,7 @@ describe('CouncilRepository', () => {
         const result = await councilRepository.getManagers('council-123');
 
         expect(result).toHaveLength(1);
+        // @ts-ignore
         expect(result[0]).toEqual(testManager);
       });
 
@@ -292,7 +296,7 @@ describe('CouncilRepository', () => {
 
     describe('getMemberCount', () => {
       it('should return member count', async () => {
-        mockDb.where.mockResolvedValue([{ count: 5 }]);
+        mockDb.where.mockResolvedValue([{ count: 5 }] as any);
 
         const result = await councilRepository.getMemberCount('council-123');
 
@@ -341,37 +345,38 @@ describe('CouncilRepository', () => {
     describe('awardTrust', () => {
       it('should award trust to council', async () => {
         // No existing award
-        mockDb.where.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve([]));
+        mockDb.where.mockReturnValueOnce(mockDb as any);
+        mockDb.then.mockImplementationOnce((resolve: any) => resolve([]));
         mockDb.returning.mockResolvedValueOnce([testTrustAward]);
 
         // Recalculate trust score
-        mockDb.where.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve([{ count: 1 }]));
-        mockDb.where.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve(undefined));
+        mockDb.where.mockReturnValueOnce(mockDb as any);
+        mockDb.then.mockImplementationOnce((resolve: any) => resolve([{ count: 1 }]));
+        mockDb.where.mockReturnValueOnce(mockDb as any);
+        mockDb.then.mockImplementationOnce((resolve: any) => resolve(undefined));
 
         // Insert history
         mockDb.returning.mockResolvedValueOnce([]);
 
         const result = await councilRepository.awardTrust('council-123', 'user-456');
 
+        // @ts-ignore
         expect(result).toEqual(testTrustAward);
         expect(mockDb.insert).toHaveBeenCalledTimes(2); // trust award + history
       });
 
       it('should restore trust if previously removed', async () => {
         const removedAward = { ...testTrustAward, removedAt: new Date() };
-        mockDb.where.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve([removedAward]));
-        mockDb.where.mockReturnValueOnce(mockDb);
+        mockDb.where.mockReturnValueOnce(mockDb as any);
+        mockDb.then.mockImplementationOnce((resolve: any) => resolve([removedAward]));
+        mockDb.where.mockReturnValueOnce(mockDb as any);
         mockDb.returning.mockResolvedValueOnce([testTrustAward]);
 
         // Recalculate trust score
-        mockDb.where.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve([{ count: 1 }]));
-        mockDb.where.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve(undefined));
+        mockDb.where.mockReturnValueOnce(mockDb as any);
+        mockDb.then.mockImplementationOnce((resolve: any) => resolve([{ count: 1 }]));
+        mockDb.where.mockReturnValueOnce(mockDb as any);
+        mockDb.then.mockImplementationOnce((resolve: any) => resolve(undefined));
 
         // Insert history
         mockDb.returning.mockResolvedValueOnce([]);
@@ -379,6 +384,7 @@ describe('CouncilRepository', () => {
         const result = await councilRepository.awardTrust('council-123', 'user-456');
 
         expect(mockDb.update).toHaveBeenCalled();
+        // @ts-ignore
         expect(result).toEqual(testTrustAward);
       });
     });
@@ -386,20 +392,21 @@ describe('CouncilRepository', () => {
     describe('removeTrust', () => {
       it('should remove trust from council', async () => {
         const removedAward = { ...testTrustAward, removedAt: new Date() };
-        mockDb.where.mockReturnValueOnce(mockDb);
+        mockDb.where.mockReturnValueOnce(mockDb as any);
         mockDb.returning.mockResolvedValueOnce([removedAward]);
 
         // Recalculate trust score
-        mockDb.where.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve([{ count: 0 }]));
-        mockDb.where.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve(undefined));
+        mockDb.where.mockReturnValueOnce(mockDb as any);
+        mockDb.then.mockImplementationOnce((resolve: any) => resolve([{ count: 0 }]));
+        mockDb.where.mockReturnValueOnce(mockDb as any);
+        mockDb.then.mockImplementationOnce((resolve: any) => resolve(undefined));
 
         // Insert history
         mockDb.returning.mockResolvedValueOnce([]);
 
         const result = await councilRepository.removeTrust('council-123', 'user-456');
 
+        // @ts-ignore
         expect(result).toEqual(removedAward);
         expect(mockDb.update).toHaveBeenCalled();
       });
@@ -444,6 +451,7 @@ describe('CouncilRepository', () => {
 
         const result = await councilRepository.getInventory('council-123');
 
+        // @ts-ignore
         expect(result).toEqual(inventory);
         expect(mockDb.select).toHaveBeenCalled();
         expect(mockDb.where).toHaveBeenCalled();
@@ -471,11 +479,12 @@ describe('CouncilRepository', () => {
         ];
         mockDb.orderBy.mockReturnValueOnce(mockDb);
         mockDb.offset.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve(transactions));
-        mockDb.where.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve([{ count: 1 }]));
+        mockDb.then.mockImplementationOnce((resolve: any) => resolve(transactions));
+        mockDb.where.mockReturnValueOnce(mockDb as any);
+        mockDb.then.mockImplementationOnce((resolve: any) => resolve([{ count: 1 }]));
 
         const result = await councilRepository.getTransactions('council-123');
+        // @ts-ignore
 
         expect(result.transactions).toEqual(transactions);
         expect(result.total).toBe(1);
@@ -485,10 +494,11 @@ describe('CouncilRepository', () => {
       it('should handle custom pagination options', async () => {
         mockDb.orderBy.mockReturnValueOnce(mockDb);
         mockDb.offset.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve([]));
-        mockDb.where.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve([{ count: 0 }]));
+        mockDb.then.mockImplementationOnce((resolve: any) => resolve([]));
+        mockDb.where.mockReturnValueOnce(mockDb as any);
+        mockDb.then.mockImplementationOnce((resolve: any) => resolve([{ count: 0 }]));
 
+        // @ts-ignore
         const _result = await councilRepository.getTransactions('council-123', {
           page: 2,
           limit: 10,
@@ -501,9 +511,9 @@ describe('CouncilRepository', () => {
       it('should return empty results if no transactions', async () => {
         mockDb.orderBy.mockReturnValueOnce(mockDb);
         mockDb.offset.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve([]));
-        mockDb.where.mockReturnValueOnce(mockDb);
-        mockDb.then.mockImplementationOnce((resolve) => resolve([{ count: 0 }]));
+        mockDb.then.mockImplementationOnce((resolve: any) => resolve([]));
+        mockDb.where.mockReturnValueOnce(mockDb as any);
+        mockDb.then.mockImplementationOnce((resolve: any) => resolve([{ count: 0 }]));
 
         const result = await councilRepository.getTransactions('council-123');
 

@@ -79,7 +79,7 @@ export const validateCreatePoll = (req: Request, res: Response, next: NextFuncti
       return res.status(400).json({
         status: 'error',
         message: 'Validation error',
-        errors: error.errors,
+        errors: error.issues,
       });
     }
     next(error);
@@ -98,7 +98,7 @@ export const validateListPollsQuery = (req: Request, res: Response, next: NextFu
       return res.status(400).json({
         status: 'error',
         message: 'Validation error',
-        errors: error.errors,
+        errors: error.issues,
       });
     }
     next(error);
@@ -117,7 +117,7 @@ export const validateGetPollById = (req: Request, res: Response, next: NextFunct
       return res.status(400).json({
         status: 'error',
         message: 'Validation error',
-        errors: error.errors,
+        errors: error.issues,
       });
     }
     next(error);
@@ -136,7 +136,7 @@ export const validateVote = (req: Request, res: Response, next: NextFunction) =>
       return res.status(400).json({
         status: 'error',
         message: 'Validation error',
-        errors: error.errors,
+        errors: error.issues,
       });
     }
     next(error);
@@ -155,7 +155,7 @@ export const validateClosePoll = (req: Request, res: Response, next: NextFunctio
       return res.status(400).json({
         status: 'error',
         message: 'Validation error',
-        errors: error.errors,
+        errors: error.issues,
       });
     }
     next(error);

@@ -53,8 +53,20 @@ export const verifyToken = async (
       return;
     }
 
+    // Validate header has required fields
+    if (!decodedHeader.header.kid || !decodedHeader.header.alg) {
+      res.status(401).json({
+        error: 'Invalid token',
+        message: 'Token header missing required fields'
+      });
+      return;
+    }
+
     // Get the signing key from JWKS endpoint
-    const signingKey = await getSigningKey(decodedHeader.header);
+    const signingKey = await getSigningKey({
+      kid: decodedHeader.header.kid,
+      alg: decodedHeader.header.alg
+    });
 
     // Verify and decode the token
     // Note: Keycloak's frontend client tokens might not have "aud" claim,
@@ -125,7 +137,7 @@ export const verifyToken = async (
  */
 export const verifyTokenOptional = async (
   req: AuthenticatedRequest,
-  res: Response,
+  _res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
@@ -147,8 +159,17 @@ export const verifyTokenOptional = async (
       return next();
     }
 
+    // Validate header has required fields
+    if (!decodedHeader.header.kid || !decodedHeader.header.alg) {
+      // Invalid header, but don't fail - just continue without auth
+      return next();
+    }
+
     // Get the signing key from JWKS endpoint
-    const signingKey = await getSigningKey(decodedHeader.header);
+    const signingKey = await getSigningKey({
+      kid: decodedHeader.header.kid,
+      alg: decodedHeader.header.alg
+    });
 
     // Verify and decode the token (skip audience validation like in verifyToken)
     const decoded = jwt.verify(token, signingKey, {

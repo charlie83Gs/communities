@@ -4,6 +4,7 @@ import {
   wealthRequests,
   wealthStatusEnum,
   wealthRequestStatusEnum,
+  wealthDistributionTypeEnum,
 } from '@db/schema/wealth.schema';
 import { items } from '@db/schema/items.schema';
 import { and, eq, inArray, ilike, or, gte, lte, desc, sql } from 'drizzle-orm';
@@ -29,7 +30,7 @@ export type WealthSearchFilters = {
   durationType?: 'timebound' | 'unlimited';
   endDateAfter?: Date;
   endDateBefore?: Date;
-  distributionType?: 'request_based' | 'unit_based';
+  distributionType?: (typeof wealthDistributionTypeEnum.enumValues)[number];
   status?: (typeof wealthStatusEnum.enumValues)[number];
   limit?: number;
   offset?: number;

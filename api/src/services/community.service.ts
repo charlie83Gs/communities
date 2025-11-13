@@ -115,7 +115,7 @@ export class CommunityService {
       // Non-critical: items can be created manually
     }
 
-    return community;
+    return community as Community;
   }
 
   async getCommunity(id: string, userId?: string): Promise<Community> {
@@ -147,7 +147,7 @@ export class CommunityService {
     logger.debug(
       `[CommunityService getCommunity] Access granted for userId: ${userId} to community ${id} with role ${role}`
     );
-    return community;
+    return community as Community;
   }
 
   async listCommunities(page = 1, limit = 10, userId?: string) {
@@ -184,7 +184,7 @@ export class CommunityService {
     for (const id of accessibleIds) {
       const c = await communityRepository.findById(id);
       if (c) {
-        accessibleCommunities.push(c);
+        accessibleCommunities.push(c as Community);
       }
     }
     logger.debug(
@@ -276,7 +276,10 @@ export class CommunityService {
     }
 
     // Check if any trust thresholds changed
-    const trustThresholdsChanged = this.haveTrustThresholdsChanged(currentCommunity, data);
+    const trustThresholdsChanged = this.haveTrustThresholdsChanged(
+      currentCommunity as Community,
+      data
+    );
 
     if (trustThresholdsChanged) {
       logger.info(
@@ -299,7 +302,7 @@ export class CommunityService {
       }
     }
 
-    return community;
+    return community as Community;
   }
 
   /**
@@ -335,7 +338,7 @@ export class CommunityService {
 
     return trustFields.some((field) => {
       if (updates[field] !== undefined) {
-        const currentValue = JSON.stringify(currentCommunity[field]);
+        const currentValue = JSON.stringify((currentCommunity as any)[field]);
         const newValue = JSON.stringify(updates[field]);
         return currentValue !== newValue;
       }
@@ -358,7 +361,7 @@ export class CommunityService {
     }
 
     // Build thresholds map from community configuration
-    const thresholds = await this.buildTrustThresholdsMap(communityId, community);
+    const thresholds = await this.buildTrustThresholdsMap(communityId, community as any);
 
     // Get all community members
     const memberships = await communityMemberRepository.findByCommunity(communityId);
@@ -409,7 +412,7 @@ export class CommunityService {
    */
   private async buildTrustThresholdsMap(
     communityId: string,
-    community: Community
+    community: any
   ): Promise<Record<string, number>> {
     // Resolve all trust thresholds using the trust resolver
     const [
@@ -458,8 +461,8 @@ export class CommunityService {
       resolveTrustRequirement(communityId, community.minTrustForFlagReview),
       resolveTrustRequirement(communityId, community.minTrustForForumModeration),
       resolveTrustRequirement(communityId, community.minTrustToViewForum),
-      resolveTrustRequirement(communityId, community.minTrustForNeeds),
-      resolveTrustRequirement(communityId, community.minTrustToViewNeeds),
+      resolveTrustRequirement(communityId, community.minTrustForNeeds || null),
+      resolveTrustRequirement(communityId, community.minTrustToViewNeeds || null),
     ]);
 
     // Map thresholds to trust role names (matching OpenFGA constants)
@@ -501,7 +504,7 @@ export class CommunityService {
       throw new AppError('Community not found', 404);
     }
 
-    return deleted;
+    return deleted as Community;
   }
 
   async getMembers(
@@ -624,7 +627,7 @@ export class CommunityService {
     await communityMemberRepository.updateRole(
       communityId,
       targetUserId,
-      newRole as 'member' | 'admin' | 'reader'
+      newRole as 'member' | 'admin'
     );
   }
 

@@ -147,7 +147,7 @@ describe('PoolsRepository', () => {
 
   describe('getInventoryForItem', () => {
     it('should get inventory for specific item', async () => {
-      mockDb.where.mockResolvedValue([{ unitsAvailable: 50 }]);
+      mockDb.where.mockResolvedValue([{ unitsAvailable: 50 }] as any);
 
       const result = await poolsRepository.getInventoryForItem('pool-123', 'item-tomato');
 
@@ -167,7 +167,7 @@ describe('PoolsRepository', () => {
 
   describe('incrementInventory', () => {
     it('should increment existing inventory', async () => {
-      mockDb.where.mockResolvedValue([{ id: 'inv-123', unitsAvailable: 50 }]);
+      mockDb.where.mockResolvedValue([{ id: 'inv-123', unitsAvailable: 50 }] as any);
 
       await poolsRepository.incrementInventory('pool-123', 'item-tomato', 10);
 

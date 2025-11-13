@@ -1,5 +1,5 @@
 import { Response, NextFunction } from 'express';
-import { AuthenticatedRequest } from '@/api/middlewares/auth.middleware';
+import { AuthenticatedRequest } from '@/api/middleware/auth.middleware';
 import { poolsService } from '@/services/pools.service';
 import { ApiResponse } from '@/utils/response';
 import logger from '@/utils/logger';

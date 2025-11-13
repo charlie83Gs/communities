@@ -233,7 +233,7 @@ describe('PoolsService', () => {
     });
 
     it('should throw error if council does not exist', async () => {
-      mockCouncilRepository.findById.mockResolvedValue(null);
+      mockCouncilRepository.findById.mockResolvedValue(null as any);
 
       await expect(
         poolsService.createPool(
@@ -322,7 +322,7 @@ describe('PoolsService', () => {
     it('should throw error if contribution already processed', async () => {
       mockWealthRepository.findById.mockResolvedValue({
         ...testWealth,
-        status: 'fulfilled',
+        status: 'fulfilled' as any,
       });
 
       await expect(
@@ -348,7 +348,7 @@ describe('PoolsService', () => {
     it('should throw error if contribution already processed', async () => {
       mockWealthRepository.findById.mockResolvedValue({
         ...testWealth,
-        status: 'cancelled',
+        status: 'cancelled' as any,
       });
 
       await expect(
@@ -440,7 +440,9 @@ describe('PoolsService', () => {
         ...testWealth,
         item: testItem,
       };
-      mockWealthRepository.getPendingContributionsByPoolId.mockResolvedValue([wealthWithItem]);
+      mockWealthRepository.getPendingContributionsByPoolId.mockResolvedValue([
+        wealthWithItem as any,
+      ] as any);
       mockAppUserRepository.findById.mockResolvedValue(testUser);
 
       const result = await poolsService.listPendingContributions('pool-123', 'user-123');
@@ -470,7 +472,9 @@ describe('PoolsService', () => {
         item: testItem,
         wealthRequest: testWealthRequest,
       };
-      mockWealthRepository.getDistributionsByPoolId.mockResolvedValue([wealthWithItemAndRequest]);
+      mockWealthRepository.getDistributionsByPoolId.mockResolvedValue([
+        wealthWithItemAndRequest as any,
+      ] as any);
       mockAppUserRepository.findById.mockResolvedValue(testUser);
 
       const result = await poolsService.listDistributions('pool-123', 'user-123');

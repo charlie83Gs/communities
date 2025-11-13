@@ -1,9 +1,18 @@
 export * from './app_users.schema';
 export * from './appConfig.schema';
 export * from './communities.schema';
-export * from './communityUserInvites.schema';
-export * from './communityLinkInvites.schema';
-export * from './invites.schema';
+
+// Export community invites - both schemas export inviteStatusEnum, so we need to be explicit
+export {
+  inviteStatusEnum,
+  communityUserInvites,
+  communityUserInvitesRelations,
+} from './communityUserInvites.schema';
+export {
+  communityLinkInvites,
+  communityLinkInvitesRelations,
+} from './communityLinkInvites.schema';
+
 export * from './resourceMemberships.schema';
 export * from './items.schema';
 export * from './wealth.schema';

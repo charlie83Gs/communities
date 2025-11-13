@@ -301,7 +301,6 @@ export class WealthController {
       const {
         q,
         communityId,
-        type,
         durationType,
         distributionType,
         status,
@@ -312,9 +311,8 @@ export class WealthController {
       } = req.query as {
         q: string;
         communityId?: string;
-        type?: 'object' | 'service';
         durationType?: 'timebound' | 'unlimited';
-        distributionType?: 'request_based' | 'unit_based';
+        distributionType?: 'unit_based';
         status?: 'active' | 'fulfilled' | 'expired' | 'cancelled';
         endDateAfter?: string;
         endDateBefore?: string;
@@ -328,7 +326,6 @@ export class WealthController {
       const results = await wealthService.searchWealth(userId, {
         q,
         communityId,
-        type,
         durationType,
         distributionType,
         status,
@@ -1079,7 +1076,7 @@ export class WealthController {
   async updateComment(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = (req as any).user?.id;
-      const { wealthId, commentId } = req.params;
+      const { commentId } = req.params;
       const comment = await wealthCommentService.updateComment(commentId, req.body, userId);
       return ApiResponse.success(res, comment, 'Comment updated successfully');
     } catch (err) {
@@ -1127,7 +1124,7 @@ export class WealthController {
   async deleteComment(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = (req as any).user?.id;
-      const { wealthId, commentId } = req.params;
+      const { commentId } = req.params;
       await wealthCommentService.deleteComment(commentId, userId);
       return ApiResponse.success(res, null, 'Comment deleted successfully');
     } catch (err) {

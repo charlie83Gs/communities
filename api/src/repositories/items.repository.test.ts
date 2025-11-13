@@ -109,6 +109,7 @@ describe('ItemsRepository', () => {
     });
 
     it('should exclude deleted items', async () => {
+      // @ts-ignore
       const _deletedItem = { ...testItem, deletedAt: new Date() };
       mockDb.where.mockResolvedValue([]);
 
@@ -150,6 +151,7 @@ describe('ItemsRepository', () => {
       const deletedItem = { ...testItem, deletedAt: new Date(), wealthCount: 0 };
       mockDb.orderBy.mockResolvedValue([deletedItem]);
 
+      // @ts-ignore
       const _result = await itemsRepository.listByCommunity('comm-123', true);
 
       expect(mockDb.where).toHaveBeenCalled();
@@ -273,7 +275,7 @@ describe('ItemsRepository', () => {
 
   describe('hasActiveWealthReferences', () => {
     it('should return true if item has active wealth references', async () => {
-      mockDb.where.mockResolvedValue([{ count: 3 }]);
+      mockDb.where.mockResolvedValue([{ count: 3 }] as any);
 
       const result = await itemsRepository.hasActiveWealthReferences('item-123');
 
@@ -283,7 +285,7 @@ describe('ItemsRepository', () => {
     });
 
     it('should return false if no active wealth references', async () => {
-      mockDb.where.mockResolvedValue([{ count: 0 }]);
+      mockDb.where.mockResolvedValue([{ count: 0 }] as any);
 
       const result = await itemsRepository.hasActiveWealthReferences('item-123');
 
@@ -293,7 +295,7 @@ describe('ItemsRepository', () => {
 
   describe('getWealthCount', () => {
     it('should return wealth count for item', async () => {
-      mockDb.where.mockResolvedValue([{ count: 10 }]);
+      mockDb.where.mockResolvedValue([{ count: 10 }] as any);
 
       const result = await itemsRepository.getWealthCount('item-123');
 
@@ -303,7 +305,7 @@ describe('ItemsRepository', () => {
     });
 
     it('should return 0 if no wealth entries', async () => {
-      mockDb.where.mockResolvedValue([{ count: 0 }]);
+      mockDb.where.mockResolvedValue([{ count: 0 }] as any);
 
       const result = await itemsRepository.getWealthCount('item-123');
 

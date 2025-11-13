@@ -65,6 +65,7 @@ describe('ForumService - Permission Checks', () => {
   const validUserId = '550e8400-e29b-41d4-a716-446655440002';
   const validCategoryId = '550e8400-e29b-41d4-a716-446655440003';
   const validThreadId = '550e8400-e29b-41d4-a716-446655440004';
+  // @ts-ignore
   const _validPostId = '550e8400-e29b-41d4-a716-446655440005';
 
   beforeEach(() => {
@@ -183,7 +184,7 @@ describe('ForumService - Permission Checks', () => {
     });
 
     it('should reject non-member from listing categories', async () => {
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
+      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null as any);
 
       await expect(forumService.listCategories(validCommunityId, validUserId)).rejects.toThrow(
         'Forbidden'
@@ -283,6 +284,7 @@ describe('ForumService - Permission Checks', () => {
         id: validThreadId,
         categoryId: validCategoryId,
         authorId: validUserId,
+        attachmentIds: [] as any,
         title: 'Test Thread',
         content: 'Test content',
         createdAt: new Date(),
@@ -300,7 +302,7 @@ describe('ForumService - Permission Checks', () => {
           categoryId: validCategoryId,
           title: 'Test Thread',
           content: 'Test content',
-        },
+        } as any,
         validUserId
       );
 
@@ -328,7 +330,7 @@ describe('ForumService - Permission Checks', () => {
             categoryId: validCategoryId,
             title: 'Test',
             content: 'Content',
-          },
+          } as any,
           validUserId
         )
       ).rejects.toThrow('Forbidden');
@@ -341,6 +343,7 @@ describe('ForumService - Permission Checks', () => {
         id: validThreadId,
         categoryId: validCategoryId,
         authorId: validUserId,
+        attachmentIds: [] as any,
         title: 'Test Thread',
         isPinned: false,
       });
@@ -354,6 +357,7 @@ describe('ForumService - Permission Checks', () => {
         id: validThreadId,
         categoryId: validCategoryId,
         authorId: validUserId,
+        attachmentIds: [] as any,
         title: 'Test Thread',
         isPinned: true,
         createdAt: new Date(),
@@ -397,6 +401,7 @@ describe('ForumService - Permission Checks', () => {
         id: validThreadId,
         categoryId: validCategoryId,
         authorId: validUserId,
+        attachmentIds: [] as any,
         title: 'Test Thread',
         isLocked: false,
       });
@@ -410,6 +415,7 @@ describe('ForumService - Permission Checks', () => {
         id: validThreadId,
         categoryId: validCategoryId,
         authorId: validUserId,
+        attachmentIds: [] as any,
         title: 'Test Thread',
         isLocked: true,
         createdAt: new Date(),

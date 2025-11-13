@@ -11,7 +11,7 @@ export class AppError extends Error {
   }
 }
 
-export const errorHandler = (error: Error, req: Request, res: Response, _next: NextFunction) => {
+export const errorHandler = (error: Error, _req: Request, res: Response, _next: NextFunction) => {
   console.error('Error:', error);
 
   if (error instanceof ZodError) {

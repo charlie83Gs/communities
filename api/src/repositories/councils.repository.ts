@@ -2,6 +2,8 @@ import { db as realDb } from '../db/index';
 import { councils, councilManagers, councilTrustScores } from '../db/schema';
 import { eq, and, isNull, sql } from 'drizzle-orm';
 
+type DbClient = typeof realDb;
+
 export type Council = {
   id: string;
   communityId: string;

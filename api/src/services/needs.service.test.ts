@@ -182,8 +182,8 @@ describe('NeedsService', () => {
     describe('createNeed', () => {
       it('should create a need with valid permissions', async () => {
         mockOpenFGAService.checkAccess.mockResolvedValue(true);
-        mockItemsRepository.findById.mockResolvedValue(testItem);
-        mockNeedsRepository.createNeed.mockResolvedValue(testNeed);
+        mockItemsRepository.findById.mockResolvedValue(testItem as any);
+        mockNeedsRepository.createNeed.mockResolvedValue(testNeed as any);
 
         const result = await needsService.createNeed(
           {
@@ -227,7 +227,7 @@ describe('NeedsService', () => {
 
       it('should throw error if item not found', async () => {
         mockOpenFGAService.checkAccess.mockResolvedValue(true);
-        mockItemsRepository.findById.mockResolvedValue(null);
+        mockItemsRepository.findById.mockResolvedValue(null as any);
 
         await expect(
           needsService.createNeed(
@@ -246,7 +246,7 @@ describe('NeedsService', () => {
 
       it('should throw error if recurring without recurrence frequency', async () => {
         mockOpenFGAService.checkAccess.mockResolvedValue(true);
-        mockItemsRepository.findById.mockResolvedValue(testItem);
+        mockItemsRepository.findById.mockResolvedValue(testItem as any);
 
         await expect(
           needsService.createNeed(
@@ -265,8 +265,8 @@ describe('NeedsService', () => {
 
       it('should create recurring need with nextFulfillmentDate', async () => {
         mockOpenFGAService.checkAccess.mockResolvedValue(true);
-        mockItemsRepository.findById.mockResolvedValue(testItem);
-        mockNeedsRepository.createNeed.mockResolvedValue(testRecurringNeed);
+        mockItemsRepository.findById.mockResolvedValue(testItem as any);
+        mockNeedsRepository.createNeed.mockResolvedValue(testRecurringNeed as any);
 
         const result = await needsService.createNeed(
           {
@@ -292,11 +292,11 @@ describe('NeedsService', () => {
 
       it('should create need with description', async () => {
         mockOpenFGAService.checkAccess.mockResolvedValue(true);
-        mockItemsRepository.findById.mockResolvedValue(testItem);
+        mockItemsRepository.findById.mockResolvedValue(testItem as any);
         mockNeedsRepository.createNeed.mockResolvedValue({
           ...testNeed,
           description: 'Detailed description',
-        });
+        } as any);
 
         const result = await needsService.createNeed(
           {
@@ -317,7 +317,7 @@ describe('NeedsService', () => {
 
     describe('getNeed', () => {
       it('should return need with can_view_needs permission', async () => {
-        mockNeedsRepository.findNeedById.mockResolvedValue(testNeed);
+        mockNeedsRepository.findNeedById.mockResolvedValue(testNeed as any);
         mockOpenFGAService.checkAccess.mockResolvedValue(true);
 
         const result = await needsService.getNeed('need-123', 'user-123');
@@ -332,7 +332,7 @@ describe('NeedsService', () => {
       });
 
       it('should throw error if need not found', async () => {
-        mockNeedsRepository.findNeedById.mockResolvedValue(null);
+        mockNeedsRepository.findNeedById.mockResolvedValue(null as any);
 
         await expect(needsService.getNeed('nonexistent', 'user-123')).rejects.toThrow(
           'Need not found'
@@ -340,7 +340,7 @@ describe('NeedsService', () => {
       });
 
       it('should throw error without can_view_needs permission', async () => {
-        mockNeedsRepository.findNeedById.mockResolvedValue(testNeed);
+        mockNeedsRepository.findNeedById.mockResolvedValue(testNeed as any);
         mockOpenFGAService.checkAccess.mockResolvedValue(false);
 
         await expect(needsService.getNeed('need-123', 'user-123')).rejects.toThrow(
@@ -352,7 +352,7 @@ describe('NeedsService', () => {
     describe('listNeeds', () => {
       it('should list needs for specific community with permission', async () => {
         mockOpenFGAService.checkAccess.mockResolvedValue(true);
-        mockNeedsRepository.listNeeds.mockResolvedValue([testNeed, testRecurringNeed]);
+        mockNeedsRepository.listNeeds.mockResolvedValue([testNeed, testRecurringNeed] as any);
 
         const result = await needsService.listNeeds({ communityId: 'comm-123' }, 'user-123');
 
@@ -374,10 +374,10 @@ describe('NeedsService', () => {
       });
 
       it('should list needs from all accessible communities', async () => {
-        mockOpenFGAService.getAccessibleResourceIds.mockResolvedValue(['comm-1', 'comm-2']);
+        mockOpenFGAService.getAccessibleResourceIds.mockResolvedValue(['comm-1', 'comm-2'] as any);
         mockNeedsRepository.listNeeds
-          .mockResolvedValueOnce([testNeed])
-          .mockResolvedValueOnce([testRecurringNeed]);
+          .mockResolvedValueOnce([testNeed] as any)
+          .mockResolvedValueOnce([testRecurringNeed] as any);
 
         const result = await needsService.listNeeds({}, 'user-123');
 
@@ -390,7 +390,7 @@ describe('NeedsService', () => {
       });
 
       it('should return empty array if no accessible communities', async () => {
-        mockOpenFGAService.getAccessibleResourceIds.mockResolvedValue([]);
+        mockOpenFGAService.getAccessibleResourceIds.mockResolvedValue([] as any);
 
         const result = await needsService.listNeeds({}, 'user-123');
 
@@ -399,7 +399,7 @@ describe('NeedsService', () => {
 
       it('should filter by priority', async () => {
         mockOpenFGAService.checkAccess.mockResolvedValue(true);
-        mockNeedsRepository.listNeeds.mockResolvedValue([testNeed]);
+        mockNeedsRepository.listNeeds.mockResolvedValue([testNeed] as any);
 
         const result = await needsService.listNeeds(
           { communityId: 'comm-123', priority: 'need' },
@@ -414,7 +414,7 @@ describe('NeedsService', () => {
 
       it('should filter by status', async () => {
         mockOpenFGAService.checkAccess.mockResolvedValue(true);
-        mockNeedsRepository.listNeeds.mockResolvedValue([testNeed]);
+        mockNeedsRepository.listNeeds.mockResolvedValue([testNeed] as any);
 
         const result = await needsService.listNeeds(
           { communityId: 'comm-123', status: 'active' },
@@ -427,11 +427,11 @@ describe('NeedsService', () => {
 
     describe('updateNeed', () => {
       it('should update need as creator', async () => {
-        mockNeedsRepository.findNeedById.mockResolvedValue(testNeed);
+        mockNeedsRepository.findNeedById.mockResolvedValue(testNeed as any);
         mockNeedsRepository.updateNeed.mockResolvedValue({
           ...testNeed,
           title: 'Updated Title',
-        });
+        } as any);
 
         const result = await needsService.updateNeed(
           'need-123',
@@ -444,7 +444,7 @@ describe('NeedsService', () => {
       });
 
       it('should throw error if need not found', async () => {
-        mockNeedsRepository.findNeedById.mockResolvedValue(null);
+        mockNeedsRepository.findNeedById.mockResolvedValue(null as any);
 
         await expect(
           needsService.updateNeed('nonexistent', { title: 'Updated' }, 'user-123')
@@ -452,7 +452,10 @@ describe('NeedsService', () => {
       });
 
       it('should throw error if not creator', async () => {
-        mockNeedsRepository.findNeedById.mockResolvedValue({ ...testNeed, createdBy: 'user-456' });
+        mockNeedsRepository.findNeedById.mockResolvedValue({
+          ...testNeed,
+          createdBy: 'user-456',
+        } as any);
 
         await expect(
           needsService.updateNeed('need-123', { title: 'Updated' }, 'user-123')
@@ -463,7 +466,7 @@ describe('NeedsService', () => {
         mockNeedsRepository.findNeedById.mockResolvedValue({
           ...testNeed,
           recurrence: null,
-        });
+        } as any);
 
         await expect(
           needsService.updateNeed('need-123', { isRecurring: true }, 'user-123')
@@ -471,13 +474,13 @@ describe('NeedsService', () => {
       });
 
       it('should recalculate nextFulfillmentDate when changing recurrence', async () => {
-        mockNeedsRepository.findNeedById.mockResolvedValue(testNeed);
+        mockNeedsRepository.findNeedById.mockResolvedValue(testNeed as any);
         mockNeedsRepository.updateNeed.mockResolvedValue({
           ...testNeed,
           isRecurring: true,
           recurrence: 'daily',
           nextFulfillmentDate: expect.any(Date),
-        });
+        } as any);
 
         await needsService.updateNeed(
           'need-123',
@@ -494,12 +497,12 @@ describe('NeedsService', () => {
       });
 
       it('should clear nextFulfillmentDate when disabling recurring', async () => {
-        mockNeedsRepository.findNeedById.mockResolvedValue(testRecurringNeed);
+        mockNeedsRepository.findNeedById.mockResolvedValue(testRecurringNeed as any);
         mockNeedsRepository.updateNeed.mockResolvedValue({
           ...testRecurringNeed,
           isRecurring: false,
           nextFulfillmentDate: null,
-        });
+        } as any);
 
         await needsService.updateNeed('need-456', { isRecurring: false }, 'user-123');
 
@@ -514,8 +517,11 @@ describe('NeedsService', () => {
 
     describe('deleteNeed', () => {
       it('should delete need as creator', async () => {
-        mockNeedsRepository.findNeedById.mockResolvedValue(testNeed);
-        mockNeedsRepository.deleteNeed.mockResolvedValue({ ...testNeed, deletedAt: new Date() });
+        mockNeedsRepository.findNeedById.mockResolvedValue(testNeed as any);
+        mockNeedsRepository.deleteNeed.mockResolvedValue({
+          ...testNeed,
+          deletedAt: new Date(),
+        } as any);
 
         await needsService.deleteNeed('need-123', 'user-123');
 
@@ -523,7 +529,7 @@ describe('NeedsService', () => {
       });
 
       it('should throw error if need not found', async () => {
-        mockNeedsRepository.findNeedById.mockResolvedValue(null);
+        mockNeedsRepository.findNeedById.mockResolvedValue(null as any);
 
         await expect(needsService.deleteNeed('nonexistent', 'user-123')).rejects.toThrow(
           'Need not found'
@@ -531,7 +537,10 @@ describe('NeedsService', () => {
       });
 
       it('should throw error if not creator', async () => {
-        mockNeedsRepository.findNeedById.mockResolvedValue({ ...testNeed, createdBy: 'user-456' });
+        mockNeedsRepository.findNeedById.mockResolvedValue({
+          ...testNeed,
+          createdBy: 'user-456',
+        } as any);
 
         await expect(needsService.deleteNeed('need-123', 'user-123')).rejects.toThrow(
           'Forbidden: you can only delete your own needs'
@@ -561,7 +570,7 @@ describe('NeedsService', () => {
             totalUnitsNeeded: 3,
             memberCount: 2,
           },
-        ]);
+        ] as any);
         mockNeedsRepository.aggregateCouncilNeeds.mockResolvedValue([
           {
             itemId: 'item-3',
@@ -572,7 +581,7 @@ describe('NeedsService', () => {
             totalUnitsNeeded: 10,
             memberCount: 1,
           },
-        ]);
+        ] as any);
 
         const result = await needsService.getAggregatedNeeds('comm-123', 'user-123');
 
@@ -604,9 +613,9 @@ describe('NeedsService', () => {
     describe('createCouncilNeed', () => {
       it('should create council need with can_manage permission', async () => {
         mockOpenFGAService.checkAccess.mockResolvedValue(true);
-        mockCouncilRepository.findById.mockResolvedValue(testCouncil);
-        mockItemsRepository.findById.mockResolvedValue(testItem);
-        mockNeedsRepository.createCouncilNeed.mockResolvedValue(testCouncilNeed);
+        mockCouncilRepository.findById.mockResolvedValue(testCouncil as any);
+        mockItemsRepository.findById.mockResolvedValue(testItem as any);
+        mockNeedsRepository.createCouncilNeed.mockResolvedValue(testCouncilNeed as any);
 
         const result = await needsService.createCouncilNeed(
           {
@@ -651,7 +660,7 @@ describe('NeedsService', () => {
 
       it('should throw error if council not found', async () => {
         mockOpenFGAService.checkAccess.mockResolvedValue(true);
-        mockCouncilRepository.findById.mockResolvedValue(null);
+        mockCouncilRepository.findById.mockResolvedValue(null as any);
 
         await expect(
           needsService.createCouncilNeed(
@@ -674,7 +683,7 @@ describe('NeedsService', () => {
         mockCouncilRepository.findById.mockResolvedValue({
           ...testCouncil,
           communityId: 'comm-456',
-        });
+        } as any);
 
         await expect(
           needsService.createCouncilNeed(
@@ -694,8 +703,8 @@ describe('NeedsService', () => {
 
       it('should throw error if recurring without recurrence frequency', async () => {
         mockOpenFGAService.checkAccess.mockResolvedValue(true);
-        mockCouncilRepository.findById.mockResolvedValue(testCouncil);
-        mockItemsRepository.findById.mockResolvedValue(testItem);
+        mockCouncilRepository.findById.mockResolvedValue(testCouncil as any);
+        mockItemsRepository.findById.mockResolvedValue(testItem as any);
 
         await expect(
           needsService.createCouncilNeed(
@@ -715,13 +724,13 @@ describe('NeedsService', () => {
 
       it('should create recurring council need with nextFulfillmentDate', async () => {
         mockOpenFGAService.checkAccess.mockResolvedValue(true);
-        mockCouncilRepository.findById.mockResolvedValue(testCouncil);
-        mockItemsRepository.findById.mockResolvedValue(testItem);
+        mockCouncilRepository.findById.mockResolvedValue(testCouncil as any);
+        mockItemsRepository.findById.mockResolvedValue(testItem as any);
         mockNeedsRepository.createCouncilNeed.mockResolvedValue({
           ...testCouncilNeed,
           isRecurring: true,
           recurrence: 'monthly',
-        });
+        } as any);
 
         await needsService.createCouncilNeed(
           {
@@ -747,7 +756,7 @@ describe('NeedsService', () => {
 
     describe('getCouncilNeed', () => {
       it('should return council need with can_view_needs permission', async () => {
-        mockNeedsRepository.findCouncilNeedById.mockResolvedValue(testCouncilNeed);
+        mockNeedsRepository.findCouncilNeedById.mockResolvedValue(testCouncilNeed as any);
         mockOpenFGAService.checkAccess.mockResolvedValue(true);
 
         const result = await needsService.getCouncilNeed('council-need-123', 'user-123');
@@ -762,7 +771,7 @@ describe('NeedsService', () => {
       });
 
       it('should throw error if council need not found', async () => {
-        mockNeedsRepository.findCouncilNeedById.mockResolvedValue(null);
+        mockNeedsRepository.findCouncilNeedById.mockResolvedValue(null as any);
 
         await expect(needsService.getCouncilNeed('nonexistent', 'user-123')).rejects.toThrow(
           'Council need not found'
@@ -770,7 +779,7 @@ describe('NeedsService', () => {
       });
 
       it('should throw error without can_view_needs permission', async () => {
-        mockNeedsRepository.findCouncilNeedById.mockResolvedValue(testCouncilNeed);
+        mockNeedsRepository.findCouncilNeedById.mockResolvedValue(testCouncilNeed as any);
         mockOpenFGAService.checkAccess.mockResolvedValue(false);
 
         await expect(needsService.getCouncilNeed('council-need-123', 'user-123')).rejects.toThrow(
@@ -782,7 +791,7 @@ describe('NeedsService', () => {
     describe('listCouncilNeeds', () => {
       it('should list council needs for specific community', async () => {
         mockOpenFGAService.checkAccess.mockResolvedValue(true);
-        mockNeedsRepository.listCouncilNeeds.mockResolvedValue([testCouncilNeed]);
+        mockNeedsRepository.listCouncilNeeds.mockResolvedValue([testCouncilNeed] as any);
 
         const result = await needsService.listCouncilNeeds({ communityId: 'comm-123' }, 'user-123');
 
@@ -796,9 +805,9 @@ describe('NeedsService', () => {
       });
 
       it('should list council needs for specific council', async () => {
-        mockCouncilRepository.findById.mockResolvedValue(testCouncil);
+        mockCouncilRepository.findById.mockResolvedValue(testCouncil as any);
         mockOpenFGAService.checkAccess.mockResolvedValue(true);
-        mockNeedsRepository.listCouncilNeeds.mockResolvedValue([testCouncilNeed]);
+        mockNeedsRepository.listCouncilNeeds.mockResolvedValue([testCouncilNeed] as any);
 
         const result = await needsService.listCouncilNeeds(
           { councilId: 'council-123' },
@@ -809,7 +818,7 @@ describe('NeedsService', () => {
       });
 
       it('should throw error if council not found', async () => {
-        mockCouncilRepository.findById.mockResolvedValue(null);
+        mockCouncilRepository.findById.mockResolvedValue(null as any);
 
         await expect(
           needsService.listCouncilNeeds({ councilId: 'nonexistent' }, 'user-123')
@@ -817,10 +826,10 @@ describe('NeedsService', () => {
       });
 
       it('should list council needs from all accessible communities', async () => {
-        mockOpenFGAService.getAccessibleResourceIds.mockResolvedValue(['comm-1', 'comm-2']);
+        mockOpenFGAService.getAccessibleResourceIds.mockResolvedValue(['comm-1', 'comm-2'] as any);
         mockNeedsRepository.listCouncilNeeds
-          .mockResolvedValueOnce([testCouncilNeed])
-          .mockResolvedValueOnce([]);
+          .mockResolvedValueOnce([testCouncilNeed] as any)
+          .mockResolvedValueOnce([] as any);
 
         const result = await needsService.listCouncilNeeds({}, 'user-123');
 
@@ -833,7 +842,7 @@ describe('NeedsService', () => {
       });
 
       it('should return empty array if no accessible communities', async () => {
-        mockOpenFGAService.getAccessibleResourceIds.mockResolvedValue([]);
+        mockOpenFGAService.getAccessibleResourceIds.mockResolvedValue([] as any);
 
         const result = await needsService.listCouncilNeeds({}, 'user-123');
 
@@ -843,12 +852,12 @@ describe('NeedsService', () => {
 
     describe('updateCouncilNeed', () => {
       it('should update council need with can_manage permission', async () => {
-        mockNeedsRepository.findCouncilNeedById.mockResolvedValue(testCouncilNeed);
+        mockNeedsRepository.findCouncilNeedById.mockResolvedValue(testCouncilNeed as any);
         mockOpenFGAService.checkAccess.mockResolvedValue(true);
         mockNeedsRepository.updateCouncilNeed.mockResolvedValue({
           ...testCouncilNeed,
           title: 'Updated Council Need',
-        });
+        } as any);
 
         const result = await needsService.updateCouncilNeed(
           'council-need-123',
@@ -866,7 +875,7 @@ describe('NeedsService', () => {
       });
 
       it('should throw error if council need not found', async () => {
-        mockNeedsRepository.findCouncilNeedById.mockResolvedValue(null);
+        mockNeedsRepository.findCouncilNeedById.mockResolvedValue(null as any);
 
         await expect(
           needsService.updateCouncilNeed('nonexistent', { title: 'Updated' }, 'user-123')
@@ -874,7 +883,7 @@ describe('NeedsService', () => {
       });
 
       it('should throw error without can_manage permission', async () => {
-        mockNeedsRepository.findCouncilNeedById.mockResolvedValue(testCouncilNeed);
+        mockNeedsRepository.findCouncilNeedById.mockResolvedValue(testCouncilNeed as any);
         mockOpenFGAService.checkAccess.mockResolvedValue(false);
 
         await expect(
@@ -883,13 +892,13 @@ describe('NeedsService', () => {
       });
 
       it('should recalculate nextFulfillmentDate when changing recurrence', async () => {
-        mockNeedsRepository.findCouncilNeedById.mockResolvedValue(testCouncilNeed);
+        mockNeedsRepository.findCouncilNeedById.mockResolvedValue(testCouncilNeed as any);
         mockOpenFGAService.checkAccess.mockResolvedValue(true);
         mockNeedsRepository.updateCouncilNeed.mockResolvedValue({
           ...testCouncilNeed,
           isRecurring: true,
           recurrence: 'weekly',
-        });
+        } as any);
 
         await needsService.updateCouncilNeed(
           'council-need-123',
@@ -908,12 +917,12 @@ describe('NeedsService', () => {
 
     describe('deleteCouncilNeed', () => {
       it('should delete council need with can_manage permission', async () => {
-        mockNeedsRepository.findCouncilNeedById.mockResolvedValue(testCouncilNeed);
+        mockNeedsRepository.findCouncilNeedById.mockResolvedValue(testCouncilNeed as any);
         mockOpenFGAService.checkAccess.mockResolvedValue(true);
         mockNeedsRepository.deleteCouncilNeed.mockResolvedValue({
           ...testCouncilNeed,
           deletedAt: new Date(),
-        });
+        } as any);
 
         await needsService.deleteCouncilNeed('council-need-123', 'user-123');
 
@@ -921,7 +930,7 @@ describe('NeedsService', () => {
       });
 
       it('should throw error if council need not found', async () => {
-        mockNeedsRepository.findCouncilNeedById.mockResolvedValue(null);
+        mockNeedsRepository.findCouncilNeedById.mockResolvedValue(null as any);
 
         await expect(needsService.deleteCouncilNeed('nonexistent', 'user-123')).rejects.toThrow(
           'Council need not found'
@@ -929,7 +938,7 @@ describe('NeedsService', () => {
       });
 
       it('should throw error without can_manage permission', async () => {
-        mockNeedsRepository.findCouncilNeedById.mockResolvedValue(testCouncilNeed);
+        mockNeedsRepository.findCouncilNeedById.mockResolvedValue(testCouncilNeed as any);
         mockOpenFGAService.checkAccess.mockResolvedValue(false);
 
         await expect(
@@ -956,10 +965,14 @@ describe('NeedsService', () => {
         nextFulfillmentDate: new Date('2024-01-31'),
       };
 
-      mockNeedsRepository.findMemberNeedsDueForReplenishment.mockResolvedValue([dueNeed]);
-      mockNeedsRepository.findCouncilNeedsDueForReplenishment.mockResolvedValue([dueCouncilNeed]);
-      mockNeedsRepository.updateNeedFulfillmentDates.mockResolvedValue(dueNeed);
-      mockNeedsRepository.updateCouncilNeedFulfillmentDates.mockResolvedValue(dueCouncilNeed);
+      mockNeedsRepository.findMemberNeedsDueForReplenishment.mockResolvedValue([dueNeed] as any);
+      mockNeedsRepository.findCouncilNeedsDueForReplenishment.mockResolvedValue([
+        dueCouncilNeed,
+      ] as any);
+      mockNeedsRepository.updateNeedFulfillmentDates.mockResolvedValue(dueNeed as any);
+      mockNeedsRepository.updateCouncilNeedFulfillmentDates.mockResolvedValue(
+        dueCouncilNeed as any
+      );
 
       const result = await needsService.replenishDueNeeds();
 
@@ -977,8 +990,10 @@ describe('NeedsService', () => {
         recurrence: null,
       };
 
-      mockNeedsRepository.findMemberNeedsDueForReplenishment.mockResolvedValue([invalidNeed]);
-      mockNeedsRepository.findCouncilNeedsDueForReplenishment.mockResolvedValue([]);
+      mockNeedsRepository.findMemberNeedsDueForReplenishment.mockResolvedValue([
+        invalidNeed,
+      ] as any);
+      mockNeedsRepository.findCouncilNeedsDueForReplenishment.mockResolvedValue([] as any);
 
       const result = await needsService.replenishDueNeeds();
 
@@ -995,8 +1010,8 @@ describe('NeedsService', () => {
         nextFulfillmentDate: new Date('2024-01-08'),
       };
 
-      mockNeedsRepository.findMemberNeedsDueForReplenishment.mockResolvedValue([dueNeed]);
-      mockNeedsRepository.findCouncilNeedsDueForReplenishment.mockResolvedValue([]);
+      mockNeedsRepository.findMemberNeedsDueForReplenishment.mockResolvedValue([dueNeed] as any);
+      mockNeedsRepository.findCouncilNeedsDueForReplenishment.mockResolvedValue([] as any);
       mockNeedsRepository.updateNeedFulfillmentDates.mockRejectedValue(new Error('Database error'));
 
       const result = await needsService.replenishDueNeeds();
@@ -1016,9 +1031,9 @@ describe('NeedsService', () => {
         dailyNeed,
         weeklyNeed,
         monthlyNeed,
-      ]);
-      mockNeedsRepository.findCouncilNeedsDueForReplenishment.mockResolvedValue([]);
-      mockNeedsRepository.updateNeedFulfillmentDates.mockResolvedValue(dailyNeed);
+      ] as any);
+      mockNeedsRepository.findCouncilNeedsDueForReplenishment.mockResolvedValue([] as any);
+      mockNeedsRepository.updateNeedFulfillmentDates.mockResolvedValue(dailyNeed as any);
 
       await needsService.replenishDueNeeds();
 
@@ -1027,8 +1042,8 @@ describe('NeedsService', () => {
     });
 
     it('should return empty results if no needs due', async () => {
-      mockNeedsRepository.findMemberNeedsDueForReplenishment.mockResolvedValue([]);
-      mockNeedsRepository.findCouncilNeedsDueForReplenishment.mockResolvedValue([]);
+      mockNeedsRepository.findMemberNeedsDueForReplenishment.mockResolvedValue([] as any);
+      mockNeedsRepository.findCouncilNeedsDueForReplenishment.mockResolvedValue([] as any);
 
       const result = await needsService.replenishDueNeeds();
 
