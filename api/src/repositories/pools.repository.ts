@@ -65,7 +65,7 @@ export class PoolsRepository {
     let primaryItemName: string | undefined;
     if (pool.primaryItemId) {
       const [item] = await this.db
-        .select({ name: items.name })
+        .select({ name: sql<string>`${items.translations}->'en'->>'name'` })
         .from(items)
         .where(eq(items.id, pool.primaryItemId));
       primaryItemName = item?.name;
@@ -137,7 +137,7 @@ export class PoolsRepository {
     const inventory = await this.db
       .select({
         itemId: poolInventory.itemId,
-        itemName: items.name,
+        itemName: sql<string>`${items.translations}->'en'->>'name'`,
         unitsAvailable: poolInventory.unitsAvailable,
       })
       .from(poolInventory)

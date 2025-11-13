@@ -145,7 +145,7 @@ export class NeedsRepository {
     const results = await this.db
       .select({
         itemId: needs.itemId,
-        itemName: items.name,
+        itemName: sql<string>`${items.translations}->'en'->>'name'`,
         itemKind: items.kind,
         priority: needs.priority,
         recurrence: needs.recurrence,
@@ -160,7 +160,7 @@ export class NeedsRepository {
       )
       .groupBy(
         needs.itemId,
-        items.name,
+        sql`${items.translations}->'en'->>'name'`,
         items.kind,
         needs.priority,
         needs.recurrence,
@@ -350,7 +350,7 @@ export class NeedsRepository {
     const results = await this.db
       .select({
         itemId: councilNeeds.itemId,
-        itemName: items.name,
+        itemName: sql<string>`${items.translations}->'en'->>'name'`,
         itemKind: items.kind,
         priority: councilNeeds.priority,
         recurrence: councilNeeds.recurrence,
@@ -369,7 +369,7 @@ export class NeedsRepository {
       )
       .groupBy(
         councilNeeds.itemId,
-        items.name,
+        sql`${items.translations}->'en'->>'name'`,
         items.kind,
         councilNeeds.priority,
         councilNeeds.recurrence,

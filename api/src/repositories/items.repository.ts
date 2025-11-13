@@ -2,12 +2,24 @@ import { db as realDb } from '@db/index';
 type DbClient = typeof realDb;
 
 import { items, wealth } from '@db/schema';
-import { eq, and, isNull, ilike, sql, or } from 'drizzle-orm';
+import { eq, and, isNull, sql } from 'drizzle-orm';
+
+export type SupportedLanguage = 'en' | 'es' | 'hi';
+
+export interface ItemTranslation {
+  name: string;
+  description?: string;
+}
+
+export interface ItemTranslations {
+  en: ItemTranslation;
+  es?: ItemTranslation;
+  hi?: ItemTranslation;
+}
 
 export interface CreateItemDto {
   communityId: string;
-  name: string;
-  description?: string | null;
+  translations: ItemTranslations;
   kind: 'object' | 'service';
   wealthValue: string; // Numeric string for precise decimal handling
   isDefault?: boolean;
@@ -15,8 +27,7 @@ export interface CreateItemDto {
 }
 
 export interface UpdateItemDto {
-  name?: string;
-  description?: string | null;
+  translations?: ItemTranslations;
   kind?: 'object' | 'service';
   wealthValue?: string; // Numeric string for precise decimal handling
 }
@@ -24,8 +35,7 @@ export interface UpdateItemDto {
 export interface ItemWithCount {
   id: string;
   communityId: string;
-  name: string;
-  description: string | null;
+  translations: ItemTranslations;
   kind: 'object' | 'service';
   wealthValue: string;
   isDefault: boolean;
@@ -69,6 +79,7 @@ export class ItemsRepository {
 
   /**
    * Find item by community and name (case-insensitive)
+   * Searches in any language translation
    */
   async findByName(communityId: string, name: string) {
     const [item] = await this.db
@@ -77,7 +88,11 @@ export class ItemsRepository {
       .where(
         and(
           eq(items.communityId, communityId),
-          sql`LOWER(${items.name}) = LOWER(${name})`,
+          sql`(
+            LOWER(${items.translations}->'en'->>'name') = LOWER(${name})
+            OR LOWER(${items.translations}->'es'->>'name') = LOWER(${name})
+            OR LOWER(${items.translations}->'hi'->>'name') = LOWER(${name})
+          )`,
           isNull(items.deletedAt)
         )
       );
@@ -98,8 +113,7 @@ export class ItemsRepository {
       .select({
         id: items.id,
         communityId: items.communityId,
-        name: items.name,
-        description: items.description,
+        translations: items.translations,
         kind: items.kind,
         wealthValue: items.wealthValue,
         isDefault: items.isDefault,
@@ -113,10 +127,11 @@ export class ItemsRepository {
       .leftJoin(wealth, eq(wealth.itemId, items.id))
       .where(and(...conditions))
       .groupBy(items.id)
-      .orderBy(items.name);
+      .orderBy(sql`${items.translations}->'en'->>'name'`);
 
     return result.map((row) => ({
       ...row,
+      translations: row.translations as ItemTranslations,
       _count: {
         wealthEntries: row.wealthCount,
       },
@@ -124,13 +139,25 @@ export class ItemsRepository {
   }
 
   /**
-   * Search items by name or description
+   * Search items by name or description in the specified language
+   * @param language - Language to search in (default: 'en')
    */
-  async search(communityId: string, query?: string, kind?: 'object' | 'service') {
+  async search(
+    communityId: string,
+    language: SupportedLanguage = 'en',
+    query?: string,
+    kind?: 'object' | 'service'
+  ) {
     const conditions = [eq(items.communityId, communityId), isNull(items.deletedAt)];
 
     if (query) {
-      conditions.push(or(ilike(items.name, `%${query}%`), ilike(items.description, `%${query}%`))!);
+      // Search in the requested language's name and description
+      conditions.push(
+        sql`(
+          ${items.translations}->${language}->>'name' ILIKE ${'%' + query + '%'}
+          OR ${items.translations}->${language}->>'description' ILIKE ${'%' + query + '%'}
+        )`
+      );
     }
 
     if (kind) {
@@ -141,7 +168,7 @@ export class ItemsRepository {
       .select()
       .from(items)
       .where(and(...conditions))
-      .orderBy(items.name)
+      .orderBy(sql`${items.translations}->${language}->>'name'`)
       .limit(50);
   }
 

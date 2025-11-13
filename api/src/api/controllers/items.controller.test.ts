@@ -14,8 +14,9 @@ import type { Item } from '@db/schema';
 const mockItem: Item = {
   id: 'item-123',
   communityId: 'comm-123',
-  name: 'Carrots',
-  description: 'Fresh organic carrots',
+  translations: {
+    en: { name: 'Carrots', description: 'Fresh organic carrots' },
+  },
   kind: 'object',
   wealthValue: '5.00',
   isDefault: false,

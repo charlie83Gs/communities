@@ -146,7 +146,7 @@ export class CouncilService {
         const item = await itemsRepository.findById(inv.itemId);
         return {
           itemId: inv.itemId,
-          itemName: item?.name || 'Unknown',
+          itemName: (item?.translations as any)?.en?.name || 'Unknown',
           quantity: inv.quantity,
           unit: inv.unit,
         };
@@ -484,7 +484,7 @@ export class CouncilService {
         const item = await itemsRepository.findById(inv.itemId);
         return {
           itemId: inv.itemId,
-          itemName: item?.name || 'Unknown',
+          itemName: (item?.translations as any)?.en?.name || 'Unknown',
           quantity: inv.quantity,
           unit: inv.unit,
         };
@@ -529,7 +529,7 @@ export class CouncilService {
           id: tx.id,
           type: tx.type,
           itemId: tx.itemId,
-          itemName: item?.name || 'Unknown',
+          itemName: (item?.translations as any)?.en?.name || 'Unknown',
           quantity: tx.quantity,
           description: tx.description,
           fromUser,

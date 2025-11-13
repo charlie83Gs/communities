@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
-import { ItemsRepository } from '@/repositories/items.repository';
+import { ItemsRepository, type ItemTranslations } from '@/repositories/items.repository';
 import { createThenableMockDb, setupMockDbChains } from '../../tests/helpers/mockDb';
 
 let itemsRepository: ItemsRepository;
@@ -10,8 +10,11 @@ const mockDb = createThenableMockDb();
 const testItem = {
   id: 'item-123',
   communityId: 'comm-123',
-  name: 'Hammer',
-  description: 'A standard claw hammer',
+  translations: {
+    en: { name: 'Hammer', description: 'A standard claw hammer' },
+    es: { name: 'Martillo', description: 'Un martillo de garra estándar' },
+    hi: { name: 'हथौड़ा', description: 'एक मानक पंजा हथौड़ा' },
+  },
   kind: 'object' as const,
   wealthValue: '10.50',
   isDefault: false,
@@ -39,8 +42,10 @@ describe('ItemsRepository', () => {
 
       const result = await itemsRepository.create({
         communityId: 'comm-123',
-        name: 'Hammer',
-        description: 'A standard claw hammer',
+        translations: {
+          en: { name: 'Hammer', description: 'A standard claw hammer' },
+          es: { name: 'Martillo', description: 'Un martillo de garra estándar' },
+        },
         kind: 'object',
         wealthValue: '10.50',
         createdBy: 'user-123',
@@ -58,8 +63,9 @@ describe('ItemsRepository', () => {
 
       const result = await itemsRepository.create({
         communityId: 'comm-123',
-        name: 'Hammer',
-        description: 'A standard claw hammer',
+        translations: {
+          en: { name: 'Hammer', description: 'A standard claw hammer' },
+        },
         kind: 'object',
         wealthValue: '10.50',
         isDefault: true,
@@ -170,7 +176,7 @@ describe('ItemsRepository', () => {
     it('should search items by query', async () => {
       mockDb.limit.mockResolvedValue([testItem]);
 
-      const result = await itemsRepository.search('comm-123', 'hammer');
+      const result = await itemsRepository.search('comm-123', 'en', 'hammer');
 
       expect(result).toHaveLength(1);
       expect(result[0]).toEqual(testItem);
@@ -181,7 +187,7 @@ describe('ItemsRepository', () => {
     it('should filter by kind', async () => {
       mockDb.limit.mockResolvedValue([testItem]);
 
-      const result = await itemsRepository.search('comm-123', undefined, 'object');
+      const result = await itemsRepository.search('comm-123', 'en', undefined, 'object');
 
       expect(result).toHaveLength(1);
       expect(mockDb.where).toHaveBeenCalled();
@@ -190,7 +196,7 @@ describe('ItemsRepository', () => {
     it('should search with both query and kind', async () => {
       mockDb.limit.mockResolvedValue([testItem]);
 
-      const result = await itemsRepository.search('comm-123', 'hammer', 'object');
+      const result = await itemsRepository.search('comm-123', 'en', 'hammer', 'object');
 
       expect(result).toHaveLength(1);
     });
@@ -198,7 +204,7 @@ describe('ItemsRepository', () => {
     it('should return empty array if no matches', async () => {
       mockDb.limit.mockResolvedValue([]);
 
-      const result = await itemsRepository.search('comm-123', 'nonexistent');
+      const result = await itemsRepository.search('comm-123', 'en', 'nonexistent');
 
       expect(result).toHaveLength(0);
     });
@@ -208,15 +214,19 @@ describe('ItemsRepository', () => {
     it('should update item', async () => {
       const updatedItem = {
         ...testItem,
-        name: 'Updated Hammer',
+        translations: {
+          en: { name: 'Updated Hammer', description: 'An updated hammer' },
+        },
       };
       mockDb.returning.mockResolvedValue([updatedItem]);
 
       const result = await itemsRepository.update('item-123', {
-        name: 'Updated Hammer',
+        translations: {
+          en: { name: 'Updated Hammer', description: 'An updated hammer' },
+        },
       });
 
-      expect(result?.name).toBe('Updated Hammer');
+      expect((result?.translations as ItemTranslations).en.name).toBe('Updated Hammer');
       expect(mockDb.update).toHaveBeenCalled();
       expect(mockDb.set).toHaveBeenCalled();
       expect(mockDb.where).toHaveBeenCalled();
@@ -241,7 +251,9 @@ describe('ItemsRepository', () => {
       mockDb.returning.mockResolvedValue([]);
 
       const result = await itemsRepository.update('nonexistent', {
-        name: 'New Name',
+        translations: {
+          en: { name: 'New Name' },
+        },
       });
 
       expect(result).toBeUndefined();

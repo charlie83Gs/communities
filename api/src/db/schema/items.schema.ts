@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, text, pgEnum, boolean, timestamp, numeric } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, pgEnum, boolean, timestamp, numeric, jsonb } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { appUsers } from './app_users.schema';
 import { communities } from './communities.schema';
@@ -35,8 +35,9 @@ export const items = pgTable('items', {
     .references(() => communities.id, { onDelete: 'cascade' })
     .notNull(),
 
-  name: varchar('name', { length: 200 }).notNull(),
-  description: text('description'),
+  // Multi-language translations
+  // Structure: { en: {name, description?}, es: {name, description?}, hi: {name, description?} }
+  translations: jsonb('translations').notNull(),
 
   kind: itemKindEnum('kind').notNull(),
 

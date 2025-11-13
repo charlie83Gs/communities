@@ -87,7 +87,7 @@ export class NeedsService {
       entityType: 'need',
       entityId: need.id,
       metadata: {
-        itemName: item.name,
+        itemName: (item.translations as any)?.en?.name || 'Unknown',
         itemKind: item.kind,
         priority: dto.priority,
         unitsNeeded: dto.unitsNeeded,
@@ -223,7 +223,7 @@ export class NeedsService {
       entityType: 'need',
       entityId: updated.id,
       metadata: {
-        itemName: item?.name,
+        itemName: (item?.translations as any)?.en?.name,
         itemKind: item?.kind,
         priority: updated.priority,
         unitsNeeded: updated.unitsNeeded,
@@ -262,7 +262,7 @@ export class NeedsService {
       entityType: 'need',
       entityId: need.id,
       metadata: {
-        itemName: item?.name,
+        itemName: (item?.translations as any)?.en?.name,
         itemKind: item?.kind,
         priority: need.priority,
         unitsNeeded: need.unitsNeeded,

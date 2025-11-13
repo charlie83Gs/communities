@@ -1,7 +1,7 @@
 import { db as realDb } from '@/db';
 import { appConfig } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import type { AppConfig, NewAppConfig } from '@/db/schema';
+import type { AppConfig } from '@/db/schema';
 
 /**
  * Repository for application-level configuration stored in the database.

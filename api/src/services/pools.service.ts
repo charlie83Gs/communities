@@ -605,7 +605,7 @@ export class PoolsService {
         createdBy: pool!.councilId,
         communityId: pool!.communityId,
         itemId: data.itemId,
-        title: `${item!.name} from ${pool!.name}`,
+        title: `${(item!.translations as any)?.en?.name || 'Unknown'} from ${pool!.name}`,
         description: `Mass distribution from pool`,
         durationType: 'unlimited',
         distributionType: 'unit_based',
