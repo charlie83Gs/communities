@@ -27,7 +27,13 @@ export type UpdateItemDto = {
   wealthValue?: string;
 };
 
-export interface ItemListItem extends Item {
+// Item with flattened name/description for display
+export interface ItemWithDisplay extends Item {
+  name: string;
+  description?: string;
+}
+
+export interface ItemListItem extends ItemWithDisplay {
   _count?: {
     wealthEntries: number;
   };
@@ -60,7 +66,7 @@ export class ItemsService {
   async listItems(
     communityId: string,
     userId: string,
-    _language: SupportedLanguage = 'en',
+    language: SupportedLanguage = 'en',
     includeDeleted = false
   ): Promise<ItemListItem[]> {
     // Verify user is a member of the community
@@ -68,14 +74,28 @@ export class ItemsService {
 
     const items = await itemsRepository.listByCommunity(communityId, includeDeleted);
 
-    // Return items as-is - they contain the full translations object
-    return items;
+    // Extract the requested language from translations and flatten to name/description
+    return items.map((item) => {
+      const translations = item.translations as ItemTranslations;
+      const langTranslation = translations[language] || translations.en;
+
+      return {
+        ...item,
+        name: langTranslation.name,
+        description: langTranslation.description,
+      } as ItemListItem;
+    });
   }
 
   /**
    * Get item by ID
+   * @param language - Language for returned item (default: 'en')
    */
-  async getItemById(itemId: string, userId: string): Promise<Item> {
+  async getItemById(
+    itemId: string,
+    userId: string,
+    language: SupportedLanguage = 'en'
+  ): Promise<ItemWithDisplay> {
     const item = await itemsRepository.findById(itemId);
     if (!item) {
       throw new AppError('Item not found', 404);
@@ -84,13 +104,21 @@ export class ItemsService {
     // Verify user is a member of the community
     await this.ensureCommunityMember(item.communityId, userId);
 
-    return item;
+    // Extract the requested language from translations and flatten to name/description
+    const translations = item.translations as ItemTranslations;
+    const langTranslation = translations[language] || translations.en;
+
+    return {
+      ...item,
+      name: langTranslation.name,
+      description: langTranslation.description,
+    };
   }
 
   /**
    * Create a new item
    */
-  async createItem(dto: CreateItemDto, userId: string): Promise<Item> {
+  async createItem(dto: CreateItemDto, userId: string): Promise<ItemWithDisplay> {
     // Verify community exists
     const community = await communityRepository.findById(dto.communityId);
     if (!community) {
@@ -164,13 +192,20 @@ export class ItemsService {
       createdBy: userId,
     });
 
-    return item;
+    // Flatten translations to name/description (use English by default)
+    const langTranslation = trimmedTranslations.en;
+
+    return {
+      ...item,
+      name: langTranslation.name,
+      description: langTranslation.description,
+    };
   }
 
   /**
    * Update an item
    */
-  async updateItem(itemId: string, dto: UpdateItemDto, userId: string): Promise<Item> {
+  async updateItem(itemId: string, dto: UpdateItemDto, userId: string): Promise<ItemWithDisplay> {
     const item = await itemsRepository.findById(itemId);
     if (!item) {
       throw new AppError('Item not found', 404);
@@ -247,7 +282,15 @@ export class ItemsService {
       throw new AppError('Failed to update item', 500);
     }
 
-    return updated;
+    // Flatten translations to name/description (use English by default)
+    const translations = updated.translations as ItemTranslations;
+    const langTranslation = translations.en;
+
+    return {
+      ...updated,
+      name: langTranslation.name,
+      description: langTranslation.description,
+    };
   }
 
   /**
@@ -304,11 +347,23 @@ export class ItemsService {
     language: SupportedLanguage = 'en',
     query?: string,
     kind?: 'object' | 'service'
-  ): Promise<Item[]> {
+  ): Promise<ItemWithDisplay[]> {
     // Verify user is a member of the community
     await this.ensureCommunityMember(communityId, userId);
 
-    return await itemsRepository.search(communityId, language, query, kind);
+    const items = await itemsRepository.search(communityId, language, query, kind);
+
+    // Extract the requested language from translations and flatten to name/description
+    return items.map((item) => {
+      const translations = item.translations as ItemTranslations;
+      const langTranslation = translations[language] || translations.en;
+
+      return {
+        ...item,
+        name: langTranslation.name,
+        description: langTranslation.description,
+      };
+    });
   }
 
   /**

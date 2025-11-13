@@ -136,7 +136,9 @@ describe('ItemsService', () => {
 
       const result = await itemsService.listItems('comm-123', 'user-123');
 
-      expect(result).toEqual([mockItem]);
+      expect(result).toEqual([
+        { ...mockItem, name: 'Carrots', description: 'Fresh organic carrots' },
+      ]);
       expect(mockItemsRepository.listByCommunity).toHaveBeenCalledWith('comm-123', false);
     });
 
@@ -176,7 +178,11 @@ describe('ItemsService', () => {
 
       const result = await itemsService.getItemById('item-123', 'user-123');
 
-      expect(result).toEqual(mockItem);
+      expect(result).toEqual({
+        ...mockItem,
+        name: 'Carrots',
+        description: 'Fresh organic carrots',
+      });
       expect(mockItemsRepository.findById).toHaveBeenCalledWith('item-123');
     });
 
@@ -218,7 +224,7 @@ describe('ItemsService', () => {
 
       const result = await itemsService.createItem(createDto, 'user-123');
 
-      expect(result).toEqual(mockItem);
+      expect(result).toEqual({ ...mockItem, name: 'Tomatoes', description: 'Fresh tomatoes' });
       expect(mockItemsRepository.create).toHaveBeenCalledWith({
         communityId: 'comm-123',
         translations: {
@@ -528,7 +534,9 @@ describe('ItemsService', () => {
         undefined
       );
 
-      expect(result).toEqual([mockItem]);
+      expect(result).toEqual([
+        { ...mockItem, name: 'Carrots', description: 'Fresh organic carrots' },
+      ]);
       expect(mockItemsRepository.search).toHaveBeenCalledWith(
         'comm-123',
         'en',

@@ -76,6 +76,13 @@ export class ItemsController {
    *           type: string
    *           format: uuid
    *         description: Item ID
+   *       - in: query
+   *         name: language
+   *         schema:
+   *           type: string
+   *           enum: [en, es, hi]
+   *           default: en
+   *         description: Language for item names/descriptions
    *     responses:
    *       200:
    *         description: Item details
@@ -90,8 +97,9 @@ export class ItemsController {
     try {
       const userId = req.user?.id!;
       const { id } = req.params;
+      const { language = 'en' } = req.query;
 
-      const item = await itemsService.getItemById(id, userId);
+      const item = await itemsService.getItemById(id, userId, language as 'en' | 'es' | 'hi');
 
       return ApiResponse.success(res, item);
     } catch (err) {

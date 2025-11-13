@@ -69,7 +69,7 @@ describe('ItemsController', () => {
 
       await itemsController.list(req, res, next);
 
-      expect(mockItemsService.listItems).toHaveBeenCalledWith('comm-123', 'user-123', false);
+      expect(mockItemsService.listItems).toHaveBeenCalledWith('comm-123', 'user-123', 'en', false);
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({
         status: 'success',
@@ -89,7 +89,7 @@ describe('ItemsController', () => {
 
       await itemsController.list(req, res, next);
 
-      expect(mockItemsService.listItems).toHaveBeenCalledWith('comm-123', 'user-123', true);
+      expect(mockItemsService.listItems).toHaveBeenCalledWith('comm-123', 'user-123', 'en', true);
     });
 
     it('should handle errors', async () => {
@@ -112,6 +112,7 @@ describe('ItemsController', () => {
     it('should get item by id successfully', async () => {
       const req = createMockAuthenticatedRequest('user-123', {
         params: { id: 'item-123' },
+        query: {},
       });
       const res = createMockResponse();
       const next = createMockNext();
@@ -120,7 +121,7 @@ describe('ItemsController', () => {
 
       await itemsController.getById(req, res, next);
 
-      expect(mockItemsService.getItemById).toHaveBeenCalledWith('item-123', 'user-123');
+      expect(mockItemsService.getItemById).toHaveBeenCalledWith('item-123', 'user-123', 'en');
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({
         status: 'success',
@@ -437,7 +438,7 @@ describe('ItemsController', () => {
 
       await itemsController.search(req, res, next);
 
-      expect(mockItemsService.searchItems).toHaveBeenCalledWith('comm-123', 'user-123', 'carrot', undefined);
+      expect(mockItemsService.searchItems).toHaveBeenCalledWith('comm-123', 'user-123', 'en', 'carrot', undefined);
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({
         status: 'success',
@@ -460,7 +461,7 @@ describe('ItemsController', () => {
 
       await itemsController.search(req, res, next);
 
-      expect(mockItemsService.searchItems).toHaveBeenCalledWith('comm-123', 'user-123', undefined, 'object');
+      expect(mockItemsService.searchItems).toHaveBeenCalledWith('comm-123', 'user-123', 'en', undefined, 'object');
     });
 
     it('should search items by query and kind', async () => {
@@ -478,7 +479,7 @@ describe('ItemsController', () => {
 
       await itemsController.search(req, res, next);
 
-      expect(mockItemsService.searchItems).toHaveBeenCalledWith('comm-123', 'user-123', 'fresh', 'service');
+      expect(mockItemsService.searchItems).toHaveBeenCalledWith('comm-123', 'user-123', 'en', 'fresh', 'service');
     });
 
     it('should search without filters', async () => {
@@ -492,7 +493,7 @@ describe('ItemsController', () => {
 
       await itemsController.search(req, res, next);
 
-      expect(mockItemsService.searchItems).toHaveBeenCalledWith('comm-123', 'user-123', undefined, undefined);
+      expect(mockItemsService.searchItems).toHaveBeenCalledWith('comm-123', 'user-123', 'en', undefined, undefined);
     });
 
     it('should handle errors', async () => {
