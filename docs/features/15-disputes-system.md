@@ -1,8 +1,8 @@
 ---
 id: FT-15
 title: Disputes System
-status: planned
-version: 1.0
+status: partial
+version: 1.1
 last_updated: 2025-11-14
 related_features: [FT-01, FT-02, FT-03, FT-13]
 ---
@@ -131,7 +131,7 @@ can_create_dispute = admin OR dispute_participant OR trust_dispute_participant
 
 ## Related Database Tables
 
-### Planned
+### Implementing
 - `disputes` - Core dispute information
   - `id` (uuid, primary key)
   - `communityId` (uuid, foreign key to communities)

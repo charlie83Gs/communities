@@ -27,6 +27,7 @@ import { CommunityActivityTimeline } from '@/components/features/communities/Com
 import { HealthAnalyticsPanel } from '@/components/features/health/HealthAnalyticsPanel';
 import { NeedsList } from '@/components/features/needs/NeedsList';
 import { PoolsList } from '@/components/features/pools/PoolsList';
+import { DisputesList } from '@/components/features/disputes/DisputesList';
 import { makeTranslator } from '@/i18n/makeTranslator';
 import { communityDetailsDict } from './[id].i18n';
 import { useTrustLevelsQuery } from '@/hooks/queries/useTrustLevelsQuery';
@@ -59,6 +60,8 @@ const CommunityDetailsContent: Component = () => {
     canManageForum,
     canCreateThreads,
     canViewAnalytics,
+    canViewDisputes,
+    canHandleDisputes,
   } = useCommunity();
 
   // Fetch user's trust score
@@ -121,6 +124,18 @@ const CommunityDetailsContent: Component = () => {
     return t('disclaimerCouncils').replace('{{minTrust}}', minTrust.toString());
   });
 
+  const disclaimerDisputes = createMemo(() => {
+    const comm = community();
+    const levels = trustLevelsQuery.data || [];
+
+    if (!comm?.minTrustForDisputeVisibility) {
+      return t('disclaimerDisputes').replace('{{minTrust}}', '20');
+    }
+
+    const minTrust = resolveTrustRequirement(comm.minTrustForDisputeVisibility, levels) ?? 20;
+    return t('disclaimerDisputes').replace('{{minTrust}}', minTrust.toString());
+  });
+
   const sidebarItems = createMemo(() => [
     {
       id: 'wealth' as SidebarTab,
@@ -163,6 +178,12 @@ const CommunityDetailsContent: Component = () => {
       label: t('tabCouncils'),
       icon: 'members' as const,
       visible: canViewCouncils(),
+    },
+    {
+      id: 'disputes' as SidebarTab,
+      label: t('tabDisputes'),
+      icon: 'alert' as const,
+      visible: canViewDisputes(),
     },
     {
       id: 'trust-timeline' as SidebarTab,
@@ -396,6 +417,19 @@ const CommunityDetailsContent: Component = () => {
                             <PoolsList
                               communityId={communityData().id}
                               canCreatePool={canCreatePools()}
+                            />
+                          </div>
+                        </Show>
+                      </Match>
+                      <Match when={activeTab() === 'disputes'}>
+                        <Show when={canViewDisputes()} fallback={<div class="p-4 text-stone-500 dark:text-stone-400">{t('mustBeMember')}</div>}>
+                          <div class="space-y-6">
+                            <SectionDisclaimer>
+                              {disclaimerDisputes()}
+                            </SectionDisclaimer>
+                            <DisputesList
+                              communityId={communityData().id}
+                              canCreateDispute={canViewDisputes()}
                             />
                           </div>
                         </Show>

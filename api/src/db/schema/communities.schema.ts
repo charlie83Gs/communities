@@ -27,10 +27,11 @@ export const communities = pgTable('communities', {
   minTrustToViewItems: jsonb('min_trust_to_view_items').notNull().default({ type: 'number', value: 0 }),
 
   // Dispute Handling Configuration
-  minTrustForDisputes: jsonb('min_trust_for_disputes').default({ type: 'number', value: 20 }),
-  minTrustToViewDisputes: jsonb('min_trust_to_view_disputes').default({ type: 'number', value: 0 }),
-  disputeResolutionRole: varchar('dispute_resolution_role', { length: 100 }),
-  disputeHandlingCouncils: jsonb('dispute_handling_councils').default([]), // Array of council IDs
+  minTrustForDisputeVisibility: jsonb('min_trust_for_dispute_visibility').notNull().default({ type: 'number', value: 20 }),
+  minTrustForDisputeParticipation: jsonb('min_trust_for_dispute_participation').notNull().default({ type: 'number', value: 10 }),
+  allowOpenResolutions: jsonb('allow_open_resolutions').default(true),
+  requireMultipleMediators: jsonb('require_multiple_mediators').default(false),
+  minMediatorsCount: integer('min_mediators_count').default(1),
 
   // Polling Permissions
   pollCreatorUsers: jsonb('poll_creator_users').default([]), // Array of user IDs
