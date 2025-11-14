@@ -28,6 +28,7 @@ import initiativeRoutes from '@api/routes/initiative.routes';
 import needsRoutes from '@api/routes/needs.routes';
 import communityEventsRoutes from '@api/routes/communityEvents.routes';
 import poolsRoutes from '@api/routes/pools.routes';
+import valueRecognitionRoutes from '@api/routes/valueRecognition.routes';
 // Keycloak authentication routes
 import authRoutes from '@api/routes/auth.routes';
 
@@ -179,6 +180,8 @@ app.use('/api/v1/needs', needsRoutes);
 app.use('/api/v1/communities', communityEventsRoutes);
 // Pools routes
 app.use('/api/v1', poolsRoutes);
+// Value Recognition routes
+app.use('/api/v1', valueRecognitionRoutes);
 
 // Swagger docs
 app.use('/openapi/docs', swaggerUi.serve, swaggerUi.setup(specs));
