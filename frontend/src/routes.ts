@@ -72,6 +72,18 @@ export const routes: RouteDefinition[] = [
         path: ':id/pools/:poolId',
         component: lazy(() => import('./pages/protected/community/pools/[poolId]')),
       },
+      {
+        path: ':id/disputes',
+        component: lazy(() => import('./pages/protected/community/disputes')),
+      },
+      {
+        path: ':id/disputes/new',
+        component: lazy(() => import('./pages/protected/community/disputes/new')),
+      },
+      {
+        path: ':id/disputes/:disputeId',
+        component: lazy(() => import('./pages/protected/community/disputes/[disputeId]')),
+      },
     ],
   },
   {

@@ -27,6 +27,12 @@ This directory contains detailed documentation for each feature of the community
 13. [FT-13: Security & Access Control](./13-security-access-control.md) - OpenFGA-based authorization (Status: Implemented)
 14. [FT-14: Audit Log](./14-audit-log.md) - Immutable audit trail and activity tracking (Status: Partial)
 
+### Conflict Resolution
+15. [FT-15: Disputes System](./15-disputes-system.md) - Mediation and conflict resolution (Status: Planned)
+
+### Contribution Tracking
+16. [FT-16: Value Contribution System](./16-value-contribution.md) - Economic contribution scoring and analytics (Status: Planned)
+
 ## Implementation Status Legend
 - **Implemented**: Core tables exist, feature is functional
 - **Partial**: Some tables implemented, feature partially functional

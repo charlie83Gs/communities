@@ -95,6 +95,15 @@ Application code checks **ONLY** permissions, never roles directly.
 ### Analytics Feature
 - **Viewer Role**: `analytics_viewer` / `trust_analytics_viewer` → `can_view_analytics`
 
+### Value Recognition Feature
+- **Viewer Role**: `contribution_viewer` / `trust_contribution_viewer` → `can_view_contributions`
+- **Logger Role**: `contribution_logger` / `trust_contribution_logger` → `can_log_contributions`
+- **Granter Role**: `recognition_granter` / `trust_recognition_granter` → `can_grant_peer_recognition`
+- **Verifier Role**: `contribution_verifier` / `trust_contribution_verifier` → `can_verify_contributions`
+- **Manager Role**: `recognition_manager` → `can_manage_recognition` (admin only)
+
+**Note:** Value recognition does NOT gate access to community features (wealth, councils, etc.). These permissions control participation in the recognition system itself.
+
 ## Example Permission Flows
 
 ### Example 1: Admin Assigns Role via UI
