@@ -29,6 +29,7 @@ export const routes: RouteDefinition[] = [
   },
   {
     path: '/communities',
+    component: AuthGuard,
     children: [
       {
         path: ':id',
