@@ -412,6 +412,8 @@ describe('TrustService', () => {
         trust_flag_reviewer: 30,
         trust_item_viewer: 0,
         trust_item_manager: 20,
+        trust_needs_viewer: 0,
+        trust_needs_publisher: 5,
         trust_analytics_viewer: 20,
       } as any);
       expect(mockTrustHistoryRepository.logAction).toHaveBeenCalled();
@@ -513,6 +515,8 @@ describe('TrustService', () => {
         trust_flag_reviewer: 30,
         trust_item_viewer: 0,
         trust_item_manager: 20,
+        trust_needs_viewer: 0,
+        trust_needs_publisher: 5,
         trust_analytics_viewer: 20,
       } as any);
       expect(mockTrustHistoryRepository.logAction).toHaveBeenCalled();
@@ -663,6 +667,8 @@ describe('TrustService', () => {
         trust_flag_reviewer: 30,
         trust_item_viewer: 0,
         trust_item_manager: 20,
+        trust_needs_viewer: 0,
+        trust_needs_publisher: 5,
         trust_analytics_viewer: 20,
       } as any);
       expect(mockTrustHistoryRepository.logAction).toHaveBeenCalled();
@@ -814,6 +820,8 @@ describe('TrustService', () => {
         trust_flag_reviewer: 30,
         trust_item_viewer: 0,
         trust_item_manager: 20,
+        trust_needs_viewer: 0,
+        trust_needs_publisher: 5,
         trust_analytics_viewer: 20,
       } as any);
       expect(mockTrustHistoryRepository.logAction).toHaveBeenCalled();

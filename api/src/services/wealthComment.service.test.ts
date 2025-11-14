@@ -76,7 +76,7 @@ describe('WealthCommentService', () => {
       expect(result.id).toBe('comment-123');
       expect(mockWealthCommentRepository.create).toHaveBeenCalledWith({
         wealthId: 'wealth-123',
-        content: 'Test comment',
+        content: 'Test',
         authorId: 'user-123',
       });
       expect(mockOpenFGAService.assignRelation).toHaveBeenCalled();

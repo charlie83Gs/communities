@@ -10,12 +10,13 @@ let communityRepository: CommunityRepository;
 const mockDb = createThenableMockDb();
 
 // Static test data
-const testCommunity: Community = {
+const testCommunity: Community & { deletedAt?: Date | null } = {
   id: 'comm-123',
   name: 'Test Community',
   description: 'A test community',
   createdBy: 'user-123',
   createdAt: new Date('2024-01-01'),
+  deletedAt: null,
   minTrustForWealth: { type: 'number' as const, value: 10 },
   minTrustForPolls: { type: 'number' as const, value: 15 },
   minTrustToAwardTrust: { type: 'number' as const, value: 15 },
