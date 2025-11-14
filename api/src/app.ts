@@ -48,14 +48,10 @@ export const initPromise = (async () => {
     throw new Error('Cannot start application without database migrations');
   }
 
-  // Run OpenFGA database migrations
-  try {
-    const { runOpenFGAMigrations } = await import('@utils/openfga-migrate');
-    await runOpenFGAMigrations();
-  } catch (error) {
-    console.error('[App] CRITICAL: Failed to run OpenFGA migrations:', error);
-    throw new Error('Cannot start application without OpenFGA migrations');
-  }
+  // Note: OpenFGA database schema migrations are handled by infrastructure:
+  // - Docker Compose: openfga_migrate service
+  // - Kubernetes: init containers or pre-deployment Jobs
+  // Application only manages authorization models via OpenFGA API
 
   console.log('[App] Initializing authentication and authorization services...');
 

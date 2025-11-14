@@ -1,0 +1,286 @@
+services:
+  # ============================================================================
+  # Database Services
+  # ============================================================================
+
+  postgres_api:
+    image: postgres:17
+    container_name: postgres_api
+    environment:
+      POSTGRES_DB: api_db
+      POSTGRES_USER: api_user
+      POSTGRES_PASSWORD: api_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_api_data:/var/lib/postgresql/data
+      - ./api/docker/init-api-db.sql:/docker-entrypoint-initdb.d/init-api-db.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U api_user -d api_db -h localhost -p 5432"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - app_network
+
+  keycloak_db:
+    image: postgres:16-alpine
+    container_name: keycloak_db
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: keycloak_password
+    ports:
+      - "5433:5432"
+    volumes:
+      - keycloak_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak -d keycloak -h localhost -p 5432"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - app_network
+
+  postgres_openfga:
+    image: postgres:17
+    container_name: postgres_openfga
+    environment:
+      POSTGRES_DB: openfga
+      POSTGRES_USER: openfga_user
+      POSTGRES_PASSWORD: openfga_password
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_openfga_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U openfga_user -d openfga -h localhost -p 5432"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - app_network
+
+  # ============================================================================
+  # Authentication & Authorization Services
+  # ============================================================================
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.3.5
+    container_name: keycloak
+    command:
+      - start-dev
+      - --import-realm
+      - --health-enabled=true
+      - --metrics-enabled=true
+    environment:
+      # Admin Console
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+
+      # Database
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak_db:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: keycloak_password
+
+      # Hostname (critical for token validation)
+      KC_HOSTNAME: localhost
+      KC_HOSTNAME_PORT: 8081
+      KC_HOSTNAME_STRICT: false
+      KC_HOSTNAME_STRICT_HTTPS: false
+
+      # HTTP Settings (dev mode)
+      KC_HTTP_ENABLED: true
+      KC_HTTP_PORT: 8080
+
+      # Proxy settings
+      KC_PROXY: edge
+
+      # Features (v26+ defaults)
+      KC_FEATURES: persistent-user-sessions
+
+      # Logging
+      KC_LOG_LEVEL: info
+
+    volumes:
+      - ./api/keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+    ports:
+      - "8081:8080"
+    depends_on:
+      keycloak_db:
+        condition: service_healthy
+    networks:
+      - app_network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f -H 'Host: localhost' http://localhost:8080/realms/share-app || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    restart: unless-stopped
+
+  # One-shot migration job to ensure OpenFGA datastore schema is at required revision
+  openfga_migrate:
+    image: openfga/openfga:latest
+    container_name: openfga_migrate
+    command: ["migrate"]
+    environment:
+      OPENFGA_DATASTORE_ENGINE: postgres
+      OPENFGA_DATASTORE_URI: postgres://openfga_user:openfga_password@postgres_openfga:5432/openfga?sslmode=disable
+    depends_on:
+      postgres_openfga:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - app_network
+
+  openfga:
+    image: openfga/openfga:latest
+    container_name: openfga
+    command: ["run"]
+    environment:
+      OPENFGA_DATASTORE_ENGINE: postgres
+      OPENFGA_DATASTORE_URI: postgres://openfga_user:openfga_password@postgres_openfga:5432/openfga?sslmode=disable
+      OPENFGA_LOG_FORMAT: json
+      OPENFGA_LOG_LEVEL: info
+      OPENFGA_PLAYGROUND_ENABLED: "true"
+      OPENFGA_PLAYGROUND_PORT: "3001"
+    ports:
+      - "8080:8080"
+      - "8082:8081"
+      - "3001:3001"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/healthz || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+    depends_on:
+      openfga_migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    networks:
+      - app_network
+
+  # ============================================================================
+  # Application Services
+  # ============================================================================
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+      target: development
+    container_name: communities_api_dev
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+
+      # Database
+      DATABASE_URL: postgresql://api_user:api_password@postgres_api:5432/api_db
+
+      # Keycloak (internal docker network)
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: share-app
+      KEYCLOAK_CLIENT_ID: communities-app
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-your-client-secret-change-in-production}
+      KEYCLOAK_JWKS_URI: http://keycloak:8080/realms/share-app/protocol/openid-connect/certs
+      KEYCLOAK_ISSUER: http://localhost:8081/realms/share-app
+      KEYCLOAK_ALLOWED_AUDIENCES: communities-app
+      KEYCLOAK_ADMIN_REALM: share-app
+      KEYCLOAK_ADMIN_CLIENT_ID: communities-app
+      KEYCLOAK_ADMIN_CLIENT_SECRET: ${KEYCLOAK_ADMIN_CLIENT_SECRET:-your-admin-client-secret-change-in-production}
+
+      # OpenFGA (internal docker network)
+      OPENFGA_API_URL: http://openfga:8080
+      OPENFGA_STORE_ID: ${OPENFGA_STORE_ID:-}
+      OPENFGA_AUTHORIZATION_MODEL_ID: ${OPENFGA_AUTHORIZATION_MODEL_ID:-}
+      OPENFGA_API_TOKEN: ${OPENFGA_API_TOKEN:-}
+      OPENFGA_STORE_NAME: share-app
+      OPENFGA_INIT_MAX_ATTEMPTS: 15
+      OPENFGA_INIT_DELAY_MS: 5000
+
+      # Note: OpenFGA database migrations are handled by openfga_migrate service
+      # Application code does not run migrations - only uses OpenFGA API
+    volumes:
+      # Mount source code for hot-reload
+      - ./api/src:/app/src:ro
+      - ./api/drizzle.config.ts:/app/drizzle.config.ts:ro
+      # Preserve node_modules from the container
+      - api_node_modules:/app/node_modules
+      # Logs and uploads
+      - ./api/logs:/app/logs
+      - ./api/uploads:/app/uploads
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres_api:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+      openfga:
+        condition: service_started
+    networks:
+      - app_network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 3s
+      start_period: 10s
+      retries: 3
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: development
+      args:
+        # Build-time environment variables for Vite
+        VITE_API_URL: http://localhost:3000
+        VITE_KEYCLOAK_URL: http://localhost:8081
+        VITE_KEYCLOAK_REALM: share-app
+        VITE_KEYCLOAK_CLIENT_ID: communities-app
+    container_name: communities_frontend_dev
+    environment:
+      # Runtime environment variables (for Vite dev server)
+      VITE_API_URL: http://localhost:3000
+      VITE_KEYCLOAK_URL: http://localhost:8081
+      VITE_KEYCLOAK_REALM: share-app
+      VITE_KEYCLOAK_CLIENT_ID: communities-app
+    volumes:
+      # Mount source code for hot-reload
+      - ./frontend/src:/app/src:ro
+      - ./frontend/public:/app/public:ro
+      - ./frontend/index.html:/app/index.html:ro
+      - ./frontend/vite.config.ts:/app/vite.config.ts:ro
+      - ./frontend/tsconfig.json:/app/tsconfig.json:ro
+      - ./frontend/postcss.config.js:/app/postcss.config.js:ro
+      # Preserve node_modules from the container
+      - frontend_node_modules:/app/node_modules
+    ports:
+      - "5000:5000"
+    depends_on:
+      - api
+      - keycloak
+    networks:
+      - app_network
+    restart: unless-stopped
+
+volumes:
+  postgres_api_data:
+  keycloak_db_data:
+  postgres_openfga_data:
+  api_node_modules:
+  frontend_node_modules:
+
+networks:
+  app_network:
+    driver: bridge

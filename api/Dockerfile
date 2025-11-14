@@ -1,4 +1,8 @@
 # Multi-stage build for communities-api
+
+# ============================================================================
+# Base stage - production dependencies only
+# ============================================================================
 FROM oven/bun:1 AS base
 
 WORKDIR /app
@@ -9,7 +13,38 @@ COPY package.json bun.lockb* ./
 # Install dependencies (production only)
 RUN bun install --frozen-lockfile --production
 
-# Builder stage
+# ============================================================================
+# Development stage - for local development with hot-reload
+# ============================================================================
+FROM oven/bun:1 AS development
+
+WORKDIR /app
+
+# Copy package files
+COPY package.json bun.lockb* ./
+
+# Install all dependencies (including devDependencies)
+RUN bun install --frozen-lockfile
+
+# Copy configuration files
+COPY drizzle.config.ts tsconfig.json ./
+
+# Create necessary directories
+RUN mkdir -p logs uploads/images src/db/migrations
+
+# Expose port
+EXPOSE 3000
+
+# Set environment to development
+ENV NODE_ENV=development
+
+# Start the application with hot-reload
+# Source files will be mounted as volumes from docker-compose
+CMD ["bun", "--watch", "src/server.ts"]
+
+# ============================================================================
+# Builder stage - for production build
+# ============================================================================
 FROM oven/bun:1 AS builder
 
 WORKDIR /app
@@ -26,7 +61,9 @@ COPY . .
 # Build the application
 RUN bun build src/server.ts --outdir dist --target node
 
-# Production stage
+# ============================================================================
+# Production stage - optimized runtime image
+# ============================================================================
 FROM oven/bun:1-slim AS production
 
 WORKDIR /app

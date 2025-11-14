@@ -68,10 +68,7 @@ const Dashboard: Component = () => {
                 </div>
                 <h2 class="text-xl font-semibold text-stone-900 dark:text-stone-100">{t('myCommunities')}</h2>
               </div>
-              <Button
-                onClick={() => setShowForm(!showForm())}
-                class="bg-ocean-600 hover:bg-ocean-700 dark:bg-ocean-500 dark:hover:bg-ocean-600"
-              >
+              <Button onClick={() => setShowForm(!showForm())}>
                 {showForm() ? t('btnCancel') : t('btnCreateCommunity')}
               </Button>
             </div>

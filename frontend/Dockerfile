@@ -1,4 +1,37 @@
 # Multi-stage build for communities-frontend
+
+# ============================================================================
+# Development stage - for local development with hot-reload
+# ============================================================================
+FROM oven/bun:1 AS development
+
+WORKDIR /app
+
+# Accept build arguments for Vite environment variables
+ARG VITE_API_URL=http://localhost:3000
+ARG VITE_KEYCLOAK_URL=http://localhost:8081
+ARG VITE_KEYCLOAK_REALM=share-app
+ARG VITE_KEYCLOAK_CLIENT_ID=share-app-frontend
+
+# Copy package files
+COPY package.json bun.lock* ./
+
+# Install all dependencies
+RUN bun install --frozen-lockfile
+
+# Copy configuration files (source files will be mounted as volumes)
+COPY vite.config.ts tsconfig.json postcss.config.js ./
+
+# Expose Vite dev server port
+EXPOSE 5173
+
+# Start Vite dev server with hot-reload
+# Source files will be mounted as volumes from docker-compose
+CMD ["bun", "run", "dev", "--host", "0.0.0.0"]
+
+# ============================================================================
+# Builder stage - for production build
+# ============================================================================
 FROM oven/bun:1 AS builder
 
 WORKDIR /app
@@ -16,7 +49,7 @@ ENV VITE_KEYCLOAK_REALM=${VITE_KEYCLOAK_REALM}
 ENV VITE_KEYCLOAK_CLIENT_ID=${VITE_KEYCLOAK_CLIENT_ID}
 
 # Copy package files
-COPY package.json bun.lock ./
+COPY package.json bun.lock* ./
 
 # Install dependencies
 RUN bun install --frozen-lockfile
@@ -27,7 +60,9 @@ COPY . .
 # Build the application with environment variables
 RUN bun run build
 
+# ============================================================================
 # Production stage - using nginx to serve static files
+# ============================================================================
 FROM nginx:alpine AS production
 
 # Copy built files from builder
