@@ -110,16 +110,23 @@
     {
       "idx": 15,
       "version": "7",
-      "when": 1762956000000,
-      "tag": "0015_value_recognition",
+      "when": 1762955000000,
+      "tag": "0015_items_translations",
       "breakpoints": true
     },
     {
       "idx": 16,
       "version": "7",
+      "when": 1762956000000,
+      "tag": "0016_value_recognition",
+      "breakpoints": false
+    },
+    {
+      "idx": 17,
+      "version": "7",
       "when": 1762960000000,
-      "tag": "0016_integrate_contributions_with_items",
-      "breakpoints": true
+      "tag": "0017_integrate_contributions_with_items",
+      "breakpoints": false
     }
   ]
 }
