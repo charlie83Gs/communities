@@ -1,0 +1,92 @@
+### Value Recognition API Examples
+### Replace {{token}} with your Keycloak JWT token
+### Replace UUIDs with actual IDs from your database
+
+@baseUrl = http://localhost:3000/api/v1
+@token = YOUR_JWT_TOKEN_HERE
+@communityId = YOUR_COMMUNITY_UUID
+@itemId = YOUR_ITEM_UUID
+@contributionId = YOUR_CONTRIBUTION_UUID
+@userId = YOUR_USER_ID
+
+### 1. Log a Self-Reported Contribution
+POST {{baseUrl}}/communities/{{communityId}}/contributions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemId": "{{itemId}}",
+  "units": 3,
+  "description": "Provided 3 hours of childcare for community members",
+  "beneficiaryIds": ["user-beneficiary-id"],
+  "witnessIds": [],
+  "sourceType": "self_reported"
+}
+
+### 2. Get My Contribution Profile
+GET {{baseUrl}}/communities/{{communityId}}/contributions/profile/me
+Authorization: Bearer {{token}}
+
+### 3. Get Another User's Contribution Profile
+GET {{baseUrl}}/communities/{{communityId}}/contributions/profile/{{userId}}
+Authorization: Bearer {{token}}
+
+### 4. Get Pending Verifications
+GET {{baseUrl}}/communities/{{communityId}}/contributions/pending-verifications
+Authorization: Bearer {{token}}
+
+### 5. Verify a Contribution
+POST {{baseUrl}}/communities/{{communityId}}/contributions/{{contributionId}}/verify
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "testimonial": "Alice provided excellent care for my children. Very patient and attentive."
+}
+
+### 6. Dispute a Contribution
+POST {{baseUrl}}/communities/{{communityId}}/contributions/{{contributionId}}/dispute
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "reason": "The hours claimed do not match what actually occurred. It was only 2 hours, not 3."
+}
+
+### 7. Grant Peer Recognition
+POST {{baseUrl}}/communities/{{communityId}}/peer-recognition
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "toUserId": "user-recipient-id",
+  "valueUnits": 10,
+  "description": "Alice helped me move into my new apartment. Her assistance was invaluable and she went above and beyond."
+}
+
+### 8. Check Peer Recognition Limits
+GET {{baseUrl}}/communities/{{communityId}}/peer-recognition/limits
+Authorization: Bearer {{token}}
+
+### 9. Get My Peer Recognition Grants
+GET {{baseUrl}}/communities/{{communityId}}/peer-recognition/my?limit=50
+Authorization: Bearer {{token}}
+
+### 10. Update Item Value (Calibration)
+PATCH {{baseUrl}}/communities/{{communityId}}/items/{{itemId}}/value
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "newValue": 15,
+  "reason": "Elder care is becoming scarce in our community and requires significant effort and skill. The community values intergenerational care highly.",
+  "decidedThrough": "community_poll"
+}
+
+### 11. Get Value Calibration History
+GET {{baseUrl}}/communities/{{communityId}}/value-calibration-history?limit=50
+Authorization: Bearer {{token}}
+
+### 12. Get Value Calibration History for Specific Item
+GET {{baseUrl}}/communities/{{communityId}}/value-calibration-history?itemId={{itemId}}&limit=20
+Authorization: Bearer {{token}}
