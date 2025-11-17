@@ -141,6 +141,13 @@ const CommunityDetailsContent: Component = () => {
       visible: role() !== undefined, // Visible to all community members
     },
     {
+      id: 'contributions' as SidebarTab,
+      label: t('tabContributions'),
+      icon: 'contributions' as const,
+      visible: role() !== undefined, // Visible to all community members (trust: 0)
+      href: `/communities/${community()?.id}/contributions`,
+    },
+    {
       id: 'members' as SidebarTab,
       label: t('tabMembers'),
       icon: 'members' as const,
