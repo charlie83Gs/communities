@@ -71,6 +71,28 @@ export const communities = pgTable('communities', {
   minTrustForNeeds: jsonb('min_trust_for_needs').default({ type: 'number', value: 5 }),
   minTrustToViewNeeds: jsonb('min_trust_to_view_needs').default({ type: 'number', value: 0 }),
 
+  // Value Recognition System Configuration
+  minTrustToViewRecognition: jsonb('min_trust_to_view_recognition').default({ type: 'number', value: 0 }),
+  minTrustToLogContributions: jsonb('min_trust_to_log_contributions').default({ type: 'number', value: 5 }),
+  minTrustToGrantPeerRecognition: jsonb('min_trust_to_grant_peer_recognition').default({ type: 'number', value: 10 }),
+  minTrustToVerifyContributions: jsonb('min_trust_to_verify_contributions').default({ type: 'number', value: 15 }),
+  minTrustForRecognitionManagement: jsonb('min_trust_for_recognition_management').default({ type: 'number', value: 25 }),
+  minTrustForCouncilVerification: jsonb('min_trust_for_council_verification').default({ type: 'number', value: 20 }),
+  minTrustForDisputeReview: jsonb('min_trust_for_dispute_review').default({ type: 'number', value: 30 }),
+
+  valueRecognitionSettings: jsonb('value_recognition_settings').default({
+    enabled: true,
+    showAggregateStats: true,
+    allowPeerGrants: true,
+    peerGrantMonthlyLimit: 20,
+    peerGrantSamePersonLimit: 3,
+    requireVerification: true,
+    autoVerifySystemActions: true,
+    allowCouncilVerification: true,
+    verificationReminderDays: 7,
+    softReciprocityNudges: false
+  }),
+
   createdBy: text('created_by').references(() => appUsers.id),
   createdAt: timestamp('created_at').defaultNow(),
   deletedAt: timestamp('deleted_at'),

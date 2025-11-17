@@ -2,7 +2,7 @@ import { Component, createSignal, Show, For, createEffect, onCleanup } from 'sol
 import { A } from '@solidjs/router';
 import { Icon, IconName } from '@/components/common/Icon';
 
-export type SidebarTab = 'wealth' | 'members' | 'invites' | 'trust-grants' | 'settings' | 'forum' | 'polls' | 'councils' | 'needs' | 'items' | 'trust-timeline' | 'health' | 'pools' | 'activity' | 'disputes';
+export type SidebarTab = 'wealth' | 'members' | 'invites' | 'trust-grants' | 'settings' | 'forum' | 'polls' | 'councils' | 'needs' | 'items' | 'trust-timeline' | 'health' | 'pools' | 'activity' | 'disputes' | 'contributions';
 
 interface SidebarItem {
   id: SidebarTab;

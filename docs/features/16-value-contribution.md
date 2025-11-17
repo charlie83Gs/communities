@@ -1,8 +1,8 @@
 ---
 id: FT-16
 title: Community Value Recognition System
-status: planned
-version: 2.0
+status: partial
+version: 2.1
 last_updated: 2025-01-14
 related_features: [FT-01, FT-02, FT-03, FT-04, FT-09, FT-13]
 ---
@@ -85,121 +85,105 @@ The system maintains three distinct but related dimensions:
 - New member still integrating, or problematic member
 - **Result:** Limited receiving capacity until trust develops through relationship
 
-## Community-Defined Value Categories
+## Integration with Items System
 
-### Default Starting Categories (All Equal by Default)
+**IMPLEMENTATION NOTE:** The value recognition system integrates with the existing **items table** (FT-04) rather than creating a separate categories system. This provides several benefits:
 
-Communities begin with equal valuation across all categories (10 value units per standard unit) and adjust based on their own priorities:
+- **Single source of truth**: Item values (`items.wealthValue`) serve both wealth sharing statistics AND contribution recognition
+- **Unified experience**: Same items used for sharing wealth and logging contributions
+- **Simplified management**: Communities manage one set of items, not separate categories
+- **Cross-feature analytics**: Can correlate wealth sharing with contribution recognition
+- **Automatic tracking**: When wealth is fulfilled, can optionally auto-log as contribution
 
-#### **Care Work**
+### Items as Contribution Categories
+
+Communities use **existing items** from the wealth sharing system as contribution categories:
+
+1. **Services** (e.g., "Childcare", "Elder Care", "Tutoring"):
+   - `kind = 'service'`
+   - Units typically measured in hours or sessions
+   - Perfect for time-based contributions
+
+2. **Objects** (e.g., "Garden Tools", "Baking Supplies", "Books"):
+   - `kind = 'object'`
+   - Units typically measured in items, days (for loans), or portions
+   - Used for material sharing contributions
+
+3. **Item Metadata** for Contributions:
+   - Items can include `contributionMetadata` JSONB field:
+     ```json
+     {
+       "categoryType": "care",
+       "examples": ["Elder care sessions", "Childcare hours"]
+     }
+     ```
+   - This metadata helps categorize contributions by type (care, community building, etc.)
+
+### Default Starting Items (All Equal by Default)
+
+Communities begin with 400+ default items (from FT-04) with equal valuation (10 value units per standard unit) and adjust based on their own priorities:
+
+#### **Example Service Items** (Care Work, Teaching, etc.)
 ```
-Default: 10 units per hour or session
+These items exist in the items table with kind='service':
 
-Examples:
-- Elder care (hours)
-- Child care (hours)
-- Sick care (hours)
-- Emotional support (sessions)
-- Grief support (sessions)
-- Disability assistance (hours)
-- Mental health support (sessions)
-```
+- "Childcare" (wealthValue: 10, contributionMetadata: { categoryType: 'care' })
+- "Elder Care" (wealthValue: 10, contributionMetadata: { categoryType: 'care' })
+- "Tutoring" (wealthValue: 10, contributionMetadata: { categoryType: 'knowledge' })
+- "Conflict Mediation" (wealthValue: 10, contributionMetadata: { categoryType: 'community_building' })
+- "Music Lessons" (wealthValue: 10, contributionMetadata: { categoryType: 'creative' })
+- "Garden Maintenance" (wealthValue: 10, contributionMetadata: { categoryType: 'maintenance' })
+- "Emotional Support" (wealthValue: 10, contributionMetadata: { categoryType: 'care' })
 
-#### **Community Building**
-```
-Default: 10 units per hour or action
-
-Examples:
-- Welcoming new members (per member)
-- Facilitating gatherings (hours)
-- Conflict mediation (sessions)
-- Community organizing (hours)
-- Creating rituals/ceremonies (events)
-- Maintaining communication (hours)
-```
-
-#### **Creative & Cultural Work**
-```
-Default: 10 units per hour or piece
-
-Examples:
-- Art creation (pieces/hours)
-- Music performance (hours)
-- Storytelling (sessions)
-- Cultural preservation (hours)
-- Writing/documentation (hours)
-- Design work (hours)
-```
-
-#### **Knowledge & Teaching**
-```
-Default: 10 units per hour
-
-Examples:
-- Teaching/tutoring (hours)
-- Mentorship (sessions)
-- Skill sharing (hours)
-- Workshop facilitation (hours)
-- Documentation (hours)
-- Research (hours)
+Units are typically hours or sessions.
 ```
 
-#### **Maintenance & Care of Spaces**
+#### **Example Object Items** (Material Sharing)
 ```
-Default: 10 units per hour
+These items exist in the items table with kind='object':
 
-Examples:
-- Cleaning shared spaces (hours)
-- Garden maintenance (hours)
-- Tool/equipment maintenance (hours)
-- Infrastructure repair (hours)
-- Beautification projects (hours)
-```
+- "Garden Tools" (wealthValue: 10, contributionMetadata: { categoryType: 'material' })
+- "Books" (wealthValue: 10, contributionMetadata: { categoryType: 'knowledge' })
+- "Fresh Vegetables" (wealthValue: 10, contributionMetadata: { categoryType: 'material' })
+- "Musical Instruments" (wealthValue: 10, contributionMetadata: { categoryType: 'creative' })
 
-#### **Material Sharing**
-```
-Default: 10 units per item-day or equivalent
-
-Examples:
-- Tool loans (item-days)
-- Vehicle sharing (days)
-- Space provision (hours)
-- Food sharing (meals/portions)
-- Equipment loans (item-days)
+Units are typically item-days (for loans) or portions (for food).
 ```
 
-#### **Invisible Labor** (Explicit Recognition)
+#### **Contribution-Specific Items**
+Communities can create items specifically for contribution tracking that may not be shared as wealth:
+
 ```
-Default: 10 units per recognition
+- "Community Event Organizing" (service, wealthValue: 10)
+- "Welcoming New Members" (service, wealthValue: 10)
+- "Atmosphere Creation" (service, wealthValue: 10)
+- "Memory Keeping" (service, wealthValue: 10)
 
-Examples:
-- Emotional labor (noticing needs, creating safety)
-- Anticipatory care (preparing spaces, handling small problems)
-- Relationship building (introducing people, noticing isolation)
-- Memory keeping (remembering birthdays, maintaining stories)
-- Atmosphere creation (making spaces welcoming, beautiful)
+These make "invisible labor" explicitly visible and valued.
 ```
 
-### Community Value Calibration Process
+### Item Value Calibration Process
 
-Communities periodically review and adjust values through democratic processes:
+Communities periodically review and adjust item values (the `wealthValue` field) through democratic processes:
 
 #### Quarterly Value Review
 ```
-1. Council or working group proposes value adjustments
+1. Council or working group proposes item value adjustments
 2. Rationale provided based on observations:
    - Scarcity/abundance of certain contributions
    - Effort required vs current valuation
    - Community priorities and needs
 3. Community discussion and feedback
 4. Decision through consensus, council vote, or community poll
-5. Changes documented with reasoning
-6. New values take effect for future contributions
+5. Changes documented in value_calibration_history table
+6. Item's wealthValue updated (affects future wealth shares AND contributions)
+7. Past contributions retain their snapshot value (valuePerUnit at time of contribution)
 ```
 
 **Example Calibration:**
 ```
-Proposal: Increase Elder Care from 10 to 15 units/hour
+Item: "Elder Care" (service)
+Proposal: Increase wealthValue from 10 to 15 units/hour
 
 Reasoning:
 - Elder care is becoming scarce
@@ -210,6 +194,12 @@ Reasoning:
 Discussion: 2 weeks
 Decision: Community poll (78% support)
 Effective: Next quarter
+
+Result:
+- items.wealthValue updated: 10 → 15
+- value_calibration_history entry created
+- Future contributions and wealth shares use new value
+- Past contributions keep original valuePerUnit=10 (snapshot)
 ```
 
 ## Contribution Recognition Workflow
@@ -729,81 +719,80 @@ Soft Reciprocity Nudges:
 
 ## Related Database Tables
 
-### New Tables
+### Integration with Existing Tables
 
-#### `community_value_categories`
+#### `items` (Extended from FT-04)
+The existing items table is reused for contribution categories. Extended with optional metadata:
+
 ```sql
-CREATE TABLE community_value_categories (
-  id UUID PRIMARY KEY,
-  community_id UUID REFERENCES communities(id) NOT NULL,
-  category_name VARCHAR(100) NOT NULL,
-  category_type VARCHAR(50) NOT NULL, 
-    -- 'care', 'community_building', 'creative', 'knowledge', 
-    -- 'maintenance', 'material', 'invisible_labor', 'custom'
-  unit_type VARCHAR(50) NOT NULL,
-    -- 'hours', 'sessions', 'items', 'events', 'days', 'custom'
-  value_per_unit NUMERIC NOT NULL DEFAULT 10,
-  description TEXT,
-  examples TEXT[], -- Array of example activities
-  created_at TIMESTAMP DEFAULT NOW(),
-  last_reviewed_at TIMESTAMP,
-  proposed_by UUID REFERENCES app_users(id),
-  approved_by VARCHAR(100), -- 'council', 'community_poll', 'consensus'
-  is_active BOOLEAN DEFAULT TRUE,
-  sort_order INTEGER,
-  
-  CONSTRAINT unique_category_per_community 
-    UNIQUE(community_id, category_name)
-);
+-- Existing fields (from FT-04):
+-- id, community_id, translations (JSONB), kind (enum: 'object'|'service'),
+-- wealthValue (NUMERIC), isDefault, createdBy, createdAt, updatedAt, deletedAt
 
-CREATE INDEX idx_value_categories_community 
-  ON community_value_categories(community_id);
+-- NEW field added for FT-16:
+ALTER TABLE items ADD COLUMN contribution_metadata JSONB;
+
+-- Example contribution_metadata structure:
+{
+  "categoryType": "care",  -- 'care', 'community_building', 'creative', etc.
+  "examples": ["Elder care sessions", "Childcare hours"]
+}
+
+-- The wealthValue field serves dual purpose:
+-- 1. Wealth sharing statistics (original use from FT-04)
+-- 2. Contribution recognition value per unit (new use from FT-16)
 ```
 
+### New Tables
+
 #### `recognized_contributions`
+Tracks individual contributions, referencing items (not separate categories):
+
 ```sql
 CREATE TABLE recognized_contributions (
   id UUID PRIMARY KEY,
   community_id UUID REFERENCES communities(id) NOT NULL,
   contributor_id UUID REFERENCES app_users(id) NOT NULL,
-  category_id UUID REFERENCES community_value_categories(id) NOT NULL,
-  
+  item_id UUID REFERENCES items(id) NOT NULL,  -- References items, not categories!
+
   units NUMERIC NOT NULL,
-  value_per_unit NUMERIC NOT NULL, -- Snapshot at time of contribution
+  value_per_unit NUMERIC NOT NULL, -- Snapshot of items.wealthValue at time of contribution
   total_value NUMERIC GENERATED ALWAYS AS (units * value_per_unit) STORED,
-  
+
   description TEXT NOT NULL,
-  
+
   -- Verification
   verification_status VARCHAR(20) DEFAULT 'pending',
     -- 'auto_verified', 'pending', 'verified', 'disputed'
   verified_by UUID REFERENCES app_users(id),
   verified_at TIMESTAMP,
-  
+
   -- Related parties
   beneficiary_ids UUID[], -- Array of users who benefited
   witness_ids UUID[], -- Array of users who can verify
-  
+
   testimonial TEXT, -- From beneficiary/witness
-  
+
   -- Source tracking
   source_type VARCHAR(50),
-    -- 'system_logged', 'peer_grant', 'self_reported'
+    -- 'system_logged', 'peer_grant', 'self_reported', 'wealth_fulfillment'
   source_id UUID, -- Reference to wealth, initiative, council, etc.
-  
+
   created_at TIMESTAMP DEFAULT NOW(),
-  
+
   CONSTRAINT positive_units CHECK (units > 0),
   CONSTRAINT positive_value CHECK (value_per_unit > 0)
 );
 
-CREATE INDEX idx_contributions_contributor 
+CREATE INDEX idx_contributions_contributor
   ON recognized_contributions(contributor_id);
-CREATE INDEX idx_contributions_community 
+CREATE INDEX idx_contributions_community
   ON recognized_contributions(community_id);
-CREATE INDEX idx_contributions_status 
+CREATE INDEX idx_contributions_item
+  ON recognized_contributions(item_id);
+CREATE INDEX idx_contributions_status
   ON recognized_contributions(verification_status);
-CREATE INDEX idx_contributions_created 
+CREATE INDEX idx_contributions_created
   ON recognized_contributions(created_at DESC);
 ```
 
@@ -817,9 +806,10 @@ CREATE TABLE contribution_summary (
   total_value_6months NUMERIC DEFAULT 0,
   total_value_lifetime NUMERIC DEFAULT 0,
   
-  -- Category breakdowns (JSONB for flexibility)
-  category_breakdown JSONB, 
-    -- { "care_work": 180, "material_sharing": 90, ... }
+  -- Item breakdowns (JSONB for flexibility)
+  item_breakdown JSONB,
+    -- { "Childcare": 180, "Garden Tools": 90, ... }
+    -- Item names from items.translations
   
   last_contribution_at TIMESTAMP,
   last_calculated_at TIMESTAMP DEFAULT NOW(),
@@ -859,27 +849,28 @@ CREATE INDEX idx_peer_grants_to
 ```
 
 #### `value_calibration_history`
+Tracks changes to item values (items.wealthValue):
+
 ```sql
 CREATE TABLE value_calibration_history (
   id UUID PRIMARY KEY,
   community_id UUID REFERENCES communities(id) NOT NULL,
-  category_id UUID REFERENCES community_value_categories(id) NOT NULL,
-  
+  item_id UUID REFERENCES items(id) NOT NULL,  -- References items, not categories!
+
   old_value_per_unit NUMERIC NOT NULL,
   new_value_per_unit NUMERIC NOT NULL,
-  
+
   reason TEXT,
   proposed_by UUID REFERENCES app_users(id),
-  decided_through VARCHAR(50), -- 'council', 'community_poll', 'consensus'
   decided_at TIMESTAMP DEFAULT NOW(),
-  
+
   effective_date TIMESTAMP NOT NULL
 );
 
-CREATE INDEX idx_calibration_community 
+CREATE INDEX idx_calibration_community
   ON value_calibration_history(community_id);
-CREATE INDEX idx_calibration_category 
-  ON value_calibration_history(category_id);
+CREATE INDEX idx_calibration_item
+  ON value_calibration_history(item_id);
 ```
 
 ### Modified Tables
@@ -902,28 +893,36 @@ ALTER TABLE communities ADD COLUMN value_recognition_settings JSONB DEFAULT '{
 
 ## Implementation Phases
 
-### Phase 1: Foundation (MVP)
-- [ ] Community value categories (CRUD)
-- [ ] Default equal starting values (10 units)
+### Phase 1: Foundation (MVP) - **IN PROGRESS**
+- [x] Database schema (integrated with items table)
+- [x] Database migration created
+- [x] Repository layer (contribution repository with items joins)
+- [x] Frontend components (log contributions, view profile, peer recognition)
+- [x] Frontend integration with ItemSelector
+- [ ] Service layer (business logic, OpenFGA permissions)
+- [ ] Validators (request validation)
+- [ ] Controllers (HTTP endpoints)
+- [ ] Routes (with OpenFGA authorization)
 - [ ] Self-reported contributions with beneficiary verification
-- [ ] Basic individual recognition display (quantitative only)
-- [ ] System auto-verification for tracked actions (tool loans, etc.)
+- [ ] Basic individual recognition display (quantitative + testimonials)
+- [ ] System auto-verification for tracked actions
+- [ ] Tests (unit and integration)
 
 ### Phase 2: Peer Recognition
-- [ ] Peer recognition grants (with monthly limits)
+- [x] Peer recognition UI (frontend completed)
+- [ ] Peer recognition backend (with monthly limits)
 - [ ] Aggregate community statistics
 - [ ] Anti-gaming pattern detection (flags only, no penalties)
-- [ ] Qualitative testimonials in display
 
 ### Phase 3: Calibration & Refinement
-- [ ] Community value calibration process
-- [ ] Value calibration history and reasoning
-- [ ] Enhanced analytics (category distributions, patterns)
+- [ ] Item value calibration UI and workflow
+- [ ] Value calibration history tracking (table created, logic pending)
+- [ ] Enhanced analytics (item distributions, patterns)
 - [ ] Privacy controls for individual profiles
 
 ### Phase 4: Integration & Polish
+- [ ] Auto-log contributions from wealth fulfillment
 - [ ] Soft reciprocity nudges (optional)
-- [ ] Invisible labor explicit recognition
 - [ ] Trust-contribution correlation insights
 - [ ] Comprehensive documentation for communities
 
