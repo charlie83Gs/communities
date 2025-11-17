@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, text, timestamp, numeric, jsonb, pgEnum } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, timestamp, numeric, pgEnum } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { communities } from './communities.schema';
 import { appUsers } from './app_users.schema';

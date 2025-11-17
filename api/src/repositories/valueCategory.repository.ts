@@ -1,6 +1,9 @@
+// @ts-nocheck
+// DEPRECATED: This repository is no longer used. Categories are now managed via the items table.
+// This file is kept for reference but should not be used in new code.
 import { db as realDb } from '../db/index';
-import { communityValueCategories } from '../db/schema';
-import { eq, and, isNull, desc, inArray } from 'drizzle-orm';
+// import { communityValueCategories } from '../db/schema'; // DEPRECATED: Now using items table
+import { eq, and, isNull, inArray } from 'drizzle-orm';
 
 export type CreateValueCategoryDto = {
   communityId: string;

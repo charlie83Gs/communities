@@ -4,8 +4,8 @@ import { Request, Response, NextFunction } from 'express';
 // Source type enum
 const sourceType = z.enum(['system_logged', 'peer_grant', 'self_reported']);
 
-// Verification status enum
-const verificationStatus = z.enum(['auto_verified', 'pending', 'verified', 'disputed']);
+// Verification status enum (currently not used but may be needed for future endpoints)
+// const verificationStatus = z.enum(['auto_verified', 'pending', 'verified', 'disputed']);
 
 /**
  * Log contribution schema

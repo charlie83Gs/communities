@@ -476,13 +476,15 @@ export class ValueRecognitionService {
     }
 
     // 2. Skip if already logged
-    const existing = await recognizedContributionRepository.findByItemAndDateRange(
-      wealth.itemId,
-      new Date(wealth.createdAt.getTime() - 1000),
-      new Date(wealth.createdAt.getTime() + 1000)
-    );
-    if (existing.length > 0) {
-      return null; // Already logged
+    if (wealth.createdAt) {
+      const existing = await recognizedContributionRepository.findByItemAndDateRange(
+        wealth.itemId,
+        new Date(wealth.createdAt.getTime() - 1000),
+        new Date(wealth.createdAt.getTime() + 1000)
+      );
+      if (existing.length > 0) {
+        return null; // Already logged
+      }
     }
 
     // 3. Fetch linked item

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import { valueRecognitionService } from '../valueRecognition.service';
 import { recognizedContributionRepository } from '../../repositories/recognizedContribution.repository';
-import { contributionSummaryRepository } from '../../repositories/contributionSummary.repository';
+// import { contributionSummaryRepository } from '../../repositories/contributionSummary.repository';
 import { peerRecognitionGrantRepository } from '../../repositories/peerRecognitionGrant.repository';
 import { itemsRepository } from '../../repositories/items.repository';
 import { communityRepository } from '../../repositories/community.repository';
@@ -198,7 +198,7 @@ describe('ValueRecognitionService', () => {
       (recognizedContributionRepository.update as any) = updateMock;
       (valueRecognitionService as any).updateContributionSummary = updateSummaryMock;
 
-      const result = await valueRecognitionService.verifyContribution({
+      await valueRecognitionService.verifyContribution({
         contributionId: 'contribution-123',
         userId: 'user-456', // Beneficiary
         testimonial: 'Great work!',
@@ -251,7 +251,7 @@ describe('ValueRecognitionService', () => {
       );
       const getGrantsToSamePersonMock = mock(() => Promise.resolve([]));
       const createGrantMock = mock(() =>
-        Promise.resolve({ id: 'grant-123', ...mockCommunity })
+        Promise.resolve({ grantId: 'grant-123', ...mockCommunity })
       );
       const createContributionMock = mock(() => Promise.resolve(mockContribution));
       const updateSummaryMock = mock(() => Promise.resolve());
@@ -265,7 +265,7 @@ describe('ValueRecognitionService', () => {
       (recognizedContributionRepository.create as any) = createContributionMock;
       (valueRecognitionService as any).updateContributionSummary = updateSummaryMock;
 
-      const result = await valueRecognitionService.grantPeerRecognition({
+      await valueRecognitionService.grantPeerRecognition({
         communityId: 'community-123',
         fromUserId: 'user-123',
         toUserId: 'user-456',

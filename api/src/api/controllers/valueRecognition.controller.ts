@@ -196,8 +196,8 @@ class ValueRecognitionController {
    */
   async getPendingVerifications(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const { communityId } = req.params;
-      const userId = req.user!.id;
+      void req.params.communityId; // Placeholder for future implementation
+      void req.user!.id; // Placeholder for future implementation
 
       // This would need to be implemented in the repository
       // For now, return empty array as placeholder
@@ -465,9 +465,9 @@ class ValueRecognitionController {
    */
   async getMyPeerRecognition(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const { communityId } = req.params;
-      const userId = req.user!.id;
-      const { limit = 50 } = req.query;
+      void req.params.communityId; // Placeholder for future implementation
+      void req.user!.id; // Placeholder for future implementation
+      void req.query.limit; // Placeholder for future implementation
 
       // This would be implemented in repository
       // For now, return placeholder
@@ -584,8 +584,9 @@ class ValueRecognitionController {
    */
   async getValueCalibrationHistory(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const { communityId } = req.params;
-      const { itemId, limit = 50 } = req.query;
+      void req.params.communityId; // Placeholder for future implementation
+      void req.query.itemId; // Placeholder for future implementation
+      void req.query.limit; // Placeholder for future implementation
 
       // This would be implemented using valueCalibrationRepository
       // For now, return placeholder
