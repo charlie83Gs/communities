@@ -49,6 +49,7 @@ const testDispute = {
   title: 'Test Dispute',
   description: 'Test description',
   status: 'open' as const,
+  privacyType: 'open' as const,
   createdBy: 'user-123',
   createdAt: new Date('2024-01-01'),
   updatedAt: new Date('2024-01-01'),

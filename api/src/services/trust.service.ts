@@ -88,8 +88,8 @@ export class TrustService {
         trust_needs_publisher: (community.minTrustForNeeds as any)?.value ?? 5,
         trust_poll_viewer: (community.minTrustToViewPolls as any)?.value ?? 0,
         trust_poll_creator: (community.minTrustForPolls as any)?.value ?? 15,
-        trust_dispute_viewer: (community.minTrustToViewDisputes as any)?.value ?? 0,
-        trust_dispute_handler: (community.minTrustForDisputes as any)?.value ?? 20,
+        trust_dispute_viewer: (community.minTrustForDisputeVisibility as any)?.value ?? 20,
+        trust_dispute_handler: (community.minTrustForDisputeVisibility as any)?.value ?? 20,
         trust_pool_viewer: (community.minTrustToViewPools as any)?.value ?? 0,
         trust_pool_creator: (community.minTrustForPoolCreation as any)?.value ?? 20,
         trust_council_viewer: (community.minTrustToViewCouncils as any)?.value ?? 0,
@@ -683,7 +683,10 @@ export class TrustService {
     }
 
     // Check trust threshold
-    const threshold = await resolveTrustRequirement(communityId, community.minTrustForDisputes);
+    const threshold = await resolveTrustRequirement(
+      communityId,
+      community.minTrustForDisputeVisibility
+    );
     return points >= threshold;
   }
 
@@ -801,8 +804,8 @@ export class TrustService {
       resolveTrustRequirement(communityId, community.minTrustToViewItems),
       resolveTrustRequirement(communityId, community.minTrustForItemManagement),
       // Dispute permissions
-      resolveTrustRequirement(communityId, community.minTrustToViewDisputes),
-      resolveTrustRequirement(communityId, community.minTrustForDisputes),
+      resolveTrustRequirement(communityId, community.minTrustForDisputeVisibility),
+      resolveTrustRequirement(communityId, community.minTrustForDisputeVisibility),
       // Poll permissions
       resolveTrustRequirement(communityId, community.minTrustToViewPolls),
       resolveTrustRequirement(communityId, community.minTrustForPolls),

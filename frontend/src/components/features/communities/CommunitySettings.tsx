@@ -172,7 +172,7 @@ export const CommunitySettings: Component<CommunitySettingsProps> = (props) => {
     customValue: 10,
     levelId: undefined,
   });
-  const [minTrustForDisputes, setMinTrustForDisputes] = createSignal<TrustLevelPickerValue>({
+  const [minTrustForDisputeVisibility, setMinTrustForDisputeVisibility] = createSignal<TrustLevelPickerValue>({
     customValue: 20,
     levelId: undefined,
   });
@@ -234,10 +234,6 @@ export const CommunitySettings: Component<CommunitySettingsProps> = (props) => {
     customValue: 0,
     levelId: undefined,
   });
-  const [minTrustToViewDisputes, setMinTrustToViewDisputes] = createSignal<TrustLevelPickerValue>({
-    customValue: 0,
-    levelId: undefined,
-  });
   const [minTrustToViewPolls, setMinTrustToViewPolls] = createSignal<TrustLevelPickerValue>({
     customValue: 0,
     levelId: undefined,
@@ -273,8 +269,8 @@ export const CommunitySettings: Component<CommunitySettingsProps> = (props) => {
       setMinTrustForWealth(
         trustRequirementToPickerValue(comm.minTrustForWealth, levels, 10)
       );
-      setMinTrustForDisputes(
-        trustRequirementToPickerValue(comm.minTrustForDisputes, levels, 20)
+      setMinTrustForDisputeVisibility(
+        trustRequirementToPickerValue(comm.minTrustForDisputeVisibility, levels, 20)
       );
       setMinTrustForPolls(
         trustRequirementToPickerValue(comm.minTrustForPolls, levels, 15)
@@ -317,9 +313,6 @@ export const CommunitySettings: Component<CommunitySettingsProps> = (props) => {
       setMinTrustToViewItems(
         trustRequirementToPickerValue(comm.minTrustToViewItems, levels, 0)
       );
-      setMinTrustToViewDisputes(
-        trustRequirementToPickerValue(comm.minTrustToViewDisputes, levels, 0)
-      );
       setMinTrustToViewPolls(
         trustRequirementToPickerValue(comm.minTrustToViewPolls, levels, 0)
       );
@@ -344,7 +337,7 @@ export const CommunitySettings: Component<CommunitySettingsProps> = (props) => {
       description: description(),
       minTrustToAwardTrust: pickerValueToTrustRequirement(minTrustToAwardTrust()),
       minTrustForWealth: pickerValueToTrustRequirement(minTrustForWealth()),
-      minTrustForDisputes: pickerValueToTrustRequirement(minTrustForDisputes()),
+      minTrustForDisputeVisibility: pickerValueToTrustRequirement(minTrustForDisputeVisibility()),
       minTrustForPolls: pickerValueToTrustRequirement(minTrustForPolls()),
       minTrustForThreadCreation: pickerValueToTrustRequirement(minTrustForThreadCreation()),
       minTrustForForumModeration: pickerValueToTrustRequirement(minTrustForForumModeration()),
@@ -358,7 +351,6 @@ export const CommunitySettings: Component<CommunitySettingsProps> = (props) => {
       minTrustToViewTrust: pickerValueToTrustRequirement(minTrustToViewTrust()),
       minTrustToViewWealth: pickerValueToTrustRequirement(minTrustToViewWealth()),
       minTrustToViewItems: pickerValueToTrustRequirement(minTrustToViewItems()),
-      minTrustToViewDisputes: pickerValueToTrustRequirement(minTrustToViewDisputes()),
       minTrustToViewPolls: pickerValueToTrustRequirement(minTrustToViewPolls()),
       minTrustToViewPools: pickerValueToTrustRequirement(minTrustToViewPools()),
       minTrustToViewCouncils: pickerValueToTrustRequirement(minTrustToViewCouncils()),
@@ -475,13 +467,6 @@ export const CommunitySettings: Component<CommunitySettingsProps> = (props) => {
                       trustLevels={trustLevels.data}
                     />
                     <TrustThresholdRow
-                      label={t('permViewDisputes')}
-                      communityId={props.communityId}
-                      value={minTrustToViewDisputes()}
-                      onChange={setMinTrustToViewDisputes}
-                      trustLevels={trustLevels.data}
-                    />
-                    <TrustThresholdRow
                       label={t('permViewPolls')}
                       communityId={props.communityId}
                       value={minTrustToViewPolls()}
@@ -575,8 +560,8 @@ export const CommunitySettings: Component<CommunitySettingsProps> = (props) => {
                     <TrustThresholdRow
                       label={t('permHandleDisputes')}
                       communityId={props.communityId}
-                      value={minTrustForDisputes()}
-                      onChange={setMinTrustForDisputes}
+                      value={minTrustForDisputeVisibility()}
+                      onChange={setMinTrustForDisputeVisibility}
                       trustLevels={trustLevels.data}
                     />
 
