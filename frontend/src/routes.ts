@@ -72,10 +72,6 @@ export const routes: RouteDefinition[] = [
         path: ':id/pools/:poolId',
         component: lazy(() => import('./pages/protected/community/pools/[poolId]')),
       },
-      {
-        path: ':communityId/contributions',
-        component: lazy(() => import('./pages/protected/CommunityContributions')),
-      },
     ],
   },
   {

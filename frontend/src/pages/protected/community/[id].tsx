@@ -27,13 +27,19 @@ import { CommunityActivityTimeline } from '@/components/features/communities/Com
 import { HealthAnalyticsPanel } from '@/components/features/health/HealthAnalyticsPanel';
 import { NeedsList } from '@/components/features/needs/NeedsList';
 import { PoolsList } from '@/components/features/pools/PoolsList';
+import { LogContributionForm } from '@/components/features/contributions/LogContributionForm';
+import { ContributionProfile } from '@/components/features/contributions/ContributionProfile';
+import { GrantPeerRecognition } from '@/components/features/contributions/GrantPeerRecognition';
+import { PendingVerifications } from '@/components/features/contributions/PendingVerifications';
 import { makeTranslator } from '@/i18n/makeTranslator';
 import { communityDetailsDict } from './[id].i18n';
 import { useTrustLevelsQuery } from '@/hooks/queries/useTrustLevelsQuery';
 import { useMyTrustSummaryQuery } from '@/hooks/queries/useMyTrustSummaryQuery';
 import { resolveTrustRequirement } from '@/utils/trustLevels';
+import { useAuth } from '@/hooks/useAuth';
 const CommunityDetailsContent: Component = () => {
   const t = makeTranslator(communityDetailsDict, 'communityDetails');
+  const { user } = useAuth();
   const {
     community,
     isLoading,
@@ -69,6 +75,7 @@ const CommunityDetailsContent: Component = () => {
   const [showPollForm, setShowPollForm] = createSignal(false);
   const [showCouncilForm, setShowCouncilForm] = createSignal(false);
   const [selectedCouncilId, setSelectedCouncilId] = createSignal<string | null>(null);
+  const [contributionsSubtab, setContributionsSubtab] = createSignal<'myProfile' | 'logContribution' | 'grantRecognition' | 'verifications'>('myProfile');
 
   // Fetch trust levels for the community
   const trustLevelsQuery = useTrustLevelsQuery(() => community()?.id);
@@ -145,7 +152,6 @@ const CommunityDetailsContent: Component = () => {
       label: t('tabContributions'),
       icon: 'contributions' as const,
       visible: role() !== undefined, // Visible to all community members (trust: 0)
-      href: `/communities/${community()?.id}/contributions`,
     },
     {
       id: 'members' as SidebarTab,
@@ -391,6 +397,80 @@ const CommunityDetailsContent: Component = () => {
                               {t('disclaimerNeeds')}
                             </SectionDisclaimer>
                             <NeedsList communityId={communityData().id} />
+                          </div>
+                        </Show>
+                      </Match>
+                      <Match when={activeTab() === 'contributions'}>
+                        <Show when={role()} fallback={<div class="p-4 text-stone-500 dark:text-stone-400">{t('mustBeMember')}</div>}>
+                          <div class="space-y-6">
+                            {/* Tab Navigation */}
+                            <div class="border-b border-stone-200 dark:border-stone-700 mb-6">
+                              <nav class="flex space-x-8 overflow-x-auto">
+                                <button
+                                  onClick={() => setContributionsSubtab('myProfile')}
+                                  class={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
+                                    contributionsSubtab() === 'myProfile'
+                                      ? 'border-ocean-500 text-ocean-600 dark:text-ocean-400'
+                                      : 'border-transparent text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300 hover:border-stone-300 dark:hover:border-stone-600'
+                                  }`}
+                                >
+                                  My Contributions
+                                </button>
+                                <button
+                                  onClick={() => setContributionsSubtab('logContribution')}
+                                  class={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
+                                    contributionsSubtab() === 'logContribution'
+                                      ? 'border-ocean-500 text-ocean-600 dark:text-ocean-400'
+                                      : 'border-transparent text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300 hover:border-stone-300 dark:hover:border-stone-600'
+                                  }`}
+                                >
+                                  Log Contribution
+                                </button>
+                                <button
+                                  onClick={() => setContributionsSubtab('grantRecognition')}
+                                  class={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
+                                    contributionsSubtab() === 'grantRecognition'
+                                      ? 'border-ocean-500 text-ocean-600 dark:text-ocean-400'
+                                      : 'border-transparent text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300 hover:border-stone-300 dark:hover:border-stone-600'
+                                  }`}
+                                >
+                                  Grant Recognition
+                                </button>
+                                <button
+                                  onClick={() => setContributionsSubtab('verifications')}
+                                  class={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
+                                    contributionsSubtab() === 'verifications'
+                                      ? 'border-ocean-500 text-ocean-600 dark:text-ocean-400'
+                                      : 'border-transparent text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300 hover:border-stone-300 dark:hover:border-stone-600'
+                                  }`}
+                                >
+                                  Verify Contributions
+                                </button>
+                              </nav>
+                            </div>
+
+                            {/* Subtab Content */}
+                            <Show when={contributionsSubtab() === 'myProfile' && user()}>
+                              <ContributionProfile communityId={communityData().id} userId={user()!.id} />
+                            </Show>
+
+                            <Show when={contributionsSubtab() === 'logContribution'}>
+                              <LogContributionForm
+                                communityId={communityData().id}
+                                onSuccess={() => setContributionsSubtab('myProfile')}
+                              />
+                            </Show>
+
+                            <Show when={contributionsSubtab() === 'grantRecognition'}>
+                              <GrantPeerRecognition
+                                communityId={communityData().id}
+                                onSuccess={() => {}}
+                              />
+                            </Show>
+
+                            <Show when={contributionsSubtab() === 'verifications'}>
+                              <PendingVerifications communityId={communityData().id} />
+                            </Show>
                           </div>
                         </Show>
                       </Match>
