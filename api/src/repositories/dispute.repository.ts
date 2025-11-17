@@ -8,8 +8,9 @@ import {
   disputeResolutions,
   disputeMessages,
   disputeHistory,
+  appUsers,
 } from '@db/schema';
-import { eq, and, or, inArray, desc, sql } from 'drizzle-orm';
+import { eq, and, inArray, desc, sql } from 'drizzle-orm';
 
 export type DisputeRecord = typeof disputes.$inferSelect;
 export type DisputeParticipantRecord = typeof disputeParticipants.$inferSelect;
@@ -23,6 +24,7 @@ export type CreateDisputeDto = {
   title: string;
   description: string;
   createdBy: string;
+  privacyType?: 'anonymous' | 'open';
 };
 
 export type UpdateDisputeDto = {
@@ -30,6 +32,7 @@ export type UpdateDisputeDto = {
   description?: string;
   status?: 'open' | 'in_mediation' | 'resolved' | 'closed';
   resolvedAt?: Date | null;
+  privacyType?: 'anonymous' | 'open';
 };
 
 export type AddParticipantDto = {
@@ -91,6 +94,7 @@ export class DisputeRepository {
         description: data.description,
         createdBy: data.createdBy,
         status: 'open',
+        privacyType: data.privacyType ?? 'open',
       })
       .returning();
     return dispute;
@@ -162,10 +166,23 @@ export class DisputeRepository {
     return participant;
   }
 
-  async findParticipantsByDispute(disputeId: string): Promise<DisputeParticipantRecord[]> {
+  async findParticipantsByDispute(disputeId: string) {
     return await this.db
-      .select()
+      .select({
+        id: disputeParticipants.id,
+        disputeId: disputeParticipants.disputeId,
+        userId: disputeParticipants.userId,
+        role: disputeParticipants.role,
+        addedAt: disputeParticipants.addedAt,
+        addedBy: disputeParticipants.addedBy,
+        user: {
+          id: appUsers.id,
+          username: appUsers.username,
+          displayName: appUsers.displayName,
+        },
+      })
       .from(disputeParticipants)
+      .leftJoin(appUsers, eq(disputeParticipants.userId, appUsers.id))
       .where(eq(disputeParticipants.disputeId, disputeId));
   }
 
@@ -209,10 +226,24 @@ export class DisputeRepository {
     return mediator;
   }
 
-  async findMediatorsByDispute(disputeId: string): Promise<DisputeMediatorRecord[]> {
+  async findMediatorsByDispute(disputeId: string) {
     return await this.db
-      .select()
+      .select({
+        id: disputeMediators.id,
+        disputeId: disputeMediators.disputeId,
+        userId: disputeMediators.userId,
+        status: disputeMediators.status,
+        proposedAt: disputeMediators.proposedAt,
+        respondedAt: disputeMediators.respondedAt,
+        respondedBy: disputeMediators.respondedBy,
+        user: {
+          id: appUsers.id,
+          username: appUsers.username,
+          displayName: appUsers.displayName,
+        },
+      })
       .from(disputeMediators)
+      .leftJoin(appUsers, eq(disputeMediators.userId, appUsers.id))
       .where(eq(disputeMediators.disputeId, disputeId))
       .orderBy(desc(disputeMediators.proposedAt));
   }
@@ -326,12 +357,26 @@ export class DisputeRepository {
   async findMessagesByDispute(
     disputeId: string,
     options: { limit?: number; offset?: number } = {}
-  ): Promise<{ messages: DisputeMessageRecord[]; total: number }> {
+  ) {
     const { limit = 50, offset = 0 } = options;
 
     const messages = await this.db
-      .select()
+      .select({
+        id: disputeMessages.id,
+        disputeId: disputeMessages.disputeId,
+        userId: disputeMessages.userId,
+        message: disputeMessages.message,
+        createdAt: disputeMessages.createdAt,
+        visibleToParticipants: disputeMessages.visibleToParticipants,
+        visibleToMediators: disputeMessages.visibleToMediators,
+        user: {
+          id: appUsers.id,
+          username: appUsers.username,
+          displayName: appUsers.displayName,
+        },
+      })
       .from(disputeMessages)
+      .leftJoin(appUsers, eq(disputeMessages.userId, appUsers.id))
       .where(eq(disputeMessages.disputeId, disputeId))
       .orderBy(desc(disputeMessages.createdAt))
       .limit(limit)

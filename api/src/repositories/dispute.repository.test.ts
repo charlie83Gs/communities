@@ -11,6 +11,7 @@ const testDispute = {
   title: 'Test Dispute',
   description: 'Test description',
   status: 'open' as const,
+  privacyType: 'open' as const,
   createdBy: 'user-123',
   createdAt: new Date('2024-01-01'),
   updatedAt: new Date('2024-01-01'),
@@ -24,6 +25,11 @@ const testParticipant = {
   role: 'initiator' as const,
   addedAt: new Date('2024-01-01'),
   addedBy: 'user-123',
+  user: {
+    id: 'user-123',
+    username: 'testuser',
+    displayName: 'Test User',
+  },
 };
 
 const testMediator = {
@@ -34,6 +40,11 @@ const testMediator = {
   proposedAt: new Date('2024-01-01'),
   respondedAt: null,
   respondedBy: null,
+  user: {
+    id: 'user-456',
+    username: 'mediator',
+    displayName: 'Mediator User',
+  },
 };
 
 describe('DisputeRepository', () => {
@@ -196,6 +207,7 @@ describe('DisputeRepository', () => {
       mockDb.returning.mockResolvedValue([acceptedMediator]);
 
       const result = await disputeRepository.updateMediatorStatus('mediator-123', {
+        mediatorId: 'mediator-123',
         status: 'accepted',
         respondedBy: 'user-123',
       });
@@ -288,6 +300,11 @@ describe('DisputeRepository', () => {
           createdAt: new Date('2024-01-01'),
           visibleToParticipants: true,
           visibleToMediators: true,
+          user: {
+            id: 'user-123',
+            username: 'testuser',
+            displayName: 'Test User',
+          },
         },
       ];
       mockDb.offset.mockResolvedValue(messages);

@@ -11,6 +11,7 @@ export const createDisputeSchema = z.object({
     title: z.string().min(1).max(200),
     description: z.string().min(1),
     participantIds: z.array(z.string()).optional(),
+    privacyType: z.enum(['anonymous', 'open']).optional(),
   }),
 }).passthrough();
 
@@ -104,6 +105,16 @@ export const updateDisputeStatusSchema = z.object({
   }),
 }).passthrough();
 
+export const updateDisputePrivacySchema = z.object({
+  params: z.object({
+    communityId: z.string().uuid(),
+    disputeId: z.string().uuid(),
+  }),
+  body: z.object({
+    privacyType: z.enum(['anonymous', 'open']),
+  }),
+}).passthrough();
+
 // ===== MIDDLEWARE FUNCTIONS =====
 
 function handleZod(parse: () => unknown, res: Response, next: NextFunction) {
@@ -150,3 +161,6 @@ export const validateGetMessages = (req: Request, res: Response, next: NextFunct
 
 export const validateUpdateDisputeStatus = (req: Request, res: Response, next: NextFunction) =>
   handleZod(() => updateDisputeStatusSchema.parse(req), res, next);
+
+export const validateUpdateDisputePrivacy = (req: Request, res: Response, next: NextFunction) =>
+  handleZod(() => updateDisputePrivacySchema.parse(req), res, next);

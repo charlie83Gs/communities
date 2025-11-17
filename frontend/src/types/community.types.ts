@@ -8,7 +8,8 @@ export interface Community {
   city?: string;
   minTrustToAwardTrust: TrustRequirement;
   minTrustForWealth: TrustRequirement;
-  minTrustForDisputes: TrustRequirement | null;
+  minTrustForDisputeVisibility: TrustRequirement | null;
+  minTrustForDisputeParticipation: TrustRequirement | null;
   minTrustForPolls: TrustRequirement | null;
   minTrustForPoolCreation: TrustRequirement | null;
   minTrustForCouncilCreation: TrustRequirement | null;
@@ -23,7 +24,6 @@ export interface Community {
   minTrustToViewNeeds: TrustRequirement | null;
   minTrustToViewWealth: TrustRequirement | null;
   minTrustToViewItems: TrustRequirement | null;
-  minTrustToViewDisputes: TrustRequirement | null;
   minTrustToViewPolls: TrustRequirement | null;
   minTrustToViewPools: TrustRequirement | null;
   minTrustToViewCouncils: TrustRequirement | null;
@@ -38,7 +38,8 @@ export interface CreateCommunityDto {
   description?: string | null;
   minTrustToAwardTrust?: TrustRequirement;
   minTrustForWealth?: TrustRequirement;
-  minTrustForDisputes?: TrustRequirement;
+  minTrustForDisputeVisibility?: TrustRequirement;
+  minTrustForDisputeParticipation?: TrustRequirement;
   minTrustForPolls?: TrustRequirement;
   minTrustForPoolCreation?: TrustRequirement;
   minTrustForCouncilCreation?: TrustRequirement;
@@ -53,7 +54,6 @@ export interface CreateCommunityDto {
   minTrustToViewNeeds?: TrustRequirement;
   minTrustToViewWealth?: TrustRequirement;
   minTrustToViewItems?: TrustRequirement;
-  minTrustToViewDisputes?: TrustRequirement;
   minTrustToViewPolls?: TrustRequirement;
   minTrustToViewPools?: TrustRequirement;
   minTrustToViewCouncils?: TrustRequirement;
@@ -65,7 +65,8 @@ export interface UpdateCommunityDto {
   description?: string | null;
   minTrustToAwardTrust?: TrustRequirement;
   minTrustForWealth?: TrustRequirement;
-  minTrustForDisputes?: TrustRequirement;
+  minTrustForDisputeVisibility?: TrustRequirement;
+  minTrustForDisputeParticipation?: TrustRequirement;
   minTrustForPolls?: TrustRequirement;
   minTrustForPoolCreation?: TrustRequirement;
   minTrustForCouncilCreation?: TrustRequirement;
@@ -80,7 +81,6 @@ export interface UpdateCommunityDto {
   minTrustToViewNeeds?: TrustRequirement;
   minTrustToViewWealth?: TrustRequirement;
   minTrustToViewItems?: TrustRequirement;
-  minTrustToViewDisputes?: TrustRequirement;
   minTrustToViewPolls?: TrustRequirement;
   minTrustToViewPools?: TrustRequirement;
   minTrustToViewCouncils?: TrustRequirement;

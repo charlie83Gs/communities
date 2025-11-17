@@ -8,9 +8,10 @@ import { useNavigate } from '@solidjs/router';
 import { useCreateDisputeMutation } from '@/hooks/queries/useDisputes';
 import { Button } from '@/components/common/Button';
 import { Card } from '@/components/common/Card';
+import { CommunityMemberSelector } from '@/components/common/CommunityMemberSelector';
 import { makeTranslator } from '@/i18n/makeTranslator';
 import { disputesDict } from './disputes.i18n';
-import type { CreateDisputeDto } from '@/types/dispute.types';
+import type { CreateDisputeDto, DisputePrivacyType } from '@/types/dispute.types';
 
 interface DisputeFormProps {
   communityId: string;
@@ -25,7 +26,17 @@ export const DisputeForm: Component<DisputeFormProps> = (props) => {
 
   const [title, setTitle] = createSignal('');
   const [description, setDescription] = createSignal('');
+  const [selectedParticipantIds, setSelectedParticipantIds] = createSignal<string[]>([]);
+  const [privacyType, setPrivacyType] = createSignal<DisputePrivacyType>('open');
   const [errors, setErrors] = createSignal<{ title?: string; description?: string }>({});
+
+  const handleSelectParticipant = (userId: string) => {
+    setSelectedParticipantIds([...selectedParticipantIds(), userId]);
+  };
+
+  const handleDeselectParticipant = (userId: string) => {
+    setSelectedParticipantIds(selectedParticipantIds().filter(id => id !== userId));
+  };
 
   const validate = (): boolean => {
     const newErrors: { title?: string; description?: string } = {};
@@ -51,6 +62,10 @@ export const DisputeForm: Component<DisputeFormProps> = (props) => {
       const dto: CreateDisputeDto = {
         title: title().trim(),
         description: description().trim(),
+        participantIds: selectedParticipantIds().length > 0
+          ? selectedParticipantIds()
+          : undefined,
+        privacyType: privacyType(),
       };
 
       const result = await createMutation.mutateAsync({
@@ -61,6 +76,8 @@ export const DisputeForm: Component<DisputeFormProps> = (props) => {
       // Reset form
       setTitle('');
       setDescription('');
+      setSelectedParticipantIds([]);
+      setPrivacyType('open');
       setErrors({});
 
       // Navigate to the dispute detail page or call success callback
@@ -121,6 +138,67 @@ export const DisputeForm: Component<DisputeFormProps> = (props) => {
           <Show when={errors().description}>
             <p class="mt-1 text-sm text-danger-600 dark:text-danger-400">{errors().description}</p>
           </Show>
+        </div>
+
+        {/* Additional Participants */}
+        <div>
+          <p class="text-xs text-stone-500 dark:text-stone-400 mb-2">
+            Select community members to include as participants in this dispute. You will be automatically added as the initiator.
+          </p>
+          <CommunityMemberSelector
+            communityId={props.communityId}
+            mode="multi"
+            selectedIds={selectedParticipantIds()}
+            onSelect={handleSelectParticipant}
+            onDeselect={handleDeselectParticipant}
+            label={t('additionalParticipantsLabel')}
+            placeholder={t('additionalParticipantsPlaceholder')}
+          />
+        </div>
+
+        {/* Privacy Type */}
+        <div>
+          <label class="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-2">
+            {t('privacyTypeLabel')}
+          </label>
+          <div class="space-y-2">
+            <label class="flex items-start gap-3 p-3 border border-stone-300 dark:border-stone-600 rounded-md cursor-pointer hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors">
+              <input
+                type="radio"
+                name="privacyType"
+                value="open"
+                checked={privacyType() === 'open'}
+                onChange={() => setPrivacyType('open')}
+                class="mt-1 text-ocean-600 focus:ring-ocean-500"
+              />
+              <div class="flex-1">
+                <div class="font-medium text-stone-900 dark:text-stone-100">
+                  {t('privacyTypeOpen')}
+                </div>
+                <div class="text-sm text-stone-600 dark:text-stone-400">
+                  {t('privacyTypeOpenDesc')}
+                </div>
+              </div>
+            </label>
+            <label class="flex items-start gap-3 p-3 border border-stone-300 dark:border-stone-600 rounded-md cursor-pointer hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors">
+              <input
+                type="radio"
+                name="privacyType"
+                value="anonymous"
+                checked={privacyType() === 'anonymous'}
+                onChange={() => setPrivacyType('anonymous')}
+                class="mt-1 text-ocean-600 focus:ring-ocean-500"
+              />
+              <div class="flex-1">
+                <div class="font-medium text-stone-900 dark:text-stone-100">
+                  {t('privacyTypeAnonymous')}
+                </div>
+                <div class="text-sm text-stone-600 dark:text-stone-400">
+                  {t('privacyTypeAnonymousDesc')}
+                </div>
+              </div>
+            </label>
+          </div>
         </div>
 
         {/* Actions */}

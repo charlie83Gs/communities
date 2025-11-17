@@ -12,6 +12,7 @@ import {
   validateCreateMessage,
   validateGetMessages,
   validateUpdateDisputeStatus,
+  validateUpdateDisputePrivacy,
 } from '../validators/dispute.validator';
 
 const router = Router();
@@ -102,6 +103,14 @@ router.put(
   verifyToken,
   validateUpdateDisputeStatus,
   disputeController.updateStatus
+);
+
+// Update dispute privacy type
+router.put(
+  '/communities/:communityId/disputes/:disputeId/privacy',
+  verifyToken,
+  validateUpdateDisputePrivacy,
+  disputeController.updatePrivacy
 );
 
 export default router;

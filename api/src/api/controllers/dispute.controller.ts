@@ -48,6 +48,10 @@ class DisputeController {
    *                 type: array
    *                 items:
    *                   type: string
+   *               privacyType:
+   *                 type: string
+   *                 enum: [anonymous, open]
+   *                 default: open
    *     responses:
    *       201:
    *         description: Dispute created successfully
@@ -62,12 +66,13 @@ class DisputeController {
     try {
       const { communityId } = req.params;
       const userId = req.user!.id;
-      const { title, description, participantIds } = req.body;
+      const { title, description, participantIds, privacyType } = req.body;
 
       const dispute = await disputeService.createDispute(communityId, userId, {
         title,
         description,
         participantIds,
+        privacyType,
       });
 
       logger.info('Dispute created via API', { disputeId: dispute.id, communityId, userId });
@@ -567,6 +572,60 @@ class DisputeController {
 
       const dispute = await disputeService.updateDisputeStatus(disputeId, userId, status);
       return ApiResponse.success(res, dispute, 'Status updated successfully');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * @swagger
+   * /api/v1/communities/{communityId}/disputes/{disputeId}/privacy:
+   *   put:
+   *     summary: Update dispute privacy type
+   *     tags: [Disputes]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: communityId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *       - in: path
+   *         name: disputeId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - privacyType
+   *             properties:
+   *               privacyType:
+   *                 type: string
+   *                 enum: [anonymous, open]
+   *     responses:
+   *       200:
+   *         description: Privacy type updated successfully
+   *       401:
+   *         description: Unauthorized
+   *       403:
+   *         description: Insufficient permissions
+   */
+  async updatePrivacy(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const { disputeId } = req.params;
+      const userId = req.user!.id;
+      const { privacyType } = req.body;
+
+      const dispute = await disputeService.updateDisputePrivacy(disputeId, userId, privacyType);
+      return ApiResponse.success(res, dispute, 'Privacy type updated successfully');
     } catch (error) {
       next(error);
     }

@@ -94,10 +94,12 @@ export class OpenFGAService {
     relation: string
   ): Promise<boolean> {
     try {
-      // Map action to permission if needed (e.g., 'update' -> 'can_update')
-      const mappedRelation = relation.startsWith('can_')
-        ? relation
-        : mapActionToPermission(relation);
+      // Don't map base roles (admin, member) or relations that already start with 'can_'
+      // Only map actions (create, read, update, delete, etc.) to permissions
+      const mappedRelation =
+        relation.startsWith('can_') || isBaseRole(relation as BaseRole)
+          ? relation
+          : mapActionToPermission(relation);
 
       // Map resource type
       const fgaType = mapResourceType(objectType);
@@ -139,9 +141,10 @@ export class OpenFGAService {
   ): Promise<string[]> {
     try {
       const fgaType = mapResourceType(resourceType);
-      const mappedRelation = relation.startsWith('can_')
-        ? relation
-        : mapActionToPermission(relation);
+      const mappedRelation =
+        relation.startsWith('can_') || isBaseRole(relation as BaseRole)
+          ? relation
+          : mapActionToPermission(relation);
 
       return await this.ensureRepository().listObjects({
         user: `user:${userId}`,

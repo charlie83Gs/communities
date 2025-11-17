@@ -10,9 +10,11 @@ import { useDisputeDetailQuery } from '@/hooks/queries/useDisputes';
 import { useAuth } from '@/hooks/useAuth';
 import { Card } from '@/components/common/Card';
 import { MediatorProposal } from '@/components/features/disputes/MediatorProposal';
+import { AddParticipant } from '@/components/features/disputes/AddParticipant';
 import { ResolutionForm } from '@/components/features/disputes/ResolutionForm';
 import { ResolutionDisplay } from '@/components/features/disputes/ResolutionDisplay';
 import { DisputeMessages } from '@/components/features/disputes/DisputeMessages';
+import { DisputePrivacyControl } from '@/components/features/disputes/DisputePrivacyControl';
 import { makeTranslator } from '@/i18n/makeTranslator';
 import { disputesDict } from '@/components/features/disputes/disputes.i18n';
 import { formatDateTime } from '@/utils/dateUtils';
@@ -86,7 +88,7 @@ const DisputeDetailPage: Component = () => {
           }
         >
           <Show
-            when={disputeQuery.data?.canView}
+            when={!disputeQuery.isError}
             fallback={
               <Card>
                 <div class="text-center py-12">
@@ -124,9 +126,17 @@ const DisputeDetailPage: Component = () => {
                         <h1 class="text-2xl font-bold text-stone-900 dark:text-stone-100 flex-1">
                           {dispute().title}
                         </h1>
-                        <span class={`px-3 py-1 rounded-md text-sm font-medium ${getStatusColor()}`}>
-                          {getStatusLabel()}
-                        </span>
+                        <div class="flex items-center gap-2">
+                          <span class={`px-3 py-1 rounded-md text-sm font-medium ${getStatusColor()}`}>
+                            {getStatusLabel()}
+                          </span>
+                          <DisputePrivacyControl
+                            communityId={communityId()!}
+                            disputeId={disputeId()!}
+                            currentPrivacyType={dispute().privacyType}
+                            canUpdatePrivacy={dispute().canUpdatePrivacy}
+                          />
+                        </div>
                       </div>
 
                       <div class="flex flex-wrap items-center gap-3 text-sm text-stone-600 dark:text-stone-400">
@@ -170,6 +180,14 @@ const DisputeDetailPage: Component = () => {
                       </div>
                     </div>
                   </Card>
+
+                  {/* Add Participant Section */}
+                  <AddParticipant
+                    communityId={communityId()!}
+                    disputeId={disputeId()!}
+                    currentParticipants={dispute().participants}
+                    canAddParticipants={dispute().isParticipant || dispute().isMediatorAccepted}
+                  />
 
                   {/* Mediators Section */}
                   <MediatorProposal

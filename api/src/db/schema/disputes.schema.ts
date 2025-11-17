@@ -7,6 +7,7 @@ export const disputeStatusEnum = pgEnum('dispute_status', ['open', 'in_mediation
 export const disputeParticipantRoleEnum = pgEnum('dispute_participant_role', ['initiator', 'participant']);
 export const disputeMediatorStatusEnum = pgEnum('dispute_mediator_status', ['proposed', 'accepted', 'rejected', 'withdrawn']);
 export const disputeResolutionTypeEnum = pgEnum('dispute_resolution_type', ['open', 'closed']);
+export const disputePrivacyTypeEnum = pgEnum('dispute_privacy_type', ['anonymous', 'open']);
 
 // Main disputes table
 export const disputes = pgTable('disputes', {
@@ -16,6 +17,7 @@ export const disputes = pgTable('disputes', {
   title: varchar('title', { length: 200 }).notNull(),
   description: text('description').notNull(),
   status: disputeStatusEnum('status').notNull().default('open'),
+  privacyType: disputePrivacyTypeEnum('privacy_type').notNull().default('open'),
   createdBy: text('created_by').notNull()
     .references(() => appUsers.id, { onDelete: 'cascade' }),
   createdAt: timestamp('created_at').defaultNow().notNull(),

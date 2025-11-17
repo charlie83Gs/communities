@@ -16,6 +16,7 @@ import type {
   CreateDisputeResolutionDto,
   CreateDisputeMessageDto,
   UpdateDisputeStatusDto,
+  UpdateDisputePrivacyDto,
   DisputeMessagesResponse,
   DisputeStatus,
 } from '@/types/dispute.types';
@@ -144,6 +145,20 @@ class DisputesService {
   ): Promise<DisputeDetail> {
     return apiClient.put(
       `${this.basePath}/${communityId}/disputes/${disputeId}/status`,
+      dto
+    );
+  }
+
+  /**
+   * Update dispute privacy type
+   */
+  async updatePrivacy(
+    communityId: string,
+    disputeId: string,
+    dto: UpdateDisputePrivacyDto
+  ): Promise<void> {
+    return apiClient.put(
+      `${this.basePath}/${communityId}/disputes/${disputeId}/privacy`,
       dto
     );
   }

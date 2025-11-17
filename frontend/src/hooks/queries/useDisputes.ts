@@ -14,6 +14,7 @@ import type {
   CreateDisputeResolutionDto,
   CreateDisputeMessageDto,
   UpdateDisputeStatusDto,
+  UpdateDisputePrivacyDto,
 } from '@/types/dispute.types';
 
 /**
@@ -220,6 +221,26 @@ export const useUpdateDisputeStatusMutation = () => {
       void qc.invalidateQueries({
         queryKey: ['disputes', 'community', vars.communityId],
         exact: false,
+      });
+    },
+  }));
+};
+
+/**
+ * Update dispute privacy type
+ */
+export const useUpdateDisputePrivacyMutation = () => {
+  const qc = useQueryClient();
+  return createMutation(() => ({
+    mutationFn: (vars: {
+      communityId: string;
+      disputeId: string;
+      dto: UpdateDisputePrivacyDto;
+    }) =>
+      disputesService.updatePrivacy(vars.communityId, vars.disputeId, vars.dto),
+    onSuccess: (_data, vars) => {
+      void qc.invalidateQueries({
+        queryKey: ['disputes', 'detail', vars.communityId, vars.disputeId],
       });
     },
   }));

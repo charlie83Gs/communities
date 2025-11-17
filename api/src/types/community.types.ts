@@ -33,10 +33,11 @@ export interface Community {
   minTrustToViewItems: TrustRequirement;
 
   // Dispute Handling Configuration
-  minTrustForDisputes: TrustRequirement | null;
-  minTrustToViewDisputes: TrustRequirement | null;
-  disputeResolutionRole: string | null;
-  disputeHandlingCouncils: string[] | null; // Array of council IDs
+  minTrustForDisputeVisibility: TrustRequirement;
+  minTrustForDisputeParticipation: TrustRequirement;
+  allowOpenResolutions: boolean;
+  requireMultipleMediators: boolean;
+  minMediatorsCount: number | null;
 
   // Polling Permissions
   pollCreatorUsers: string[] | null; // Array of user IDs

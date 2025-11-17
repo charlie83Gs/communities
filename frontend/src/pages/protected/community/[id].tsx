@@ -195,7 +195,7 @@ const CommunityDetailsContent: Component = () => {
     {
       id: 'disputes' as SidebarTab,
       label: t('tabDisputes'),
-      icon: 'alert' as const,
+      icon: 'shield-alert' as const,
       visible: canViewDisputes(),
     },
     {

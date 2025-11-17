@@ -7,6 +7,7 @@ export type DisputeStatus = 'open' | 'in_mediation' | 'resolved' | 'closed';
 export type DisputeParticipantRole = 'initiator' | 'participant';
 export type MediatorStatus = 'proposed' | 'accepted' | 'rejected' | 'withdrawn';
 export type ResolutionType = 'open' | 'closed';
+export type DisputePrivacyType = 'anonymous' | 'open';
 
 export interface Dispute {
   id: string;
@@ -14,6 +15,7 @@ export interface Dispute {
   title: string;
   description: string;
   status: DisputeStatus;
+  privacyType: DisputePrivacyType;
   createdBy: string;
   createdAt: string;
   updatedAt: string;
@@ -110,6 +112,7 @@ export interface DisputeDetail extends Dispute {
   canAcceptMediator: boolean;
   canCreateResolution: boolean;
   canViewResolution: boolean;
+  canUpdatePrivacy: boolean;
 }
 
 export interface DisputeListItem extends Dispute {
@@ -124,7 +127,8 @@ export interface DisputeListItem extends Dispute {
 export interface CreateDisputeDto {
   title: string;
   description: string;
-  additionalParticipantIds?: string[];
+  participantIds?: string[];
+  privacyType?: DisputePrivacyType;
 }
 
 export interface AddDisputeParticipantDto {
@@ -152,6 +156,10 @@ export interface CreateDisputeMessageDto {
 
 export interface UpdateDisputeStatusDto {
   status: DisputeStatus;
+}
+
+export interface UpdateDisputePrivacyDto {
+  privacyType: DisputePrivacyType;
 }
 
 export interface DisputesListResponse {

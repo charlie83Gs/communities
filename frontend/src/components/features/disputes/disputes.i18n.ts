@@ -106,6 +106,16 @@ export const disputesDict = {
       submitting: 'Creating...',
       cancel: 'Cancel',
 
+      // Privacy
+      privacyTypeLabel: 'Dispute Privacy',
+      privacyTypeOpen: 'Open',
+      privacyTypeAnonymous: 'Anonymous',
+      privacyTypeOpenDesc: 'Participant identities are visible to everyone',
+      privacyTypeAnonymousDesc: 'Participant identities are only visible to participants, mediators, and admins',
+      changePrivacyType: 'Change Privacy Type',
+      privacyUpdated: 'Privacy type updated successfully',
+      confirmPrivacyChange: 'Are you sure you want to change the privacy type? This will affect who can see participant identities.',
+
       // Validation messages
       titleRequired: 'Title is required',
       descriptionRequired: 'Description is required',
@@ -241,6 +251,16 @@ export const disputesDict = {
       submitting: 'Creando...',
       cancel: 'Cancelar',
 
+      // Privacy
+      privacyTypeLabel: 'Privacidad de la Disputa',
+      privacyTypeOpen: 'Abierta',
+      privacyTypeAnonymous: 'Anónima',
+      privacyTypeOpenDesc: 'Las identidades de los participantes son visibles para todos',
+      privacyTypeAnonymousDesc: 'Las identidades de los participantes solo son visibles para participantes, mediadores y administradores',
+      changePrivacyType: 'Cambiar Tipo de Privacidad',
+      privacyUpdated: 'Tipo de privacidad actualizado exitosamente',
+      confirmPrivacyChange: '¿Está seguro de que desea cambiar el tipo de privacidad? Esto afectará quién puede ver las identidades de los participantes.',
+
       // Validation messages
       titleRequired: 'El título es requerido',
       descriptionRequired: 'La descripción es requerida',
@@ -375,6 +395,16 @@ export const disputesDict = {
       submit: 'विवाद बनाएं',
       submitting: 'बना रहे हैं...',
       cancel: 'रद्द करें',
+
+      // Privacy
+      privacyTypeLabel: 'विवाद गोपनीयता',
+      privacyTypeOpen: 'खुला',
+      privacyTypeAnonymous: 'गुमनाम',
+      privacyTypeOpenDesc: 'प्रतिभागी की पहचान सभी के लिए दृश्यमान है',
+      privacyTypeAnonymousDesc: 'प्रतिभागी की पहचान केवल प्रतिभागियों, मध्यस्थों और प्रशासकों के लिए दृश्यमान है',
+      changePrivacyType: 'गोपनीयता प्रकार बदलें',
+      privacyUpdated: 'गोपनीयता प्रकार सफलतापूर्वक अपडेट किया गया',
+      confirmPrivacyChange: 'क्या आप वाकई गोपनीयता प्रकार बदलना चाहते हैं? यह प्रभावित करेगा कि कौन प्रतिभागी की पहचान देख सकता है।',
 
       // Validation messages
       titleRequired: 'शीर्षक आवश्यक है',

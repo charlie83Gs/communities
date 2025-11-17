@@ -1,7 +1,6 @@
 import { disputeRepository, DisputeRepository } from '../repositories/dispute.repository';
 import { communityRepository } from '../repositories/community.repository';
 import { communityMemberRepository } from '../repositories/communityMember.repository';
-import { trustViewRepository } from '../repositories/trustView.repository';
 import { openFGAService } from './openfga.service';
 import { AppError } from '../utils/errors';
 import logger from '../utils/logger';
@@ -19,7 +18,12 @@ export class DisputeService {
   async createDispute(
     communityId: string,
     userId: string,
-    data: { title: string; description: string; participantIds?: string[] }
+    data: {
+      title: string;
+      description: string;
+      participantIds?: string[];
+      privacyType?: 'anonymous' | 'open';
+    }
   ) {
     // Verify community exists
     const community = await communityRepository.findById(communityId);
@@ -45,6 +49,7 @@ export class DisputeService {
       title: data.title,
       description: data.description,
       createdBy: userId,
+      privacyType: data.privacyType ?? 'open',
     });
 
     // Add creator as initiator
@@ -106,11 +111,53 @@ export class DisputeService {
     const mediators = await this.disputeRepo.findMediatorsByDispute(disputeId);
     const resolutions = await this.disputeRepo.findResolutionsByDispute(disputeId);
 
+    // Check user's capabilities
+    const isParticipant = await this.disputeRepo.isParticipant(disputeId, userId);
+    const isAcceptedMediator = await this.disputeRepo.isAcceptedMediator(disputeId, userId);
+    const isAdmin = await openFGAService.checkAccess(
+      userId,
+      'community',
+      dispute.communityId,
+      'admin'
+    );
+    const canProposeAsMediator = await openFGAService.checkAccess(
+      userId,
+      'community',
+      dispute.communityId,
+      'can_handle_dispute'
+    );
+
+    // Determine if user can see identities (for anonymous disputes)
+    const canSeeIdentities =
+      dispute.privacyType === 'open' || isAcceptedMediator || isAdmin || isParticipant;
+
+    // Anonymize participants and mediators if needed
+    const processedParticipants = participants.map((p) => ({
+      ...p,
+      user: canSeeIdentities
+        ? p.user
+        : { id: 'anonymous', username: 'anonymous', displayName: 'Anonymous' },
+    }));
+
+    const processedMediators = mediators.map((m) => ({
+      ...m,
+      user: canSeeIdentities
+        ? m.user
+        : { id: 'anonymous', username: 'anonymous', displayName: 'Anonymous' },
+    }));
+
     return {
       ...dispute,
-      participants,
-      mediators,
+      participants: processedParticipants,
+      mediators: processedMediators,
       resolutions,
+      isParticipant,
+      isAcceptedMediator,
+      canProposeAsMediator,
+      canAcceptMediator: isParticipant,
+      canCreateResolution: isAcceptedMediator,
+      canViewResolution: true, // If user can see the dispute, they can see open resolutions
+      canUpdatePrivacy: isAdmin || isAcceptedMediator,
     };
   }
 
@@ -281,6 +328,7 @@ export class DisputeService {
 
     // Update mediator status
     const updatedMediator = await this.disputeRepo.updateMediatorStatus(mediatorId, {
+      mediatorId,
       status: accept ? 'accepted' : 'rejected',
       respondedBy: userId,
     });
@@ -432,12 +480,30 @@ export class DisputeService {
     // Filter messages based on visibility and user role
     const isParticipant = await this.disputeRepo.isParticipant(disputeId, userId);
     const isMediator = await this.disputeRepo.isAcceptedMediator(disputeId, userId);
+    const isAdmin = await openFGAService.checkAccess(
+      userId,
+      'community',
+      dispute.communityId,
+      'admin'
+    );
 
-    const filteredMessages = messages.filter((msg) => {
-      if (isParticipant && msg.visibleToParticipants) return true;
-      if (isMediator && msg.visibleToMediators) return true;
-      return false;
-    });
+    // Determine if user can see identities (for anonymous disputes)
+    const canSeeIdentities =
+      dispute.privacyType === 'open' || isMediator || isAdmin || isParticipant;
+
+    // Filter and anonymize messages
+    const filteredMessages = messages
+      .filter((msg) => {
+        if (isParticipant && msg.visibleToParticipants) return true;
+        if (isMediator && msg.visibleToMediators) return true;
+        return false;
+      })
+      .map((msg) => ({
+        ...msg,
+        user: canSeeIdentities
+          ? msg.user
+          : { id: 'anonymous', username: 'anonymous', displayName: 'Anonymous' },
+      }));
 
     return { messages: filteredMessages, total };
   }
@@ -490,6 +556,48 @@ export class DisputeService {
   }
 
   /**
+   * Update dispute privacy type
+   */
+  async updateDisputePrivacy(disputeId: string, userId: string, privacyType: 'anonymous' | 'open') {
+    const dispute = await this.disputeRepo.findDisputeById(disputeId);
+    if (!dispute) {
+      throw new AppError('Dispute not found', 404);
+    }
+
+    // Only mediators or admins can update privacy
+    const isMediator = await this.disputeRepo.isAcceptedMediator(disputeId, userId);
+    const isAdmin = await openFGAService.checkAccess(
+      userId,
+      'community',
+      dispute.communityId,
+      'admin'
+    );
+
+    if (!isMediator && !isAdmin) {
+      throw new AppError('You do not have permission to update dispute privacy', 403);
+    }
+
+    // Update privacy type
+    const updated = await this.disputeRepo.updateDispute(disputeId, { privacyType });
+
+    // Log history
+    await this.disputeRepo.createHistory({
+      disputeId,
+      action: 'privacy_updated',
+      performedBy: userId,
+      metadata: JSON.stringify({ oldPrivacy: dispute.privacyType, newPrivacy: privacyType }),
+    });
+
+    logger.info('Dispute privacy updated', {
+      disputeId,
+      oldPrivacy: dispute.privacyType,
+      newPrivacy: privacyType,
+      userId,
+    });
+    return updated;
+  }
+
+  /**
    * Helper: Check if user can access dispute details
    */
   private async canAccessDisputeDetails(
@@ -497,18 +605,24 @@ export class DisputeService {
     userId: string,
     communityId: string
   ): Promise<boolean> {
+    logger.info('[Dispute Access Check]', { disputeId, userId, communityId });
+
     // Admins can always access
     const isAdmin = await openFGAService.checkAccess(userId, 'community', communityId, 'admin');
+    logger.info('[Dispute Access Check] Admin check', { isAdmin });
     if (isAdmin) return true;
 
     // Participants can access
     const isParticipant = await this.disputeRepo.isParticipant(disputeId, userId);
+    logger.info('[Dispute Access Check] Participant check', { isParticipant });
     if (isParticipant) return true;
 
     // Accepted mediators can access
     const isMediator = await this.disputeRepo.isAcceptedMediator(disputeId, userId);
+    logger.info('[Dispute Access Check] Mediator check', { isMediator });
     if (isMediator) return true;
 
+    logger.warn('[Dispute Access Check] Access denied', { disputeId, userId });
     return false;
   }
 }
