@@ -31,4 +31,5 @@ export * from './initiatives.schema';
 export * from './pools.schema';
 export * from './needs.schema';
 export * from './communityEvents.schema';
+export * from './disputes.schema';
 export * from './valueRecognition.schema';

@@ -153,7 +153,7 @@ bunx prettier --write .
 4. **Feature Documentation Location**
    - Main index: `docs/features/README.md`
    - Individual features: `docs/features/[FT-##]-[name].md`
-   - Feature IDs: FT-01 through FT-13
+   - Feature IDs: FT-01 through FT-16
    - Each feature has metadata with status, related features, and database tables
 
 5. **Workflow for Implementation Tasks**
@@ -173,7 +173,7 @@ For detailed information about features, see `docs/features/README.md`.
 
 ## Core Features Summary
 
-The system includes 13 core features organized into 4 categories:
+The system includes 16 core features organized into 6 categories:
 
 ### Core Features (FT-01 to FT-03)
 - **FT-01: Communities** - Base organizational unit (Status: Implemented)
@@ -191,10 +191,17 @@ The system includes 13 core features organized into 4 categories:
 - **FT-10: Forum System** - Community discussions (Status: Partial)
 - **FT-11: Invite System** - Community growth (Status: Implemented)
 
-### Administration (FT-09, FT-12, FT-13)
+### Administration (FT-09, FT-12, FT-13, FT-14)
 - **FT-09: Analytics & Statistics** - Community health metrics (Status: Planned)
 - **FT-12: Configuration** - Per-community settings (Status: Implemented)
 - **FT-13: Security & Access Control** - OpenFGA authorization (Status: Implemented)
+- **FT-14: Audit Log** - Immutable audit trail (Status: Partial)
+
+### Conflict Resolution (FT-15)
+- **FT-15: Disputes System** - Mediation and conflict resolution (Status: Planned)
+
+### Contribution Tracking (FT-16)
+- **FT-16: Value Contribution System** - Economic contribution scoring and analytics (Status: Planned)
 
 **For detailed feature information, see `docs/features/README.md` and individual feature documents.**
 
@@ -231,10 +238,13 @@ The system includes 13 core features organized into 4 categories:
 
 Stored in `communities` table as JSONB with structure `{ type: 'number', value: X }`:
 
+### Trust-Based Thresholds
+
 - `minTrustToAwardTrust` (default: 15) - Award trust to others
 - `minTrustForWealth` (default: 10) - Publish/share wealth
 - `minTrustForPolls` (default: 15) - Create polls
-- `minTrustForDisputes` (default: 20) - Handle disputes
+- `minTrustForDisputeVisibility` (default: 20) - View dispute titles and propose mediation
+- `minTrustForDisputeParticipation` (default: 10) - Create disputes as participant
 - `minTrustForPoolCreation` (default: 20) - Create pools (planned feature)
 - `minTrustForCouncilCreation` (default: 25) - Create councils
 - `minTrustForForumModeration` (default: 30) - Full forum moderation
@@ -244,6 +254,34 @@ Stored in `communities` table as JSONB with structure `{ type: 'number', value: 
 - `minTrustForFlagReview` (default: 30) - Review flagged content
 - `minTrustForItemManagement` (default: 20) - Manage community items
 - `minTrustForHealthAnalytics` (default: 20) - View health analytics
+
+### Value Recognition System Trust Thresholds
+
+**Note:** Value recognition does NOT gate access to community features (wealth, councils, pools, etc.).
+These thresholds control participation in the recognition system itself:
+
+- `minTrustToViewRecognition` (default: 0) - View contribution profiles and community statistics
+- `minTrustToLogContributions` (default: 5) - Log self-reported contributions
+- `minTrustToGrantPeerRecognition` (default: 10) - Grant peer recognition to others
+- `minTrustToVerifyContributions` (default: 15) - Verify contributions as beneficiary/witness
+- `minTrustForRecognitionManagement` (default: 25) - Manage recognition categories and values
+- `minTrustForCouncilVerification` (default: 20) - Council members can verify unclaimed work
+- `minTrustForDisputeReview` (default: 30) - Review and mediate disputed contributions
+
+### Value Recognition System Settings
+
+Stored in `communities.value_recognition_settings` as JSONB:
+
+- `enabled` (default: true) - Enable value recognition system
+- `show_aggregate_stats` (default: true) - Show community statistics
+- `allow_peer_grants` (default: true) - Allow peer recognition grants
+- `peer_grant_monthly_limit` (default: 20) - Max value units grantable per month
+- `peer_grant_same_person_limit` (default: 3) - Max grants to same person per month
+- `require_verification` (default: true) - Require verification for self-reported contributions
+- `auto_verify_system_actions` (default: true) - Auto-verify tracked actions
+- `allow_council_verification` (default: true) - Allow council to verify unclaimed work
+- `verification_reminder_days` (default: 7) - Days before verification reminder
+- `soft_reciprocity_nudges` (default: false) - Show gentle nudges (optional, discouraged)
 
 ## Implementation Examples & Use Cases
 

@@ -49,6 +49,7 @@ export const authorizationModel = {
      * - poll_creator: Can create polls
      * - dispute_viewer: Can view disputes
      * - dispute_handler: Can handle disputes
+     * - dispute_participant: Can create disputes
      * - pool_viewer: Can view pools
      * - pool_creator: Can create pools
      * - council_viewer: Can view councils
@@ -73,6 +74,7 @@ export const authorizationModel = {
      * Trust Roles (auto-granted when trust >= threshold):
      * - trust_trust_viewer, trust_trust_granter, trust_wealth_viewer, trust_wealth_creator,
      * - trust_poll_viewer, trust_poll_creator, trust_dispute_viewer, trust_dispute_handler,
+     *   trust_dispute_participant,
      * - trust_pool_viewer, trust_pool_creator, trust_council_viewer, trust_council_creator,
      * - trust_forum_viewer, trust_forum_manager, trust_thread_creator,
      * - trust_attachment_uploader, trust_content_flagger, trust_flag_reviewer,
@@ -83,7 +85,7 @@ export const authorizationModel = {
      *
      * Permissions (union of admin + regular_role + trust_role):
      * - can_view_trust, can_award_trust, can_view_wealth, can_create_wealth,
-     * - can_view_poll, can_create_poll, can_view_dispute, can_handle_dispute,
+     * - can_view_poll, can_create_poll, can_view_dispute, can_handle_dispute, can_create_dispute,
      * - can_view_pool, can_create_pool, can_view_council, can_create_council,
      * - can_view_forum, can_manage_forum, can_create_thread, can_upload_attachment,
      * - can_flag_content, can_review_flag, can_view_item, can_manage_item,
@@ -107,6 +109,7 @@ export const authorizationModel = {
         poll_creator: { this: {} },
         dispute_viewer: { this: {} },
         dispute_handler: { this: {} },
+        dispute_participant: { this: {} },
         pool_viewer: { this: {} },
         pool_creator: { this: {} },
         council_viewer: { this: {} },
@@ -137,6 +140,7 @@ export const authorizationModel = {
         trust_poll_creator: { this: {} },
         trust_dispute_viewer: { this: {} },
         trust_dispute_handler: { this: {} },
+        trust_dispute_participant: { this: {} },
         trust_pool_viewer: { this: {} },
         trust_pool_creator: { this: {} },
         trust_council_viewer: { this: {} },
@@ -283,6 +287,15 @@ export const authorizationModel = {
               { computedUserset: { relation: 'admin' } },
               { computedUserset: { relation: 'dispute_handler' } },
               { computedUserset: { relation: 'trust_dispute_handler' } },
+            ],
+          },
+        },
+        can_create_dispute: {
+          union: {
+            child: [
+              { computedUserset: { relation: 'admin' } },
+              { computedUserset: { relation: 'dispute_participant' } },
+              { computedUserset: { relation: 'trust_dispute_participant' } },
             ],
           },
         },
@@ -448,6 +461,7 @@ export const authorizationModel = {
           dispute_handler: {
             directly_related_user_types: [{ type: 'user' }, { type: 'council' }],
           },
+          dispute_participant: { directly_related_user_types: [{ type: 'user' }] },
           pool_viewer: { directly_related_user_types: [{ type: 'user' }] },
           pool_creator: { directly_related_user_types: [{ type: 'user' }] },
           council_viewer: { directly_related_user_types: [{ type: 'user' }] },
@@ -480,6 +494,7 @@ export const authorizationModel = {
           trust_dispute_handler: {
             directly_related_user_types: [{ type: 'user' }, { type: 'council' }],
           },
+          trust_dispute_participant: { directly_related_user_types: [{ type: 'user' }] },
           trust_pool_viewer: { directly_related_user_types: [{ type: 'user' }] },
           trust_pool_creator: { directly_related_user_types: [{ type: 'user' }] },
           trust_council_viewer: { directly_related_user_types: [{ type: 'user' }] },
