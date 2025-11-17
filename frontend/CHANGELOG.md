@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.4.0](https://github.com/charlie83Gs/communities/compare/communities-frontend-v1.3.1...communities-frontend-v1.4.0) (2025-11-17)
+
+
+### Features
+
+* add multi-language support to items (EN, ES, HI) ([e2eabc6](https://github.com/charlie83Gs/communities/commit/e2eabc6f336ded901013c5a0494259c7aa9ef668))
+* **contributions:** FT-16 Community Value Recognition System ([#25](https://github.com/charlie83Gs/communities/issues/25)) ([83c4fe1](https://github.com/charlie83Gs/communities/commit/83c4fe1a6aa0a84d63ba28a760ad1c44eb64b67d))
+
+
+### Bug Fixes
+
+* **api:** resolve all TypeScript compilation errors ([b4d125e](https://github.com/charlie83Gs/communities/commit/b4d125efe8e08781b83a2682e7cbb91584cf0346))
+* **frontend:** add AuthGuard to communities route ([e5817e7](https://github.com/charlie83Gs/communities/commit/e5817e7f545b21fab53f6efbb378571afbc0f8b7))
+* **frontend:** prevent ItemSelector dropdown from flashing/losing focus ([1174b07](https://github.com/charlie83Gs/communities/commit/1174b0761945ffb4cdb058690ca820c46400539e))
+* **frontend:** resolve input focus-loss bugs across 6 components ([7e97734](https://github.com/charlie83Gs/communities/commit/7e977340782f3ac93eb61fdbf5f7de747d889972))
+* **frontend:** resolve token refresh infinite loop causing API 500 errors ([85cca1f](https://github.com/charlie83Gs/communities/commit/85cca1ff80c7950f8b384e3e36ecda3e926f25a0))
+
 ## [1.3.1](https://github.com/charlie83Gs/communities/compare/communities-frontend-v1.3.0...communities-frontend-v1.3.1) (2025-11-12)
 
 
