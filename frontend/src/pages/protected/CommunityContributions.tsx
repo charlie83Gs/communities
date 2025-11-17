@@ -5,13 +5,11 @@ import { LogContributionForm } from '@/components/features/contributions/LogCont
 import { ContributionProfile } from '@/components/features/contributions/ContributionProfile';
 import { GrantPeerRecognition } from '@/components/features/contributions/GrantPeerRecognition';
 import { PendingVerifications } from '@/components/features/contributions/PendingVerifications';
-import { ManageValueCategories } from '@/components/features/contributions/ManageValueCategories';
 import { useAuth } from '@/hooks/useAuth';
-import { useMyCommunityRoleQuery } from '@/hooks/queries/useMyCommunityRoleQuery';
 import { makeTranslator } from '@/i18n/makeTranslator';
 import { communityContributionsDict } from './CommunityContributions.i18n';
 
-type TabType = 'myProfile' | 'logContribution' | 'grantRecognition' | 'verifications' | 'adminCategories';
+type TabType = 'myProfile' | 'logContribution' | 'grantRecognition' | 'verifications';
 
 const CommunityContributions: Component = () => {
   const t = makeTranslator(communityContributionsDict, 'communityContributions');
@@ -19,13 +17,6 @@ const CommunityContributions: Component = () => {
   const { user } = useAuth();
 
   const [activeTab, setActiveTab] = createSignal<TabType>('myProfile');
-
-  const roleQuery = useMyCommunityRoleQuery(() => params.communityId);
-
-  const isAdmin = () => {
-    const roles = roleQuery.data?.roles || [];
-    return roles.includes('admin');
-  };
 
   return (
     <>
@@ -86,18 +77,6 @@ const CommunityContributions: Component = () => {
             >
               {t('tabs.verifications')}
             </button>
-            <Show when={isAdmin()}>
-              <button
-                onClick={() => setActiveTab('adminCategories')}
-                class={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
-                  activeTab() === 'adminCategories'
-                    ? 'border-ocean-500 text-ocean-600 dark:text-ocean-400'
-                    : 'border-transparent text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300 hover:border-stone-300 dark:hover:border-stone-600'
-                }`}
-              >
-                {t('tabs.adminCategories')}
-              </button>
-            </Show>
           </nav>
         </div>
 
@@ -125,10 +104,6 @@ const CommunityContributions: Component = () => {
 
           <Show when={activeTab() === 'verifications'}>
             <PendingVerifications communityId={params.communityId} />
-          </Show>
-
-          <Show when={activeTab() === 'adminCategories' && isAdmin()}>
-            <ManageValueCategories communityId={params.communityId} />
           </Show>
         </div>
 

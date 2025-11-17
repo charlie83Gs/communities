@@ -10,7 +10,6 @@ export const communityContributionsDict = {
         logContribution: 'Log Contribution',
         grantRecognition: 'Grant Recognition',
         verifications: 'Verify Contributions',
-        adminCategories: 'Manage Categories',
       },
       infoBox: {
         title: 'About Value Recognition',
@@ -32,7 +31,6 @@ export const communityContributionsDict = {
         logContribution: 'Registrar Contribución',
         grantRecognition: 'Otorgar Reconocimiento',
         verifications: 'Verificar Contribuciones',
-        adminCategories: 'Gestionar Categorías',
       },
       infoBox: {
         title: 'Acerca del Reconocimiento de Valor',
@@ -54,7 +52,6 @@ export const communityContributionsDict = {
         logContribution: 'योगदान दर्ज करें',
         grantRecognition: 'मान्यता प्रदान करें',
         verifications: 'योगदान सत्यापित करें',
-        adminCategories: 'श्रेणियों का प्रबंधन करें',
       },
       infoBox: {
         title: 'मूल्य मान्यता के बारे में',
