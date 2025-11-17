@@ -37,7 +37,7 @@ export const ItemSelector: Component<ItemSelectorProps> = (props) => {
     const query = displayQuery().toLowerCase();
     if (!query) return items.data;
     return items.data.filter((item) =>
-      item.name.toLowerCase().includes(query)
+      item.name?.toLowerCase().includes(query) ?? false
     );
   });
 
@@ -71,7 +71,7 @@ export const ItemSelector: Component<ItemSelectorProps> = (props) => {
               }
             >
               <div class="flex items-center gap-2">
-                <span>{selectedItem()!.name}</span>
+                <span>{selectedItem()!.name || 'Unnamed Item'}</span>
                 <Badge variant={selectedItem()!.kind === 'object' ? 'ocean' : 'forest'}>
                   {selectedItem()!.kind}
                 </Badge>
@@ -104,7 +104,7 @@ export const ItemSelector: Component<ItemSelectorProps> = (props) => {
                     class="px-3 py-2 hover:bg-stone-100 dark:hover:bg-stone-700 cursor-pointer flex items-center justify-between text-stone-900 dark:text-stone-100"
                     onClick={() => handleSelect(item.id)}
                   >
-                    <span class="text-sm">{item.name}</span>
+                    <span class="text-sm">{item.name || 'Unnamed Item'}</span>
                     <Badge variant={item.kind === 'object' ? 'ocean' : 'forest'} class="text-xs">
                       {item.kind}
                     </Badge>
