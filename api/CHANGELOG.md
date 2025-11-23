@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.7.0](https://github.com/charlie83Gs/communities/compare/communities-api-v1.6.0...communities-api-v1.7.0) (2025-11-23)
+
+
+### Features
+
+* comprehensive community platform enhancements ([ced4e66](https://github.com/charlie83Gs/communities/commit/ced4e667ddd678e452ff23a1e327b6837da4a1d6))
+* **disputes:** implement complete dispute resolution system ([#24](https://github.com/charlie83Gs/communities/issues/24)) ([22fd755](https://github.com/charlie83Gs/communities/commit/22fd7554b7a7cd5be8ce05a717ed86ec2022a1b0))
+
 ## [1.6.0](https://github.com/charlie83Gs/communities/compare/communities-api-v1.5.3...communities-api-v1.6.0) (2025-11-17)
 
 
