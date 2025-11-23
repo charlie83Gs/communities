@@ -3,6 +3,9 @@ export const needsListDict = {
     needsList: {
       title: 'Community Needs',
       filterLabel: 'Filters',
+      searchPlaceholder: 'Search needs...',
+      search: 'Search',
+      advancedSearch: 'Filters',
       allStatuses: 'All Statuses',
       active: 'Active',
       fulfilled: 'Fulfilled',
@@ -18,6 +21,12 @@ export const needsListDict = {
       priorityLabel: 'Priority',
       recurrenceLabel: 'Recurrence',
       ownerLabel: 'Owner',
+      // Filter tooltips
+      tooltips: {
+        priority: 'Need = Essential requirement, Want = Nice to have',
+        recurrence: 'One-time needs vs recurring/ongoing needs',
+        status: 'Active = Open for fulfillment, Archived = Closed',
+      },
       allNeeds: 'All Needs',
       myNeeds: 'My Needs',
       emptyTitle: 'No needs published',
@@ -36,12 +45,16 @@ export const needsListDict = {
       object: 'Object',
       service: 'Service',
       createNeed: 'Create Need',
+      backToResources: 'Back to Resources',
     },
   },
   es: {
     needsList: {
       title: 'Necesidades de la comunidad',
       filterLabel: 'Filtros',
+      searchPlaceholder: 'Buscar necesidades...',
+      search: 'Buscar',
+      advancedSearch: 'Filtros',
       allStatuses: 'Todos los estados',
       active: 'Activo',
       fulfilled: 'Cumplido',
@@ -57,6 +70,12 @@ export const needsListDict = {
       priorityLabel: 'Prioridad',
       recurrenceLabel: 'Recurrencia',
       ownerLabel: 'Propietario',
+      // Filter tooltips
+      tooltips: {
+        priority: 'Necesidad = Requisito esencial, Deseo = Agradable de tener',
+        recurrence: 'Necesidades unicas vs necesidades recurrentes/continuas',
+        status: 'Activo = Abierto para cumplimiento, Archivado = Cerrado',
+      },
       allNeeds: 'Todas las Necesidades',
       myNeeds: 'Mis Necesidades',
       emptyTitle: 'No se publicaron necesidades',
@@ -75,12 +94,16 @@ export const needsListDict = {
       object: 'Objeto',
       service: 'Servicio',
       createNeed: 'Crear Necesidad',
+      backToResources: 'Volver a Recursos',
     },
   },
   hi: {
     needsList: {
       title: 'समुदाय की आवश्यकताएं',
       filterLabel: 'फ़िल्टर',
+      searchPlaceholder: 'आवश्यकताएं खोजें...',
+      search: 'खोजें',
+      advancedSearch: 'फ़िल्टर',
       allStatuses: 'सभी स्थितियाँ',
       active: 'सक्रिय',
       fulfilled: 'पूर्ण',
@@ -96,6 +119,12 @@ export const needsListDict = {
       priorityLabel: 'प्राथमिकता',
       recurrenceLabel: 'पुनरावृत्ति',
       ownerLabel: 'स्वामी',
+      // Filter tooltips
+      tooltips: {
+        priority: 'आवश्यकता = आवश्यक आवश्यकता, इच्छा = अच्छा होगा',
+        recurrence: 'एक बार की आवश्यकताएं बनाम आवर्ती/निरंतर आवश्यकताएं',
+        status: 'सक्रिय = पूर्ति के लिए खुला, संग्रहीत = बंद',
+      },
       allNeeds: 'सभी आवश्यकताएं',
       myNeeds: 'मेरी आवश्यकताएं',
       emptyTitle: 'कोई आवश्यकता प्रकाशित नहीं',
@@ -114,6 +143,7 @@ export const needsListDict = {
       object: 'वस्तु',
       service: 'सेवा',
       createNeed: 'आवश्यकता बनाएं',
+      backToResources: 'संसाधनों पर वापस जाएं',
     },
   },
 } as const;

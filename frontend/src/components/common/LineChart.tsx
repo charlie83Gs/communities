@@ -50,7 +50,7 @@ export const LineChart: Component<LineChartProps> = (props) => {
     return props.datasets.map((dataset) => ({
       label: dataset.label,
       data: dataset.data.map((point) => ({
-        x: point.date,
+        x: new Date(point.date).getTime(),
         y: point.value,
       })),
       borderColor: dataset.color,
@@ -101,7 +101,9 @@ export const LineChart: Component<LineChartProps> = (props) => {
             borderWidth: 1,
             callbacks: {
               title: (context) => {
-                const date = new Date(context[0].parsed.x);
+                const xValue = context[0].parsed.x;
+                if (xValue === null) return '';
+                const date = new Date(xValue);
                 return date.toLocaleDateString();
               },
               label: (context) => {

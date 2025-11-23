@@ -83,12 +83,15 @@ import logger from '../../utils/logger';
  *               date:
  *                 type: string
  *                 format: date
- *               trustAwarded:
+ *               cumulativePeerTrust:
  *                 type: integer
- *               trustRemoved:
+ *                 description: Total peer trust awarded up to and including this date
+ *               cumulativeAdminTrust:
  *                 type: integer
- *               netTrust:
+ *                 description: Total admin trust granted up to and including this date
+ *               cumulativeTotal:
  *                 type: integer
+ *                 description: Combined total trust as of this date
  *     TrustDistribution:
  *       type: object
  *       properties:

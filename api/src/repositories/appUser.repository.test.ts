@@ -14,6 +14,7 @@ const mockUser: AppUser = {
   email: 'test@example.com',
   username: 'testuser',
   displayName: 'Test User',
+  description: null,
   profileImage: null,
   lastSeenAt: null,
   createdAt: new Date('2024-01-01'),
@@ -25,6 +26,7 @@ const mockUser2: AppUser = {
   email: 'test2@example.com',
   username: 'testuser2',
   displayName: 'Test User 2',
+  description: null,
   profileImage: null,
   lastSeenAt: null,
   createdAt: new Date('2024-01-02'),
@@ -43,7 +45,7 @@ describe('AppUserRepository', () => {
     // Reset all mocks and setup default chains
     setupMockDbChains(mockDb);
     // Instantiate repository with the per-test mock DB
-    appUserRepository = new AppUserRepository(mockDb as any);
+    appUserRepository = new AppUserRepository(mockDb);
   });
 
   afterEach(() => {
@@ -147,11 +149,12 @@ describe('AppUserRepository', () => {
     it('should create user with all required fields', async () => {
       const createdUser: AppUser = {
         ...mockNewUser,
+        description: null,
         profileImage: null,
         lastSeenAt: null,
         createdAt: new Date('2024-01-01'),
         updatedAt: new Date('2024-01-01'),
-      };
+      } as any;
       mockDb.returning.mockResolvedValue([createdUser]);
 
       const result = await appUserRepository.create(mockNewUser);
@@ -169,10 +172,11 @@ describe('AppUserRepository', () => {
       };
       const createdUser: AppUser = {
         ...userWithImage,
+        description: null,
         lastSeenAt: null,
         createdAt: new Date('2024-01-01'),
         updatedAt: new Date('2024-01-01'),
-      };
+      } as any;
       mockDb.returning.mockResolvedValue([createdUser]);
 
       const result = await appUserRepository.create(userWithImage);
@@ -183,11 +187,12 @@ describe('AppUserRepository', () => {
     it('should set timestamps automatically', async () => {
       const createdUser: AppUser = {
         ...mockNewUser,
+        description: null,
         profileImage: null,
         lastSeenAt: null,
         createdAt: new Date('2024-01-01'),
         updatedAt: new Date('2024-01-01'),
-      };
+      } as any;
       mockDb.returning.mockResolvedValue([createdUser]);
 
       const result = await appUserRepository.create(mockNewUser);
@@ -202,11 +207,12 @@ describe('AppUserRepository', () => {
       mockDb.limit.mockResolvedValueOnce([]);
       const createdUser: AppUser = {
         ...mockNewUser,
+        description: null,
         profileImage: null,
         lastSeenAt: null,
         createdAt: new Date('2024-01-01'),
         updatedAt: new Date('2024-01-01'),
-      };
+      } as any;
       mockDb.returning.mockResolvedValue([createdUser]);
 
       const result = await appUserRepository.findOrCreate(mockNewUser);
@@ -396,7 +402,7 @@ describe('AppUserRepository', () => {
 
   describe('isUsernameTaken', () => {
     it('should return true for existing username', async () => {
-      mockDb.limit.mockResolvedValue([{ id: 'user-123' }]);
+      mockDb.limit.mockResolvedValue([{ id: 'user-123' }] as any);
 
       const result = await appUserRepository.isUsernameTaken('testuser');
 
@@ -415,7 +421,7 @@ describe('AppUserRepository', () => {
     });
 
     it('should be case-insensitive', async () => {
-      mockDb.limit.mockResolvedValue([{ id: 'user-123' }]);
+      mockDb.limit.mockResolvedValue([{ id: 'user-123' }] as any);
 
       const result = await appUserRepository.isUsernameTaken('TESTUSER');
 
@@ -431,7 +437,7 @@ describe('AppUserRepository', () => {
     });
 
     it('should return true when checking another user with same username', async () => {
-      mockDb.limit.mockResolvedValue([{ id: 'user-456' }]);
+      mockDb.limit.mockResolvedValue([{ id: 'user-456' }] as any);
 
       const result = await appUserRepository.isUsernameTaken('testuser', 'user-123');
 
@@ -441,7 +447,7 @@ describe('AppUserRepository', () => {
 
   describe('isEmailTaken', () => {
     it('should return true for existing email', async () => {
-      mockDb.limit.mockResolvedValue([{ id: 'user-123' }]);
+      mockDb.limit.mockResolvedValue([{ id: 'user-123' }] as any);
 
       const result = await appUserRepository.isEmailTaken('test@example.com');
 
@@ -468,7 +474,7 @@ describe('AppUserRepository', () => {
     });
 
     it('should return true when checking another user with same email', async () => {
-      mockDb.limit.mockResolvedValue([{ id: 'user-456' }]);
+      mockDb.limit.mockResolvedValue([{ id: 'user-456' }] as any);
 
       const result = await appUserRepository.isEmailTaken('test@example.com', 'user-123');
 
@@ -521,7 +527,7 @@ describe('AppUserRepository', () => {
 
   describe('count', () => {
     it('should return number', async () => {
-      mockDb.from.mockResolvedValue([{ count: 42 }]);
+      mockDb.from.mockResolvedValue([{ count: 42 }] as any);
 
       const result = await appUserRepository.count();
 
@@ -532,7 +538,7 @@ describe('AppUserRepository', () => {
     });
 
     it('should return non-negative number', async () => {
-      mockDb.from.mockResolvedValue([{ count: 0 }]);
+      mockDb.from.mockResolvedValue([{ count: 0 }] as any);
 
       const result = await appUserRepository.count();
 
@@ -540,7 +546,7 @@ describe('AppUserRepository', () => {
     });
 
     it('should handle null count', async () => {
-      mockDb.from.mockResolvedValue([{ count: null }]);
+      mockDb.from.mockResolvedValue([{ count: null }] as any);
 
       const result = await appUserRepository.count();
 
@@ -611,7 +617,9 @@ describe('AppUserRepository', () => {
       };
 
       // TypeScript should prevent these at compile time
+
       expect((input as any).id).toBeUndefined();
+
       expect((input as any).createdAt).toBeUndefined();
     });
   });
@@ -634,11 +642,12 @@ describe('AppUserRepository', () => {
     it('create should return AppUser', async () => {
       const createdUser: AppUser = {
         ...mockNewUser,
+        description: null,
         profileImage: null,
         lastSeenAt: null,
         createdAt: new Date('2024-01-01'),
         updatedAt: new Date('2024-01-01'),
-      };
+      } as any;
       mockDb.returning.mockResolvedValue([createdUser]);
 
       const result = await appUserRepository.create(mockNewUser);

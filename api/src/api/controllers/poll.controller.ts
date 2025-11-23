@@ -483,7 +483,7 @@ export class PollController {
   async createComment(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = (req as any).user?.id;
-      const { communityId, pollId } = req.params;
+      const { pollId } = req.params;
 
       // Note: Using wealthCommentService as a generic comment service
       // In a production system, you might want a dedicated poll comment service
@@ -546,7 +546,7 @@ export class PollController {
   async listComments(req: Request, res: Response, next: NextFunction) {
     try {
       const userId = (req as any).user?.id;
-      const { communityId, pollId } = req.params;
+      const { pollId } = req.params;
       const { limit, offset } = req.query;
 
       const comments = await wealthCommentService.getCommentsByWealthId(

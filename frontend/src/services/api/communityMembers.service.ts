@@ -25,6 +25,10 @@ class CommunityMembersService {
   async updateMemberRole(communityId: string, userId: string, role: string): Promise<void> {
     return apiClient.put(`${this.basePath}/${communityId}/members/${userId}`, { role });
   }
+
+  async updateMemberFeatureRoles(communityId: string, userId: string, roles: string[]): Promise<void> {
+    return apiClient.put(`${this.basePath}/${communityId}/members/${userId}/feature-roles`, { roles });
+  }
 }
 
 export const communityMembersService = new CommunityMembersService();

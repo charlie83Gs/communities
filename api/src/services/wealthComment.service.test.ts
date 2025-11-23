@@ -3,7 +3,7 @@ import { wealthCommentService } from '@/services/wealthComment.service';
 import { wealthCommentRepository } from '@/repositories/wealthComment.repository';
 import { wealthRepository } from '@/repositories/wealth.repository';
 import { openFGAService } from './openfga.service';
-import { AppError } from '@/utils/errors';
+
 import { testData } from '../../tests/helpers/testUtils';
 
 const mockWealthCommentRepository = {
@@ -69,24 +69,27 @@ describe('WealthCommentService', () => {
       mockOpenFGAService.assignRelation.mockResolvedValue(undefined);
 
       const result = await wealthCommentService.createComment(
-        { wealthId: 'wealth-123', content: 'Test comment' },
+        { wealthId: 'wealth-123', content: 'Test', authorId: 'user-123' } as any,
         'user-123'
       );
 
       expect(result.id).toBe('comment-123');
       expect(mockWealthCommentRepository.create).toHaveBeenCalledWith({
         wealthId: 'wealth-123',
-        content: 'Test comment',
+        content: 'Test',
         authorId: 'user-123',
       });
       expect(mockOpenFGAService.assignRelation).toHaveBeenCalled();
     });
 
     it('should throw error if wealth not found', async () => {
-      mockWealthRepository.findById.mockResolvedValue(null);
+      mockWealthRepository.findById.mockResolvedValue(null as any);
 
       await expect(
-        wealthCommentService.createComment({ wealthId: 'wealth-123', content: 'Test' }, 'user-123')
+        wealthCommentService.createComment(
+          { wealthId: 'wealth-123', content: 'Test', authorId: 'user-123' } as any,
+          'user-123'
+        )
       ).rejects.toThrow('Wealth not found');
     });
 
@@ -95,7 +98,10 @@ describe('WealthCommentService', () => {
       mockOpenFGAService.checkAccess.mockResolvedValue(false);
 
       await expect(
-        wealthCommentService.createComment({ wealthId: 'wealth-123', content: 'Test' }, 'user-123')
+        wealthCommentService.createComment(
+          { wealthId: 'wealth-123', content: 'Test', authorId: 'user-123' } as any,
+          'user-123'
+        )
       ).rejects.toThrow('Forbidden: You do not have permission to comment on this wealth');
     });
   });
@@ -105,8 +111,8 @@ describe('WealthCommentService', () => {
       mockWealthRepository.findById.mockResolvedValue(testData.wealth);
       mockOpenFGAService.checkAccess.mockResolvedValue(true);
       mockWealthCommentRepository.findByWealthId.mockResolvedValue([
-        { id: 'comment-123', content: 'Test comment' },
-      ]);
+        { id: 'comment-123', content: 'Test comment' } as any,
+      ] as any);
 
       const result = await wealthCommentService.getCommentsByWealthId('wealth-123', 'user-123');
 
@@ -114,7 +120,7 @@ describe('WealthCommentService', () => {
     });
 
     it('should throw error if wealth not found', async () => {
-      mockWealthRepository.findById.mockResolvedValue(null);
+      mockWealthRepository.findById.mockResolvedValue(null as any);
 
       await expect(
         wealthCommentService.getCommentsByWealthId('wealth-123', 'user-123')
@@ -137,14 +143,14 @@ describe('WealthCommentService', () => {
         id: 'comment-123',
         authorId: 'user-123',
         content: 'Original',
-      });
+      } as any);
       mockWealthCommentRepository.update.mockResolvedValue({
         id: 'comment-123',
         wealthId: 'wealth-123',
         authorId: 'user-123',
         content: 'Updated comment',
         createdAt: new Date(),
-      });
+      } as any);
 
       const result = await wealthCommentService.updateComment(
         'comment-123',
@@ -157,7 +163,7 @@ describe('WealthCommentService', () => {
     });
 
     it('should throw error if comment not found', async () => {
-      mockWealthCommentRepository.findById.mockResolvedValue(null);
+      mockWealthCommentRepository.findById.mockResolvedValue(null as any);
 
       await expect(
         wealthCommentService.updateComment('comment-123', { content: 'Updated' }, 'user-123')
@@ -169,7 +175,7 @@ describe('WealthCommentService', () => {
         id: 'comment-123',
         authorId: 'user-456',
         content: 'Original',
-      });
+      } as any);
 
       await expect(
         wealthCommentService.updateComment('comment-123', { content: 'Updated' }, 'user-123')
@@ -182,15 +188,16 @@ describe('WealthCommentService', () => {
       mockWealthCommentRepository.findById.mockResolvedValue({
         id: 'comment-123',
         authorId: 'user-123',
-      });
+      } as any);
 
-      const result = await wealthCommentService.deleteComment('comment-123', 'user-123');
+      // @ts-ignore
+      const _result = await wealthCommentService.deleteComment('comment-123', 'user-123');
 
       expect(mockWealthCommentRepository.delete).toHaveBeenCalledWith('comment-123');
     });
 
     it('should throw error if comment not found', async () => {
-      mockWealthCommentRepository.findById.mockResolvedValue(null);
+      mockWealthCommentRepository.findById.mockResolvedValue(null as any);
 
       await expect(wealthCommentService.deleteComment('comment-123', 'user-123')).rejects.toThrow(
         'Comment not found'
@@ -201,7 +208,7 @@ describe('WealthCommentService', () => {
       mockWealthCommentRepository.findById.mockResolvedValue({
         id: 'comment-123',
         authorId: 'user-456',
-      });
+      } as any);
 
       await expect(wealthCommentService.deleteComment('comment-123', 'user-123')).rejects.toThrow(
         'Forbidden: You can only delete your own comments'

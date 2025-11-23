@@ -1,6 +1,6 @@
 import { Component, createSignal, For, Show, createMemo } from 'solid-js';
 import { StatCard } from '@/components/common/StatCard';
-import { LineChart } from '@/components/common/LineChart';
+import { AreaChart } from '@/components/common/AreaChart';
 import { useNeedsOverviewQuery, useNeedsItemsQuery, useAggregatedNeedsQuery } from '@/hooks/queries/useHealthQueries';
 import type { TimeRange } from '@/types/health.types';
 import { makeTranslator } from '@/i18n/makeTranslator';
@@ -30,11 +30,11 @@ export const NeedsStatistics: Component<NeedsStatisticsProps> = (props) => {
   );
 
   const currentRecurrenceData = createMemo(() => {
-    return aggregatedQuery.data?.find(g => g.recurrence === selectedRecurrence());
+    return aggregatedQuery.data?.find((g: { recurrence: string }) => g.recurrence === selectedRecurrence());
   });
 
   const getRecurrenceCount = (recurrence: 'one-time' | 'daily' | 'weekly' | 'monthly') => {
-    return aggregatedQuery.data?.find(g => g.recurrence === recurrence)?.items.length || 0;
+    return aggregatedQuery.data?.find((g: { recurrence: string; items: unknown[] }) => g.recurrence === recurrence)?.items.length || 0;
   };
 
   const getRowClass = (item: { needsTotal: number; wantsTotal: number }) => {
@@ -224,23 +224,24 @@ export const NeedsStatistics: Component<NeedsStatisticsProps> = (props) => {
 
       {/* Time Series Chart */}
       <Show when={!overviewQuery.isLoading && overviewQuery.data}>
-        <LineChart
+        <AreaChart
           title={t('chartTitle')}
           datasets={[
             {
               label: t('needsLine'),
-              data: overviewQuery.data!.timeSeries.needs,
+              data: overviewQuery.data!.timeSeries.cumulativeNeeds,
               color: '#059669', // success-600
             },
             {
               label: t('wantsLine'),
-              data: overviewQuery.data!.timeSeries.wants,
+              data: overviewQuery.data!.timeSeries.cumulativeWants,
               color: '#0284c7', // ocean-600
             },
           ]}
           yAxisLabel={t('count')}
           height={300}
           loading={overviewQuery.isLoading}
+          stacked={true}
         />
       </Show>
 

@@ -1,9 +1,9 @@
 ---
 id: FT-06
 title: Councils
-status: partial
-version: 1.0
-last_updated: 2025-01-06
+status: implemented
+version: 1.1
+last_updated: 2025-11-18
 related_features: [FT-01, FT-02, FT-03, FT-04, FT-05, FT-07, FT-08]
 ---
 
@@ -92,11 +92,49 @@ Reports can include images and documents:
 - `initiative_comments` - Comments on initiatives
 - `initiative_reports` - Progress reports on initiatives
 - `initiative_report_comments` - Comments on reports
-
-### Planned
 - `council_usage_reports` - Council-written explanations of resource usage
 - `report_attachments` - Images and documents attached to council reports
+
+### Planned
 - `council_needs` - Resource requirements published by councils
+
+## Frontend Implementation
+
+The council details page uses a tabbed layout with the following sections:
+
+### Overview Tab
+- Council description and trust score
+- Trust actions (award/remove trust)
+- Managers list
+
+### Inventory Tab
+- Current inventory display
+- Transaction history
+
+### Pools Tab
+- List of pools owned by this council
+- Shows pool name, description, inventory summary
+- Links to pool detail pages
+- Link to create new pool
+
+### Initiatives Tab
+- List of council initiatives with voting (upvote/downvote)
+- Initiative status badges (active, completed, cancelled)
+- Create initiative functionality for managers
+- Links to initiative detail page
+
+### Usage Reports Tab
+- List of usage reports documenting resource usage
+- Expandable reports showing markdown content
+- Attachment support (images, documents)
+- Create/edit/delete for council managers
+
+### Initiative Detail Page
+Route: `/communities/:id/councils/:councilId/initiatives/:initiativeId`
+- Full initiative view with title, description (markdown), status
+- Voting functionality
+- Comments section
+- Progress reports with comments
 
 ## Configuration
 - `minTrustForCouncilCreation` - Minimum trust score to create councils (default: 25)

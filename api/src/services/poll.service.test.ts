@@ -19,7 +19,7 @@
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import { pollService } from '@/services/poll.service';
 import { openFGAService } from './openfga.service';
-import type { CreatePollDto } from '@types/poll.types';
+import type { CreatePollDto } from '../types/poll.types';
 
 // Mock OpenFGA service
 const mockOpenFGAService = {
@@ -125,7 +125,8 @@ describe('PollService - Permission Checks', () => {
 
       try {
         await pollService.createPoll(validPollDto, 'user-123');
-      } catch (error) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      } catch (_error) {
         // Expected to fail due to no permission
       }
 

@@ -14,8 +14,9 @@ describe('Items Validators', () => {
       const req = createMockRequest({
         body: {
           communityId: '123e4567-e89b-12d3-a456-426614174000',
-          name: 'Carrots',
-          description: 'Fresh organic carrots',
+          translations: {
+            en: { name: 'Carrots', description: 'Fresh organic carrots' },
+          },
           kind: 'object',
           wealthValue: '10.50',
         },
@@ -33,7 +34,9 @@ describe('Items Validators', () => {
       const req = createMockRequest({
         body: {
           communityId: '123e4567-e89b-12d3-a456-426614174000',
-          name: 'T',
+          translations: {
+            en: { name: 'T' },
+          },
           kind: 'service',
           wealthValue: '5.00',
         },
@@ -152,9 +155,10 @@ describe('Items Validators', () => {
       const req = createMockRequest({
         body: {
           communityId: '123e4567-e89b-12d3-a456-426614174000',
-          name: 'Carrots',
+          translations: {
+            en: { name: 'Carrots' },
+          },
           kind: 'object',
-          description: null,
           wealthValue: '15.00',
         },
       });
@@ -224,7 +228,7 @@ describe('Items Validators', () => {
     it('should fail validation with empty name', () => {
       const req = createMockRequest({
         params: { id: '123e4567-e89b-12d3-a456-426614174000' },
-        body: { name: '' },
+        body: { translations: { en: { name: '' } } },
       });
       const res = createMockResponse();
       const next = createMockNext();
@@ -238,7 +242,7 @@ describe('Items Validators', () => {
     it('should fail validation with name exceeding 200 characters', () => {
       const req = createMockRequest({
         params: { id: '123e4567-e89b-12d3-a456-426614174000' },
-        body: { name: 'a'.repeat(201) },
+        body: { translations: { en: { name: 'a'.repeat(201) } } },
       });
       const res = createMockResponse();
       const next = createMockNext();

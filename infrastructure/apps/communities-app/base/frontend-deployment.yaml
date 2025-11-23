@@ -18,21 +18,14 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: ghcr.io/charlie83gs/communities-frontend:1.1.0 # {"$imagepolicy": "flux-system:communities-frontend"}
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/charlie83gs/communities-frontend:latest # {"$imagepolicy": "flux-system:communities-frontend"}
+          imagePullPolicy: Always
           ports:
             - name: http
               containerPort: 80
               protocol: TCP
-          env:
-            - name: VITE_API_URL
-              value: "https://api.plv.it.com"
-            - name: VITE_KEYCLOAK_URL
-              value: "https://auth.plv.it.com"
-            - name: VITE_KEYCLOAK_REALM
-              value: "share-app"
-            - name: VITE_KEYCLOAK_CLIENT_ID
-              value: "communities-app"
+          # Note: Vite environment variables are baked into the build at Docker image build time
+          # They are configured in the Dockerfile and GitHub Actions workflow
           livenessProbe:
             httpGet:
               path: /

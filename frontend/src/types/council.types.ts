@@ -10,15 +10,7 @@ export interface Council {
 }
 
 export interface CouncilDetail extends Council {
-  inventory: CouncilInventoryItem[];
   managers: CouncilManager[];
-}
-
-export interface CouncilInventoryItem {
-  categoryId: string;
-  categoryName: string;
-  quantity: number;
-  unit?: string;
 }
 
 export interface CouncilManager {
@@ -27,21 +19,10 @@ export interface CouncilManager {
   addedAt: string;
 }
 
-export interface CouncilTransaction {
-  id: string;
-  type: 'received' | 'used' | 'transferred';
-  categoryId: string;
-  categoryName: string;
-  quantity: number;
-  description: string;
-  fromUser?: string;
-  toPool?: string;
-  createdAt: string;
-}
-
 export interface CreateCouncilDto {
   name: string;
   description: string;
+  additionalManagers?: string[];
 }
 
 export interface UpdateCouncilDto {
@@ -54,15 +35,6 @@ export interface CouncilsListResponse {
   total: number;
   page: number;
   limit: number;
-}
-
-export interface CouncilTransactionsResponse {
-  transactions: CouncilTransaction[];
-  total: number;
-}
-
-export interface CouncilInventoryResponse {
-  inventory: CouncilInventoryItem[];
 }
 
 export interface CouncilTrustStatusResponse {
@@ -88,4 +60,78 @@ export interface AddCouncilManagerResponse {
 
 export interface RemoveCouncilManagerResponse {
   success: boolean;
+}
+
+// Council Pools types
+export interface CouncilPoolSummary {
+  id: string;
+  name: string;
+  description: string | null;
+  allowedItems: Array<{ itemId: string; itemName: string }>;
+  inventorySummary: {
+    totalItems: number;
+    totalQuantity: number;
+  };
+  createdAt: string;
+}
+
+export interface CouncilPoolsResponse {
+  pools: CouncilPoolSummary[];
+  total: number;
+}
+
+// Usage Reports types
+export interface UsageReportAttachment {
+  id: string;
+  filename: string;
+  originalName: string;
+  mimeType: string;
+  size: number;
+  url: string;
+  createdAt: string;
+}
+
+export interface ReportItemDto {
+  itemId: string;
+  quantity: number;
+}
+
+export interface UsageReportItem {
+  id: string;
+  itemId: string;
+  itemName: string;
+  quantity: number;
+  createdAt: string;
+}
+
+export interface UsageReport {
+  id: string;
+  councilId: string;
+  title: string;
+  content: string;
+  createdBy: string;
+  creatorName: string;
+  createdAt: string;
+  updatedAt: string;
+  attachments: UsageReportAttachment[];
+  items: UsageReportItem[];
+}
+
+export interface CreateUsageReportDto {
+  title: string;
+  content: string;
+  items?: ReportItemDto[];
+}
+
+export interface UpdateUsageReportDto {
+  title?: string;
+  content?: string;
+  items?: ReportItemDto[];
+}
+
+export interface UsageReportsListResponse {
+  reports: UsageReport[];
+  total: number;
+  page: number;
+  limit: number;
 }

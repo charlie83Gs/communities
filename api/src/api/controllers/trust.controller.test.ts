@@ -9,20 +9,20 @@ import {
 
 // Mock the service
 const mockTrustService = {
-  getEventsForUser: mock(() => Promise.resolve({ events: [], total: 0, page: 1, limit: 50 })),
-  getTrustView: mock(() => Promise.resolve({ userId: 'user-123', communityId: 'comm-123', points: 10 })),
-  listCommunityTrust: mock(() => Promise.resolve({ data: [], total: 0, page: 1, limit: 50 })),
-  getTrustMe: mock(() => Promise.resolve({ trusted: true, points: 10, roles: ['member'], canAwardTrust: true })),
-  getMyEventsAllCommunities: mock(() => Promise.resolve({ events: [], total: 0, page: 1, limit: 50 })),
-  listMyTrustAcrossCommunities: mock(() => Promise.resolve({ data: [], total: 0, page: 1, limit: 50 })),
-  awardTrust: mock(() => Promise.resolve({ success: true })),
-  removeTrust: mock(() => Promise.resolve({ success: true })),
-  listMyAwards: mock(() => Promise.resolve([])),
-  listAwardsToUser: mock(() => Promise.resolve([])),
-  getTrustHistory: mock(() => Promise.resolve({ history: [], total: 0, page: 1, limit: 50 })),
-  getAdminGrants: mock(() => Promise.resolve([])),
-  setAdminGrant: mock(() => Promise.resolve({ success: true })),
-  deleteAdminGrant: mock(() => Promise.resolve({ success: true })),
+  getEventsForUser: mock(() => Promise.resolve({ events: [] as any[], total: 0, page: 1, limit: 50 })),
+  getTrustView: mock(() => Promise.resolve({ userId: 'user-123', communityId: 'comm-123', points: 10 } as any)),
+  listCommunityTrust: mock(() => Promise.resolve({ data: [] as any[], total: 0, page: 1, limit: 50 })),
+  getTrustMe: mock(() => Promise.resolve({ trusted: true, points: 10, roles: ['member'], canAwardTrust: true } as any)),
+  getMyEventsAllCommunities: mock(() => Promise.resolve({ events: [] as any[], total: 0, page: 1, limit: 50 })),
+  listMyTrustAcrossCommunities: mock(() => Promise.resolve({ data: [] as any[], total: 0, page: 1, limit: 50 })),
+  awardTrust: mock(() => Promise.resolve({ success: true } as any)),
+  removeTrust: mock(() => Promise.resolve({ success: true } as any)),
+  listMyAwards: mock(() => Promise.resolve([] as any[])),
+  listAwardsToUser: mock(() => Promise.resolve([] as any[])),
+  getTrustHistory: mock(() => Promise.resolve({ history: [] as any[], total: 0, page: 1, limit: 50 })),
+  getAdminGrants: mock(() => Promise.resolve([] as any[])),
+  setAdminGrant: mock(() => Promise.resolve({ success: true } as any)),
+  deleteAdminGrant: mock(() => Promise.resolve({ success: true } as any)),
 };
 
 describe('TrustController', () => {

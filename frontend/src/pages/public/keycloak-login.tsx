@@ -1,19 +1,17 @@
 import { Component, createSignal } from 'solid-js';
 import { useNavigate } from '@solidjs/router';
-import { keycloakService } from '@/services/keycloak.service';
+import { useAuth } from '@/components/auth';
 
 const KeycloakLoginPage: Component = () => {
   const navigate = useNavigate();
+  const auth = useAuth();
   const [loading, setLoading] = createSignal(false);
 
   // Option 1: Redirect to Keycloak hosted login (Recommended)
   const handleKeycloakLogin = async () => {
     setLoading(true);
     try {
-      await keycloakService.login({
-        redirectUri: `${window.location.origin}/dashboard`,
-        prompt: 'login',
-      });
+      await auth.login(`${window.location.origin}/dashboard`);
     } catch (error) {
       console.error('Login failed:', error);
       setLoading(false);
@@ -23,9 +21,7 @@ const KeycloakLoginPage: Component = () => {
   const handleKeycloakRegister = async () => {
     setLoading(true);
     try {
-      await keycloakService.register(
-        `${window.location.origin}/dashboard`
-      );
+      await auth.register(`${window.location.origin}/dashboard`);
     } catch (error) {
       console.error('Registration failed:', error);
       setLoading(false);

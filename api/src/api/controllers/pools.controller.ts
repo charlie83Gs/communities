@@ -1,5 +1,5 @@
 import { Response, NextFunction } from 'express';
-import { AuthenticatedRequest } from '@/api/middlewares/auth.middleware';
+import { AuthenticatedRequest } from '@/api/middleware/auth.middleware';
 import { poolsService } from '@/services/pools.service';
 import { ApiResponse } from '@/utils/response';
 import logger from '@/utils/logger';
@@ -41,19 +41,12 @@ class PoolsController {
    *             required:
    *               - name
    *               - description
-   *               - distributionType
    *             properties:
    *               name:
    *                 type: string
    *                 maxLength: 200
    *               description:
    *                 type: string
-   *               primaryItemId:
-   *                 type: string
-   *                 format: uuid
-   *               distributionType:
-   *                 type: string
-   *                 enum: [manual, needs_based]
    *               maxUnitsPerUser:
    *                 type: integer
    *                 minimum: 1
@@ -75,6 +68,83 @@ class PoolsController {
 
       logger.info('Pool created', { poolId: pool.id, communityId, councilId, userId });
       return ApiResponse.created(res, pool, 'Pool created successfully');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * @swagger
+   * /api/v1/communities/{communityId}/councils/{councilId}/pools:
+   *   get:
+   *     summary: Get pools owned by a council
+   *     tags: [Pools]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: communityId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *       - in: path
+   *         name: councilId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *     responses:
+   *       200:
+   *         description: List of pools owned by the council
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 pools:
+   *                   type: array
+   *                   items:
+   *                     type: object
+   *                     properties:
+   *                       id:
+   *                         type: string
+   *                         format: uuid
+   *                       name:
+   *                         type: string
+   *                       description:
+   *                         type: string
+   *                       allowedItems:
+   *                         type: array
+   *                         items:
+   *                           type: object
+   *                           properties:
+   *                             itemId:
+   *                               type: string
+   *                             itemName:
+   *                               type: string
+   *                       inventorySummary:
+   *                         type: object
+   *                         properties:
+   *                           totalItems:
+   *                             type: integer
+   *                           totalQuantity:
+   *                             type: integer
+   *                       createdAt:
+   *                         type: string
+   *                         format: date-time
+   *                 total:
+   *                   type: integer
+   *       404:
+   *         description: Council not found
+   */
+  async getCouncilPools(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const { councilId } = req.params;
+      const userId = req.user!.id;
+
+      const result = await poolsService.getPoolsByCouncil(councilId, userId);
+      return ApiResponse.success(res, result);
     } catch (error) {
       next(error);
     }
@@ -182,12 +252,6 @@ class PoolsController {
    *                 type: string
    *               description:
    *                 type: string
-   *               primaryItemId:
-   *                 type: string
-   *                 format: uuid
-   *               distributionType:
-   *                 type: string
-   *                 enum: [manual, needs_based]
    *               maxUnitsPerUser:
    *                 type: integer
    *               minimumContribution:
@@ -706,6 +770,73 @@ class PoolsController {
 
       const inventory = await poolsService.getPoolInventory(poolId, userId);
       return ApiResponse.success(res, inventory);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * @swagger
+   * /api/v1/communities/{communityId}/pools/{poolId}/needs:
+   *   get:
+   *     summary: Get aggregated needs for pool items
+   *     tags: [Pools]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: communityId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *       - in: path
+   *         name: poolId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *     responses:
+   *       200:
+   *         description: Aggregated needs for pool's whitelisted items
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 items:
+   *                   type: array
+   *                   items:
+   *                     type: object
+   *                     properties:
+   *                       itemId:
+   *                         type: string
+   *                       itemName:
+   *                         type: string
+   *                       categoryName:
+   *                         type: string
+   *                       totalNeedsCount:
+   *                         type: integer
+   *                       totalWantsCount:
+   *                         type: integer
+   *                       totalNeedsUnits:
+   *                         type: integer
+   *                       totalWantsUnits:
+   *                         type: integer
+   *                       poolInventoryUnits:
+   *                         type: integer
+   *                       recurrenceBreakdown:
+   *                         type: object
+   *       403:
+   *         description: Only council managers can view pool needs
+   */
+  async getPoolNeeds(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const { poolId } = req.params;
+      const userId = req.user!.id;
+
+      const needs = await poolsService.getPoolNeeds(poolId, userId);
+      return ApiResponse.success(res, needs);
     } catch (error) {
       next(error);
     }

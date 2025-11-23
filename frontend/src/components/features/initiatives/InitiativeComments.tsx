@@ -9,6 +9,7 @@ import { Button } from '@/components/common/Button';
 
 interface InitiativeCommentsProps {
   communityId: string;
+  councilId: string;
   initiativeId: string;
 }
 
@@ -18,6 +19,7 @@ export const InitiativeComments: Component<InitiativeCommentsProps> = (props) =>
 
   const commentsQuery = useInitiativeCommentsQuery(
     () => props.communityId,
+    () => props.councilId,
     () => props.initiativeId
   );
   const createCommentMutation = useCreateInitiativeCommentMutation();
@@ -30,6 +32,7 @@ export const InitiativeComments: Component<InitiativeCommentsProps> = (props) =>
     try {
       await createCommentMutation.mutateAsync({
         communityId: props.communityId,
+        councilId: props.councilId,
         initiativeId: props.initiativeId,
         dto: { content },
       });

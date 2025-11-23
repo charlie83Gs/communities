@@ -10,16 +10,19 @@ export const trustStatisticsDict = {
       // Overview cards
       totalTrust: 'Total Trust',
       totalTrustSubtitle: 'All members combined',
+      peerTrust: 'Peer Trust',
+      peerTrustSubtitle: 'From other members',
+      adminTrust: 'Admin Trust',
+      adminTrustSubtitle: 'Granted by admins',
       averageTrust: 'Average Trust',
       averageTrustSubtitle: 'Per member',
       trustPerDay: 'Trust Per Day',
       trustPerDaySubtitle: 'Average daily growth',
 
       // Chart
-      chartTitle: 'Trust Activity Over Time',
-      awarded: 'Awarded',
-      removed: 'Removed',
-      net: 'Net Change',
+      chartTitle: 'Cumulative Trust Over Time',
+      peerTrustLine: 'Peer Trust',
+      adminTrustLine: 'Admin Trust',
       trustPoints: 'Trust Points',
 
       // Distribution table
@@ -46,15 +49,18 @@ export const trustStatisticsDict = {
 
       totalTrust: 'Confianza Total',
       totalTrustSubtitle: 'Todos los miembros combinados',
+      peerTrust: 'Confianza de Pares',
+      peerTrustSubtitle: 'De otros miembros',
+      adminTrust: 'Confianza de Admin',
+      adminTrustSubtitle: 'Otorgada por administradores',
       averageTrust: 'Confianza Promedio',
       averageTrustSubtitle: 'Por miembro',
       trustPerDay: 'Confianza por Día',
       trustPerDaySubtitle: 'Crecimiento diario promedio',
 
-      chartTitle: 'Actividad de Confianza a lo Largo del Tiempo',
-      awarded: 'Otorgado',
-      removed: 'Eliminado',
-      net: 'Cambio Neto',
+      chartTitle: 'Confianza Acumulada a lo Largo del Tiempo',
+      peerTrustLine: 'Confianza de Pares',
+      adminTrustLine: 'Confianza de Admin',
       trustPoints: 'Puntos de Confianza',
 
       distributionTableTitle: 'Distribución de Nivel de Confianza',
@@ -79,15 +85,18 @@ export const trustStatisticsDict = {
 
       totalTrust: 'कुल विश्वास',
       totalTrustSubtitle: 'सभी सदस्य संयुक्त',
+      peerTrust: 'सहकर्मी विश्वास',
+      peerTrustSubtitle: 'अन्य सदस्यों से',
+      adminTrust: 'एडमिन विश्वास',
+      adminTrustSubtitle: 'व्यवस्थापकों द्वारा प्रदत्त',
       averageTrust: 'औसत विश्वास',
       averageTrustSubtitle: 'प्रति सदस्य',
       trustPerDay: 'प्रति दिन विश्वास',
       trustPerDaySubtitle: 'औसत दैनिक वृद्धि',
 
-      chartTitle: 'समय के साथ विश्वास गतिविधि',
-      awarded: 'प्रदान किया',
-      removed: 'हटाया गया',
-      net: 'नेट परिवर्तन',
+      chartTitle: 'समय के साथ संचयी विश्वास',
+      peerTrustLine: 'सहकर्मी विश्वास',
+      adminTrustLine: 'एडमिन विश्वास',
       trustPoints: 'विश्वास अंक',
 
       distributionTableTitle: 'विश्वास स्तर वितरण',

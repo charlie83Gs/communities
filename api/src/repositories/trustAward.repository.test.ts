@@ -46,7 +46,7 @@ describe('TrustAwardRepository', () => {
     // Reset all mocks and setup default chains
     setupMockDbChains(mockDb);
     // Instantiate repository with the per-test mock DB
-    trustAwardRepository = new TrustAwardRepository(mockDb as any);
+    trustAwardRepository = new TrustAwardRepository(mockDb);
   });
 
   afterEach(() => {
@@ -248,9 +248,9 @@ describe('TrustAwardRepository', () => {
       const awards = await trustAwardRepository.listUserAwards(testCommunityId, testUserId1);
 
       expect(awards).toHaveLength(2);
-      expect(awards.every((a) => a.fromUserId === testUserId1)).toBe(true);
-      expect(awards.some((a) => a.toUserId === testUserId2)).toBe(true);
-      expect(awards.some((a) => a.toUserId === testUserId3)).toBe(true);
+      expect(awards.every((a: any) => a.fromUserId === testUserId1)).toBe(true);
+      expect(awards.some((a: any) => a.toUserId === testUserId2)).toBe(true);
+      expect(awards.some((a: any) => a.toUserId === testUserId3)).toBe(true);
     });
 
     test('should not include awards from other users', async () => {
@@ -286,9 +286,9 @@ describe('TrustAwardRepository', () => {
       const awards = await trustAwardRepository.listAwardsToUser(testCommunityId, testUserId3);
 
       expect(awards).toHaveLength(2);
-      expect(awards.every((a) => a.toUserId === testUserId3)).toBe(true);
-      expect(awards.some((a) => a.fromUserId === testUserId1)).toBe(true);
-      expect(awards.some((a) => a.fromUserId === testUserId2)).toBe(true);
+      expect(awards.every((a: any) => a.toUserId === testUserId3)).toBe(true);
+      expect(awards.some((a: any) => a.fromUserId === testUserId1)).toBe(true);
+      expect(awards.some((a: any) => a.fromUserId === testUserId2)).toBe(true);
     });
 
     test('should not include awards to other users', async () => {
@@ -311,7 +311,7 @@ describe('TrustAwardRepository', () => {
 
   describe('countAwardsToUser', () => {
     test('should return 0 when user has no awards', async () => {
-      mockDb.where.mockResolvedValue([{ count: 0 }]);
+      mockDb.where.mockResolvedValue([{ count: 0 }] as any);
 
       const count = await trustAwardRepository.countAwardsToUser(testCommunityId, testUserId2);
 
@@ -321,7 +321,7 @@ describe('TrustAwardRepository', () => {
     });
 
     test('should return correct count of awards received', async () => {
-      mockDb.where.mockResolvedValue([{ count: 2 }]);
+      mockDb.where.mockResolvedValue([{ count: 2 }] as any);
 
       const count = await trustAwardRepository.countAwardsToUser(testCommunityId, testUserId3);
 
@@ -329,7 +329,7 @@ describe('TrustAwardRepository', () => {
     });
 
     test('should not count awards from other communities', async () => {
-      mockDb.where.mockResolvedValue([{ count: 0 }]);
+      mockDb.where.mockResolvedValue([{ count: 0 }] as any);
 
       const count = await trustAwardRepository.countAwardsToUser(differentCommunityId, testUserId2);
 
@@ -339,7 +339,7 @@ describe('TrustAwardRepository', () => {
 
   describe('countAwardsFromUser', () => {
     test('should return 0 when user has given no awards', async () => {
-      mockDb.where.mockResolvedValue([{ count: 0 }]);
+      mockDb.where.mockResolvedValue([{ count: 0 }] as any);
 
       const count = await trustAwardRepository.countAwardsFromUser(testCommunityId, testUserId1);
 
@@ -347,7 +347,7 @@ describe('TrustAwardRepository', () => {
     });
 
     test('should return correct count of awards given', async () => {
-      mockDb.where.mockResolvedValue([{ count: 2 }]);
+      mockDb.where.mockResolvedValue([{ count: 2 }] as any);
 
       const count = await trustAwardRepository.countAwardsFromUser(testCommunityId, testUserId1);
 
@@ -355,7 +355,7 @@ describe('TrustAwardRepository', () => {
     });
 
     test('should not count awards from other communities', async () => {
-      mockDb.where.mockResolvedValue([{ count: 0 }]);
+      mockDb.where.mockResolvedValue([{ count: 0 }] as any);
 
       const count = await trustAwardRepository.countAwardsFromUser(
         differentCommunityId,
@@ -366,7 +366,7 @@ describe('TrustAwardRepository', () => {
     });
 
     test('should not count awards given by other users', async () => {
-      mockDb.where.mockResolvedValue([{ count: 1 }]);
+      mockDb.where.mockResolvedValue([{ count: 1 }] as any);
 
       const count = await trustAwardRepository.countAwardsFromUser(testCommunityId, testUserId1);
 

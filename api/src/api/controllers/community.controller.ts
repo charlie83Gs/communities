@@ -592,6 +592,231 @@ export class CommunityController {
       next(error);
     }
   }
+
+  /**
+   * @swagger
+   * /api/v1/communities/{id}/members/{userId}/feature-roles:
+   *   put:
+   *     summary: Update member feature roles
+   *     description: Set the feature roles for a community member. This replaces all existing feature roles with the provided set.
+   *     tags: [Communities]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Community ID
+   *       - in: path
+   *         name: userId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Target user ID
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required: [roles]
+   *             properties:
+   *               roles:
+   *                 type: array
+   *                 items:
+   *                   type: string
+   *                 example: ["forum_manager", "wealth_creator"]
+   *                 description: Array of feature roles to assign
+   *     responses:
+   *       204:
+   *         description: Feature roles updated successfully
+   *       400:
+   *         description: Validation error - invalid role names
+   *       401:
+   *         description: Unauthorized
+   *       403:
+   *         description: Forbidden - only admins can update feature roles
+   *       404:
+   *         description: Community or user not found
+   */
+  async updateMemberFeatureRoles(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = (req as any).user?.id;
+      if (!userId) {
+        throw new AppError('Unauthorized', 401);
+      }
+
+      const { id: communityId, userId: targetUserId } = req.params as { id: string; userId: string };
+      const { roles } = req.body as { roles: string[] };
+
+      logger.debug(
+        `[Community UpdateMemberFeatureRoles] Request - communityId: ${communityId}, targetUserId: ${targetUserId}, requesterId: ${userId}, roles: [${roles.join(', ')}]`
+      );
+
+      await communityService.updateMemberFeatureRoles(communityId, targetUserId, roles as any, userId);
+
+      logger.info(
+        `[Community UpdateMemberFeatureRoles] Success - communityId: ${communityId}, targetUserId: ${targetUserId}`
+      );
+
+      return res.status(204).send();
+    } catch (error) {
+      const userId = (req as any).user?.id;
+      const { id: communityId, userId: targetUserId } = req.params as { id: string; userId: string };
+      logger.error(
+        `[Community UpdateMemberFeatureRoles] Error for communityId: ${communityId}, targetUserId: ${targetUserId}, requesterId: ${userId || 'guest'} - ${error}`
+      );
+      next(error);
+    }
+  }
+
+  /**
+   * @swagger
+   * /api/v1/communities/{id}/stats/summary:
+   *   get:
+   *     summary: Get community statistics summary
+   *     description: Returns aggregated statistics about the community including member count, average trust score, wealth count, pool count, and needs count.
+   *     tags: [Communities]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Community ID
+   *     responses:
+   *       200:
+   *         description: Community statistics summary
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 memberCount:
+   *                   type: integer
+   *                   description: Total number of community members
+   *                   example: 42
+   *                 avgTrustScore:
+   *                   type: number
+   *                   description: Average trust score across all members
+   *                   example: 15
+   *                 wealthCount:
+   *                   type: integer
+   *                   description: Number of active wealth items
+   *                   example: 18
+   *                 poolCount:
+   *                   type: integer
+   *                   description: Number of active pools
+   *                   example: 3
+   *                 needsCount:
+   *                   type: integer
+   *                   description: Number of open needs
+   *                   example: 7
+   *       401:
+   *         description: Unauthorized
+   *       403:
+   *         description: Forbidden - user must be a community member
+   *       404:
+   *         description: Community not found
+   */
+  async getStatsSummary(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = (req as any).user?.id;
+      const { id } = req.params as { id: string };
+
+      if (!userId) {
+        throw new AppError('Unauthorized', 401);
+      }
+
+      logger.debug(`[Community GetStatsSummary] Request - communityId: ${id}, userId: ${userId}`);
+      const stats = await communityService.getStatsSummary(id, userId);
+      logger.debug(`[Community GetStatsSummary] Success - communityId: ${id}`);
+
+      return ApiResponse.success(res, stats);
+    } catch (error) {
+      const userId = (req as any).user?.id;
+      const { id } = req.params as { id: string };
+      logger.error(`[Community GetStatsSummary] Error for communityId: ${id}, userId: ${userId || 'guest'} - ${error}`);
+      next(error);
+    }
+  }
+
+  /**
+   * @swagger
+   * /api/v1/communities/{id}/stats/pending-actions:
+   *   get:
+   *     summary: Get pending actions for the current user in a community
+   *     description: Returns counts of pending items that require the user's attention, including incoming wealth requests, outgoing requests, pool distributions, and open disputes.
+   *     tags: [Communities]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Community ID
+   *     responses:
+   *       200:
+   *         description: Pending actions for the user
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 incomingRequests:
+   *                   type: integer
+   *                   description: Number of pending requests for user's wealth items
+   *                   example: 5
+   *                 outgoingRequests:
+   *                   type: integer
+   *                   description: Number of user's pending requests to others
+   *                   example: 2
+   *                 poolDistributions:
+   *                   type: integer
+   *                   description: Number of pending pool distributions for user
+   *                   example: 0
+   *                 openDisputes:
+   *                   type: integer
+   *                   description: Number of open disputes where user is a participant
+   *                   example: 1
+   *       401:
+   *         description: Unauthorized
+   *       403:
+   *         description: Forbidden - user must be a community member
+   *       404:
+   *         description: Community not found
+   */
+  async getPendingActions(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = (req as any).user?.id;
+      const { id } = req.params as { id: string };
+
+      if (!userId) {
+        throw new AppError('Unauthorized', 401);
+      }
+
+      logger.debug(`[Community GetPendingActions] Request - communityId: ${id}, userId: ${userId}`);
+      const pendingActions = await communityService.getPendingActions(id, userId);
+      logger.debug(`[Community GetPendingActions] Success - communityId: ${id}`);
+
+      return ApiResponse.success(res, pendingActions);
+    } catch (error) {
+      const userId = (req as any).user?.id;
+      const { id } = req.params as { id: string };
+      logger.error(`[Community GetPendingActions] Error for communityId: ${id}, userId: ${userId || 'guest'} - ${error}`);
+      next(error);
+    }
+  }
 }
 
 export const communityController = new CommunityController();

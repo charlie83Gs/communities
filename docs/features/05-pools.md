@@ -2,8 +2,8 @@
 id: FT-05
 title: Pools
 status: implemented
-version: 2.2
-last_updated: 2025-11-08
+version: 2.4
+last_updated: 2025-11-19
 related_features: [FT-01, FT-02, FT-04, FT-06, FT-07, FT-08]
 ---
 
@@ -44,12 +44,18 @@ Pools leverage the existing wealth sharing tables:
 4. **Unified Analytics**: All shares (individual, council, pool) tracked in same system
 5. **Future Statistics**: Can aggregate how much users contributed to pools vs community vs councils
 
-### Pool Types
-Pools can be configured for different distribution models:
-1. **Standard Pool**: Manual distribution by council managers (creates regular wealth shares)
-2. **Needs-Based Pool**: Mass distribution based on published needs (creates multiple wealth shares at once)
+### Distribution Methods
+Council managers can distribute from pools using either method:
+1. **Manual Distribution**: Individual wealth shares created one at a time
+2. **Mass Distribution**: Multiple wealth shares created at once based on published needs
 
 ## Pool Contribution Process
+
+### Permission Model
+- **No trust requirement to contribute**: Any community member can contribute to pools
+- **Philosophy**: Same as wealth sharing - giving is unrestricted
+- **Permission**: Requires `can_view_wealth` (basic community membership)
+- **Council approval**: All contributions must be confirmed by pool managers before inventory updates
 
 ### Share to Pool Flow
 Pool contributions are **standard wealth shares** with special configuration:
@@ -61,6 +67,7 @@ Pool contributions are **standard wealth shares** with special configuration:
    - Selects existing community item (e.g., "Tomatoes")
    - Specifies quantity (`unitsAvailable`)
    - Creates wealth share entry in `wealth` table
+   - **No trust check required** - anyone can give
 
 2. **Council Confirmation**:
    - Wealth share appears in `wealth_requests` as request to pool (or auto-created request)
@@ -130,7 +137,7 @@ Pool managers create multiple wealth shares at once:
    - Optionally select specific recipients
 
 3. **Create Batch Wealth Shares**:
-   - System creates multiple entries in `wealth` table
+   System creates multiple entries in `wealth` table- 
    - Each share: `createdBy` = council ID, `sourcePoolId` = pool ID
    - Each share auto-assigned to specific recipient (pre-fulfilled)
    - If limit applied: creates share for min(userNeed, limit)
@@ -144,6 +151,648 @@ Pool managers create multiple wealth shares at once:
 - Pool can satisfy all needs fully (if inventory allows)
 - Pool can satisfy all needs partially (up to configured limit)
 - Pool can select specific users from need list
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 - All distributions visible as wealth shares in community feed
 - Each recipient sees standard wealth share (just from council/pool)
 - Council coordinates timing externally (not system-scheduled)
@@ -161,25 +810,31 @@ Pool managers create multiple wealth shares at once:
 - **Name**: Pool identifier (e.g., "Community Tomatoes Pool")
 - **Description**: Pool purpose and details
 - **Council ID**: Owning council
-- **Primary Item**: Main item this pool handles (optional but recommended)
+- **Note**: Pools can contain multiple different items in their inventory (tracked via `pool_inventory` table)
 
 ### Distribution Settings
 - **Distribution Location**: Physical pickup/delivery location (informational only)
-- **Distribution Type**: Manual or needs-based
 - **Max Units Per User**: Cap on individual share amounts
 
 ### Contribution Settings
 - **Minimum Contribution**: Minimum units to contribute to pool (optional)
 
+### Item Whitelist
+- **Allowed Items**: List of item IDs that can be contributed to this pool (optional)
+- If no items are specified, pool accepts any community item
+- If items are specified, only those items can be contributed
+- Contributions and distributions are validated against the whitelist
+- Useful for specialized pools (e.g., "Fresh Produce Pool" only accepts vegetables/fruits)
+
 ### Needs Integration
-- **Linked Need Item**: Connect pool to specific community need
 - **Priority Mode**: How to prioritize when distributing (needs before wants, equal distribution, etc.)
+- **Note**: Pools can distribute any items from their inventory to fulfill community needs
+- **Pool Needs View**: Council members can view aggregated community needs for whitelisted items
 
 ## Visibility
 
 ### Pool Discovery
 - Pools are filterable by council
-- Pools are filterable by primary item
 - All community members can see:
   - Pool inventory levels
   - Recent contributions
@@ -209,6 +864,7 @@ Users can filter wealth shares by:
 - Item type
 - Status
 - Sharing target (community, council, pool)
+- **Pool Contributions**: Advanced filter to show/hide contributions to pools (disabled by default in UI)
 
 ### Statistics and Analytics (Future)
 Because all shares use the same table:
@@ -264,6 +920,7 @@ Because all shares use the same table:
 #### New Pool Tables
 - `pools` - Pool definitions and settings (includes location, limits, linked item)
 - `pool_inventory` - Current resources held by pools (aggregated from confirmed contributions)
+- `pool_allowed_items` - Junction table for item whitelist (poolId, itemId pairs)
 
 #### Enhanced Wealth Tables (Modified)
 - `wealth` - **Extended to support pool contributions and distributions**

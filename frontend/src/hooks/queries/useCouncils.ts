@@ -89,45 +89,6 @@ export const useCouncilTrustStatusQuery = (
   }));
 };
 
-export const useCouncilInventoryQuery = (
-  communityId: Accessor<string | undefined>,
-  councilId: Accessor<string | undefined>
-) => {
-  return createQuery(() => ({
-    queryKey: ['councils', 'inventory', communityId(), councilId()],
-    queryFn: () => councilsService.getInventory(communityId()!, councilId()!),
-    enabled: !!communityId() && !!councilId(),
-    staleTime: 30000, // 30 seconds
-  }));
-};
-
-export const useCouncilTransactionsQuery = (
-  communityId: Accessor<string | undefined>,
-  councilId: Accessor<string | undefined>,
-  params?: {
-    page?: Accessor<number | undefined>;
-    limit?: Accessor<number | undefined>;
-  }
-) => {
-  return createQuery(() => ({
-    queryKey: [
-      'councils',
-      'transactions',
-      communityId(),
-      councilId(),
-      params?.page?.(),
-      params?.limit?.(),
-    ],
-    queryFn: () =>
-      councilsService.getTransactions(communityId()!, councilId()!, {
-        page: params?.page?.(),
-        limit: params?.limit?.(),
-      }),
-    enabled: !!communityId() && !!councilId(),
-    staleTime: 30000, // 30 seconds
-  }));
-};
-
 export const useCreateCouncilMutation = () => {
   const qc = useQueryClient();
   return createMutation(() => ({
@@ -246,5 +207,18 @@ export const useRemoveCouncilManagerMutation = () => {
         queryKey: ['councils', 'detail', vars.communityId, vars.councilId],
       });
     },
+  }));
+};
+
+export const useCouncilPoolsQuery = (
+  communityId: Accessor<string | undefined>,
+  councilId: Accessor<string | undefined>
+) => {
+  return createQuery(() => ({
+    queryKey: ['councils', councilId(), 'pools'],
+    queryFn: () => councilsService.getCouncilPools(communityId()!, councilId()!),
+    enabled: !!communityId() && !!councilId(),
+    staleTime: 30000, // 30 seconds
+    gcTime: 5 * 60 * 1000, // 5 minutes
   }));
 };

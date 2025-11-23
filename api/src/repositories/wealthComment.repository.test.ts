@@ -21,7 +21,7 @@ describe('WealthCommentRepository', () => {
     // Reset all mocks and setup default chains
     setupMockDbChains(mockDb);
     // Instantiate repository with the per-test mock DB
-    wealthCommentRepository = new WealthCommentRepository(mockDb as any);
+    wealthCommentRepository = new WealthCommentRepository(mockDb);
   });
 
   afterEach(() => {

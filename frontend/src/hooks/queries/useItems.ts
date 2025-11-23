@@ -2,11 +2,13 @@ import { createQuery, createMutation, useQueryClient } from '@tanstack/solid-que
 import type { Accessor } from 'solid-js';
 import { itemsService } from '@/services/api/items.service';
 import type { CreateItemDto, UpdateItemDto, ItemKind, Item, ItemListItem } from '@/types/items.types';
+import type { Locale } from '@/stores/i18n.store';
+import { i18nLocale } from '@/stores/i18n.store';
 
-export const useItems = (communityId: Accessor<string>) => {
+export const useItems = (communityId: Accessor<string>, language?: Accessor<Locale>) => {
   return createQuery(() => ({
-    queryKey: ['items', communityId()],
-    queryFn: () => itemsService.listItems(communityId()),
+    queryKey: ['items', communityId(), language?.() || i18nLocale.locale()],
+    queryFn: () => itemsService.listItems(communityId(), language?.() || i18nLocale.locale()),
     enabled: !!communityId(),
   }));
 };
@@ -14,19 +16,22 @@ export const useItems = (communityId: Accessor<string>) => {
 export const useSearchItems = (
   communityId: Accessor<string>,
   query: Accessor<string | undefined>,
-  kind: Accessor<ItemKind | undefined>
+  kind: Accessor<ItemKind | undefined>,
+  language?: Accessor<Locale>
 ) => {
   return createQuery(() => ({
-    queryKey: ['items', 'search', communityId(), query(), kind()],
-    queryFn: () => itemsService.searchItems(communityId(), query(), kind()),
+    queryKey: ['items', 'search', communityId(), query(), kind(), language?.() || i18nLocale.locale()],
+    queryFn: () => itemsService.searchItems(communityId(), query(), kind(), language?.() || i18nLocale.locale()),
     enabled: !!communityId(),
+    placeholderData: (previousData) => previousData, // Keep previous data while fetching new results
+    staleTime: 30000, // Cache results for 30 seconds to reduce unnecessary refetches
   }));
 };
 
-export const useItem = (itemId: Accessor<string | undefined>) => {
+export const useItem = (itemId: Accessor<string | undefined>, language?: Accessor<Locale>) => {
   return createQuery(() => ({
-    queryKey: ['items', itemId()],
-    queryFn: () => itemsService.getItem(itemId()!),
+    queryKey: ['items', itemId(), language?.() || i18nLocale.locale()],
+    queryFn: () => itemsService.getItem(itemId()!, language?.() || i18nLocale.locale()),
     enabled: !!itemId(),
   }));
 };

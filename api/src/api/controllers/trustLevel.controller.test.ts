@@ -9,12 +9,12 @@ import {
 
 // Mock the service
 const mockTrustLevelService = {
-  createTrustLevel: mock(() => Promise.resolve({ id: 'level-123', name: 'Trusted', threshold: 50 })),
-  listTrustLevels: mock(() => Promise.resolve([])),
-  getTrustLevel: mock(() => Promise.resolve({ id: 'level-123', name: 'Trusted', threshold: 50 })),
-  updateTrustLevel: mock(() => Promise.resolve({ id: 'level-123', name: 'Updated', threshold: 60 })),
+  createTrustLevel: mock(() => Promise.resolve({ id: 'level-123', name: 'Trusted', threshold: 50 } as any)),
+  listTrustLevels: mock(() => Promise.resolve([] as any[])),
+  getTrustLevel: mock(() => Promise.resolve({ id: 'level-123', name: 'Trusted', threshold: 50 } as any)),
+  updateTrustLevel: mock(() => Promise.resolve({ id: 'level-123', name: 'Updated', threshold: 60 } as any)),
   deleteTrustLevel: mock(() => Promise.resolve()),
-  resolveTrustReference: mock(() => Promise.resolve({ id: 'level-123', name: 'Trusted', threshold: 50 })),
+  resolveTrustReference: mock(() => Promise.resolve({ id: 'level-123', name: 'Trusted', threshold: 50 } as any)),
 };
 
 describe('TrustLevelController', () => {

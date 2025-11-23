@@ -104,7 +104,7 @@ spec:
     - name: communities-external-secrets
     - name: communities-traefik
 ---
-# PostgreSQL Clusters - Depends on CNPG and External Secrets
+# Communities App - Depends on CNPG, External Secrets, Keycloak, and OpenFGA
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
@@ -115,7 +115,7 @@ spec:
   sourceRef:
     kind: GitRepository
     name: communities
-  path: ./infrastructure/apps/overlays/production
+  path: ./infrastructure/apps/communities-app/overlays/production
   prune: true
   wait: true
   timeout: 15m

@@ -174,3 +174,28 @@ export interface CreateWealthCommentDto {
 export interface UpdateWealthCommentDto {
   content: string;
 }
+
+/**
+ * Pool distribution request type
+ * Extends WealthRequest with pool-specific fields
+ */
+export interface PoolDistributionRequest extends WealthRequest {
+  sourcePoolId: string;
+  poolName: string;
+  wealthTitle: string;
+}
+
+/**
+ * Private message in a wealth request thread
+ */
+export interface WealthRequestMessage {
+  id: string;
+  requestId: string;
+  authorId: string;
+  content: string;
+  createdAt: string;
+  author: {
+    id: string;
+    displayName: string;
+  };
+}

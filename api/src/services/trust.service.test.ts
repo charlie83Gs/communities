@@ -9,7 +9,6 @@ import { adminTrustGrantRepository } from '@/repositories/adminTrustGrant.reposi
 import { trustHistoryRepository } from '@/repositories/trustHistory.repository';
 import { trustLevelRepository } from '@/repositories/trustLevel.repository';
 import { openFGAService } from '@/services/openfga.service';
-import { AppError } from '@/utils/errors';
 
 // Mock repositories
 const mockCommunityRepository = {
@@ -19,7 +18,7 @@ const mockCommunityRepository = {
       name: 'Test Community',
       minTrustToAwardTrust: { type: 'number', value: 15 },
       minTrustForWealth: { type: 'number', value: 10 },
-      minTrustForDisputes: { type: 'number', value: 20 },
+      minTrustForDisputeVisibility: { type: 'number', value: 20 },
       minTrustForPolls: { type: 'number', value: 15 },
     })
   ),
@@ -131,7 +130,11 @@ describe('TrustService', () => {
   describe('isTrusted', () => {
     it('should return true for admin', async () => {
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('admin');
-      mockTrustViewRepository.get.mockResolvedValue({ points: 0 });
+      mockTrustViewRepository.get.mockResolvedValue({
+        communityId: 'comm-123',
+        userId: 'user-123',
+        points: 0,
+      } as any);
 
       const result = await trustService.isTrusted('comm-123', 'user-123');
 
@@ -140,7 +143,11 @@ describe('TrustService', () => {
 
     it('should return true for user with trust points', async () => {
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
-      mockTrustViewRepository.get.mockResolvedValue({ points: 10 });
+      mockTrustViewRepository.get.mockResolvedValue({
+        communityId: 'comm-123',
+        userId: 'user-123',
+        points: 10,
+      } as any);
 
       const result = await trustService.isTrusted('comm-123', 'user-123');
 
@@ -149,7 +156,11 @@ describe('TrustService', () => {
 
     it('should return false for user without trust points', async () => {
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
-      mockTrustViewRepository.get.mockResolvedValue({ points: 0 });
+      mockTrustViewRepository.get.mockResolvedValue({
+        communityId: 'comm-123',
+        userId: 'user-123',
+        points: 0,
+      } as any);
 
       const result = await trustService.isTrusted('comm-123', 'user-123');
 
@@ -161,11 +172,11 @@ describe('TrustService', () => {
     it('should return events for member', async () => {
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
       mockTrustEventRepository.listByUser.mockResolvedValue([
-        { id: 'event-1', createdAt: new Date() },
-      ]);
+        { id: 'event-1', createdAt: new Date() } as any,
+      ] as any);
       mockTrustEventRepository.listByUserB.mockResolvedValue([
-        { id: 'event-2', createdAt: new Date() },
-      ]);
+        { id: 'event-2', createdAt: new Date() } as any,
+      ] as any);
 
       const result = await trustService.getEventsForUser('comm-123', 'user-123', 'user-456', 1, 10);
 
@@ -173,7 +184,7 @@ describe('TrustService', () => {
     });
 
     it('should throw forbidden for non-member', async () => {
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
+      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null as any);
 
       await expect(
         trustService.getEventsForUser('comm-123', 'user-123', 'user-456')
@@ -188,8 +199,7 @@ describe('TrustService', () => {
         communityId: 'comm-123',
         userId: 'user-123',
         points: 15,
-        updatedAt: new Date(),
-      });
+      } as any);
 
       const result = await trustService.getTrustView('comm-123', 'user-123', 'user-456');
 
@@ -198,7 +208,7 @@ describe('TrustService', () => {
 
     it('should return zero points if no view exists', async () => {
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
-      mockTrustViewRepository.get.mockResolvedValue(null);
+      mockTrustViewRepository.get.mockResolvedValue(null as any);
 
       const result = await trustService.getTrustView('comm-123', 'user-123', 'user-456');
 
@@ -206,7 +216,7 @@ describe('TrustService', () => {
     });
 
     it('should throw forbidden for non-member', async () => {
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
+      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null as any);
 
       await expect(trustService.getTrustView('comm-123', 'user-123', 'user-456')).rejects.toThrow(
         'Forbidden: not a member of this community'
@@ -218,8 +228,8 @@ describe('TrustService', () => {
     it('should return community trust list for member', async () => {
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
       mockTrustViewRepository.listByCommunity.mockResolvedValue([
-        { communityId: 'comm-123', userId: 'user-123', points: 10 },
-      ]);
+        { communityId: 'comm-123', userId: 'user-123', points: 10 } as any,
+      ] as any);
 
       const result = await trustService.listCommunityTrust('comm-123', 'user-123', 1, 10);
 
@@ -227,7 +237,7 @@ describe('TrustService', () => {
     });
 
     it('should throw forbidden for non-member', async () => {
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
+      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null as any);
 
       await expect(trustService.listCommunityTrust('comm-123', 'user-123')).rejects.toThrow(
         'Forbidden: not a member of this community'
@@ -238,14 +248,19 @@ describe('TrustService', () => {
   describe('getTrustMe', () => {
     it('should return trust info for user with points', async () => {
       mockCommunityMemberRepository.getUserRoles.mockResolvedValue(['member']);
-      mockTrustViewRepository.get.mockResolvedValue({ points: 20 });
+      mockTrustViewRepository.get.mockResolvedValue({
+        communityId: 'comm-123',
+        userId: 'user-123',
+        points: 20,
+      } as any);
       mockCommunityRepository.findById.mockResolvedValue({
         id: 'comm-123',
+        name: 'Test Community',
         minTrustToAwardTrust: { type: 'number', value: 15 },
         minTrustForWealth: { type: 'number', value: 10 },
-        minTrustForDisputes: { type: 'number', value: 20 },
+        minTrustForDisputeVisibility: { type: 'number', value: 20 },
         minTrustForPolls: { type: 'number', value: 15 },
-      });
+      } as any);
       mockOpenFGAService.checkAccess.mockResolvedValue(true);
 
       const result = await trustService.getTrustMe('comm-123', 'user-123');
@@ -260,11 +275,16 @@ describe('TrustService', () => {
 
     it('should return admin permissions for admin', async () => {
       mockCommunityMemberRepository.getUserRoles.mockResolvedValue(['admin']);
-      mockTrustViewRepository.get.mockResolvedValue({ points: 0 });
+      mockTrustViewRepository.get.mockResolvedValue({
+        communityId: 'comm-123',
+        userId: 'user-123',
+        points: 0,
+      } as any);
       mockCommunityRepository.findById.mockResolvedValue({
         id: 'comm-123',
+        name: 'Test Community',
         minTrustToAwardTrust: { type: 'number', value: 15 },
-      });
+      } as any);
       mockOpenFGAService.checkAccess.mockResolvedValue(true);
 
       const result = await trustService.getTrustMe('comm-123', 'user-123');
@@ -276,14 +296,18 @@ describe('TrustService', () => {
 
   describe('recordShareRedeemed', () => {
     it('should award points when giver is trusted', async () => {
-      mockTrustViewRepository.get.mockResolvedValue({ points: 10 });
+      mockTrustViewRepository.get.mockResolvedValue({
+        communityId: 'comm-123',
+        userId: 'user-123',
+        points: 10,
+      } as any);
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('admin');
 
       const result = await trustService.recordShareRedeemed({
         communityId: 'comm-123',
         giverUserId: 'user-123',
         receiverUserId: 'user-456',
-      });
+      } as any);
 
       expect(result.awarded).toBe(true);
       expect(mockTrustViewRepository.adjustPoints).toHaveBeenCalledTimes(2);
@@ -292,8 +316,8 @@ describe('TrustService', () => {
 
     it('should award points when receiver is trusted', async () => {
       mockTrustViewRepository.get
-        .mockResolvedValueOnce({ points: 0 })
-        .mockResolvedValueOnce({ points: 15 });
+        .mockResolvedValueOnce({ communityId: 'comm-123', userId: 'user-123', points: 0 } as any)
+        .mockResolvedValueOnce({ communityId: 'comm-123', userId: 'user-456', points: 15 } as any);
       mockCommunityMemberRepository.getUserRole
         .mockResolvedValueOnce('member')
         .mockResolvedValueOnce('admin');
@@ -302,20 +326,24 @@ describe('TrustService', () => {
         communityId: 'comm-123',
         giverUserId: 'user-123',
         receiverUserId: 'user-456',
-      });
+      } as any);
 
       expect(result.awarded).toBe(true);
     });
 
     it('should not award points when neither is trusted', async () => {
-      mockTrustViewRepository.get.mockResolvedValue({ points: 0 });
+      mockTrustViewRepository.get.mockResolvedValue({
+        communityId: 'comm-123',
+        userId: 'user-123',
+        points: 0,
+      } as any);
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
 
       const result = await trustService.recordShareRedeemed({
         communityId: 'comm-123',
         giverUserId: 'user-123',
         receiverUserId: 'user-456',
-      });
+      } as any);
 
       expect(result.awarded).toBe(false);
     });
@@ -329,16 +357,20 @@ describe('TrustService', () => {
       mockOpenFGAService.checkAccess.mockResolvedValue(true);
       mockTrustAwardRepository.createAward.mockResolvedValue({
         id: 'award-123',
-      });
-      mockTrustViewRepository.recalculatePoints.mockResolvedValue(undefined);
-      mockTrustViewRepository.get.mockResolvedValue({ points: 20 });
+      } as any);
+      mockTrustViewRepository.recalculatePoints.mockResolvedValue(undefined as any);
+      mockTrustViewRepository.get.mockResolvedValue({
+        communityId: 'comm-123',
+        userId: 'user-456',
+        points: 20,
+      } as any);
       mockCommunityRepository.findById.mockResolvedValue({
         id: 'comm-123',
+        name: 'Test Community',
         minTrustToAwardTrust: { type: 'number', value: 15 },
         minTrustForWealth: { type: 'number', value: 10 },
-        minTrustForNeeds: { type: 'number', value: 5 },
         minTrustForPolls: { type: 'number', value: 15 },
-        minTrustForDisputes: { type: 'number', value: 20 },
+        minTrustForDisputeVisibility: { type: 'number', value: 20 },
         minTrustForPoolCreation: { type: 'number', value: 20 },
         minTrustForCouncilCreation: { type: 'number', value: 25 },
         minTrustForForumModeration: { type: 'number', value: 30 },
@@ -348,11 +380,11 @@ describe('TrustService', () => {
         minTrustForFlagReview: { type: 'number', value: 30 },
         minTrustForItemManagement: { type: 'number', value: 20 },
         minTrustForHealthAnalytics: { type: 'number', value: 20 },
-      });
-      mockOpenFGAService.syncTrustRoles.mockResolvedValue(undefined);
+      } as any);
+      mockOpenFGAService.syncTrustRoles.mockResolvedValue(undefined as any);
       mockTrustHistoryRepository.logAction.mockResolvedValue({
         id: 'history-123',
-      });
+      } as any);
 
       const result = await trustService.awardTrust('comm-123', 'user-123', 'user-456');
 
@@ -364,11 +396,9 @@ describe('TrustService', () => {
         trust_trust_granter: 15,
         trust_wealth_viewer: 0,
         trust_wealth_creator: 10,
-        trust_needs_viewer: 0,
-        trust_needs_publisher: 5,
         trust_poll_viewer: 0,
         trust_poll_creator: 15,
-        trust_dispute_viewer: 0,
+        trust_dispute_viewer: 20,
         trust_dispute_handler: 20,
         trust_pool_viewer: 0,
         trust_pool_creator: 20,
@@ -382,8 +412,11 @@ describe('TrustService', () => {
         trust_flag_reviewer: 30,
         trust_item_viewer: 0,
         trust_item_manager: 20,
+        trust_needs_viewer: 0,
+        trust_needs_publisher: 5,
         trust_analytics_viewer: 20,
-      });
+        trust_skill_endorser: 10,
+      } as any);
       expect(mockTrustHistoryRepository.logAction).toHaveBeenCalled();
     });
 
@@ -394,7 +427,7 @@ describe('TrustService', () => {
     });
 
     it('should throw forbidden for non-member', async () => {
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
+      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null as any);
 
       await expect(trustService.awardTrust('comm-123', 'user-123', 'user-456')).rejects.toThrow(
         'Forbidden: not a member of this community'
@@ -428,16 +461,20 @@ describe('TrustService', () => {
       mockTrustAwardRepository.hasAward.mockResolvedValue(true);
       mockTrustAwardRepository.deleteAward.mockResolvedValue({
         id: 'award-123',
-      });
-      mockTrustViewRepository.recalculatePoints.mockResolvedValue(undefined);
-      mockTrustViewRepository.get.mockResolvedValue({ points: 15 });
+      } as any);
+      mockTrustViewRepository.recalculatePoints.mockResolvedValue(undefined as any);
+      mockTrustViewRepository.get.mockResolvedValue({
+        communityId: 'comm-123',
+        userId: 'user-456',
+        points: 15,
+      } as any);
       mockCommunityRepository.findById.mockResolvedValue({
         id: 'comm-123',
+        name: 'Test Community',
         minTrustToAwardTrust: { type: 'number', value: 15 },
         minTrustForWealth: { type: 'number', value: 10 },
-        minTrustForNeeds: { type: 'number', value: 5 },
         minTrustForPolls: { type: 'number', value: 15 },
-        minTrustForDisputes: { type: 'number', value: 20 },
+        minTrustForDisputeVisibility: { type: 'number', value: 20 },
         minTrustForPoolCreation: { type: 'number', value: 20 },
         minTrustForCouncilCreation: { type: 'number', value: 25 },
         minTrustForForumModeration: { type: 'number', value: 30 },
@@ -447,11 +484,11 @@ describe('TrustService', () => {
         minTrustForFlagReview: { type: 'number', value: 30 },
         minTrustForItemManagement: { type: 'number', value: 20 },
         minTrustForHealthAnalytics: { type: 'number', value: 20 },
-      });
-      mockOpenFGAService.syncTrustRoles.mockResolvedValue(undefined);
+      } as any);
+      mockOpenFGAService.syncTrustRoles.mockResolvedValue(undefined as any);
       mockTrustHistoryRepository.logAction.mockResolvedValue({
         id: 'history-123',
-      });
+      } as any);
 
       const result = await trustService.removeTrust('comm-123', 'user-123', 'user-456');
 
@@ -463,11 +500,9 @@ describe('TrustService', () => {
         trust_trust_granter: 15,
         trust_wealth_viewer: 0,
         trust_wealth_creator: 10,
-        trust_needs_viewer: 0,
-        trust_needs_publisher: 5,
         trust_poll_viewer: 0,
         trust_poll_creator: 15,
-        trust_dispute_viewer: 0,
+        trust_dispute_viewer: 20,
         trust_dispute_handler: 20,
         trust_pool_viewer: 0,
         trust_pool_creator: 20,
@@ -481,13 +516,16 @@ describe('TrustService', () => {
         trust_flag_reviewer: 30,
         trust_item_viewer: 0,
         trust_item_manager: 20,
+        trust_needs_viewer: 0,
+        trust_needs_publisher: 5,
         trust_analytics_viewer: 20,
-      });
+        trust_skill_endorser: 10,
+      } as any);
       expect(mockTrustHistoryRepository.logAction).toHaveBeenCalled();
     });
 
     it('should throw forbidden for non-member', async () => {
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
+      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null as any);
 
       await expect(trustService.removeTrust('comm-123', 'user-123', 'user-456')).rejects.toThrow(
         'Forbidden: not a member of this community'
@@ -526,8 +564,8 @@ describe('TrustService', () => {
     it('should return awards for member', async () => {
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
       mockTrustAwardRepository.listUserAwards.mockResolvedValue([
-        { id: 'award-123', fromUserId: 'user-123', toUserId: 'user-456' },
-      ]);
+        { id: 'award-123', fromUserId: 'user-123', toUserId: 'user-456' } as any,
+      ] as any);
 
       const result = await trustService.listMyAwards('comm-123', 'user-123');
 
@@ -535,7 +573,7 @@ describe('TrustService', () => {
     });
 
     it('should throw forbidden for non-member', async () => {
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
+      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null as any);
 
       await expect(trustService.listMyAwards('comm-123', 'user-123')).rejects.toThrow(
         'Forbidden: not a member of this community'
@@ -547,8 +585,8 @@ describe('TrustService', () => {
     it('should return awards to user for member', async () => {
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
       mockTrustAwardRepository.listAwardsToUser.mockResolvedValue([
-        { id: 'award-123', fromUserId: 'user-123', toUserId: 'user-456' },
-      ]);
+        { id: 'award-123', fromUserId: 'user-123', toUserId: 'user-456' } as any,
+      ] as any);
 
       const result = await trustService.listAwardsToUser('comm-123', 'user-123', 'user-456');
 
@@ -556,7 +594,7 @@ describe('TrustService', () => {
     });
 
     it('should throw forbidden for non-member', async () => {
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
+      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null as any);
 
       await expect(
         trustService.listAwardsToUser('comm-123', 'user-123', 'user-456')
@@ -568,19 +606,23 @@ describe('TrustService', () => {
     it('should set admin grant when user is admin', async () => {
       // Reconfigure mocks for this test
       mockCommunityMemberRepository.isAdmin.mockResolvedValue(true);
-      mockAdminTrustGrantRepository.getGrant.mockResolvedValue(null);
+      mockAdminTrustGrantRepository.getGrant.mockResolvedValue(null as any);
       mockAdminTrustGrantRepository.upsertGrant.mockResolvedValue({
         id: 'grant-123',
-      });
-      mockTrustViewRepository.recalculatePoints.mockResolvedValue(undefined);
-      mockTrustViewRepository.get.mockResolvedValue({ points: 50 });
+      } as any);
+      mockTrustViewRepository.recalculatePoints.mockResolvedValue(undefined as any);
+      mockTrustViewRepository.get.mockResolvedValue({
+        communityId: 'comm-123',
+        userId: 'user-456',
+        points: 50,
+      } as any);
       mockCommunityRepository.findById.mockResolvedValue({
         id: 'comm-123',
+        name: 'Test Community',
         minTrustToAwardTrust: { type: 'number', value: 15 },
         minTrustForWealth: { type: 'number', value: 10 },
-        minTrustForNeeds: { type: 'number', value: 5 },
         minTrustForPolls: { type: 'number', value: 15 },
-        minTrustForDisputes: { type: 'number', value: 20 },
+        minTrustForDisputeVisibility: { type: 'number', value: 20 },
         minTrustForPoolCreation: { type: 'number', value: 20 },
         minTrustForCouncilCreation: { type: 'number', value: 25 },
         minTrustForForumModeration: { type: 'number', value: 30 },
@@ -590,11 +632,11 @@ describe('TrustService', () => {
         minTrustForFlagReview: { type: 'number', value: 30 },
         minTrustForItemManagement: { type: 'number', value: 20 },
         minTrustForHealthAnalytics: { type: 'number', value: 20 },
-      });
-      mockOpenFGAService.syncTrustRoles.mockResolvedValue(undefined);
+      } as any);
+      mockOpenFGAService.syncTrustRoles.mockResolvedValue(undefined as any);
       mockTrustHistoryRepository.logAction.mockResolvedValue({
         id: 'history-123',
-      });
+      } as any);
 
       const result = await trustService.setAdminGrant('comm-123', 'user-123', 'user-456', 50);
 
@@ -611,11 +653,9 @@ describe('TrustService', () => {
         trust_trust_granter: 15,
         trust_wealth_viewer: 0,
         trust_wealth_creator: 10,
-        trust_needs_viewer: 0,
-        trust_needs_publisher: 5,
         trust_poll_viewer: 0,
         trust_poll_creator: 15,
-        trust_dispute_viewer: 0,
+        trust_dispute_viewer: 20,
         trust_dispute_handler: 20,
         trust_pool_viewer: 0,
         trust_pool_creator: 20,
@@ -629,8 +669,11 @@ describe('TrustService', () => {
         trust_flag_reviewer: 30,
         trust_item_viewer: 0,
         trust_item_manager: 20,
+        trust_needs_viewer: 0,
+        trust_needs_publisher: 5,
         trust_analytics_viewer: 20,
-      });
+        trust_skill_endorser: 10,
+      } as any);
       expect(mockTrustHistoryRepository.logAction).toHaveBeenCalled();
     });
 
@@ -639,19 +682,23 @@ describe('TrustService', () => {
       mockCommunityMemberRepository.isAdmin.mockResolvedValue(true);
       mockAdminTrustGrantRepository.getGrant.mockResolvedValue({
         trustAmount: 30,
-      });
+      } as any);
       mockAdminTrustGrantRepository.upsertGrant.mockResolvedValue({
         id: 'grant-123',
-      });
-      mockTrustViewRepository.recalculatePoints.mockResolvedValue(undefined);
-      mockTrustViewRepository.get.mockResolvedValue({ points: 50 });
+      } as any);
+      mockTrustViewRepository.recalculatePoints.mockResolvedValue(undefined as any);
+      mockTrustViewRepository.get.mockResolvedValue({
+        communityId: 'comm-123',
+        userId: 'user-456',
+        points: 50,
+      } as any);
       mockCommunityRepository.findById.mockResolvedValue({
         id: 'comm-123',
+        name: 'Test Community',
         minTrustToAwardTrust: { type: 'number', value: 15 },
         minTrustForWealth: { type: 'number', value: 10 },
-        minTrustForNeeds: { type: 'number', value: 5 },
         minTrustForPolls: { type: 'number', value: 15 },
-        minTrustForDisputes: { type: 'number', value: 20 },
+        minTrustForDisputeVisibility: { type: 'number', value: 20 },
         minTrustForPoolCreation: { type: 'number', value: 20 },
         minTrustForCouncilCreation: { type: 'number', value: 25 },
         minTrustForForumModeration: { type: 'number', value: 30 },
@@ -661,11 +708,11 @@ describe('TrustService', () => {
         minTrustForFlagReview: { type: 'number', value: 30 },
         minTrustForItemManagement: { type: 'number', value: 20 },
         minTrustForHealthAnalytics: { type: 'number', value: 20 },
-      });
-      mockOpenFGAService.syncTrustRoles.mockResolvedValue(undefined);
+      } as any);
+      mockOpenFGAService.syncTrustRoles.mockResolvedValue(undefined as any);
       mockTrustHistoryRepository.logAction.mockResolvedValue({
         id: 'history-123',
-      });
+      } as any);
 
       const result = await trustService.setAdminGrant('comm-123', 'user-123', 'user-456', 50);
 
@@ -694,8 +741,8 @@ describe('TrustService', () => {
     it('should return grants for admin', async () => {
       mockCommunityMemberRepository.isAdmin.mockResolvedValue(true);
       mockAdminTrustGrantRepository.listAllGrants.mockResolvedValue([
-        { id: 'grant-123', userId: 'user-456', trustAmount: 50 },
-      ]);
+        { id: 'grant-123', userId: 'user-456', trustAmount: 50 } as any,
+      ] as any);
 
       const result = await trustService.getAdminGrants('comm-123', 'user-123');
 
@@ -718,19 +765,23 @@ describe('TrustService', () => {
       mockAdminTrustGrantRepository.getGrant.mockResolvedValue({
         id: 'grant-123',
         trustAmount: 50,
-      });
+      } as any);
       mockAdminTrustGrantRepository.deleteGrant.mockResolvedValue({
         id: 'grant-123',
-      });
-      mockTrustViewRepository.recalculatePoints.mockResolvedValue(undefined);
-      mockTrustViewRepository.get.mockResolvedValue({ points: 0 });
+      } as any);
+      mockTrustViewRepository.recalculatePoints.mockResolvedValue(undefined as any);
+      mockTrustViewRepository.get.mockResolvedValue({
+        communityId: 'comm-123',
+        userId: 'user-456',
+        points: 0,
+      } as any);
       mockCommunityRepository.findById.mockResolvedValue({
         id: 'comm-123',
+        name: 'Test Community',
         minTrustToAwardTrust: { type: 'number', value: 15 },
         minTrustForWealth: { type: 'number', value: 10 },
-        minTrustForNeeds: { type: 'number', value: 5 },
         minTrustForPolls: { type: 'number', value: 15 },
-        minTrustForDisputes: { type: 'number', value: 20 },
+        minTrustForDisputeVisibility: { type: 'number', value: 20 },
         minTrustForPoolCreation: { type: 'number', value: 20 },
         minTrustForCouncilCreation: { type: 'number', value: 25 },
         minTrustForForumModeration: { type: 'number', value: 30 },
@@ -740,11 +791,11 @@ describe('TrustService', () => {
         minTrustForFlagReview: { type: 'number', value: 30 },
         minTrustForItemManagement: { type: 'number', value: 20 },
         minTrustForHealthAnalytics: { type: 'number', value: 20 },
-      });
-      mockOpenFGAService.syncTrustRoles.mockResolvedValue(undefined);
+      } as any);
+      mockOpenFGAService.syncTrustRoles.mockResolvedValue(undefined as any);
       mockTrustHistoryRepository.logAction.mockResolvedValue({
         id: 'history-123',
-      });
+      } as any);
 
       const result = await trustService.deleteAdminGrant('comm-123', 'user-123', 'user-456');
 
@@ -756,11 +807,9 @@ describe('TrustService', () => {
         trust_trust_granter: 15,
         trust_wealth_viewer: 0,
         trust_wealth_creator: 10,
-        trust_needs_viewer: 0,
-        trust_needs_publisher: 5,
         trust_poll_viewer: 0,
         trust_poll_creator: 15,
-        trust_dispute_viewer: 0,
+        trust_dispute_viewer: 20,
         trust_dispute_handler: 20,
         trust_pool_viewer: 0,
         trust_pool_creator: 20,
@@ -774,8 +823,11 @@ describe('TrustService', () => {
         trust_flag_reviewer: 30,
         trust_item_viewer: 0,
         trust_item_manager: 20,
+        trust_needs_viewer: 0,
+        trust_needs_publisher: 5,
         trust_analytics_viewer: 20,
-      });
+        trust_skill_endorser: 10,
+      } as any);
       expect(mockTrustHistoryRepository.logAction).toHaveBeenCalled();
     });
 
@@ -789,7 +841,7 @@ describe('TrustService', () => {
 
     it('should throw error if grant not found', async () => {
       mockCommunityMemberRepository.isAdmin.mockResolvedValue(true);
-      mockAdminTrustGrantRepository.getGrant.mockResolvedValue(null);
+      mockAdminTrustGrantRepository.getGrant.mockResolvedValue(null as any);
 
       await expect(
         trustService.deleteAdminGrant('comm-123', 'user-123', 'user-456')
@@ -801,8 +853,8 @@ describe('TrustService', () => {
     it('should return trust history for member', async () => {
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
       mockTrustHistoryRepository.getHistoryForUser.mockResolvedValue([
-        { id: 'history-123', action: 'award', pointsDelta: 1 },
-      ]);
+        { id: 'history-123', action: 'award', pointsDelta: 1 } as any,
+      ] as any);
 
       const result = await trustService.getTrustHistory('comm-123', 'user-123', 'user-456', 1, 10);
 
@@ -810,7 +862,7 @@ describe('TrustService', () => {
     });
 
     it('should throw forbidden for non-member', async () => {
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
+      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null as any);
 
       await expect(
         trustService.getTrustHistory('comm-123', 'user-123', 'user-456')
@@ -821,8 +873,8 @@ describe('TrustService', () => {
   describe('getMyEventsAllCommunities', () => {
     it('should return events across all communities', async () => {
       mockTrustEventRepository.listByUserAllCommunities.mockResolvedValue([
-        { id: 'event-123', communityId: 'comm-123' },
-      ]);
+        { id: 'event-123', communityId: 'comm-123' } as any,
+      ] as any);
 
       const result = await trustService.getMyEventsAllCommunities('user-123', 1, 10);
 
@@ -833,8 +885,8 @@ describe('TrustService', () => {
   describe('listMyTrustAcrossCommunities', () => {
     it('should return trust across all communities', async () => {
       mockTrustViewRepository.listByUser.mockResolvedValue([
-        { communityId: 'comm-123', userId: 'user-123', points: 10 },
-      ]);
+        { communityId: 'comm-123', userId: 'user-123', points: 10 } as any,
+      ] as any);
 
       const result = await trustService.listMyTrustAcrossCommunities('user-123', 1, 10);
 
@@ -845,11 +897,16 @@ describe('TrustService', () => {
   describe('canAwardTrust', () => {
     it('should return true for admin', async () => {
       mockCommunityMemberRepository.getUserRoles.mockResolvedValue(['admin']);
-      mockTrustViewRepository.get.mockResolvedValue({ points: 0 });
+      mockTrustViewRepository.get.mockResolvedValue({
+        communityId: 'comm-123',
+        userId: 'user-123',
+        points: 0,
+      } as any);
       mockCommunityRepository.findById.mockResolvedValue({
         id: 'comm-123',
+        name: 'Test Community',
         minTrustToAwardTrust: { type: 'number', value: 15 },
-      });
+      } as any);
 
       const result = await trustService.canAwardTrust('user-123', 'comm-123');
 
@@ -858,11 +915,16 @@ describe('TrustService', () => {
 
     it('should return true when user meets numeric threshold', async () => {
       mockCommunityMemberRepository.getUserRoles.mockResolvedValue(['member']);
-      mockTrustViewRepository.get.mockResolvedValue({ points: 20 });
+      mockTrustViewRepository.get.mockResolvedValue({
+        communityId: 'comm-123',
+        userId: 'user-123',
+        points: 20,
+      } as any);
       mockCommunityRepository.findById.mockResolvedValue({
         id: 'comm-123',
+        name: 'Test Community',
         minTrustToAwardTrust: { type: 'number', value: 15 },
-      });
+      } as any);
 
       const result = await trustService.canAwardTrust('user-123', 'comm-123');
 
@@ -871,11 +933,16 @@ describe('TrustService', () => {
 
     it('should return false when user below numeric threshold', async () => {
       mockCommunityMemberRepository.getUserRoles.mockResolvedValue(['member']);
-      mockTrustViewRepository.get.mockResolvedValue({ points: 10 });
+      mockTrustViewRepository.get.mockResolvedValue({
+        communityId: 'comm-123',
+        userId: 'user-123',
+        points: 10,
+      } as any);
       mockCommunityRepository.findById.mockResolvedValue({
         id: 'comm-123',
+        name: 'Test Community',
         minTrustToAwardTrust: { type: 'number', value: 15 },
-      });
+      } as any);
 
       const result = await trustService.canAwardTrust('user-123', 'comm-123');
 
@@ -884,11 +951,16 @@ describe('TrustService', () => {
 
     it('should return false for non-member', async () => {
       mockCommunityMemberRepository.getUserRoles.mockResolvedValue([]);
-      mockTrustViewRepository.get.mockResolvedValue({ points: 20 });
+      mockTrustViewRepository.get.mockResolvedValue({
+        communityId: 'comm-123',
+        userId: 'user-123',
+        points: 20,
+      } as any);
       mockCommunityRepository.findById.mockResolvedValue({
         id: 'comm-123',
+        name: 'Test Community',
         minTrustToAwardTrust: { type: 'number', value: 15 },
-      });
+      } as any);
 
       const result = await trustService.canAwardTrust('user-123', 'comm-123');
 
@@ -897,8 +969,12 @@ describe('TrustService', () => {
 
     it('should throw error if community not found', async () => {
       mockCommunityMemberRepository.getUserRoles.mockResolvedValue(['member']);
-      mockTrustViewRepository.get.mockResolvedValue({ points: 10 });
-      mockCommunityRepository.findById.mockResolvedValue(null);
+      mockTrustViewRepository.get.mockResolvedValue({
+        communityId: 'comm-123',
+        userId: 'user-123',
+        points: 10,
+      } as any);
+      mockCommunityRepository.findById.mockResolvedValue(null as any);
 
       await expect(trustService.canAwardTrust('user-123', 'comm-123')).rejects.toThrow(
         'Community not found'
@@ -909,11 +985,16 @@ describe('TrustService', () => {
   describe('canAccessWealth', () => {
     it('should return true for admin', async () => {
       mockCommunityMemberRepository.getUserRoles.mockResolvedValue(['admin']);
-      mockTrustViewRepository.get.mockResolvedValue({ points: 0 });
+      mockTrustViewRepository.get.mockResolvedValue({
+        communityId: 'comm-123',
+        userId: 'user-123',
+        points: 0,
+      } as any);
       mockCommunityRepository.findById.mockResolvedValue({
         id: 'comm-123',
+        name: 'Test Community',
         minTrustForWealth: { type: 'number', value: 10 },
-      });
+      } as any);
 
       const result = await trustService.canAccessWealth('user-123', 'comm-123');
 
@@ -922,11 +1003,16 @@ describe('TrustService', () => {
 
     it('should return true when user meets threshold', async () => {
       mockCommunityMemberRepository.getUserRoles.mockResolvedValue(['member']);
-      mockTrustViewRepository.get.mockResolvedValue({ points: 15 });
+      mockTrustViewRepository.get.mockResolvedValue({
+        communityId: 'comm-123',
+        userId: 'user-123',
+        points: 15,
+      } as any);
       mockCommunityRepository.findById.mockResolvedValue({
         id: 'comm-123',
+        name: 'Test Community',
         minTrustForWealth: { type: 'number', value: 10 },
-      });
+      } as any);
 
       const result = await trustService.canAccessWealth('user-123', 'comm-123');
 
@@ -935,11 +1021,16 @@ describe('TrustService', () => {
 
     it('should return false when user below threshold', async () => {
       mockCommunityMemberRepository.getUserRoles.mockResolvedValue(['member']);
-      mockTrustViewRepository.get.mockResolvedValue({ points: 5 });
+      mockTrustViewRepository.get.mockResolvedValue({
+        communityId: 'comm-123',
+        userId: 'user-123',
+        points: 5,
+      } as any);
       mockCommunityRepository.findById.mockResolvedValue({
         id: 'comm-123',
+        name: 'Test Community',
         minTrustForWealth: { type: 'number', value: 10 },
-      });
+      } as any);
 
       const result = await trustService.canAccessWealth('user-123', 'comm-123');
 
@@ -950,11 +1041,16 @@ describe('TrustService', () => {
   describe('canHandleDisputes', () => {
     it('should return true for admin', async () => {
       mockCommunityMemberRepository.getUserRoles.mockResolvedValue(['admin']);
-      mockTrustViewRepository.get.mockResolvedValue({ points: 0 });
+      mockTrustViewRepository.get.mockResolvedValue({
+        communityId: 'comm-123',
+        userId: 'user-123',
+        points: 0,
+      } as any);
       mockCommunityRepository.findById.mockResolvedValue({
         id: 'comm-123',
-        minTrustForDisputes: { type: 'number', value: 20 },
-      });
+        name: 'Test Community',
+        minTrustForDisputeVisibility: { type: 'number', value: 20 },
+      } as any);
 
       const result = await trustService.canHandleDisputes('user-123', 'comm-123');
 
@@ -963,11 +1059,16 @@ describe('TrustService', () => {
 
     it('should return true when user meets threshold', async () => {
       mockCommunityMemberRepository.getUserRoles.mockResolvedValue(['member']);
-      mockTrustViewRepository.get.mockResolvedValue({ points: 25 });
+      mockTrustViewRepository.get.mockResolvedValue({
+        communityId: 'comm-123',
+        userId: 'user-123',
+        points: 25,
+      } as any);
       mockCommunityRepository.findById.mockResolvedValue({
         id: 'comm-123',
-        minTrustForDisputes: { type: 'number', value: 20 },
-      });
+        name: 'Test Community',
+        minTrustForDisputeVisibility: { type: 'number', value: 20 },
+      } as any);
 
       const result = await trustService.canHandleDisputes('user-123', 'comm-123');
 
@@ -976,11 +1077,16 @@ describe('TrustService', () => {
 
     it('should return false when user below threshold', async () => {
       mockCommunityMemberRepository.getUserRoles.mockResolvedValue(['member']);
-      mockTrustViewRepository.get.mockResolvedValue({ points: 15 });
+      mockTrustViewRepository.get.mockResolvedValue({
+        communityId: 'comm-123',
+        userId: 'user-123',
+        points: 15,
+      } as any);
       mockCommunityRepository.findById.mockResolvedValue({
         id: 'comm-123',
-        minTrustForDisputes: { type: 'number', value: 20 },
-      });
+        name: 'Test Community',
+        minTrustForDisputeVisibility: { type: 'number', value: 20 },
+      } as any);
 
       const result = await trustService.canHandleDisputes('user-123', 'comm-123');
 
@@ -991,11 +1097,16 @@ describe('TrustService', () => {
   describe('canCreatePolls', () => {
     it('should return true for admin', async () => {
       mockCommunityMemberRepository.getUserRoles.mockResolvedValue(['admin']);
-      mockTrustViewRepository.get.mockResolvedValue({ points: 0 });
+      mockTrustViewRepository.get.mockResolvedValue({
+        communityId: 'comm-123',
+        userId: 'user-123',
+        points: 0,
+      } as any);
       mockCommunityRepository.findById.mockResolvedValue({
         id: 'comm-123',
+        name: 'Test Community',
         minTrustForPolls: { type: 'number', value: 15 },
-      });
+      } as any);
 
       const result = await trustService.canCreatePolls('user-123', 'comm-123');
 
@@ -1004,11 +1115,16 @@ describe('TrustService', () => {
 
     it('should return true when user meets threshold', async () => {
       mockCommunityMemberRepository.getUserRoles.mockResolvedValue(['member']);
-      mockTrustViewRepository.get.mockResolvedValue({ points: 20 });
+      mockTrustViewRepository.get.mockResolvedValue({
+        communityId: 'comm-123',
+        userId: 'user-123',
+        points: 20,
+      } as any);
       mockCommunityRepository.findById.mockResolvedValue({
         id: 'comm-123',
+        name: 'Test Community',
         minTrustForPolls: { type: 'number', value: 15 },
-      });
+      } as any);
 
       const result = await trustService.canCreatePolls('user-123', 'comm-123');
 
@@ -1017,11 +1133,16 @@ describe('TrustService', () => {
 
     it('should return false when user below threshold', async () => {
       mockCommunityMemberRepository.getUserRoles.mockResolvedValue(['member']);
-      mockTrustViewRepository.get.mockResolvedValue({ points: 10 });
+      mockTrustViewRepository.get.mockResolvedValue({
+        communityId: 'comm-123',
+        userId: 'user-123',
+        points: 10,
+      } as any);
       mockCommunityRepository.findById.mockResolvedValue({
         id: 'comm-123',
+        name: 'Test Community',
         minTrustForPolls: { type: 'number', value: 15 },
-      });
+      } as any);
 
       const result = await trustService.canCreatePolls('user-123', 'comm-123');
 
@@ -1033,24 +1154,25 @@ describe('TrustService', () => {
     it('should return numeric value for number type', async () => {
       mockCommunityRepository.findById.mockResolvedValue({
         id: 'comm-123',
-      });
+        name: 'Test Community',
+      } as any);
 
       const result = await trustService.getEffectiveTrustThreshold('comm-123', {
         type: 'number',
         value: 25,
-      });
+      } as any);
 
       expect(result).toBe(25);
     });
 
     it('should throw error if community not found', async () => {
-      mockCommunityRepository.findById.mockResolvedValue(null);
+      mockCommunityRepository.findById.mockResolvedValue(null as any);
 
       await expect(
         trustService.getEffectiveTrustThreshold('comm-123', {
           type: 'number',
           value: 25,
-        })
+        } as any)
       ).rejects.toThrow('Community not found');
     });
   });
@@ -1058,41 +1180,55 @@ describe('TrustService', () => {
   describe('getTrustTimeline', () => {
     it('should return trust timeline with user trust score and sorted thresholds', async () => {
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
-      mockTrustViewRepository.get.mockResolvedValue({ points: 15 });
+      mockTrustViewRepository.get.mockResolvedValue({
+        communityId: 'comm-123',
+        userId: 'user-123',
+        points: 15,
+      } as any);
       mockCommunityRepository.findById.mockResolvedValue({
         id: 'comm-123',
         name: 'Test Community',
+        minTrustToViewTrust: { type: 'number', value: 0 },
         minTrustToAwardTrust: { type: 'number', value: 15 },
+        minTrustToViewWealth: { type: 'number', value: 0 },
         minTrustForWealth: { type: 'number', value: 10 },
+        minTrustToViewItems: { type: 'number', value: 0 },
         minTrustForItemManagement: { type: 'number', value: 20 },
-        minTrustForDisputes: { type: 'number', value: 20 },
+        minTrustForDisputeVisibility: { type: 'number', value: 20 },
+        minTrustToViewPolls: { type: 'number', value: 0 },
         minTrustForPolls: { type: 'number', value: 15 },
+        minTrustToViewPools: { type: 'number', value: 0 },
+        minTrustForPoolCreation: { type: 'number', value: 20 },
+        minTrustToViewCouncils: { type: 'number', value: 0 },
+        minTrustForCouncilCreation: { type: 'number', value: 25 },
+        minTrustToViewForum: { type: 'number', value: 0 },
         minTrustForThreadCreation: { type: 'number', value: 10 },
         minTrustForAttachments: { type: 'number', value: 15 },
         minTrustForFlagging: { type: 'number', value: 15 },
         minTrustForFlagReview: { type: 'number', value: 30 },
         minTrustForForumModeration: { type: 'number', value: 30 },
-      });
+        minTrustForHealthAnalytics: { type: 'number', value: 20 },
+      } as any);
       mockTrustLevelRepository.findByCommunityId.mockResolvedValue([
-        { id: 'level-1', name: 'New', threshold: 0, communityId: 'comm-123' },
+        { id: 'level-1', name: 'New', threshold: 0, communityId: 'comm-123' } as any,
         {
           id: 'level-2',
           name: 'Stable',
           threshold: 10,
           communityId: 'comm-123',
-        },
+        } as any,
         {
           id: 'level-3',
           name: 'Trusted',
           threshold: 50,
           communityId: 'comm-123',
-        },
-      ]);
+        } as any,
+      ] as any);
 
       const result = await trustService.getTrustTimeline('comm-123', 'user-123');
 
       expect(result.userTrustScore).toBe(15);
-      expect(result.timeline).toHaveLength(6); // 0, 10, 15, 20, 30, 50
+      expect(result.timeline).toHaveLength(7); // 0, 10, 15, 20, 25, 30, 50
 
       // Check first threshold (0)
       expect(result.timeline[0].threshold).toBe(0);
@@ -1100,7 +1236,7 @@ describe('TrustService', () => {
       expect(result.timeline[0].trustLevel).toEqual({
         name: 'New',
         id: 'level-1',
-      });
+      } as any);
 
       // Check threshold at 10
       const threshold10 = result.timeline.find((t) => t.threshold === 10);
@@ -1128,7 +1264,7 @@ describe('TrustService', () => {
     });
 
     it('should throw forbidden for non-member', async () => {
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
+      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null as any);
 
       await expect(trustService.getTrustTimeline('comm-123', 'user-123')).rejects.toThrow(
         'Forbidden: not a member of this community'
@@ -1137,7 +1273,7 @@ describe('TrustService', () => {
 
     it('should throw error if community not found', async () => {
       mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
-      mockCommunityRepository.findById.mockResolvedValue(null);
+      mockCommunityRepository.findById.mockResolvedValue(null as any);
 
       await expect(trustService.getTrustTimeline('comm-123', 'user-123')).rejects.toThrow(
         'Community not found'

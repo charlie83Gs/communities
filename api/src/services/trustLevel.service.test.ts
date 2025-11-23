@@ -163,7 +163,7 @@ describe('TrustLevelService', () => {
         name: 'Trusted',
         threshold: 50,
       });
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
+      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null as any);
 
       await expect(trustLevelService.getTrustLevel(validLevelId, validUserId)).rejects.toThrow(
         'Forbidden'
@@ -199,7 +199,7 @@ describe('TrustLevelService', () => {
     });
 
     it('should reject non-member from listing trust levels', async () => {
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
+      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null as any);
 
       await expect(
         trustLevelService.listTrustLevels(validCommunityId, validUserId)

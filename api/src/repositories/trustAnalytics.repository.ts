@@ -1,5 +1,5 @@
 import { db as realDb } from '../db/index';
-import { eq, and, gte, lte, desc, asc, sql } from 'drizzle-orm';
+import { eq, and, gte, lte, asc, sql } from 'drizzle-orm';
 import { trustHistory } from '../db/schema/trustHistory.schema';
 import { communities } from '../db/schema/communities.schema';
 import { appUsers } from '../db/schema/app_users.schema';
@@ -82,19 +82,31 @@ export class TrustAnalyticsRepository {
 
     // Calculate cumulative trust over time
     let cumulative = 0;
-    const timeline: TrustTimelineEvent[] = events.map((event) => {
-      cumulative += event.amount;
-      return {
-        timestamp: event.timestamp,
-        type: event.type as 'award' | 'remove' | 'admin_grant',
-        fromUserId: event.fromUserId,
-        fromUserDisplayName: event.fromUserDisplayName || event.fromUserUsername || null,
-        amount: event.amount,
-        cumulativeTrust: cumulative,
-        communityId: event.communityId,
-        communityName: event.communityName || 'Unknown Community',
-      };
-    });
+    const timeline: TrustTimelineEvent[] = events.map(
+      (event: {
+        id: string;
+        timestamp: Date;
+        type: 'award' | 'remove' | 'admin_grant';
+        fromUserId: string | null;
+        fromUserDisplayName: string | null;
+        fromUserUsername: string | null;
+        amount: number;
+        communityId: string;
+        communityName: string | null;
+      }) => {
+        cumulative += event.amount;
+        return {
+          timestamp: event.timestamp,
+          type: event.type as 'award' | 'remove' | 'admin_grant',
+          fromUserId: event.fromUserId,
+          fromUserDisplayName: event.fromUserDisplayName || event.fromUserUsername || null,
+          amount: event.amount,
+          cumulativeTrust: cumulative,
+          communityId: event.communityId,
+          communityName: event.communityName || 'Unknown Community',
+        };
+      }
+    );
 
     // Return in descending order (newest first) for API response
     return timeline.reverse();
@@ -147,11 +159,13 @@ export class TrustAnalyticsRepository {
       totalTrustPoints: Number(stats.totalPoints),
       totalAwardsReceived: Number(stats.totalAwards),
       totalAwardsRemoved: Number(stats.totalRemovals),
-      trustByCommunity: byCommunity.map((item) => ({
-        communityId: item.communityId,
-        communityName: item.communityName || 'Unknown Community',
-        trustPoints: Number(item.trustPoints),
-      })),
+      trustByCommunity: byCommunity.map(
+        (item: { communityId: string; communityName: string | null; trustPoints: number }) => ({
+          communityId: item.communityId,
+          communityName: item.communityName || 'Unknown Community',
+          trustPoints: Number(item.trustPoints),
+        })
+      ),
     };
   }
 

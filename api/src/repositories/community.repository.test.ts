@@ -1,11 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach, mock } from 'bun:test';
 import { CommunityRepository } from '@/repositories/community.repository';
-import type {
-  CommunitySearchFilters,
-  CommunitySearchResult,
-} from '@/repositories/community.repository';
+import type { CommunitySearchFilters } from '@/repositories/community.repository';
 import type { CreateCommunityDto, UpdateCommunityDto, Community } from '@/types/community.types';
 import { createThenableMockDb, setupMockDbChains } from '../../tests/helpers/mockDb';
+import { communityMemberRepository } from './communityMember.repository';
 
 let communityRepository: CommunityRepository;
 
@@ -13,27 +11,60 @@ let communityRepository: CommunityRepository;
 const mockDb = createThenableMockDb();
 
 // Static test data
-const testCommunity: Community = {
+const testCommunity: Community & { deletedAt?: Date | null } = {
   id: 'comm-123',
   name: 'Test Community',
   description: 'A test community',
   createdBy: 'user-123',
   createdAt: new Date('2024-01-01'),
-  updatedAt: new Date('2024-01-01'),
   deletedAt: null,
   minTrustForWealth: { type: 'number' as const, value: 10 },
   minTrustForPolls: { type: 'number' as const, value: 15 },
   minTrustToAwardTrust: { type: 'number' as const, value: 15 },
-  minTrustForDisputes: { type: 'number' as const, value: 20 },
+  minTrustToViewTrust: { type: 'number' as const, value: 0 },
+  trustTitles: { titles: [{ name: 'New', minScore: 0 }] },
+  minTrustToViewWealth: { type: 'number' as const, value: 0 },
+  minTrustToViewItems: { type: 'number' as const, value: 0 },
+  minTrustForDisputeVisibility: { type: 'number' as const, value: 20 },
+  minTrustForDisputeParticipation: { type: 'number' as const, value: 10 },
+  allowOpenResolutions: true,
+  requireMultipleMediators: false,
+  minMediatorsCount: 1,
+  pollCreatorUsers: [],
+  minTrustToViewPolls: { type: 'number' as const, value: 0 },
   minTrustForPoolCreation: { type: 'number' as const, value: 20 },
+  minTrustToViewPools: { type: 'number' as const, value: 0 },
   minTrustForCouncilCreation: { type: 'number' as const, value: 25 },
+  minTrustToViewCouncils: { type: 'number' as const, value: 0 },
+  nonContributionThresholdDays: 30,
+  dashboardRefreshInterval: 3600,
+  metricVisibilitySettings: {
+    showActiveMembers: true,
+    showWealthGeneration: true,
+    showTrustNetwork: true,
+    showCouncilActivity: true,
+    showNeedsFulfillment: true,
+    showDisputeRate: true,
+  },
+  minTrustForHealthAnalytics: { type: 'number' as const, value: 20 },
   minTrustForForumModeration: { type: 'number' as const, value: 30 },
   minTrustForThreadCreation: { type: 'number' as const, value: 10 },
   minTrustForAttachments: { type: 'number' as const, value: 15 },
   minTrustForFlagging: { type: 'number' as const, value: 15 },
   minTrustForFlagReview: { type: 'number' as const, value: 30 },
+  minTrustToViewForum: { type: 'number' as const, value: 0 },
   minTrustForItemManagement: { type: 'number' as const, value: 20 },
-  minTrustForHealthAnalytics: { type: 'number' as const, value: 20 },
+  minTrustForCheckoutLinks: { type: 'number' as const, value: 5 },
+  featureFlags: {
+    poolsEnabled: true,
+    needsEnabled: true,
+    pollsEnabled: true,
+    councilsEnabled: true,
+    forumEnabled: true,
+    healthAnalyticsEnabled: true,
+    disputesEnabled: true,
+    contributionsEnabled: true,
+  },
 };
 
 const testCommunity2: Community = {
@@ -60,7 +91,7 @@ describe('CommunityRepository', () => {
     });
 
     // Instantiate repository with the per-test mock DB
-    communityRepository = new CommunityRepository(mockDb as any);
+    communityRepository = new CommunityRepository(mockDb);
   });
 
   afterEach(() => {
@@ -75,6 +106,8 @@ describe('CommunityRepository', () => {
       expect(typeof communityRepository.delete).toBe('function');
       expect(typeof communityRepository.search).toBe('function');
       expect(typeof communityRepository.cleanupOldDeleted).toBe('function');
+      expect(typeof communityRepository.getStatsSummary).toBe('function');
+      expect(typeof communityRepository.getPendingActionsCounts).toBe('function');
     });
   });
 
@@ -90,7 +123,7 @@ describe('CommunityRepository', () => {
 
       const result = await communityRepository.create(data);
 
-      expect(result).toEqual(testCommunity);
+      expect(result as any).toEqual(testCommunity as any);
       expect(mockDb.insert).toHaveBeenCalled();
       expect(mockDb.values).toHaveBeenCalled();
       expect(mockDb.returning).toHaveBeenCalled();
@@ -143,7 +176,7 @@ describe('CommunityRepository', () => {
 
       const result = await communityRepository.create(data);
 
-      expect(result.deletedAt).toBeNull();
+      expect((result as any).deletedAt).toBeNull();
     });
   });
 
@@ -153,7 +186,7 @@ describe('CommunityRepository', () => {
 
       const result = await communityRepository.findById('comm-123');
 
-      expect(result).toEqual(testCommunity);
+      expect(result as any).toEqual(testCommunity as any);
       expect(mockDb.select).toHaveBeenCalled();
       expect(mockDb.where).toHaveBeenCalled();
     });
@@ -225,7 +258,7 @@ describe('CommunityRepository', () => {
       const result = await communityRepository.findAll();
 
       result.forEach((community) => {
-        expect(community.deletedAt).toBeNull();
+        expect((community as any).deletedAt).toBeNull();
       });
     });
 
@@ -264,8 +297,8 @@ describe('CommunityRepository', () => {
       const result = await communityRepository.update('comm-123', updates);
 
       expect(result).toBeDefined();
-      expect(result?.name).toBe(updates.name);
-      expect(result?.description).toBe(updates.description);
+      expect(result?.name).toBe(updates.name!);
+      expect(result?.description).toBe(updates.description!);
       expect(mockDb.update).toHaveBeenCalled();
       expect(mockDb.set).toHaveBeenCalled();
       expect(mockDb.returning).toHaveBeenCalled();
@@ -306,7 +339,7 @@ describe('CommunityRepository', () => {
       const result = await communityRepository.update('comm-123', updates);
 
       expect(result).toBeDefined();
-      expect(result?.description).toBe(updates.description);
+      expect(result?.description).toBe(updates.description!);
       expect(result?.name).toBe(testCommunity.name);
     });
   });
@@ -316,14 +349,14 @@ describe('CommunityRepository', () => {
       const deletedCommunity = {
         ...testCommunity,
         deletedAt: new Date('2024-06-01'),
-      };
+      } as any;
       mockDb.where.mockResolvedValue([deletedCommunity]);
 
       const result = await communityRepository.delete('comm-123');
 
       expect(result).toBeDefined();
-      expect(result?.deletedAt).not.toBeNull();
-      expect(result?.deletedAt).toBeInstanceOf(Date);
+      expect((result as any)?.deletedAt).not.toBeNull();
+      expect((result as any)?.deletedAt).toBeInstanceOf(Date);
       expect(mockDb.update).toHaveBeenCalled();
       expect(mockDb.delete).toHaveBeenCalled();
     });
@@ -333,7 +366,7 @@ describe('CommunityRepository', () => {
       const deletedCommunity = {
         ...testCommunity,
         deletedAt: new Date('2024-06-01'),
-      };
+      } as any;
       mockDb.where.mockResolvedValueOnce([deletedCommunity]);
 
       await communityRepository.delete('comm-123');
@@ -365,7 +398,7 @@ describe('CommunityRepository', () => {
       const deletedCommunity = {
         ...testCommunity,
         deletedAt: new Date('2024-06-01'),
-      };
+      } as any;
       mockDb.where.mockResolvedValue([deletedCommunity]);
 
       await communityRepository.delete('comm-123');
@@ -577,7 +610,7 @@ describe('CommunityRepository', () => {
       const result = await communityRepository.search(filters);
 
       result.rows.forEach((community) => {
-        expect(community.deletedAt).toBeNull();
+        expect((community as any).deletedAt).toBeNull();
       });
     });
 
@@ -890,6 +923,150 @@ describe('CommunityRepository', () => {
       const result = await communityRepository.cleanupOldDeleted();
 
       expect(typeof result).toBe('number');
+    });
+  });
+
+  describe('getStatsSummary', () => {
+    const mockFindByCommunity = mock(() => Promise.resolve([]));
+
+    beforeEach(() => {
+      mockFindByCommunity.mockReset();
+      (communityMemberRepository.findByCommunity as any) = mockFindByCommunity;
+    });
+
+    it('should return stats summary with all counts', async () => {
+      // Mock member count from communityMemberRepository
+      mockFindByCommunity.mockResolvedValue(Array(10).fill({ userId: 'user' }) as any);
+      // Mock avg trust score query
+      mockDb.where.mockResolvedValueOnce([{ avg: 15.5 }] as any);
+      // Mock wealth count query
+      mockDb.where.mockResolvedValueOnce([{ count: 5 }] as any);
+      // Mock pool count query
+      mockDb.where.mockResolvedValueOnce([{ count: 2 }] as any);
+      // Mock needs count query
+      mockDb.where.mockResolvedValueOnce([{ count: 3 }] as any);
+
+      const result = await communityRepository.getStatsSummary('comm-123');
+
+      expect(result).toEqual({
+        memberCount: 10,
+        avgTrustScore: 16, // Rounded from 15.5
+        wealthCount: 5,
+        poolCount: 2,
+        needsCount: 3,
+      });
+    });
+
+    it('should return zero for all counts when community is empty', async () => {
+      // Mock empty member list
+      mockFindByCommunity.mockResolvedValue([]);
+      // Mock all queries returning 0
+      mockDb.where.mockResolvedValueOnce([{ avg: 0 }]);
+      mockDb.where.mockResolvedValueOnce([{ count: 0 }]);
+      mockDb.where.mockResolvedValueOnce([{ count: 0 }]);
+      mockDb.where.mockResolvedValueOnce([{ count: 0 }]);
+
+      const result = await communityRepository.getStatsSummary('comm-123');
+
+      expect(result).toEqual({
+        memberCount: 0,
+        avgTrustScore: 0,
+        wealthCount: 0,
+        poolCount: 0,
+        needsCount: 0,
+      });
+    });
+
+    it('should handle null values from database', async () => {
+      // Mock empty member list
+      mockFindByCommunity.mockResolvedValue([]);
+      // Mock queries returning null values
+      mockDb.where.mockResolvedValueOnce([{ avg: null }]);
+      mockDb.where.mockResolvedValueOnce([{ count: null }]);
+      mockDb.where.mockResolvedValueOnce([{ count: null }]);
+      mockDb.where.mockResolvedValueOnce([{ count: null }]);
+
+      const result = await communityRepository.getStatsSummary('comm-123');
+
+      expect(result).toEqual({
+        memberCount: 0,
+        avgTrustScore: 0,
+        wealthCount: 0,
+        poolCount: 0,
+        needsCount: 0,
+      });
+    });
+
+    it('should round average trust score to nearest integer', async () => {
+      mockFindByCommunity.mockResolvedValue(Array(5).fill({ userId: 'user' }) as any);
+      mockDb.where.mockResolvedValueOnce([{ avg: 12.7 }] as any); // Should round to 13
+      mockDb.where.mockResolvedValueOnce([{ count: 3 }] as any);
+      mockDb.where.mockResolvedValueOnce([{ count: 1 }] as any);
+      mockDb.where.mockResolvedValueOnce([{ count: 2 }] as any);
+
+      const result = await communityRepository.getStatsSummary('comm-123');
+
+      expect(result.avgTrustScore).toBe(13);
+    });
+  });
+
+  describe('getPendingActionsCounts', () => {
+    it('should return pending actions counts', async () => {
+      // Mock incoming requests query
+      mockDb.where.mockResolvedValueOnce([{ count: 3 }]);
+      // Mock outgoing requests query
+      mockDb.where.mockResolvedValueOnce([{ count: 2 }]);
+      // Mock open disputes query
+      mockDb.where.mockResolvedValueOnce([{ count: 1 }]);
+
+      const result = await communityRepository.getPendingActionsCounts('comm-123', 'user-123');
+
+      expect(result).toEqual({
+        incomingRequests: 3,
+        outgoingRequests: 2,
+        poolDistributions: 0, // Not yet implemented
+        openDisputes: 1,
+      });
+    });
+
+    it('should return zero for all counts when no pending actions', async () => {
+      mockDb.where.mockResolvedValueOnce([{ count: 0 }]);
+      mockDb.where.mockResolvedValueOnce([{ count: 0 }]);
+      mockDb.where.mockResolvedValueOnce([{ count: 0 }]);
+
+      const result = await communityRepository.getPendingActionsCounts('comm-123', 'user-123');
+
+      expect(result).toEqual({
+        incomingRequests: 0,
+        outgoingRequests: 0,
+        poolDistributions: 0,
+        openDisputes: 0,
+      });
+    });
+
+    it('should handle null values from database', async () => {
+      mockDb.where.mockResolvedValueOnce([{ count: null }]);
+      mockDb.where.mockResolvedValueOnce([{ count: null }]);
+      mockDb.where.mockResolvedValueOnce([{ count: null }]);
+
+      const result = await communityRepository.getPendingActionsCounts('comm-123', 'user-123');
+
+      expect(result).toEqual({
+        incomingRequests: 0,
+        outgoingRequests: 0,
+        poolDistributions: 0,
+        openDisputes: 0,
+      });
+    });
+
+    it('should always return 0 for poolDistributions (not yet implemented)', async () => {
+      mockDb.where.mockResolvedValueOnce([{ count: 5 }]);
+      mockDb.where.mockResolvedValueOnce([{ count: 3 }]);
+      mockDb.where.mockResolvedValueOnce([{ count: 2 }]);
+
+      const result = await communityRepository.getPendingActionsCounts('comm-123', 'user-123');
+
+      expect(result.poolDistributions).toBe(0);
     });
   });
 });

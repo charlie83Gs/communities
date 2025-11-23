@@ -10,6 +10,11 @@ const axiosInstance = axios.create({
 // Request interceptor - Add Authorization header with Keycloak token
 axiosInstance.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
+    // Proactively refresh token if it expires within 30 seconds
+    if (keycloakService.isAuthenticated()) {
+      await keycloakService.ensureTokenValidity(30);
+    }
+
     const token = keycloakService.getToken();
 
     if (token) {
@@ -38,7 +43,7 @@ axiosInstance.interceptors.response.use(
 
       try {
         // Try to refresh the token
-        const refreshed = await keycloakService.refreshToken();
+        const refreshed = await keycloakService.ensureTokenValidity(0);
 
         if (refreshed) {
           // Get the new token and retry the request

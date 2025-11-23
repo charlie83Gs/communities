@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { Request, Response, NextFunction } from 'express';
+import { FEATURE_ROLES } from '../../config/openfga.constants';
 
 /**
  * TrustRequirement schema matching the TrustRequirement type from trustLevel.types.ts
@@ -36,6 +37,17 @@ const metricVisibilitySchema = z.object({
   showDisputeRate: z.boolean().optional(),
 });
 
+const featureFlagsSchema = z.object({
+  poolsEnabled: z.boolean(),
+  needsEnabled: z.boolean(),
+  pollsEnabled: z.boolean(),
+  councilsEnabled: z.boolean(),
+  forumEnabled: z.boolean(),
+  healthAnalyticsEnabled: z.boolean(),
+  disputesEnabled: z.boolean(),
+  contributionsEnabled: z.boolean(),
+});
+
 export const createCommunitySchema = z.object({
   body: z.object({
     name: z.string().min(1).max(100),
@@ -67,6 +79,9 @@ export const createCommunitySchema = z.object({
     nonContributionThresholdDays: z.number().int().min(1).optional(),
     dashboardRefreshInterval: z.number().int().min(60).optional(),
     metricVisibilitySettings: metricVisibilitySchema.optional(),
+
+    // Feature Flags
+    featureFlags: featureFlagsSchema.optional(),
   }),
 }).passthrough();
 
@@ -101,6 +116,9 @@ export const updateCommunitySchema = z.object({
     nonContributionThresholdDays: z.number().int().min(1).optional(),
     dashboardRefreshInterval: z.number().int().min(60).optional(),
     metricVisibilitySettings: metricVisibilitySchema.optional(),
+
+    // Feature Flags
+    featureFlags: featureFlagsSchema.optional(),
   }),
   params: z.object({
     id: z.string().uuid(),
@@ -151,6 +169,16 @@ export const getMemberByIdSchema = z.object({
   }),
 }).passthrough();
 
+export const updateMemberFeatureRolesSchema = z.object({
+  params: z.object({
+    id: z.string().uuid(),
+    userId: z.string().uuid(),
+  }),
+  body: z.object({
+    roles: z.array(z.enum(FEATURE_ROLES)).min(0).max(FEATURE_ROLES.length),
+  }),
+}).passthrough();
+
 function handleZod(
   parse: () => unknown,
   res: Response,
@@ -193,6 +221,9 @@ export const validateUpdateMemberRole = (req: Request, res: Response, next: Next
 
 export const validateGetMemberById = (req: Request, res: Response, next: NextFunction) =>
   handleZod(() => getMemberByIdSchema.parse(req), res, next);
+
+export const validateUpdateMemberFeatureRoles = (req: Request, res: Response, next: NextFunction) =>
+  handleZod(() => updateMemberFeatureRolesSchema.parse(req), res, next);
 
 // Search communities query schema and validator
 // - q: search text (name or description)

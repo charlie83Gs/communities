@@ -1,8 +1,8 @@
 import { Router, Request, Response } from 'express';
-import { keycloakUserService } from '@/services/keycloakUser.service';
-import { verifyToken, AuthenticatedRequest } from '@/api/middleware/auth.middleware';
-import { appUserRepository } from '@/repositories/appUser.repository';
-import { keycloakConfig } from '@/config/keycloak.config';
+import { keycloakUserService } from '../../services/keycloakUser.service';
+import { verifyToken, AuthenticatedRequest } from '../middleware/auth.middleware';
+import { appUserRepository } from '../../repositories/appUser.repository';
+import { keycloakConfig } from '../../config/keycloak.config';
 import axios from 'axios';
 
 const router = Router();

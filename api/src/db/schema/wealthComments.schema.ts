@@ -16,7 +16,7 @@ export const wealthComments = pgTable('wealth_comments', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
-export const wealthCommentsRelations = relations(wealthComments, ({ one, many }) => ({
+export const wealthCommentsRelations = relations(wealthComments, ({ one }) => ({
   wealth: one(wealth, {
     fields: [wealthComments.wealthId],
     references: [wealth.id],

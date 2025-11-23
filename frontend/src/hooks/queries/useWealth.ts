@@ -10,6 +10,8 @@ import type {
   WealthRequest,
   WealthRequestStatus,
   CreateWealthRequestDto,
+  PoolDistributionRequest,
+  WealthRequestMessage,
 } from '@/types/wealth.types';
 
 /**
@@ -54,14 +56,14 @@ export const useCreateWealthMutation = () => {
         createdBy: 'optimistic',
         title: dto.title,
         description: dto.description,
-        type: dto.type,
         durationType: dto.durationType,
         endDate: dto.endDate,
-        distributionType: dto.distributionType,
+        distributionType: dto.distributionType ?? 'unit_based',
         unitsAvailable: dto.unitsAvailable ?? null,
         maxUnitsPerUser: dto.maxUnitsPerUser ?? null,
         automationEnabled: dto.automationEnabled ?? false,
         status: 'active',
+        itemId: dto.itemId,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -273,5 +275,44 @@ export const useIncomingRequestsQuery = (statuses?: Accessor<WealthRequestStatus
   return createQuery(() => ({
     queryKey: ['wealth', 'requests', 'incoming', statuses?.()],
     queryFn: () => wealthService.getIncomingRequests(statuses?.()),
+  }));
+};
+
+export const usePoolDistributionRequestsQuery = (statuses?: Accessor<WealthRequestStatus | WealthRequestStatus[] | undefined>) => {
+  return createQuery(() => ({
+    queryKey: ['wealth', 'requests', 'pool-distributions', statuses?.()],
+    queryFn: () => wealthService.getPoolDistributionRequests(statuses?.()),
+  }));
+};
+
+// Request Messages
+
+export const useRequestMessagesQuery = (
+  wealthId: Accessor<string | undefined>,
+  requestId: Accessor<string | undefined>
+) => {
+  return createQuery(() => ({
+    queryKey: ['wealth', 'messages', wealthId(), requestId()],
+    queryFn: async () => {
+      const wId = wealthId();
+      const rId = requestId();
+      if (!wId || !rId) return { messages: [] as WealthRequestMessage[] };
+      return wealthService.getRequestMessages(wId, rId);
+    },
+    enabled: !!wealthId() && !!requestId(),
+  }));
+};
+
+export const useSendRequestMessageMutation = () => {
+  const qc = useQueryClient();
+  return createMutation(() => ({
+    mutationFn: (args: { wealthId: string; requestId: string; content: string }) =>
+      wealthService.createRequestMessage(args.wealthId, args.requestId, args.content),
+    onSuccess: (message, vars) => {
+      // Invalidate messages for this request
+      qc.invalidateQueries({ queryKey: ['wealth', 'messages', vars.wealthId, vars.requestId] });
+      // Also invalidate notifications as there might be new unread counts
+      qc.invalidateQueries({ queryKey: ['notifications'] });
+    },
   }));
 };

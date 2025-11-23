@@ -14,6 +14,30 @@ export interface MetricVisibilitySettings {
   showDisputeRate?: boolean;
 }
 
+export interface FeatureFlags {
+  poolsEnabled: boolean;
+  needsEnabled: boolean;
+  pollsEnabled: boolean;
+  councilsEnabled: boolean;
+  forumEnabled: boolean;
+  healthAnalyticsEnabled: boolean;
+  disputesEnabled: boolean;
+  contributionsEnabled: boolean;
+}
+
+export interface ValueRecognitionSettings {
+  enabled: boolean;
+  showAggregateStats: boolean;
+  allowPeerGrants: boolean;
+  peerGrantMonthlyLimit: number;
+  peerGrantSamePersonLimit: number;
+  requireVerification: boolean;
+  autoVerifySystemActions: boolean;
+  allowCouncilVerification: boolean;
+  verificationReminderDays: number;
+  softReciprocityNudges: boolean;
+}
+
 export interface Community {
   id: string;
   name: string;
@@ -33,10 +57,11 @@ export interface Community {
   minTrustToViewItems: TrustRequirement;
 
   // Dispute Handling Configuration
-  minTrustForDisputes: TrustRequirement | null;
-  minTrustToViewDisputes: TrustRequirement | null;
-  disputeResolutionRole: string | null;
-  disputeHandlingCouncils: string[] | null; // Array of council IDs
+  minTrustForDisputeVisibility: TrustRequirement;
+  minTrustForDisputeParticipation: TrustRequirement;
+  allowOpenResolutions: boolean;
+  requireMultipleMediators: boolean;
+  minMediatorsCount: number | null;
 
   // Polling Permissions
   pollCreatorUsers: string[] | null; // Array of user IDs
@@ -46,6 +71,9 @@ export interface Community {
   // Pool Permissions
   minTrustForPoolCreation: TrustRequirement | null;
   minTrustToViewPools: TrustRequirement | null;
+
+  // Checkout Links Permissions (FT-21: Sharing Markets)
+  minTrustForCheckoutLinks: TrustRequirement;
 
   // Council Permissions
   minTrustForCouncilCreation: TrustRequirement | null;
@@ -64,6 +92,10 @@ export interface Community {
   minTrustForHealthAnalytics: TrustRequirement;
   dashboardRefreshInterval: number | null; // in seconds
   metricVisibilitySettings: MetricVisibilitySettings | null;
+
+  // Feature Flags - toggles for optional features
+  // Core features (wealth, items, members, trust-timeline, activity, invites, trust-grants, settings) are always enabled
+  featureFlags: FeatureFlags;
 
   createdBy: string | null;
   createdAt: Date | null;
@@ -104,6 +136,9 @@ export interface CreateCommunityDto {
   minTrustForPoolCreation?: TrustRequirement;
   minTrustToViewPools?: TrustRequirement;
 
+  // Checkout Links Permissions (FT-21: Sharing Markets)
+  minTrustForCheckoutLinks?: TrustRequirement;
+
   // Council Permissions
   minTrustForCouncilCreation?: TrustRequirement;
   minTrustToViewCouncils?: TrustRequirement;
@@ -121,6 +156,9 @@ export interface CreateCommunityDto {
   minTrustForHealthAnalytics?: TrustRequirement;
   dashboardRefreshInterval?: number;
   metricVisibilitySettings?: MetricVisibilitySettings;
+
+  // Feature Flags
+  featureFlags?: FeatureFlags;
 }
 
 export interface UpdateCommunityDto {
@@ -155,6 +193,9 @@ export interface UpdateCommunityDto {
   minTrustForPoolCreation?: TrustRequirement;
   minTrustToViewPools?: TrustRequirement;
 
+  // Checkout Links Permissions (FT-21: Sharing Markets)
+  minTrustForCheckoutLinks?: TrustRequirement;
+
   // Council Permissions
   minTrustForCouncilCreation?: TrustRequirement;
   minTrustToViewCouncils?: TrustRequirement;
@@ -172,6 +213,12 @@ export interface UpdateCommunityDto {
   minTrustForHealthAnalytics?: TrustRequirement;
   dashboardRefreshInterval?: number;
   metricVisibilitySettings?: MetricVisibilitySettings;
+
+  // Feature Flags
+  featureFlags?: FeatureFlags;
+
+  // Value Recognition Settings
+  valueRecognitionSettings?: Partial<ValueRecognitionSettings>;
 }
 
 export interface PaginatedCommunities {
@@ -187,4 +234,19 @@ export interface CommunityMember {
   userId: string;
   roles: Array<'member' | 'admin'>;
   joinedAt: Date;
+}
+
+export interface CommunityStatsSummary {
+  memberCount: number;
+  avgTrustScore: number;
+  wealthCount: number;
+  poolCount: number;
+  needsCount: number;
+}
+
+export interface CommunityPendingActions {
+  incomingRequests: number;
+  outgoingRequests: number;
+  poolDistributions: number;
+  openDisputes: number;
 }

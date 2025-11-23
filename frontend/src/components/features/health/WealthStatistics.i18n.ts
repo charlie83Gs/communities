@@ -15,12 +15,16 @@ export const wealthStatisticsDict = {
       activeCategories: 'Active Categories',
       activeCategoriesSubtitle: 'With shares',
 
-      // Chart
-      chartTitle: 'Wealth Activity Over Time',
-      shares: 'Shares',
+      // Charts
+      openSharesChartTitle: 'Open Shares Over Time',
+      openSharesLine: 'Open Shares',
+      requestsChartTitle: 'Daily Requests & Fulfilled',
       requests: 'Requests',
       fulfilled: 'Fulfilled',
       count: 'Count',
+      valueContributedChartTitle: 'Value Contributed Over Time',
+      valueContributedLine: 'Value Points',
+      valuePointsLabel: 'Value Points',
 
       // Items table
       itemsTableTitle: 'Wealth by Category',
@@ -60,11 +64,15 @@ export const wealthStatisticsDict = {
       activeCategories: 'Categorías Activas',
       activeCategoriesSubtitle: 'Con compartidos',
 
-      chartTitle: 'Actividad de Riqueza a lo Largo del Tiempo',
-      shares: 'Compartidos',
+      openSharesChartTitle: 'Compartidos Abiertos a lo Largo del Tiempo',
+      openSharesLine: 'Compartidos Abiertos',
+      requestsChartTitle: 'Solicitudes y Cumplidos Diarios',
       requests: 'Solicitudes',
       fulfilled: 'Cumplidos',
       count: 'Cantidad',
+      valueContributedChartTitle: 'Valor Contribuido a lo Largo del Tiempo',
+      valueContributedLine: 'Puntos de Valor',
+      valuePointsLabel: 'Puntos de Valor',
 
       itemsTableTitle: 'Riqueza por Categoría',
       category: 'Categoría',
@@ -101,11 +109,15 @@ export const wealthStatisticsDict = {
       activeCategories: 'सक्रिय श्रेणियाँ',
       activeCategoriesSubtitle: 'शेयरों के साथ',
 
-      chartTitle: 'समय के साथ धन गतिविधि',
-      shares: 'शेयर',
+      openSharesChartTitle: 'समय के साथ खुले शेयर',
+      openSharesLine: 'खुले शेयर',
+      requestsChartTitle: 'दैनिक अनुरोध और पूर्ण',
       requests: 'अनुरोध',
       fulfilled: 'पूर्ण',
       count: 'गिनती',
+      valueContributedChartTitle: 'समय के साथ योगदान मूल्य',
+      valueContributedLine: 'मूल्य अंक',
+      valuePointsLabel: 'मूल्य अंक',
 
       itemsTableTitle: 'श्रेणी के अनुसार धन',
       category: 'श्रेणी',

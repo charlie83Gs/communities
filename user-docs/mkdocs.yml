@@ -1,0 +1,108 @@
+site_name: Communities - Community Resource Sharing Platform
+site_description: User guide for the Communities community resource sharing platform
+site_author: Communities Team
+
+theme:
+  name: material
+  palette:
+    # Light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: blue
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - navigation.tracking
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.tabs.link
+  icon:
+    repo: fontawesome/brands/github
+
+# Repository
+repo_url: https://github.com/yourusername/communities
+edit_uri: edit/main/user-docs/docs/
+
+# Extensions
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - tables
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+
+# Navigation
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Introduction: getting-started/introduction.md
+      - Creating Your Account: getting-started/creating-account.md
+      - Joining a Community: getting-started/joining-community.md
+      - Understanding Trust: getting-started/understanding-trust.md
+  - Core Concepts:
+      - Communities: concepts/communities.md
+      - Trust System: concepts/trust-system.md
+      - Members & Roles: concepts/members-roles.md
+      - Permissions: concepts/permissions.md
+  - Features:
+      - Overview: features/overview.md
+      - Sharing Wealth: features/wealth-sharing.md
+      - Councils: features/councils.md
+      - Pools: features/pools.md
+      - Community Forum: features/forum.md
+      - Voting & Polls: features/voting-polls.md
+      - Needs System: features/needs-system.md
+      - Value Contributions: features/value-contributions.md
+      - Skills & Endorsements: features/skills-endorsements.md
+      - Dispute Resolution: features/disputes.md
+      - Notifications: features/notifications.md
+  - For Community Admins:
+      - Creating a Community: admin/creating-community.md
+      - Configuring Settings: admin/configuring-settings.md
+      - Managing Members: admin/managing-members.md
+      - Trust Thresholds: admin/trust-thresholds.md
+      - Analytics & Health: admin/analytics-health.md
+      - Moderation: admin/moderation.md
+  - How-To Guides:
+      - Share Resources: guides/share-resources.md
+      - Request Resources: guides/request-resources.md
+      - Award Trust: guides/award-trust.md
+      - Create a Poll: guides/create-poll.md
+      - Join a Council: guides/join-council.md
+      - Create a Pool: guides/create-pool.md
+      - Log Contributions: guides/log-contributions.md
+      - Endorse Skills: guides/endorse-skills.md
+  - FAQ: faq.md
+  - Support: support.md
+
+plugins:
+  - search
+  - tags
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/yourusername/communities

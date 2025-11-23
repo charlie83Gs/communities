@@ -2,9 +2,9 @@ apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
   name: postgres-api
-  namespace: share-app
+  namespace: communities-app
 spec:
-  instances: 3
+  instances: 1
 
   postgresql:
     parameters:
@@ -25,12 +25,13 @@ spec:
     initdb:
       database: api_db
       owner: api_user
-      secret:
-        name: postgres-api-credentials
+      encoding: UTF8
+      localeCType: C
+      localeCollate: C
 
   storage:
     size: 50Gi
-    storageClass: fast-ssd
+    storageClass: do-block-storage
 
   backup:
     barmanObjectStore:
@@ -51,8 +52,8 @@ spec:
 
   resources:
     requests:
-      memory: "2Gi"
-      cpu: "1000m"
+      memory: "512Mi"
+      cpu: "250m"
     limits:
-      memory: "4Gi"
-      cpu: "2000m"
+      memory: "1Gi"
+      cpu: "500m"

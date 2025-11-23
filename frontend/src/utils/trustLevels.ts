@@ -1,6 +1,10 @@
 import type { TrustLevel, TrustLevelPickerValue } from '@/types/community.types';
 
 /**
+ * Trust level utilities for the community trust system
+ */
+
+/**
  * Get the trust level name for a given score
  * @param score - The trust score
  * @param levels - Array of trust levels (must be sorted by threshold ascending)

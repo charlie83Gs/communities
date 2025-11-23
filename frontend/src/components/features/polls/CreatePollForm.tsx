@@ -156,14 +156,14 @@ export const CreatePollForm: Component<CreatePollFormProps> = (props) => {
           {t('options')}
         </label>
         <div class="space-y-2">
-          <For each={options()} fallback={null}>
-            {(_, index) => (
+          <For each={options().map((_, i) => i)} fallback={null}>
+            {(index) => (
               <div class="flex gap-2">
                 <input
                   type="text"
-                  value={options()[index()]}
-                  onInput={(e) => updateOption(index(), e.currentTarget.value)}
-                  placeholder={`${t('optionPlaceholder')} ${index() + 1}`}
+                  value={options()[index]}
+                  onInput={(e) => updateOption(index, e.currentTarget.value)}
+                  placeholder={`${t('optionPlaceholder')} ${index + 1}`}
                   class="flex-1 rounded-md border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 shadow-sm focus:border-ocean-500 focus:ring-ocean-500 sm:text-sm"
                 />
                 <Show when={options().length > 2}>
@@ -171,7 +171,7 @@ export const CreatePollForm: Component<CreatePollFormProps> = (props) => {
                     type="button"
                     variant="secondary"
                     size="sm"
-                    onClick={() => removeOption(index())}
+                    onClick={() => removeOption(index)}
                   >
                     {t('removeOption')}
                   </Button>

@@ -11,6 +11,7 @@ import { initiativesDict } from './initiatives.i18n';
 
 interface InitiativeDetailProps {
   communityId: string;
+  councilId: string;
   initiativeId: string;
   onClose?: () => void;
   canCreateReport?: boolean;
@@ -22,6 +23,7 @@ export const InitiativeDetail: Component<InitiativeDetailProps> = (props) => {
 
   const initiativeQuery = useInitiativeDetailQuery(
     () => props.communityId,
+    () => props.councilId,
     () => props.initiativeId
   );
 
@@ -106,6 +108,7 @@ export const InitiativeDetail: Component<InitiativeDetailProps> = (props) => {
                   <div class="flex items-center gap-4">
                     <VoteButtons
                       communityId={props.communityId}
+                      councilId={props.councilId}
                       initiativeId={props.initiativeId}
                       upvotes={initiative().upvotes || 0}
                       downvotes={initiative().downvotes || 0}
@@ -142,6 +145,7 @@ export const InitiativeDetail: Component<InitiativeDetailProps> = (props) => {
                     </div>
                     <ReportsList
                       communityId={props.communityId}
+                      councilId={props.councilId}
                       initiativeId={props.initiativeId}
                     />
                   </div>
@@ -150,6 +154,7 @@ export const InitiativeDetail: Component<InitiativeDetailProps> = (props) => {
                   <div class="border-t border-stone-200 dark:border-stone-700 pt-6">
                     <InitiativeComments
                       communityId={props.communityId}
+                      councilId={props.councilId}
                       initiativeId={props.initiativeId}
                     />
                   </div>
@@ -163,6 +168,7 @@ export const InitiativeDetail: Component<InitiativeDetailProps> = (props) => {
       {/* Create report modal */}
       <CreateReportModal
         communityId={props.communityId}
+        councilId={props.councilId}
         initiativeId={props.initiativeId}
         isOpen={showCreateReport()}
         onClose={() => setShowCreateReport(false)}

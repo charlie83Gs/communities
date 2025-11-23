@@ -1,6 +1,6 @@
 import { Component, JSX } from 'solid-js';
 import { useNavigate } from '@solidjs/router';
-import { keycloakService } from '@/services/keycloak.service';
+import { useAuth } from '@/components/auth';
 
 interface ProtectedRouteProps {
   children: JSX.Element;
@@ -9,9 +9,10 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute: Component<ProtectedRouteProps> = (props) => {
   const navigate = useNavigate();
+  const auth = useAuth();
 
   // Check authentication
-  const isAuthenticated = keycloakService.isAuthenticated();
+  const isAuthenticated = auth.authenticated();
 
   if (!isAuthenticated) {
     // Redirect to login
@@ -20,7 +21,7 @@ const ProtectedRoute: Component<ProtectedRouteProps> = (props) => {
   }
 
   // Check role if required
-  if (props.requiredRole && !keycloakService.hasRole(props.requiredRole)) {
+  if (props.requiredRole && !auth.hasRole(props.requiredRole)) {
     return (
       <div class="min-h-screen flex items-center justify-center bg-stone-50 dark:bg-stone-900">
         <div class="text-center">

@@ -2,11 +2,11 @@ import { Component, Show, For, createSignal, createMemo } from 'solid-js';
 import { Card } from '@/components/common/Card';
 import { Button } from '@/components/common/Button';
 import { useCommunity } from '@/contexts/CommunityContext';
-import { useForumThreadsQuery, useCreateThreadMutation } from '@/hooks/queries/useForumQueries';
+import { useForumThreadsQuery, useCreateThreadMutation, useUpdateHomepagePinMutation } from '@/hooks/queries/useForumQueries';
 import { useMyTrustSummaryQuery } from '@/hooks/queries/useMyTrustSummaryQuery';
 import { makeTranslator } from '@/i18n/makeTranslator';
 import { forumDict } from '@/pages/protected/community/forum.i18n';
-import type { CreateThreadDto, ThreadListParams } from '@/types/forum.types';
+import type { CreateThreadDto, ThreadListParams, ForumThread } from '@/types/forum.types';
 
 interface ForumThreadListProps {
   communityId: string;
@@ -17,13 +17,18 @@ interface ForumThreadListProps {
 
 export const ForumThreadList: Component<ForumThreadListProps> = (props) => {
   const t = makeTranslator(forumDict, 'forum');
-  const { community, isAdmin, role, canCreateThreads } = useCommunity();
+  const { community, isAdmin, role, canCreateThreads, canManageForum } = useCommunity();
   const [showCreateModal, setShowCreateModal] = createSignal(false);
   const [threadTitle, setThreadTitle] = createSignal('');
   const [threadContent, setThreadContent] = createSignal('');
   const [threadTags, setThreadTags] = createSignal('');
   const [currentPage, setCurrentPage] = createSignal(1);
   const [sortBy, setSortBy] = createSignal<'newest' | 'popular' | 'mostUpvoted'>('newest');
+
+  // Homepage pin state
+  const [showHomepagePinModal, setShowHomepagePinModal] = createSignal(false);
+  const [selectedThreadForPin, setSelectedThreadForPin] = createSignal<ForumThread | null>(null);
+  const [homepagePinPriority, setHomepagePinPriority] = createSignal(0);
 
   const params = createMemo<ThreadListParams>(() => ({
     page: currentPage(),
@@ -33,6 +38,8 @@ export const ForumThreadList: Component<ForumThreadListProps> = (props) => {
 
   const threadsQuery = useForumThreadsQuery(() => props.communityId, () => props.categoryId, params);
   const createThreadMutation = useCreateThreadMutation();
+  const updateHomepagePinMutation = useUpdateHomepagePinMutation();
+  const trustSummaryQuery = useMyTrustSummaryQuery(() => props.communityId);
 
   const canCreateThread = createMemo(() => canCreateThreads());
 
@@ -64,6 +71,47 @@ export const ForumThreadList: Component<ForumThreadListProps> = (props) => {
       props.onThreadClick(result.thread.id, props.categoryId);
     } catch (error) {
       console.error('Error creating thread:', error);
+    }
+  };
+
+  const handleHomepagePinClick = (thread: ForumThread, e: Event) => {
+    e.stopPropagation();
+    setSelectedThreadForPin(thread);
+    setHomepagePinPriority(0);
+    setShowHomepagePinModal(true);
+  };
+
+  const handleHomepageUnpinClick = async (thread: ForumThread, e: Event) => {
+    e.stopPropagation();
+    try {
+      await updateHomepagePinMutation.mutateAsync({
+        communityId: props.communityId,
+        threadId: thread.id,
+        isPinned: false,
+        categoryId: props.categoryId,
+      });
+    } catch (error) {
+      console.error('Error unpinning from homepage:', error);
+    }
+  };
+
+  const handleHomepagePinSubmit = async (e: Event) => {
+    e.preventDefault();
+    const thread = selectedThreadForPin();
+    if (!thread) return;
+
+    try {
+      await updateHomepagePinMutation.mutateAsync({
+        communityId: props.communityId,
+        threadId: thread.id,
+        isPinned: true,
+        priority: homepagePinPriority(),
+        categoryId: props.categoryId,
+      });
+      setShowHomepagePinModal(false);
+      setSelectedThreadForPin(null);
+    } catch (error) {
+      console.error('Error pinning to homepage:', error);
     }
   };
 
@@ -179,6 +227,11 @@ export const ForumThreadList: Component<ForumThreadListProps> = (props) => {
                               📌 {t('pinnedBadge')}
                             </span>
                           </Show>
+                          <Show when={thread.isHomepagePinned}>
+                            <span class="px-2 py-0.5 bg-forest-100 dark:bg-forest-900 text-forest-800 dark:text-forest-200 text-xs font-semibold rounded">
+                              🏠 {t('homepagePinnedBadge')}
+                            </span>
+                          </Show>
                           <Show when={thread.isLocked}>
                             <span class="px-2 py-0.5 bg-stone-200 dark:bg-stone-700 text-stone-700 dark:text-stone-300 text-xs font-semibold rounded">
                               🔒 {t('lockedBadge')}
@@ -191,17 +244,40 @@ export const ForumThreadList: Component<ForumThreadListProps> = (props) => {
                           <span>{t('threadPostCount').replace('{{count}}', thread.postCount.toString())}</span>
                           <span>{t('threadLastActivity').replace('{{time}}', formatTimeAgo(thread.lastActivity))}</span>
                         </div>
-                        <Show when={thread.tags && thread.tags.length > 0}>
-                          <div class="flex gap-2">
-                            <For each={thread.tags}>
-                              {(tag) => (
-                                <span class="px-2 py-0.5 bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300 text-xs rounded">
-                                  #{tag}
-                                </span>
-                              )}
-                            </For>
-                          </div>
-                        </Show>
+                        <div class="flex items-center gap-2">
+                          <Show when={thread.tags && thread.tags.length > 0}>
+                            <div class="flex gap-2">
+                              <For each={thread.tags}>
+                                {(tag) => (
+                                  <span class="px-2 py-0.5 bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300 text-xs rounded">
+                                    #{tag}
+                                  </span>
+                                )}
+                              </For>
+                            </div>
+                          </Show>
+                          {/* Homepage pin action for forum managers */}
+                          <Show when={canManageForum()}>
+                            <Show
+                              when={thread.isHomepagePinned}
+                              fallback={
+                                <button
+                                  onClick={(e) => handleHomepagePinClick(thread, e)}
+                                  class="px-2 py-0.5 bg-forest-100 dark:bg-forest-900 text-forest-700 dark:text-forest-300 text-xs rounded hover:bg-forest-200 dark:hover:bg-forest-800 transition-colors"
+                                >
+                                  {t('pinToHomepage')}
+                                </button>
+                              }
+                            >
+                              <button
+                                onClick={(e) => handleHomepageUnpinClick(thread, e)}
+                                class="px-2 py-0.5 bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300 text-xs rounded hover:bg-stone-200 dark:hover:bg-stone-600 transition-colors"
+                              >
+                                {t('unpinFromHomepage')}
+                              </button>
+                            </Show>
+                          </Show>
+                        </div>
                       </div>
                       <div class="text-center">
                         <div class="text-2xl font-bold text-forest-600 dark:text-forest-400">
@@ -313,6 +389,65 @@ export const ForumThreadList: Component<ForumThreadListProps> = (props) => {
                 </Button>
                 <Button type="submit" loading={createThreadMutation.isPending}>
                   {t('modalCreate')}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </Show>
+
+      {/* Homepage Pin Modal */}
+      <Show when={showHomepagePinModal()}>
+        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div class="bg-stone-50 dark:bg-stone-800 p-6 rounded-lg max-w-md w-full mx-4 border border-stone-200 dark:border-stone-700">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="text-lg font-semibold text-stone-900 dark:text-stone-100">{t('pinToHomepage')}</h3>
+              <button
+                onClick={() => {
+                  setShowHomepagePinModal(false);
+                  setSelectedThreadForPin(null);
+                }}
+                class="text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-300"
+              >
+                {t('modalClose')}
+              </button>
+            </div>
+
+            <form onSubmit={handleHomepagePinSubmit} class="space-y-4">
+              <div>
+                <p class="text-sm text-stone-600 dark:text-stone-400 mb-3">
+                  {selectedThreadForPin()?.title}
+                </p>
+                <label class="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">
+                  {t('homepagePinPriority')}
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={homepagePinPriority()}
+                  onInput={(e) => setHomepagePinPriority(parseInt(e.currentTarget.value) || 0)}
+                  placeholder={t('homepagePinPriorityPlaceholder')}
+                  class="w-full px-3 py-2 border border-stone-300 dark:border-stone-600 rounded-md bg-white dark:bg-stone-700 text-stone-900 dark:text-stone-100 focus:ring-2 focus:ring-ocean-500 focus:border-ocean-500"
+                />
+                <p class="text-xs text-stone-500 dark:text-stone-400 mt-1">
+                  {t('homepagePinPriorityPlaceholder')}
+                </p>
+              </div>
+
+              <div class="flex gap-2 justify-end">
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setShowHomepagePinModal(false);
+                    setSelectedThreadForPin(null);
+                  }}
+                  type="button"
+                >
+                  {t('modalCancel')}
+                </Button>
+                <Button type="submit" loading={updateHomepagePinMutation.isPending}>
+                  {t('pinToHomepage')}
                 </Button>
               </div>
             </form>

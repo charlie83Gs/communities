@@ -1,7 +1,7 @@
 import {
   itemsRepository,
-  CreateItemDto as RepoCreateItemDto,
-  UpdateItemDto as RepoUpdateItemDto,
+  type ItemTranslations,
+  type SupportedLanguage,
 } from '@repositories/items.repository';
 import { communityMemberRepository } from '@repositories/communityMember.repository';
 import { communityRepository } from '@repositories/community.repository';
@@ -11,26 +11,29 @@ import type { Item } from '@db/schema';
 import {
   DEFAULT_ITEMS,
   DEFAULT_ITEM_LANGUAGE,
-  getItemTranslation,
-  type SupportedLanguage,
+  type SupportedLanguage as ConfigSupportedLanguage,
 } from '@config/defaultItems.constants';
 
 export type CreateItemDto = {
   communityId: string;
-  name: string;
-  description?: string | null;
+  translations: ItemTranslations;
   kind: 'object' | 'service';
   wealthValue: string;
 };
 
 export type UpdateItemDto = {
-  name?: string;
-  description?: string | null;
+  translations?: ItemTranslations;
   kind?: 'object' | 'service';
   wealthValue?: string;
 };
 
-export interface ItemListItem extends Item {
+// Item with flattened name/description for display
+export interface ItemWithDisplay extends Item {
+  name: string;
+  description?: string;
+}
+
+export interface ItemListItem extends ItemWithDisplay {
   _count?: {
     wealthEntries: number;
   };
@@ -58,22 +61,41 @@ export class ItemsService {
 
   /**
    * List all items for a community
+   * @param language - Language for returned items (default: 'en')
    */
   async listItems(
     communityId: string,
     userId: string,
+    language: SupportedLanguage = 'en',
     includeDeleted = false
   ): Promise<ItemListItem[]> {
     // Verify user is a member of the community
     await this.ensureCommunityMember(communityId, userId);
 
-    return await itemsRepository.listByCommunity(communityId, includeDeleted);
+    const items = await itemsRepository.listByCommunity(communityId, includeDeleted);
+
+    // Extract the requested language from translations and flatten to name/description
+    return items.map((item) => {
+      const translations = item.translations as ItemTranslations;
+      const langTranslation = translations[language] || translations.en;
+
+      return {
+        ...item,
+        name: langTranslation.name,
+        description: langTranslation.description,
+      } as ItemListItem;
+    });
   }
 
   /**
    * Get item by ID
+   * @param language - Language for returned item (default: 'en')
    */
-  async getItemById(itemId: string, userId: string): Promise<Item> {
+  async getItemById(
+    itemId: string,
+    userId: string,
+    language: SupportedLanguage = 'en'
+  ): Promise<ItemWithDisplay> {
     const item = await itemsRepository.findById(itemId);
     if (!item) {
       throw new AppError('Item not found', 404);
@@ -82,13 +104,21 @@ export class ItemsService {
     // Verify user is a member of the community
     await this.ensureCommunityMember(item.communityId, userId);
 
-    return item;
+    // Extract the requested language from translations and flatten to name/description
+    const translations = item.translations as ItemTranslations;
+    const langTranslation = translations[language] || translations.en;
+
+    return {
+      ...item,
+      name: langTranslation.name,
+      description: langTranslation.description,
+    };
   }
 
   /**
    * Create a new item
    */
-  async createItem(dto: CreateItemDto, userId: string): Promise<Item> {
+  async createItem(dto: CreateItemDto, userId: string): Promise<ItemWithDisplay> {
     // Verify community exists
     const community = await communityRepository.findById(dto.communityId);
     if (!community) {
@@ -107,41 +137,75 @@ export class ItemsService {
       );
     }
 
-    // Check name uniqueness (case-insensitive)
-    const existing = await itemsRepository.findByName(dto.communityId, dto.name);
+    // Validate translations - at least 'en' must be provided
+    if (!dto.translations.en || !dto.translations.en.name) {
+      throw new AppError('English (en) translation with name is required', 400);
+    }
+
+    // Validate name length for all provided languages
+    for (const [lang, trans] of Object.entries(dto.translations)) {
+      if (trans.name.trim().length === 0) {
+        throw new AppError(`Item name cannot be empty for language ${lang}`, 400);
+      }
+      if (trans.name.length > 200) {
+        throw new AppError(`Item name cannot exceed 200 characters for language ${lang}`, 400);
+      }
+    }
+
+    // Check name uniqueness (case-insensitive) - check English name
+    const existing = await itemsRepository.findByName(dto.communityId, dto.translations.en.name);
     if (existing) {
       throw new AppError(
-        `An item with the name "${dto.name}" already exists in this community`,
+        `An item with the name "${dto.translations.en.name}" already exists in this community`,
         400
       );
     }
 
-    // Validate name length
-    if (dto.name.trim().length === 0) {
-      throw new AppError('Item name cannot be empty', 400);
+    // Trim whitespace from all translations
+    const trimmedTranslations: ItemTranslations = {
+      en: {
+        name: dto.translations.en.name.trim(),
+        description: dto.translations.en.description?.trim(),
+      },
+    };
+
+    if (dto.translations.es) {
+      trimmedTranslations.es = {
+        name: dto.translations.es.name.trim(),
+        description: dto.translations.es.description?.trim(),
+      };
     }
 
-    if (dto.name.length > 200) {
-      throw new AppError('Item name cannot exceed 200 characters', 400);
+    if (dto.translations.hi) {
+      trimmedTranslations.hi = {
+        name: dto.translations.hi.name.trim(),
+        description: dto.translations.hi.description?.trim(),
+      };
     }
 
     // Create item
     const item = await itemsRepository.create({
       communityId: dto.communityId,
-      name: dto.name.trim(),
-      description: dto.description?.trim() || null,
+      translations: trimmedTranslations,
       kind: dto.kind,
       wealthValue: dto.wealthValue,
       createdBy: userId,
     });
 
-    return item;
+    // Flatten translations to name/description (use English by default)
+    const langTranslation = trimmedTranslations.en;
+
+    return {
+      ...item,
+      name: langTranslation.name,
+      description: langTranslation.description,
+    };
   }
 
   /**
    * Update an item
    */
-  async updateItem(itemId: string, dto: UpdateItemDto, userId: string): Promise<Item> {
+  async updateItem(itemId: string, dto: UpdateItemDto, userId: string): Promise<ItemWithDisplay> {
     const item = await itemsRepository.findById(itemId);
     if (!item) {
       throw new AppError('Item not found', 404);
@@ -164,30 +228,52 @@ export class ItemsService {
       );
     }
 
-    // If name is being changed, check uniqueness
-    if (dto.name && dto.name.toLowerCase() !== item.name.toLowerCase()) {
-      const existing = await itemsRepository.findByName(item.communityId, dto.name);
-      if (existing && existing.id !== itemId) {
-        throw new AppError(
-          `An item with the name "${dto.name}" already exists in this community`,
-          400
+    // If translations are being updated
+    if (dto.translations) {
+      // Validate name length for all provided languages
+      for (const [lang, trans] of Object.entries(dto.translations)) {
+        if (trans?.name && trans.name.trim().length === 0) {
+          throw new AppError(`Item name cannot be empty for language ${lang}`, 400);
+        }
+        if (trans?.name && trans.name.length > 200) {
+          throw new AppError(`Item name cannot exceed 200 characters for language ${lang}`, 400);
+        }
+      }
+
+      // If English name is being changed, check uniqueness
+      if (
+        dto.translations.en?.name &&
+        dto.translations.en.name.toLowerCase() !==
+          (item.translations as ItemTranslations).en.name.toLowerCase()
+      ) {
+        const existing = await itemsRepository.findByName(
+          item.communityId,
+          dto.translations.en.name
         );
+        if (existing && existing.id !== itemId) {
+          throw new AppError(
+            `An item with the name "${dto.translations.en.name}" already exists in this community`,
+            400
+          );
+        }
       }
 
-      // Validate name length
-      if (dto.name.trim().length === 0) {
-        throw new AppError('Item name cannot be empty', 400);
+      // Trim whitespace from translations
+      const trimmedTranslations: ItemTranslations = { en: { name: '' } };
+      for (const [lang, trans] of Object.entries(dto.translations)) {
+        if (trans) {
+          (trimmedTranslations as any)[lang] = {
+            name: trans.name?.trim(),
+            description: trans.description?.trim(),
+          };
+        }
       }
-
-      if (dto.name.length > 200) {
-        throw new AppError('Item name cannot exceed 200 characters', 400);
-      }
+      dto.translations = trimmedTranslations;
     }
 
     // Update item
     const updated = await itemsRepository.update(itemId, {
-      name: dto.name?.trim(),
-      description: dto.description !== undefined ? dto.description?.trim() || null : undefined,
+      translations: dto.translations,
       kind: dto.kind,
       wealthValue: dto.wealthValue,
     });
@@ -196,7 +282,15 @@ export class ItemsService {
       throw new AppError('Failed to update item', 500);
     }
 
-    return updated;
+    // Flatten translations to name/description (use English by default)
+    const translations = updated.translations as ItemTranslations;
+    const langTranslation = translations.en;
+
+    return {
+      ...updated,
+      name: langTranslation.name,
+      description: langTranslation.description,
+    };
   }
 
   /**
@@ -225,11 +319,6 @@ export class ItemsService {
       );
     }
 
-    // Prevent deletion of default items
-    if (item.isDefault) {
-      throw new AppError('Cannot delete default items', 400);
-    }
-
     // Check if item has active wealth references
     const hasActiveReferences = await itemsRepository.hasActiveWealthReferences(itemId);
     if (hasActiveReferences) {
@@ -244,18 +333,32 @@ export class ItemsService {
   }
 
   /**
-   * Search items by name or description
+   * Search items by name or description in the specified language
+   * @param language - Language to search in (default: 'en')
    */
   async searchItems(
     communityId: string,
     userId: string,
+    language: SupportedLanguage = 'en',
     query?: string,
     kind?: 'object' | 'service'
-  ): Promise<Item[]> {
+  ): Promise<ItemWithDisplay[]> {
     // Verify user is a member of the community
     await this.ensureCommunityMember(communityId, userId);
 
-    return await itemsRepository.search(communityId, query, kind);
+    const items = await itemsRepository.search(communityId, language, query, kind);
+
+    // Extract the requested language from translations and flatten to name/description
+    return items.map((item) => {
+      const translations = item.translations as ItemTranslations;
+      const langTranslation = translations[language] || translations.en;
+
+      return {
+        ...item,
+        name: langTranslation.name,
+        description: langTranslation.description,
+      };
+    });
   }
 
   /**
@@ -264,28 +367,44 @@ export class ItemsService {
    *
    * @param communityId - The community ID to create items for
    * @param creatorId - The user ID creating the community
-   * @param language - Language for item names/descriptions (default: 'en')
+   * @param language - Primary language for fallback (default: 'en')
    * @returns The first created item (for backward compatibility)
    */
   async ensureDefaultItem(
     communityId: string,
     creatorId: string,
-    language: SupportedLanguage = DEFAULT_ITEM_LANGUAGE
+    _language: ConfigSupportedLanguage = DEFAULT_ITEM_LANGUAGE
   ): Promise<Item> {
-    // Create all default items from the comprehensive constants file
+    // Create all default items from the comprehensive constants file with all translations
     const createdItems: Item[] = [];
 
     for (const itemTemplate of DEFAULT_ITEMS) {
-      // Get translation for the specified language
-      const translation = getItemTranslation(itemTemplate, language);
+      // Check if item already exists (by English name)
+      const enTranslation = itemTemplate.translations.en;
+      const existing = await itemsRepository.findByName(communityId, enTranslation.name);
 
-      // Check if item already exists (by exact name)
-      const existing = await itemsRepository.findByName(communityId, translation.name);
       if (!existing) {
+        // Create item with all available translations
         const item = await itemsRepository.create({
           communityId,
-          name: translation.name,
-          description: translation.description || null,
+          translations: {
+            en: {
+              name: itemTemplate.translations.en.name,
+              description: itemTemplate.translations.en.description,
+            },
+            es: itemTemplate.translations.es
+              ? {
+                  name: itemTemplate.translations.es.name,
+                  description: itemTemplate.translations.es.description,
+                }
+              : undefined,
+            hi: itemTemplate.translations.hi
+              ? {
+                  name: itemTemplate.translations.hi.name,
+                  description: itemTemplate.translations.hi.description,
+                }
+              : undefined,
+          },
           kind: itemTemplate.kind,
           wealthValue: itemTemplate.wealthValue.toString(),
           isDefault: true,

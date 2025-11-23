@@ -1,10 +1,39 @@
+export interface FeatureFlags {
+  poolsEnabled: boolean;
+  needsEnabled: boolean;
+  pollsEnabled: boolean;
+  councilsEnabled: boolean;
+  forumEnabled: boolean;
+  healthAnalyticsEnabled: boolean;
+  disputesEnabled: boolean;
+  contributionsEnabled: boolean;
+}
+
+export interface ValueRecognitionSettings {
+  enabled: boolean;
+  showAggregateStats: boolean;
+  allowPeerGrants: boolean;
+  peerGrantMonthlyLimit: number;
+  peerGrantSamePersonLimit: number;
+  requireVerification: boolean;
+  autoVerifySystemActions: boolean;
+  allowCouncilVerification: boolean;
+  verificationReminderDays: number;
+  softReciprocityNudges: boolean;
+}
+
 export interface Community {
   id: string;
   name: string;
   description: string | null;
+  locationRestricted?: boolean;
+  country?: string;
+  stateProvince?: string;
+  city?: string;
   minTrustToAwardTrust: TrustRequirement;
   minTrustForWealth: TrustRequirement;
-  minTrustForDisputes: TrustRequirement | null;
+  minTrustForDisputeVisibility: TrustRequirement | null;
+  minTrustForDisputeParticipation: TrustRequirement | null;
   minTrustForPolls: TrustRequirement | null;
   minTrustForPoolCreation: TrustRequirement | null;
   minTrustForCouncilCreation: TrustRequirement | null;
@@ -14,14 +43,17 @@ export interface Community {
   minTrustForFlagging: TrustRequirement | null;
   minTrustForFlagReview: TrustRequirement | null;
   minTrustForHealthAnalytics: TrustRequirement | null;
+  minTrustForNeeds: TrustRequirement | null;
   minTrustToViewTrust: TrustRequirement | null;
+  minTrustToViewNeeds: TrustRequirement | null;
   minTrustToViewWealth: TrustRequirement | null;
   minTrustToViewItems: TrustRequirement | null;
-  minTrustToViewDisputes: TrustRequirement | null;
   minTrustToViewPolls: TrustRequirement | null;
   minTrustToViewPools: TrustRequirement | null;
   minTrustToViewCouncils: TrustRequirement | null;
   minTrustToViewForum: TrustRequirement | null;
+  featureFlags: FeatureFlags;
+  valueRecognitionSettings?: ValueRecognitionSettings;
   createdBy: string | null;
   createdAt: Date | null;
   userTrustScore?: number | null;
@@ -32,7 +64,8 @@ export interface CreateCommunityDto {
   description?: string | null;
   minTrustToAwardTrust?: TrustRequirement;
   minTrustForWealth?: TrustRequirement;
-  minTrustForDisputes?: TrustRequirement;
+  minTrustForDisputeVisibility?: TrustRequirement;
+  minTrustForDisputeParticipation?: TrustRequirement;
   minTrustForPolls?: TrustRequirement;
   minTrustForPoolCreation?: TrustRequirement;
   minTrustForCouncilCreation?: TrustRequirement;
@@ -42,14 +75,16 @@ export interface CreateCommunityDto {
   minTrustForFlagging?: TrustRequirement;
   minTrustForFlagReview?: TrustRequirement;
   minTrustForHealthAnalytics?: TrustRequirement;
+  minTrustForNeeds?: TrustRequirement;
   minTrustToViewTrust?: TrustRequirement;
+  minTrustToViewNeeds?: TrustRequirement;
   minTrustToViewWealth?: TrustRequirement;
   minTrustToViewItems?: TrustRequirement;
-  minTrustToViewDisputes?: TrustRequirement;
   minTrustToViewPolls?: TrustRequirement;
   minTrustToViewPools?: TrustRequirement;
   minTrustToViewCouncils?: TrustRequirement;
   minTrustToViewForum?: TrustRequirement;
+  featureFlags?: FeatureFlags;
 }
 
 export interface UpdateCommunityDto {
@@ -57,7 +92,8 @@ export interface UpdateCommunityDto {
   description?: string | null;
   minTrustToAwardTrust?: TrustRequirement;
   minTrustForWealth?: TrustRequirement;
-  minTrustForDisputes?: TrustRequirement;
+  minTrustForDisputeVisibility?: TrustRequirement;
+  minTrustForDisputeParticipation?: TrustRequirement;
   minTrustForPolls?: TrustRequirement;
   minTrustForPoolCreation?: TrustRequirement;
   minTrustForCouncilCreation?: TrustRequirement;
@@ -67,14 +103,17 @@ export interface UpdateCommunityDto {
   minTrustForFlagging?: TrustRequirement;
   minTrustForFlagReview?: TrustRequirement;
   minTrustForHealthAnalytics?: TrustRequirement;
+  minTrustForNeeds?: TrustRequirement;
   minTrustToViewTrust?: TrustRequirement;
+  minTrustToViewNeeds?: TrustRequirement;
   minTrustToViewWealth?: TrustRequirement;
   minTrustToViewItems?: TrustRequirement;
-  minTrustToViewDisputes?: TrustRequirement;
   minTrustToViewPolls?: TrustRequirement;
   minTrustToViewPools?: TrustRequirement;
   minTrustToViewCouncils?: TrustRequirement;
   minTrustToViewForum?: TrustRequirement;
+  featureFlags?: FeatureFlags;
+  valueRecognitionSettings?: Partial<ValueRecognitionSettings>;
 }
 
 export interface PaginatedCommunities {
@@ -124,6 +163,10 @@ export interface CommunityMember {
 }
 export interface SearchCommunitiesParams {
   q?: string;
+  locationRestricted?: boolean;
+  country?: string;
+  stateProvince?: string;
+  city?: string;
   page: number;
   limit: number;
 }
@@ -166,4 +209,19 @@ export interface TrustRequirement {
 export interface TrustLevelPickerValue {
   customValue: number;
   levelId?: string;
+}
+
+export interface CommunityStatsSummary {
+  memberCount: number;
+  avgTrustScore: number;
+  wealthCount: number;
+  poolCount: number;
+  needsCount: number;
+}
+
+export interface CommunityPendingActions {
+  incomingRequests: number;
+  outgoingRequests: number;
+  poolDistributions: number;
+  openDisputes: number;
 }

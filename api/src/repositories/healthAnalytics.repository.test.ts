@@ -23,7 +23,7 @@ describe('HealthAnalyticsRepository', () => {
     // Reset all mocks and setup default chains
     setupMockDbChains(mockDb);
     // Instantiate repository with the per-test mock DB
-    healthAnalyticsRepository = new HealthAnalyticsRepository(mockDb as any);
+    healthAnalyticsRepository = new HealthAnalyticsRepository(mockDb);
   });
 
   afterEach(() => {
@@ -66,8 +66,18 @@ describe('HealthAnalyticsRepository', () => {
       mockDb.where.mockResolvedValueOnce([{ count: 10 }]);
       mockDb.where.mockResolvedValueOnce([{ itemId: 'item-1' }, { itemId: 'item-2' }]);
       mockDb.execute.mockResolvedValueOnce([
-        { date: '2024-01-01', shares: '2', requests: '1', fulfilled: '1' },
-        { date: '2024-01-02', shares: '3', requests: '2', fulfilled: '1' },
+        {
+          date: '2024-01-01',
+          cumulative_shares: '2',
+          cumulative_requests: '1',
+          cumulative_fulfilled: '1',
+        },
+        {
+          date: '2024-01-02',
+          cumulative_shares: '5',
+          cumulative_requests: '3',
+          cumulative_fulfilled: '2',
+        },
       ]);
 
       const result = await healthAnalyticsRepository.getWealthOverview(TEST_COMMUNITY_ID);
@@ -110,7 +120,12 @@ describe('HealthAnalyticsRepository', () => {
       mockDb.where.mockResolvedValueOnce([{ count: 1 }]);
       mockDb.where.mockResolvedValueOnce([]);
       mockDb.execute.mockResolvedValueOnce([
-        { date: '2024-01-01', shares: '1', requests: '0', fulfilled: '0' },
+        {
+          date: '2024-01-01',
+          cumulative_shares: '1',
+          cumulative_requests: '0',
+          cumulative_fulfilled: '0',
+        },
       ]);
 
       const result = await healthAnalyticsRepository.getWealthOverview(TEST_COMMUNITY_ID);
@@ -123,21 +138,35 @@ describe('HealthAnalyticsRepository', () => {
       mockDb.where.mockResolvedValueOnce([{ count: 5 }]);
       mockDb.where.mockResolvedValueOnce([{ itemId: 'item-1' }]);
       mockDb.execute.mockResolvedValueOnce([
-        { date: '2024-01-01', shares: '3', requests: '1', fulfilled: '0' },
-        { date: '2024-01-02', shares: '2', requests: '1', fulfilled: '1' },
+        {
+          date: '2024-01-01',
+          open_shares: '3',
+          daily_requests: '1',
+          daily_fulfilled: '0',
+          daily_value_contributed: '10',
+        },
+        {
+          date: '2024-01-02',
+          open_shares: '5',
+          daily_requests: '2',
+          daily_fulfilled: '1',
+          daily_value_contributed: '15',
+        },
       ]);
 
       const result = await healthAnalyticsRepository.getWealthOverview(TEST_COMMUNITY_ID);
 
       result.timeSeriesData.forEach((item) => {
         expect(item).toHaveProperty('date');
-        expect(item).toHaveProperty('shares');
-        expect(item).toHaveProperty('requests');
-        expect(item).toHaveProperty('fulfilled');
+        expect(item).toHaveProperty('openShares');
+        expect(item).toHaveProperty('dailyRequests');
+        expect(item).toHaveProperty('dailyFulfilled');
+        expect(item).toHaveProperty('dailyValueContributed');
         expect(typeof item.date).toBe('string');
-        expect(typeof item.shares).toBe('number');
-        expect(typeof item.requests).toBe('number');
-        expect(typeof item.fulfilled).toBe('number');
+        expect(typeof item.openShares).toBe('number');
+        expect(typeof item.dailyRequests).toBe('number');
+        expect(typeof item.dailyFulfilled).toBe('number');
+        expect(typeof item.dailyValueContributed).toBe('number');
       });
     });
 
@@ -219,15 +248,30 @@ describe('HealthAnalyticsRepository', () => {
       mockDb.where.mockResolvedValueOnce([{ count: 2 }]);
       mockDb.where.mockResolvedValueOnce([]);
       mockDb.execute.mockResolvedValueOnce([
-        { date: '2024-01-01', shares: '1', requests: '0', fulfilled: '0' },
+        {
+          date: '2024-01-01',
+          cumulative_shares: '1',
+          cumulative_requests: '0',
+          cumulative_fulfilled: '0',
+        },
       ]);
 
       mockDb.where.mockResolvedValueOnce([{ count: 1 }]);
       mockDb.where.mockResolvedValueOnce([{ count: 5 }]);
       mockDb.where.mockResolvedValueOnce([]);
       mockDb.execute.mockResolvedValueOnce([
-        { date: '2024-01-01', shares: '1', requests: '0', fulfilled: '0' },
-        { date: '2024-01-02', shares: '1', requests: '0', fulfilled: '0' },
+        {
+          date: '2024-01-01',
+          cumulative_shares: '1',
+          cumulative_requests: '0',
+          cumulative_fulfilled: '0',
+        },
+        {
+          date: '2024-01-02',
+          cumulative_shares: '2',
+          cumulative_requests: '0',
+          cumulative_fulfilled: '0',
+        },
       ]);
 
       const result7d = await healthAnalyticsRepository.getWealthOverview(TEST_COMMUNITY_ID, '7d');
@@ -243,16 +287,23 @@ describe('HealthAnalyticsRepository', () => {
       mockDb.where.mockResolvedValueOnce([{ count: 1 }]);
       mockDb.where.mockResolvedValueOnce([]);
       mockDb.execute.mockResolvedValueOnce([
-        { date: '2024-01-01', shares: '1', requests: '1', fulfilled: '0' },
+        {
+          date: '2024-01-01',
+          open_shares: '1',
+          daily_requests: '1',
+          daily_fulfilled: '0',
+          daily_value_contributed: '5',
+        },
       ]);
 
       const result = await healthAnalyticsRepository.getWealthOverview(TEST_COMMUNITY_ID);
 
       result.timeSeriesData.forEach((item) => {
         expect(item.date).not.toBeNull();
-        expect(item.shares).not.toBeNull();
-        expect(item.requests).not.toBeNull();
-        expect(item.fulfilled).not.toBeNull();
+        expect(item.openShares).not.toBeNull();
+        expect(item.dailyRequests).not.toBeNull();
+        expect(item.dailyFulfilled).not.toBeNull();
+        expect(item.dailyValueContributed).not.toBeNull();
       });
     });
   });
@@ -429,16 +480,24 @@ describe('HealthAnalyticsRepository', () => {
   });
 
   describe('getTrustOverview', () => {
-    it('should return structured trust overview', async () => {
-      mockDb.execute.mockResolvedValueOnce([{ total: '100' }]);
+    it('should return structured trust overview with peer and admin trust', async () => {
+      mockDb.execute.mockResolvedValueOnce([{ total: '80' }]); // peer trust
+      mockDb.execute.mockResolvedValueOnce([{ total: '20' }]); // admin trust
       mockDb.execute.mockResolvedValueOnce([{ average: '25', count: '4' }]);
       mockDb.execute.mockResolvedValueOnce([
-        { date: '2024-01-01', trust_awarded: '10', trust_removed: '2', net_trust: '8' },
+        {
+          date: '2024-01-01',
+          cumulative_peer_trust: '10',
+          cumulative_admin_trust: '5',
+          cumulative_total: '15',
+        },
       ]);
 
       const result = await healthAnalyticsRepository.getTrustOverview(TEST_COMMUNITY_ID);
 
       expect(result).toBeDefined();
+      expect(result).toHaveProperty('totalPeerTrust');
+      expect(result).toHaveProperty('totalAdminTrust');
       expect(result).toHaveProperty('totalTrust');
       expect(result).toHaveProperty('averageTrust');
       expect(result).toHaveProperty('trustPerDay');
@@ -446,34 +505,46 @@ describe('HealthAnalyticsRepository', () => {
     });
 
     it('should return numeric trust metrics', async () => {
-      mockDb.execute.mockResolvedValueOnce([{ total: '50' }]);
+      mockDb.execute.mockResolvedValueOnce([{ total: '40' }]); // peer trust
+      mockDb.execute.mockResolvedValueOnce([{ total: '10' }]); // admin trust
       mockDb.execute.mockResolvedValueOnce([{ average: '12.5', count: '4' }]);
       mockDb.execute.mockResolvedValueOnce([]);
 
       const result = await healthAnalyticsRepository.getTrustOverview(TEST_COMMUNITY_ID);
 
+      expect(typeof result.totalPeerTrust).toBe('number');
+      expect(typeof result.totalAdminTrust).toBe('number');
       expect(typeof result.totalTrust).toBe('number');
       expect(typeof result.averageTrust).toBe('number');
       expect(typeof result.trustPerDay).toBe('number');
     });
 
     it('should return non-negative metrics', async () => {
-      mockDb.execute.mockResolvedValueOnce([{ total: '0' }]);
+      mockDb.execute.mockResolvedValueOnce([{ total: '0' }]); // peer trust
+      mockDb.execute.mockResolvedValueOnce([{ total: '0' }]); // admin trust
       mockDb.execute.mockResolvedValueOnce([{ average: '0', count: '0' }]);
       mockDb.execute.mockResolvedValueOnce([]);
 
       const result = await healthAnalyticsRepository.getTrustOverview(TEST_COMMUNITY_ID);
 
+      expect(result.totalPeerTrust).toBeGreaterThanOrEqual(0);
+      expect(result.totalAdminTrust).toBeGreaterThanOrEqual(0);
       expect(result.totalTrust).toBeGreaterThanOrEqual(0);
       expect(result.averageTrust).toBeGreaterThanOrEqual(0);
       expect(result.trustPerDay).toBeGreaterThanOrEqual(0);
     });
 
     it('should return time series data as array', async () => {
-      mockDb.execute.mockResolvedValueOnce([{ total: '10' }]);
+      mockDb.execute.mockResolvedValueOnce([{ total: '10' }]); // peer trust
+      mockDb.execute.mockResolvedValueOnce([{ total: '0' }]); // admin trust
       mockDb.execute.mockResolvedValueOnce([{ average: '5', count: '2' }]);
       mockDb.execute.mockResolvedValueOnce([
-        { date: '2024-01-01', trust_awarded: '5', trust_removed: '1', net_trust: '4' },
+        {
+          date: '2024-01-01',
+          cumulative_peer_trust: '5',
+          cumulative_admin_trust: '0',
+          cumulative_total: '5',
+        },
       ]);
 
       const result = await healthAnalyticsRepository.getTrustOverview(TEST_COMMUNITY_ID);
@@ -481,30 +552,42 @@ describe('HealthAnalyticsRepository', () => {
       expect(Array.isArray(result.timeSeriesData)).toBe(true);
     });
 
-    it('should have correct time series structure', async () => {
-      mockDb.execute.mockResolvedValueOnce([{ total: '20' }]);
+    it('should have correct time series structure with cumulative peer and admin trust', async () => {
+      mockDb.execute.mockResolvedValueOnce([{ total: '15' }]); // peer trust
+      mockDb.execute.mockResolvedValueOnce([{ total: '5' }]); // admin trust
       mockDb.execute.mockResolvedValueOnce([{ average: '10', count: '2' }]);
       mockDb.execute.mockResolvedValueOnce([
-        { date: '2024-01-01', trust_awarded: '10', trust_removed: '2', net_trust: '8' },
-        { date: '2024-01-02', trust_awarded: '5', trust_removed: '1', net_trust: '4' },
+        {
+          date: '2024-01-01',
+          cumulative_peer_trust: '8',
+          cumulative_admin_trust: '5',
+          cumulative_total: '13',
+        },
+        {
+          date: '2024-01-02',
+          cumulative_peer_trust: '12',
+          cumulative_admin_trust: '5',
+          cumulative_total: '17',
+        },
       ]);
 
       const result = await healthAnalyticsRepository.getTrustOverview(TEST_COMMUNITY_ID);
 
       result.timeSeriesData.forEach((item) => {
         expect(item).toHaveProperty('date');
-        expect(item).toHaveProperty('trustAwarded');
-        expect(item).toHaveProperty('trustRemoved');
-        expect(item).toHaveProperty('netTrust');
+        expect(item).toHaveProperty('cumulativePeerTrust');
+        expect(item).toHaveProperty('cumulativeAdminTrust');
+        expect(item).toHaveProperty('cumulativeTotal');
         expect(typeof item.date).toBe('string');
-        expect(typeof item.trustAwarded).toBe('number');
-        expect(typeof item.trustRemoved).toBe('number');
-        expect(typeof item.netTrust).toBe('number');
+        expect(typeof item.cumulativePeerTrust).toBe('number');
+        expect(typeof item.cumulativeAdminTrust).toBe('number');
+        expect(typeof item.cumulativeTotal).toBe('number');
       });
     });
 
     it('should accept 7d time range', async () => {
-      mockDb.execute.mockResolvedValueOnce([{ total: '5' }]);
+      mockDb.execute.mockResolvedValueOnce([{ total: '5' }]); // peer trust
+      mockDb.execute.mockResolvedValueOnce([{ total: '0' }]); // admin trust
       mockDb.execute.mockResolvedValueOnce([{ average: '5', count: '1' }]);
       mockDb.execute.mockResolvedValueOnce([]);
 
@@ -515,7 +598,8 @@ describe('HealthAnalyticsRepository', () => {
     });
 
     it('should accept 30d time range', async () => {
-      mockDb.execute.mockResolvedValueOnce([{ total: '10' }]);
+      mockDb.execute.mockResolvedValueOnce([{ total: '10' }]); // peer trust
+      mockDb.execute.mockResolvedValueOnce([{ total: '0' }]); // admin trust
       mockDb.execute.mockResolvedValueOnce([{ average: '5', count: '2' }]);
       mockDb.execute.mockResolvedValueOnce([]);
 
@@ -526,7 +610,8 @@ describe('HealthAnalyticsRepository', () => {
     });
 
     it('should accept 90d time range', async () => {
-      mockDb.execute.mockResolvedValueOnce([{ total: '15' }]);
+      mockDb.execute.mockResolvedValueOnce([{ total: '15' }]); // peer trust
+      mockDb.execute.mockResolvedValueOnce([{ total: '0' }]); // admin trust
       mockDb.execute.mockResolvedValueOnce([{ average: '5', count: '3' }]);
       mockDb.execute.mockResolvedValueOnce([]);
 
@@ -537,7 +622,8 @@ describe('HealthAnalyticsRepository', () => {
     });
 
     it('should accept 1y time range', async () => {
-      mockDb.execute.mockResolvedValueOnce([{ total: '20' }]);
+      mockDb.execute.mockResolvedValueOnce([{ total: '20' }]); // peer trust
+      mockDb.execute.mockResolvedValueOnce([{ total: '0' }]); // admin trust
       mockDb.execute.mockResolvedValueOnce([{ average: '5', count: '4' }]);
       mockDb.execute.mockResolvedValueOnce([]);
 
@@ -548,7 +634,8 @@ describe('HealthAnalyticsRepository', () => {
     });
 
     it('should use default time range when not specified', async () => {
-      mockDb.execute.mockResolvedValueOnce([{ total: '10' }]);
+      mockDb.execute.mockResolvedValueOnce([{ total: '10' }]); // peer trust
+      mockDb.execute.mockResolvedValueOnce([{ total: '0' }]); // admin trust
       mockDb.execute.mockResolvedValueOnce([{ average: '5', count: '2' }]);
       mockDb.execute.mockResolvedValueOnce([]);
 
@@ -559,19 +646,23 @@ describe('HealthAnalyticsRepository', () => {
     });
 
     it('should handle community with no trust data', async () => {
-      mockDb.execute.mockResolvedValueOnce([{ total: '0' }]);
+      mockDb.execute.mockResolvedValueOnce([{ total: '0' }]); // peer trust
+      mockDb.execute.mockResolvedValueOnce([{ total: '0' }]); // admin trust
       mockDb.execute.mockResolvedValueOnce([{ average: '0', count: '0' }]);
       mockDb.execute.mockResolvedValueOnce([]);
 
       const result = await healthAnalyticsRepository.getTrustOverview(TEST_COMMUNITY_ID);
 
+      expect(result.totalPeerTrust).toBe(0);
+      expect(result.totalAdminTrust).toBe(0);
       expect(result.totalTrust).toBe(0);
       expect(result.averageTrust).toBe(0);
       expect(result.trustPerDay).toBe(0);
     });
 
     it('should round average trust to 2 decimal places', async () => {
-      mockDb.execute.mockResolvedValueOnce([{ total: '100' }]);
+      mockDb.execute.mockResolvedValueOnce([{ total: '80' }]); // peer trust
+      mockDb.execute.mockResolvedValueOnce([{ total: '20' }]); // admin trust
       mockDb.execute.mockResolvedValueOnce([{ average: '33.333333', count: '3' }]);
       mockDb.execute.mockResolvedValueOnce([]);
 
@@ -582,7 +673,8 @@ describe('HealthAnalyticsRepository', () => {
     });
 
     it('should round trustPerDay to 2 decimal places', async () => {
-      mockDb.execute.mockResolvedValueOnce([{ total: '100' }]);
+      mockDb.execute.mockResolvedValueOnce([{ total: '80' }]); // peer trust
+      mockDb.execute.mockResolvedValueOnce([{ total: '20' }]); // admin trust
       mockDb.execute.mockResolvedValueOnce([{ average: '10', count: '10' }]);
       mockDb.execute.mockResolvedValueOnce([]);
 
@@ -592,32 +684,72 @@ describe('HealthAnalyticsRepository', () => {
       expect(decimalPlaces).toBeLessThanOrEqual(2);
     });
 
-    it('should calculate netTrust correctly', async () => {
-      mockDb.execute.mockResolvedValueOnce([{ total: '50' }]);
+    it('should calculate cumulativeTotal correctly', async () => {
+      mockDb.execute.mockResolvedValueOnce([{ total: '50' }]); // peer trust
+      mockDb.execute.mockResolvedValueOnce([{ total: '0' }]); // admin trust
       mockDb.execute.mockResolvedValueOnce([{ average: '10', count: '5' }]);
       mockDb.execute.mockResolvedValueOnce([
-        { date: '2024-01-01', trust_awarded: '10', trust_removed: '2', net_trust: '8' },
+        {
+          date: '2024-01-01',
+          cumulative_peer_trust: '8',
+          cumulative_admin_trust: '0',
+          cumulative_total: '8',
+        },
       ]);
 
       const result = await healthAnalyticsRepository.getTrustOverview(TEST_COMMUNITY_ID);
 
       result.timeSeriesData.forEach((item) => {
-        expect(typeof item.netTrust).toBe('number');
+        expect(typeof item.cumulativeTotal).toBe('number');
+        expect(item.cumulativeTotal).toBe(item.cumulativePeerTrust + item.cumulativeAdminTrust);
       });
     });
 
-    it('should handle negative net trust', async () => {
-      mockDb.execute.mockResolvedValueOnce([{ total: '20' }]);
+    it('should show cumulative values increasing over time', async () => {
+      mockDb.execute.mockResolvedValueOnce([{ total: '20' }]); // peer trust
+      mockDb.execute.mockResolvedValueOnce([{ total: '5' }]); // admin trust
       mockDb.execute.mockResolvedValueOnce([{ average: '5', count: '4' }]);
       mockDb.execute.mockResolvedValueOnce([
-        { date: '2024-01-01', trust_awarded: '5', trust_removed: '10', net_trust: '-5' },
+        {
+          date: '2024-01-01',
+          cumulative_peer_trust: '5',
+          cumulative_admin_trust: '5',
+          cumulative_total: '10',
+        },
+        {
+          date: '2024-01-02',
+          cumulative_peer_trust: '15',
+          cumulative_admin_trust: '5',
+          cumulative_total: '20',
+        },
+        {
+          date: '2024-01-03',
+          cumulative_peer_trust: '20',
+          cumulative_admin_trust: '5',
+          cumulative_total: '25',
+        },
       ]);
 
       const result = await healthAnalyticsRepository.getTrustOverview(TEST_COMMUNITY_ID);
 
+      expect(result.timeSeriesData.length).toBe(3);
+      // Cumulative values should be non-decreasing (unless trust is removed)
       result.timeSeriesData.forEach((item) => {
-        expect(typeof item.netTrust).toBe('number');
+        expect(typeof item.cumulativeTotal).toBe('number');
       });
+    });
+
+    it('should combine peer and admin trust in total', async () => {
+      mockDb.execute.mockResolvedValueOnce([{ total: '60' }]); // peer trust
+      mockDb.execute.mockResolvedValueOnce([{ total: '40' }]); // admin trust
+      mockDb.execute.mockResolvedValueOnce([{ average: '25', count: '4' }]);
+      mockDb.execute.mockResolvedValueOnce([]);
+
+      const result = await healthAnalyticsRepository.getTrustOverview(TEST_COMMUNITY_ID);
+
+      expect(result.totalPeerTrust).toBe(60);
+      expect(result.totalAdminTrust).toBe(40);
+      expect(result.totalTrust).toBe(100);
     });
   });
 
@@ -865,7 +997,15 @@ describe('HealthAnalyticsRepository', () => {
         openShares: 10,
         totalShares: 50,
         activeCategories: 5,
-        timeSeriesData: [{ date: '2024-01-01', shares: 5, requests: 3, fulfilled: 2 }],
+        timeSeriesData: [
+          {
+            date: '2024-01-01',
+            openShares: 5,
+            dailyRequests: 3,
+            dailyFulfilled: 2,
+            dailyValueContributed: 10,
+          },
+        ],
       };
 
       expect(data.openShares).toBe(10);
@@ -891,12 +1031,23 @@ describe('HealthAnalyticsRepository', () => {
 
     it('should accept valid TrustOverviewData structure', () => {
       const data: TrustOverviewData = {
+        totalPeerTrust: 80,
+        totalAdminTrust: 20,
         totalTrust: 100,
         averageTrust: 25.5,
         trustPerDay: 5.2,
-        timeSeriesData: [{ date: '2024-01-01', trustAwarded: 10, trustRemoved: 2, netTrust: 8 }],
+        timeSeriesData: [
+          {
+            date: '2024-01-01',
+            cumulativePeerTrust: 80,
+            cumulativeAdminTrust: 20,
+            cumulativeTotal: 100,
+          },
+        ],
       };
 
+      expect(data.totalPeerTrust).toBe(80);
+      expect(data.totalAdminTrust).toBe(20);
       expect(data.totalTrust).toBe(100);
       expect(data.averageTrust).toBe(25.5);
       expect(Array.isArray(data.timeSeriesData)).toBe(true);
@@ -969,13 +1120,16 @@ describe('HealthAnalyticsRepository', () => {
     });
 
     it('getTrustOverview should return TrustOverviewData', async () => {
-      mockDb.execute.mockResolvedValueOnce([{ total: '10' }]);
+      mockDb.execute.mockResolvedValueOnce([{ total: '10' }]); // peer trust
+      mockDb.execute.mockResolvedValueOnce([{ total: '0' }]); // admin trust
       mockDb.execute.mockResolvedValueOnce([{ average: '5', count: '2' }]);
       mockDb.execute.mockResolvedValueOnce([]);
 
       const result = await healthAnalyticsRepository.getTrustOverview(TEST_COMMUNITY_ID);
 
       expect(result).toBeDefined();
+      expect(typeof result.totalPeerTrust).toBe('number');
+      expect(typeof result.totalAdminTrust).toBe('number');
       expect(typeof result.totalTrust).toBe('number');
       expect(typeof result.averageTrust).toBe('number');
       expect(typeof result.trustPerDay).toBe('number');
@@ -1078,7 +1232,8 @@ describe('HealthAnalyticsRepository', () => {
     });
 
     it('should handle division by zero in averages', async () => {
-      mockDb.execute.mockResolvedValueOnce([{ total: '0' }]);
+      mockDb.execute.mockResolvedValueOnce([{ total: '0' }]); // peer trust
+      mockDb.execute.mockResolvedValueOnce([{ total: '0' }]); // admin trust
       mockDb.execute.mockResolvedValueOnce([{ average: '0', count: '0' }]);
       mockDb.execute.mockResolvedValueOnce([]);
 
@@ -1102,17 +1257,29 @@ describe('HealthAnalyticsRepository', () => {
       expect(result.totalShares).toBeGreaterThanOrEqual(0);
     });
 
-    it('should handle negative netTrust values', async () => {
-      mockDb.execute.mockResolvedValueOnce([{ total: '10' }]);
+    it('should handle cumulative values that can decrease when trust is removed', async () => {
+      mockDb.execute.mockResolvedValueOnce([{ total: '10' }]); // peer trust
+      mockDb.execute.mockResolvedValueOnce([{ total: '0' }]); // admin trust
       mockDb.execute.mockResolvedValueOnce([{ average: '5', count: '2' }]);
       mockDb.execute.mockResolvedValueOnce([
-        { date: '2024-01-01', trust_awarded: '5', trust_removed: '10', net_trust: '-5' },
+        {
+          date: '2024-01-01',
+          cumulative_peer_trust: '15',
+          cumulative_admin_trust: '0',
+          cumulative_total: '15',
+        },
+        {
+          date: '2024-01-02',
+          cumulative_peer_trust: '10',
+          cumulative_admin_trust: '0',
+          cumulative_total: '10',
+        },
       ]);
 
       const result = await healthAnalyticsRepository.getTrustOverview(TEST_COMMUNITY_ID);
 
       result.timeSeriesData.forEach((item) => {
-        expect(typeof item.netTrust).toBe('number');
+        expect(typeof item.cumulativeTotal).toBe('number');
       });
     });
 

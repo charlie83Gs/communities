@@ -14,6 +14,7 @@ import type {
   ThreadListParams,
   ThreadListResponse,
   ThreadDetailResponse,
+  HomepagePinnedThreadsResponse,
 } from '@/types/forum.types';
 
 class ForumService {
@@ -139,6 +140,29 @@ class ForumService {
 
   async setBestAnswer(communityId: string, threadId: string, postId: string): Promise<void> {
     await apiClient.put(`/api/v1/communities/${communityId}/forum/threads/${threadId}/best-answer`, { postId });
+  }
+
+  // Homepage pinned threads
+  async getHomepagePinnedThreads(communityId: string): Promise<HomepagePinnedThreadsResponse> {
+    const response = await apiClient.get(`/api/v1/communities/${communityId}/forum/homepage-pinned`);
+    return response;
+  }
+
+  async updateHomepagePin(
+    communityId: string,
+    threadId: string,
+    isPinned: boolean,
+    priority?: number
+  ): Promise<ForumThread> {
+    const response = await apiClient.put(
+      `/api/v1/communities/${communityId}/forum/threads/${threadId}/homepage-pin`,
+      { isPinned, priority }
+    );
+    return {
+      ...response.thread,
+      createdAt: new Date(response.thread.createdAt),
+      lastActivity: response.thread.lastActivity ? new Date(response.thread.lastActivity) : null,
+    };
   }
 }
 

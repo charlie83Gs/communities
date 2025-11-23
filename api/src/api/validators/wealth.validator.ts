@@ -47,7 +47,7 @@ export const updateWealthSchema = z.object({
     description: z.string().optional().nullable(),
     image: z.string().max(255).optional().nullable(),
     endDate: z.string().datetime().or(z.date()).optional().nullable(),
-    unitsAvailable: z.number().int().positive().optional(),
+    unitsAvailable: z.number().int().nonnegative().optional(), // Allow 0 for updates (depleted)
     maxUnitsPerUser: z.number().int().positive().optional(),
     // Recurrent fields (for updating recurrent settings)
     recurrentFrequency: recurrentFrequency.optional().nullable(),
@@ -318,6 +318,28 @@ export const validateUpdateComment = (req: Request, res: Response, next: NextFun
 export const validateDeleteComment = (req: Request, res: Response, next: NextFunction) => {
   try {
     deleteCommentSchema.parse(req);
+    next();
+  } catch (err) {
+    const r = handleZodError(res, err);
+    if (!r) next(err);
+  }
+};
+
+// Request message validation schemas
+
+export const createRequestMessageSchema = z.object({
+  params: z.object({
+    id: z.string().uuid(),
+    requestId: z.string().uuid(),
+  }),
+  body: z.object({
+    content: z.string().min(1).max(5000),
+  }),
+}).passthrough();
+
+export const validateCreateRequestMessage = (req: Request, res: Response, next: NextFunction) => {
+  try {
+    createRequestMessageSchema.parse(req);
     next();
   } catch (err) {
     const r = handleZodError(res, err);

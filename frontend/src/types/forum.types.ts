@@ -14,6 +14,8 @@ export interface ForumThread {
   title: string;
   isPinned: boolean;
   isLocked: boolean;
+  isHomepagePinned?: boolean;
+  homepagePriority?: number;
   createdAt: Date;
   authorId: string;
   authorName: string;
@@ -31,6 +33,8 @@ export interface ForumThreadDetail {
   content: string;
   isPinned: boolean;
   isLocked: boolean;
+  isHomepagePinned?: boolean;
+  homepagePriority?: number;
   createdAt: Date;
   authorId: string;
   authorName: string;
@@ -99,4 +103,24 @@ export interface ThreadListResponse {
 export interface ThreadDetailResponse {
   thread: ForumThreadDetail;
   posts: ForumPost[];
+}
+
+// Homepage pinned threads
+export interface HomepagePinnedThread {
+  id: string;
+  title: string;
+  postCount: number;
+  authorId: string;
+  authorDisplayName: string;
+  priority: number;
+  createdAt: string;
+}
+
+export interface HomepagePinnedThreadsResponse {
+  threads: HomepagePinnedThread[];
+}
+
+export interface HomepagePinDto {
+  isPinned: boolean;
+  priority?: number;
 }

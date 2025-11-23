@@ -1,13 +1,7 @@
 import { db as realDb } from '@db/index';
-import {
-  needs,
-  councilNeeds,
-  needPriorityEnum,
-  needRecurrenceEnum,
-  needStatusEnum,
-} from '@db/schema/needs.schema';
+import { needs, councilNeeds, needPriorityEnum, needStatusEnum } from '@db/schema/needs.schema';
 import { items } from '@db/schema/items.schema';
-import { and, desc, eq, isNull, sql, count as drizzleCount, inArray } from 'drizzle-orm';
+import { and, desc, eq, isNull, sql } from 'drizzle-orm';
 
 export type NeedRecord = typeof needs.$inferSelect;
 export type CreateNeedInput = typeof needs.$inferInsert;
@@ -151,7 +145,7 @@ export class NeedsRepository {
     const results = await this.db
       .select({
         itemId: needs.itemId,
-        itemName: items.name,
+        itemName: sql<string>`${items.translations}->'en'->>'name'`,
         itemKind: items.kind,
         priority: needs.priority,
         recurrence: needs.recurrence,
@@ -166,7 +160,7 @@ export class NeedsRepository {
       )
       .groupBy(
         needs.itemId,
-        items.name,
+        sql`${items.translations}->'en'->>'name'`,
         items.kind,
         needs.priority,
         needs.recurrence,
@@ -174,15 +168,26 @@ export class NeedsRepository {
       );
 
     // Transform results to match expected format
-    return results.map((r) => ({
-      itemId: r.itemId,
-      itemName: r.itemName,
-      itemKind: r.itemKind,
-      priority: r.priority,
-      recurrence: r.isRecurring && r.recurrence ? r.recurrence : 'one-time',
-      totalUnitsNeeded: r.totalUnitsNeeded,
-      memberCount: r.memberCount,
-    }));
+    return results.map(
+      (r: {
+        itemId: string;
+        itemName: string;
+        itemKind: 'object' | 'service';
+        priority: 'need' | 'want';
+        recurrence: 'daily' | 'weekly' | 'monthly' | null;
+        isRecurring: boolean;
+        totalUnitsNeeded: number;
+        memberCount: number;
+      }) => ({
+        itemId: r.itemId,
+        itemName: r.itemName,
+        itemKind: r.itemKind,
+        priority: r.priority,
+        recurrence: r.isRecurring && r.recurrence ? r.recurrence : 'one-time',
+        totalUnitsNeeded: r.totalUnitsNeeded,
+        memberCount: r.memberCount,
+      })
+    );
   }
 
   /**
@@ -345,7 +350,7 @@ export class NeedsRepository {
     const results = await this.db
       .select({
         itemId: councilNeeds.itemId,
-        itemName: items.name,
+        itemName: sql<string>`${items.translations}->'en'->>'name'`,
         itemKind: items.kind,
         priority: councilNeeds.priority,
         recurrence: councilNeeds.recurrence,
@@ -364,7 +369,7 @@ export class NeedsRepository {
       )
       .groupBy(
         councilNeeds.itemId,
-        items.name,
+        sql`${items.translations}->'en'->>'name'`,
         items.kind,
         councilNeeds.priority,
         councilNeeds.recurrence,
@@ -372,15 +377,26 @@ export class NeedsRepository {
       );
 
     // Transform results to match expected format
-    return results.map((r) => ({
-      itemId: r.itemId,
-      itemName: r.itemName,
-      itemKind: r.itemKind,
-      priority: r.priority,
-      recurrence: r.isRecurring && r.recurrence ? r.recurrence : 'one-time',
-      totalUnitsNeeded: r.totalUnitsNeeded,
-      memberCount: r.memberCount,
-    }));
+    return results.map(
+      (r: {
+        itemId: string;
+        itemName: string;
+        itemKind: 'object' | 'service';
+        priority: 'need' | 'want';
+        recurrence: 'daily' | 'weekly' | 'monthly' | null;
+        isRecurring: boolean;
+        totalUnitsNeeded: number;
+        memberCount: number;
+      }) => ({
+        itemId: r.itemId,
+        itemName: r.itemName,
+        itemKind: r.itemKind,
+        priority: r.priority,
+        recurrence: r.isRecurring && r.recurrence ? r.recurrence : 'one-time',
+        totalUnitsNeeded: r.totalUnitsNeeded,
+        memberCount: r.memberCount,
+      })
+    );
   }
 
   /**

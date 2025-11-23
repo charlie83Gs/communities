@@ -2,9 +2,9 @@
 id: FT-04
 title: Community Wealth & Resource Sharing
 status: partial
-version: 1.1
-last_updated: 2025-11-08
-related_features: [FT-01, FT-02, FT-03, FT-05, FT-06]
+version: 1.6
+last_updated: 2025-11-18
+related_features: [FT-01, FT-02, FT-03, FT-05, FT-06, FT-18]
 ---
 
 # Community Wealth & Resource Sharing
@@ -19,10 +19,23 @@ The wealth system enables members to share products, services, and resources wit
 2. **Council**: Direct transfer to a specific council
 3. **Pool**: Instant transfer to a pool (automatically fulfilled, cannot be cancelled)
 
-## Wealth Publications
-- Access is trust-gated: admins configure the minimum trust score required
+## Permission Model
+
+### Sharing Wealth (Creating Offers)
+- **No trust requirement**: Any community member can share/offer items or services
+- **Philosophy**: Giving is unrestricted - encourages generosity and builds trust
+- **Permission**: Requires `can_view_wealth` (basic community membership)
+
+### Requesting Wealth (Receiving)
+- **Trust-gated**: Admins configure minimum trust score required to request items (`minTrustForWealth`)
+- **Default threshold**: 10 trust points
+- **Philosophy**: Receiving requires proven trustworthiness in the community
+- **Permission**: Requires `can_create_wealth` (trust-based)
+- **Rationale**: Prevents new/untrusted users from taking resources before establishing relationships
+
+### Comments and Visibility
 - Wealth publications support comments
-- Members with sufficient trust can publish wealth items
+- All members can view available wealth (visibility not restricted)
 
 ## Wealth Types
 All wealth items are unit-based and categorized as either:
@@ -55,10 +68,43 @@ All wealth items are unit-based and categorized as either:
 
 ## Resource Discovery
 
-### Categories & Subcategories
-Wealth items are organized hierarchically for easy browsing:
-- Example: Food > Vegetables > Carrots
-- Example: Tools > Gardening > Shovels
+### Default Item Catalog
+Communities are initialized with 400+ default items across 22 categories to provide a comprehensive starting point for wealth sharing. These items are **starter templates** that communities can freely edit or delete to match their specific needs - they are not restricted in any way:
+
+#### Objects (329 items)
+- **Fresh Produce (85+ items)**: Both general categories (Vegetables, Fruits) and specific items (Tomatoes, Potatoes, Carrots, Spinach, Apples, Oranges, etc.)
+- **Packaged Food (100+ items)**: Grains, pasta, legumes, canned goods, spices, baking items, snacks, oils, condiments
+- **Beverages (60+ items)**: Coffee, tea, juices, soft drinks, milk alternatives, water
+- **Clothing (25+ items)**: Adult/children clothing, shoes, accessories
+- **Tools (15+ items)**: Hand tools, power tools, garden tools
+- **Furniture (12+ items)**: Chairs, tables, beds, sofas, storage
+- **Electronics (20+ items)**: Computers, phones, appliances, small appliances
+- **Household Items (15+ items)**: Bedding, kitchenware, cleaning supplies, storage
+- **Baby & Children (9 items)**: Baby clothing, gear, care products, toys
+- **Personal Care (14+ items)**: Toiletries, hygiene products, first aid
+- **Books & Media (5 items)**: Books, textbooks, educational materials, games
+- **Sports & Recreation (11+ items)**: Bicycles, sports equipment, camping gear, musical instruments
+
+#### Services (71 items)
+- **Home Repair & Maintenance (12 services)**: Plumbing, electrical, carpentry, painting, gardening, etc.
+- **Care Services (5 services)**: Childcare, eldercare, pet care, special needs care
+- **Educational (7 services)**: Tutoring, language instruction, music lessons, test prep, workshops
+- **Transportation (4 services)**: Rides, moving help, delivery, airport transportation
+- **Professional Services (9 services)**: Tech support, web development, legal advice, accounting, consulting
+- **Creative Services (10 services)**: Graphic design, photography, video production, writing, translation
+- **Food Services (5 services)**: Cooking, catering, baking, personal chef
+- **Health & Wellness (8 services)**: Massage, fitness training, yoga, nutrition counseling, life coaching
+- **Cleaning & Organizing (7 services)**: House cleaning, organization, laundry, window/carpet cleaning
+- **Event Services (4 services)**: Event planning, DJ services, MC/host, setup/breakdown
+
+### Item Naming Convention
+- **No unit references in item names**: Units (kg, hour, liter, etc.) are specified by users when creating wealth items
+- **Both specific and general items**: Users can choose "Vegetables" for unspecified produce OR specific items like "Tomatoes"
+- **Multilingual support**: All items include translations for English, Spanish, and Hindi
+- **Flexible categorization**: Items can be found by browsing categories or searching by name
+
+### Custom Items
+Communities can create custom items beyond the default catalog to meet specific needs. The `isDefault` flag in the database is purely for tracking which items were auto-created during community initialization - it does not restrict editing or deletion in any way
 
 ### Expiration Dates
 - Members can set time limits on their shares
@@ -75,11 +121,38 @@ Users can filter available resources by:
 - Trust requirement (items I can access, all items, items requiring 20+, etc.)
 - Availability status (available, pending, fulfilled)
 - Recurrent status (recurrent services only)
+- **Pool Contributions**: Advanced filter to show/hide contributions to pools (disabled by default - pool contributions are hidden from main wealth table)
 
 ## Wealth Requests
 - Members and councils can request publicly shared wealth items
 - The owner (creator of the wealth item) decides whether to accept or reject requests
 - Pool shares bypass the request system (instant fulfillment)
+
+### Private Request Messaging
+Each wealth request has a private message thread between the requester and wealth owner:
+
+**Purpose:**
+- Coordinate delivery details (time, location)
+- Ask clarifying questions about the item/service
+- Discuss specific requirements or conditions
+- Follow up on accepted requests
+
+**Features:**
+- Private to requester and owner only (not visible to other community members)
+- Rich text support with link formatting
+- Messages preserved throughout request lifecycle
+- Read-only in terminal states (fulfilled, rejected, cancelled, failed)
+- Active messaging in pending and accepted states
+
+**Activity Indicators:**
+- Visual indicator on requests with unread messages
+- Shown to both requester and owner
+- Cleared when message thread is viewed
+
+**Relationship to Comments:**
+- Request messages are PRIVATE (only requester + owner)
+- Wealth comments are PUBLIC (all community members)
+- Different purposes: coordination vs. community discussion
 
 ## Disputes
 
@@ -118,6 +191,12 @@ Available when delivery of accepted wealth is not completed.
 - `wealth_requests` - Requests for publicly shared wealth items
   - `unitsRequested` - Required for all requests (default: 1)
 - `wealth_comments` - Comments on wealth
+- `wealth_request_messages` - Private message threads on requests
+  - `requestId` - Reference to wealth_requests
+  - `authorId` - Message author (requester or owner)
+  - `content` - Rich text message content
+- `notifications` - Activity notifications (see FT-18)
+  - Used to track unread messages on requests
 
 ### Planned
 - `wealth_categories` - Hierarchical resource categorization

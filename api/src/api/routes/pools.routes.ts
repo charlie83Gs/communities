@@ -15,6 +15,7 @@ import {
   validateMassDistribute,
   validatePreviewMassDistribution,
   validateGetPoolInventory,
+  validateGetPoolNeeds,
 } from '@api/validators/pools.validator';
 
 const router = Router();
@@ -195,6 +196,23 @@ router.post(
   verifyToken,
   validateDistributeFromPool,
   poolsController.distributeFromPool
+);
+
+/**
+ * Pool Needs Endpoint
+ */
+
+/**
+ * Get Pool Needs
+ * GET /api/v1/communities/:communityId/pools/:poolId/needs
+ * - Requires: Council manager role
+ * - Returns aggregated needs for pool's whitelisted items
+ */
+router.get(
+  '/communities/:communityId/pools/:poolId/needs',
+  verifyToken,
+  validateGetPoolNeeds,
+  poolsController.getPoolNeeds
 );
 
 /**

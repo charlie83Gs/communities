@@ -10,11 +10,13 @@ let trustViewRepository: TrustViewRepository;
 const mockDb = createThenableMockDb();
 
 // Mock the external repository methods
-const mockCountAwardsToUser = mock(() => Promise.resolve(0));
+const mockGetEndorsementsWithDecay = mock(() =>
+  Promise.resolve([] as Array<{ id: string; fromUserId: string; updatedAt: Date }>)
+);
 const mockGetGrantAmount = mock(() => Promise.resolve(0));
 
 // Override the repository methods before tests
-(trustAwardRepository as any).countAwardsToUser = mockCountAwardsToUser;
+(trustAwardRepository as any).getEndorsementsWithDecay = mockGetEndorsementsWithDecay;
 (adminTrustGrantRepository as any).getGrantAmount = mockGetGrantAmount;
 
 describe('TrustViewRepository', () => {
@@ -46,13 +48,13 @@ describe('TrustViewRepository', () => {
     setupMockDbChains(mockDb);
 
     // Reset repository mocks
-    mockCountAwardsToUser.mockReset();
+    mockGetEndorsementsWithDecay.mockReset();
     mockGetGrantAmount.mockReset();
-    mockCountAwardsToUser.mockResolvedValue(0);
+    mockGetEndorsementsWithDecay.mockResolvedValue([]);
     mockGetGrantAmount.mockResolvedValue(0);
 
     // Instantiate repository with the per-test mock DB
-    trustViewRepository = new TrustViewRepository(mockDb as any);
+    trustViewRepository = new TrustViewRepository(mockDb);
   });
 
   describe('get', () => {
@@ -130,8 +132,15 @@ describe('TrustViewRepository', () => {
   });
 
   describe('recalculatePoints', () => {
+    // Recent award dates (within 30 days = no decay, each worth 1.0)
+    const recentDate = new Date();
+
     test('should calculate points from peer awards only', async () => {
-      mockCountAwardsToUser.mockResolvedValue(2);
+      // 2 recent awards = 2.0 effective trust -> floor = 2
+      mockGetEndorsementsWithDecay.mockResolvedValue([
+        { id: 'award-1', fromUserId: 'user-1', updatedAt: recentDate },
+        { id: 'award-2', fromUserId: 'user-2', updatedAt: recentDate },
+      ]);
       mockGetGrantAmount.mockResolvedValue(0);
 
       // upsertZero call - get returns nothing, insert creates
@@ -145,12 +154,13 @@ describe('TrustViewRepository', () => {
       const view = await trustViewRepository.recalculatePoints(testCommunityId1, testUserId2);
 
       expect(view.points).toBe(2);
-      expect(mockCountAwardsToUser).toHaveBeenCalledWith(testCommunityId1, testUserId2);
+      expect(mockGetEndorsementsWithDecay).toHaveBeenCalledWith(testCommunityId1, testUserId2);
       expect(mockGetGrantAmount).toHaveBeenCalledWith(testCommunityId1, testUserId2);
     });
 
     test('should calculate points from admin grant only', async () => {
-      mockCountAwardsToUser.mockResolvedValue(0);
+      // No peer awards
+      mockGetEndorsementsWithDecay.mockResolvedValue([]);
       mockGetGrantAmount.mockResolvedValue(10);
 
       // upsertZero call
@@ -167,7 +177,11 @@ describe('TrustViewRepository', () => {
     });
 
     test('should calculate points from peer awards and admin grant', async () => {
-      mockCountAwardsToUser.mockResolvedValue(2);
+      // 2 recent awards + 5 admin grant
+      mockGetEndorsementsWithDecay.mockResolvedValue([
+        { id: 'award-1', fromUserId: 'user-1', updatedAt: recentDate },
+        { id: 'award-2', fromUserId: 'user-2', updatedAt: recentDate },
+      ]);
       mockGetGrantAmount.mockResolvedValue(5);
 
       // upsertZero call
@@ -184,7 +198,10 @@ describe('TrustViewRepository', () => {
     });
 
     test('should update existing view', async () => {
-      mockCountAwardsToUser.mockResolvedValue(1);
+      // 1 recent award
+      mockGetEndorsementsWithDecay.mockResolvedValue([
+        { id: 'award-1', fromUserId: 'user-1', updatedAt: recentDate },
+      ]);
       mockGetGrantAmount.mockResolvedValue(0);
 
       // upsertZero finds existing view
@@ -200,7 +217,7 @@ describe('TrustViewRepository', () => {
     });
 
     test('should return zero when no awards or grants exist', async () => {
-      mockCountAwardsToUser.mockResolvedValue(0);
+      mockGetEndorsementsWithDecay.mockResolvedValue([]);
       mockGetGrantAmount.mockResolvedValue(0);
 
       // upsertZero call
@@ -362,8 +379,8 @@ describe('TrustViewRepository', () => {
 
       expect(views).toHaveLength(2);
 
-      const user1View = views.find((v) => v.userId === testUserId1);
-      const user2View = views.find((v) => v.userId === testUserId2);
+      const user1View = views.find((v: any) => v.userId === testUserId1);
+      const user2View = views.find((v: any) => v.userId === testUserId2);
 
       expect(user1View?.points).toBe(2);
       expect(Number(user1View?.peerAwards)).toBe(2);
@@ -414,9 +431,9 @@ describe('TrustViewRepository', () => {
       const views = await trustViewRepository.listByUser(testUserId1);
 
       expect(views).toHaveLength(2);
-      expect(views.every((v) => v.userId === testUserId1)).toBe(true);
-      expect(views.some((v) => v.communityId === testCommunityId1)).toBe(true);
-      expect(views.some((v) => v.communityId === testCommunityId2)).toBe(true);
+      expect(views.every((v: any) => v.userId === testUserId1)).toBe(true);
+      expect(views.some((v: any) => v.communityId === testCommunityId1)).toBe(true);
+      expect(views.some((v: any) => v.communityId === testCommunityId2)).toBe(true);
     });
 
     test('should respect limit parameter', async () => {
@@ -456,7 +473,7 @@ describe('TrustViewRepository', () => {
       const result = await trustViewRepository.getAllForCommunity(testCommunityId1);
 
       expect(result).toHaveLength(3);
-      expect(result.every((v) => v.communityId === testCommunityId1)).toBe(true);
+      expect(result.every((v: any) => v.communityId === testCommunityId1)).toBe(true);
     });
   });
 

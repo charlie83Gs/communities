@@ -790,6 +790,195 @@ export class TrustController {
       next(err);
     }
   }
+
+  // ========== TRUST DECAY ENDPOINTS ==========
+
+  /**
+   * @swagger
+   * /api/v1/communities/{communityId}/trust/decaying:
+   *   get:
+   *     summary: Get decaying trust endorsements granted by the current user
+   *     description: Returns endorsements that are past the 6-month decay threshold
+   *     tags: [Trust]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: communityId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *     responses:
+   *       200:
+   *         description: Decaying endorsements list
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 status:
+   *                   type: string
+   *                   example: success
+   *                 data:
+   *                   type: array
+   *                   items:
+   *                     type: object
+   *                     properties:
+   *                       recipientId:
+   *                         type: string
+   *                       recipientName:
+   *                         type: string
+   *                       recipientUsername:
+   *                         type: string
+   *                       lastUpdated:
+   *                         type: string
+   *                         format: date-time
+   *                       decayPercent:
+   *                         type: number
+   *                         description: How much trust has decayed (0-100)
+   *                       monthsUntilExpiry:
+   *                         type: number
+   *                       isDecaying:
+   *                         type: boolean
+   *                       isExpired:
+   *                         type: boolean
+   *       403:
+   *         description: Not a member of this community
+   */
+  async getDecayingEndorsements(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = (req as any).user?.id;
+      const { communityId } = req.params;
+      const result = await trustService.getDecayingEndorsements(communityId, userId);
+      return ApiResponse.success(res, result);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
+   * @swagger
+   * /api/v1/communities/{communityId}/trust/recertify:
+   *   post:
+   *     summary: Recertify trust endorsements (bulk)
+   *     description: Resets the decay timer for specified endorsements
+   *     tags: [Trust]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: communityId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required: [userIds]
+   *             properties:
+   *               userIds:
+   *                 type: array
+   *                 items:
+   *                   type: string
+   *                 description: Array of user IDs to recertify trust for
+   *     responses:
+   *       200:
+   *         description: Trust recertified successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 status:
+   *                   type: string
+   *                   example: success
+   *                 data:
+   *                   type: object
+   *                   properties:
+   *                     recertified:
+   *                       type: number
+   *                       description: Number of endorsements recertified
+   *       400:
+   *         description: No users specified
+   *       403:
+   *         description: Not a member of this community
+   */
+  async recertifyTrust(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = (req as any).user?.id;
+      const { communityId } = req.params;
+      const { userIds } = req.body;
+      const result = await trustService.recertifyTrust(communityId, userId, userIds);
+      return ApiResponse.success(res, result, 'Trust recertified successfully');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
+   * @swagger
+   * /api/v1/communities/{communityId}/trust/status/{toUserId}:
+   *   get:
+   *     summary: Get trust status for a specific user including decay info
+   *     tags: [Trust]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: communityId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *       - in: path
+   *         name: toUserId
+   *         required: true
+   *         schema:
+   *           type: string
+   *     responses:
+   *       200:
+   *         description: Trust status with decay info
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 status:
+   *                   type: string
+   *                   example: success
+   *                 data:
+   *                   type: object
+   *                   nullable: true
+   *                   properties:
+   *                     hasTrust:
+   *                       type: boolean
+   *                     lastUpdated:
+   *                       type: string
+   *                       format: date-time
+   *                     decayPercent:
+   *                       type: number
+   *                     monthsUntilExpiry:
+   *                       type: number
+   *                     isDecaying:
+   *                       type: boolean
+   *                     isExpired:
+   *                       type: boolean
+   */
+  async getTrustStatus(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = (req as any).user?.id;
+      const { communityId, toUserId } = req.params;
+      const result = await trustService.getTrustStatus(communityId, userId, toUserId);
+      return ApiResponse.success(res, result);
+    } catch (err) {
+      next(err);
+    }
+  }
 }
 
 export const trustController = new TrustController();

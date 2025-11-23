@@ -2,11 +2,11 @@ import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import { itemsController } from '@/api/controllers/items.controller';
 import { itemsService } from '@/services/items.service';
 import { AppError } from '@/utils/errors';
+
 import {
   createMockAuthenticatedRequest,
   createMockResponse,
   createMockNext,
-  getNextError,
 } from '../../../tests/helpers/testUtils';
 import type { Item } from '@db/schema';
 
@@ -14,10 +14,13 @@ import type { Item } from '@db/schema';
 const mockItem: Item = {
   id: 'item-123',
   communityId: 'comm-123',
-  name: 'Carrots',
-  description: 'Fresh organic carrots',
+  translations: {
+    en: { name: 'Carrots', description: 'Fresh organic carrots' },
+  },
   kind: 'object',
   wealthValue: '5.00',
+  contributionMetadata: null,
+  relatedSkills: null,
   isDefault: false,
   createdBy: 'user-123',
   createdAt: new Date('2024-01-01'),
@@ -68,7 +71,7 @@ describe('ItemsController', () => {
 
       await itemsController.list(req, res, next);
 
-      expect(mockItemsService.listItems).toHaveBeenCalledWith('comm-123', 'user-123', false);
+      expect(mockItemsService.listItems).toHaveBeenCalledWith('comm-123', 'user-123', 'en', false);
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({
         status: 'success',
@@ -88,7 +91,7 @@ describe('ItemsController', () => {
 
       await itemsController.list(req, res, next);
 
-      expect(mockItemsService.listItems).toHaveBeenCalledWith('comm-123', 'user-123', true);
+      expect(mockItemsService.listItems).toHaveBeenCalledWith('comm-123', 'user-123', 'en', true);
     });
 
     it('should handle errors', async () => {
@@ -111,6 +114,7 @@ describe('ItemsController', () => {
     it('should get item by id successfully', async () => {
       const req = createMockAuthenticatedRequest('user-123', {
         params: { id: 'item-123' },
+        query: {},
       });
       const res = createMockResponse();
       const next = createMockNext();
@@ -119,7 +123,7 @@ describe('ItemsController', () => {
 
       await itemsController.getById(req, res, next);
 
-      expect(mockItemsService.getItemById).toHaveBeenCalledWith('item-123', 'user-123');
+      expect(mockItemsService.getItemById).toHaveBeenCalledWith('item-123', 'user-123', 'en');
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({
         status: 'success',
@@ -436,7 +440,7 @@ describe('ItemsController', () => {
 
       await itemsController.search(req, res, next);
 
-      expect(mockItemsService.searchItems).toHaveBeenCalledWith('comm-123', 'user-123', 'carrot', undefined);
+      expect(mockItemsService.searchItems).toHaveBeenCalledWith('comm-123', 'user-123', 'en', 'carrot', undefined);
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({
         status: 'success',
@@ -459,7 +463,7 @@ describe('ItemsController', () => {
 
       await itemsController.search(req, res, next);
 
-      expect(mockItemsService.searchItems).toHaveBeenCalledWith('comm-123', 'user-123', undefined, 'object');
+      expect(mockItemsService.searchItems).toHaveBeenCalledWith('comm-123', 'user-123', 'en', undefined, 'object');
     });
 
     it('should search items by query and kind', async () => {
@@ -477,7 +481,7 @@ describe('ItemsController', () => {
 
       await itemsController.search(req, res, next);
 
-      expect(mockItemsService.searchItems).toHaveBeenCalledWith('comm-123', 'user-123', 'fresh', 'service');
+      expect(mockItemsService.searchItems).toHaveBeenCalledWith('comm-123', 'user-123', 'en', 'fresh', 'service');
     });
 
     it('should search without filters', async () => {
@@ -491,7 +495,7 @@ describe('ItemsController', () => {
 
       await itemsController.search(req, res, next);
 
-      expect(mockItemsService.searchItems).toHaveBeenCalledWith('comm-123', 'user-123', undefined, undefined);
+      expect(mockItemsService.searchItems).toHaveBeenCalledWith('comm-123', 'user-123', 'en', undefined, undefined);
     });
 
     it('should handle errors', async () => {
@@ -567,7 +571,7 @@ describe('ItemsController', () => {
 
     it('should handle invalid communityId type', async () => {
       const req = createMockAuthenticatedRequest('user-123', {
-        query: { communityId: 123 }, // Invalid type
+        query: { communityId: 123 as any }, // Invalid type
       });
       const res = createMockResponse();
       const next = createMockNext();

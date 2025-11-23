@@ -1,0 +1,47 @@
+export const initiativeDetailsDict = {
+  en: {
+    initiativeDetails: {
+      backToCouncil: 'Back to Council',
+      loading: 'Loading initiative...',
+      error: 'Failed to load initiative',
+      description: 'Description',
+      createdBy: 'Created by',
+      reports: 'Progress Reports',
+      createReport: 'Create Report',
+      comments: 'Comments',
+      statusActive: 'Active',
+      statusCompleted: 'Completed',
+      statusCancelled: 'Cancelled',
+    },
+  },
+  es: {
+    initiativeDetails: {
+      backToCouncil: 'Volver al Consejo',
+      loading: 'Cargando iniciativa...',
+      error: 'Error al cargar la iniciativa',
+      description: 'Descripcion',
+      createdBy: 'Creado por',
+      reports: 'Informes de Progreso',
+      createReport: 'Crear Informe',
+      comments: 'Comentarios',
+      statusActive: 'Activa',
+      statusCompleted: 'Completada',
+      statusCancelled: 'Cancelada',
+    },
+  },
+  hi: {
+    initiativeDetails: {
+      backToCouncil: 'परिषद पर वापस जाएं',
+      loading: 'पहल लोड हो रही है...',
+      error: 'पहल लोड करने में विफल',
+      description: 'विवरण',
+      createdBy: 'द्वारा बनाया गया',
+      reports: 'प्रगति रिपोर्ट',
+      createReport: 'रिपोर्ट बनाएं',
+      comments: 'टिप्पणियां',
+      statusActive: 'सक्रिय',
+      statusCompleted: 'पूर्ण',
+      statusCancelled: 'रद्द',
+    },
+  },
+} as const;

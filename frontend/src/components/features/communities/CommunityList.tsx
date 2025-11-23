@@ -1,9 +1,10 @@
-import { Component, For, Show, createMemo, createSignal, on } from 'solid-js';
+import { Component, For, Show, createMemo, createSignal, createEffect } from 'solid-js';
 import { Card } from '@/components/common/Card';
 import { Button } from '@/components/common/Button';
 import { Input } from '@/components/common/Input';
 import { CommunityCard } from './CommunityCard';
 import { useSearchCommunitiesQuery } from '@/hooks/queries/useSearchCommunitiesQuery';
+import { createDebouncedSignal } from '@/utils/debounce';
 import { makeTranslator } from '@/i18n/makeTranslator';
 import { communityListDict } from './CommunityList.i18n';
 
@@ -15,15 +16,19 @@ export const CommunityList: Component<CommunityListProps> = (props) => {
   const t = makeTranslator(communityListDict, 'communityList');
 
   // Filters and controls
-  const [q, setQ] = createSignal<string>('');
+  const [displayQ, debouncedQ, setQ] = createDebouncedSignal<string>('', 300);
   const [advancedSearch, setAdvancedSearch] = createSignal<boolean>(false);
   const [page, setPage] = createSignal<number>(1);
   const [limit, setLimit] = createSignal<number>(12);
 
   // Reset page to 1 when filters (except page/limit) change
-  const resetOnFilterChange = () => setPage(1);
-  const resetters = createMemo(() => [q()]);
-  on(resetters, resetOnFilterChange);
+  // Use createEffect instead of standalone on() for proper reactive tracking
+  createEffect(() => {
+    // Track filter dependencies
+    debouncedQ();
+    // Reset page to 1 when filter changes
+    setPage(1);
+  });
 
   // Build params for search endpoint
   const params = createMemo(() => {
@@ -32,19 +37,32 @@ export const CommunityList: Component<CommunityListProps> = (props) => {
       limit: limit(),
     };
 
-    if (q()) p.q = q();
+    if (debouncedQ()) p.q = debouncedQ();
 
     return p;
   });
 
   const query = useSearchCommunitiesQuery(params);
 
+  // Safe accessors that handle undefined data properly
   const items = createMemo(() => query.data?.items ?? []);
   const pagination = createMemo(() => query.data?.pagination);
-  const hasMore = createMemo(() => !!pagination()?.hasMore);
-  const currentPage = createMemo(() => pagination()?.page ?? page());
-  const pageSize = createMemo(() => pagination()?.limit ?? limit());
-  const total = createMemo(() => pagination()?.total);
+  const hasMore = createMemo(() => {
+    const pag = pagination();
+    return pag ? !!pag.hasMore : false;
+  });
+  const currentPage = createMemo(() => {
+    const pag = pagination();
+    return pag?.page ?? page();
+  });
+  const pageSize = createMemo(() => {
+    const pag = pagination();
+    return pag?.limit ?? limit();
+  });
+  const total = createMemo(() => {
+    const pag = pagination();
+    return pag?.total;
+  });
 
   return (
     <div class="space-y-4">
@@ -62,7 +80,7 @@ export const CommunityList: Component<CommunityListProps> = (props) => {
               <label class="block text-sm mb-1">{t('searchLabel')}</label>
               <Input
                 placeholder={t('searchPlaceholder')}
-                value={q()}
+                value={displayQ()}
                 onInput={(e) => setQ((e.currentTarget as HTMLInputElement).value)}
               />
             </div>

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
-import { ItemsRepository } from '@/repositories/items.repository';
+import { ItemsRepository, type ItemTranslations } from '@/repositories/items.repository';
 import { createThenableMockDb, setupMockDbChains } from '../../tests/helpers/mockDb';
 
 let itemsRepository: ItemsRepository;
@@ -10,10 +10,15 @@ const mockDb = createThenableMockDb();
 const testItem = {
   id: 'item-123',
   communityId: 'comm-123',
-  name: 'Hammer',
-  description: 'A standard claw hammer',
+  translations: {
+    en: { name: 'Hammer', description: 'A standard claw hammer' },
+    es: { name: 'Martillo', description: 'Un martillo de garra estándar' },
+    hi: { name: 'हथौड़ा', description: 'एक मानक पंजा हथौड़ा' },
+  },
   kind: 'object' as const,
   wealthValue: '10.50',
+  contributionMetadata: null,
+  relatedSkills: null,
   isDefault: false,
   createdBy: 'user-123',
   createdAt: new Date('2024-01-01'),
@@ -26,7 +31,7 @@ describe('ItemsRepository', () => {
     // Reset all mocks and setup default chains
     setupMockDbChains(mockDb);
     // Instantiate repository with the per-test mock DB
-    itemsRepository = new ItemsRepository(mockDb as any);
+    itemsRepository = new ItemsRepository(mockDb);
   });
 
   afterEach(() => {
@@ -39,8 +44,10 @@ describe('ItemsRepository', () => {
 
       const result = await itemsRepository.create({
         communityId: 'comm-123',
-        name: 'Hammer',
-        description: 'A standard claw hammer',
+        translations: {
+          en: { name: 'Hammer', description: 'A standard claw hammer' },
+          es: { name: 'Martillo', description: 'Un martillo de garra estándar' },
+        },
         kind: 'object',
         wealthValue: '10.50',
         createdBy: 'user-123',
@@ -58,8 +65,9 @@ describe('ItemsRepository', () => {
 
       const result = await itemsRepository.create({
         communityId: 'comm-123',
-        name: 'Hammer',
-        description: 'A standard claw hammer',
+        translations: {
+          en: { name: 'Hammer', description: 'A standard claw hammer' },
+        },
         kind: 'object',
         wealthValue: '10.50',
         isDefault: true,
@@ -109,7 +117,8 @@ describe('ItemsRepository', () => {
     });
 
     it('should exclude deleted items', async () => {
-      const deletedItem = { ...testItem, deletedAt: new Date() };
+      // @ts-ignore
+      const _deletedItem = { ...testItem, deletedAt: new Date() };
       mockDb.where.mockResolvedValue([]);
 
       const result = await itemsRepository.findByName('comm-123', 'hammer');
@@ -150,7 +159,8 @@ describe('ItemsRepository', () => {
       const deletedItem = { ...testItem, deletedAt: new Date(), wealthCount: 0 };
       mockDb.orderBy.mockResolvedValue([deletedItem]);
 
-      const result = await itemsRepository.listByCommunity('comm-123', true);
+      // @ts-ignore
+      const _result = await itemsRepository.listByCommunity('comm-123', true);
 
       expect(mockDb.where).toHaveBeenCalled();
     });
@@ -168,7 +178,7 @@ describe('ItemsRepository', () => {
     it('should search items by query', async () => {
       mockDb.limit.mockResolvedValue([testItem]);
 
-      const result = await itemsRepository.search('comm-123', 'hammer');
+      const result = await itemsRepository.search('comm-123', 'en', 'hammer');
 
       expect(result).toHaveLength(1);
       expect(result[0]).toEqual(testItem);
@@ -179,7 +189,7 @@ describe('ItemsRepository', () => {
     it('should filter by kind', async () => {
       mockDb.limit.mockResolvedValue([testItem]);
 
-      const result = await itemsRepository.search('comm-123', undefined, 'object');
+      const result = await itemsRepository.search('comm-123', 'en', undefined, 'object');
 
       expect(result).toHaveLength(1);
       expect(mockDb.where).toHaveBeenCalled();
@@ -188,7 +198,7 @@ describe('ItemsRepository', () => {
     it('should search with both query and kind', async () => {
       mockDb.limit.mockResolvedValue([testItem]);
 
-      const result = await itemsRepository.search('comm-123', 'hammer', 'object');
+      const result = await itemsRepository.search('comm-123', 'en', 'hammer', 'object');
 
       expect(result).toHaveLength(1);
     });
@@ -196,7 +206,7 @@ describe('ItemsRepository', () => {
     it('should return empty array if no matches', async () => {
       mockDb.limit.mockResolvedValue([]);
 
-      const result = await itemsRepository.search('comm-123', 'nonexistent');
+      const result = await itemsRepository.search('comm-123', 'en', 'nonexistent');
 
       expect(result).toHaveLength(0);
     });
@@ -206,15 +216,19 @@ describe('ItemsRepository', () => {
     it('should update item', async () => {
       const updatedItem = {
         ...testItem,
-        name: 'Updated Hammer',
+        translations: {
+          en: { name: 'Updated Hammer', description: 'An updated hammer' },
+        },
       };
       mockDb.returning.mockResolvedValue([updatedItem]);
 
       const result = await itemsRepository.update('item-123', {
-        name: 'Updated Hammer',
+        translations: {
+          en: { name: 'Updated Hammer', description: 'An updated hammer' },
+        },
       });
 
-      expect(result?.name).toBe('Updated Hammer');
+      expect((result?.translations as ItemTranslations).en.name).toBe('Updated Hammer');
       expect(mockDb.update).toHaveBeenCalled();
       expect(mockDb.set).toHaveBeenCalled();
       expect(mockDb.where).toHaveBeenCalled();
@@ -239,7 +253,9 @@ describe('ItemsRepository', () => {
       mockDb.returning.mockResolvedValue([]);
 
       const result = await itemsRepository.update('nonexistent', {
-        name: 'New Name',
+        translations: {
+          en: { name: 'New Name' },
+        },
       });
 
       expect(result).toBeUndefined();
@@ -273,7 +289,7 @@ describe('ItemsRepository', () => {
 
   describe('hasActiveWealthReferences', () => {
     it('should return true if item has active wealth references', async () => {
-      mockDb.where.mockResolvedValue([{ count: 3 }]);
+      mockDb.where.mockResolvedValue([{ count: 3 }] as any);
 
       const result = await itemsRepository.hasActiveWealthReferences('item-123');
 
@@ -283,7 +299,7 @@ describe('ItemsRepository', () => {
     });
 
     it('should return false if no active wealth references', async () => {
-      mockDb.where.mockResolvedValue([{ count: 0 }]);
+      mockDb.where.mockResolvedValue([{ count: 0 }] as any);
 
       const result = await itemsRepository.hasActiveWealthReferences('item-123');
 
@@ -293,7 +309,7 @@ describe('ItemsRepository', () => {
 
   describe('getWealthCount', () => {
     it('should return wealth count for item', async () => {
-      mockDb.where.mockResolvedValue([{ count: 10 }]);
+      mockDb.where.mockResolvedValue([{ count: 10 }] as any);
 
       const result = await itemsRepository.getWealthCount('item-123');
 
@@ -303,7 +319,7 @@ describe('ItemsRepository', () => {
     });
 
     it('should return 0 if no wealth entries', async () => {
-      mockDb.where.mockResolvedValue([{ count: 0 }]);
+      mockDb.where.mockResolvedValue([{ count: 0 }] as any);
 
       const result = await itemsRepository.getWealthCount('item-123');
 

@@ -1,11 +1,6 @@
 import { describe, it, expect, beforeEach } from 'bun:test';
 import { NeedsRepository } from '@/repositories/needs.repository';
-import type {
-  NeedRecord,
-  CouncilNeedRecord,
-  NeedListFilters,
-  CouncilNeedListFilters,
-} from '@/repositories/needs.repository';
+import type { NeedRecord, CouncilNeedRecord } from '@/repositories/needs.repository';
 import { createThenableMockDb, setupMockDbChains } from '../../tests/helpers/mockDb';
 
 let needsRepository: NeedsRepository;
@@ -77,7 +72,7 @@ describe('NeedsRepository', () => {
     // Reset all mocks and setup default chains
     setupMockDbChains(mockDb);
     // Instantiate repository with the per-test mock DB
-    needsRepository = new NeedsRepository(mockDb as any);
+    needsRepository = new NeedsRepository(mockDb);
   });
 
   // ========================================
@@ -459,7 +454,8 @@ describe('NeedsRepository', () => {
       it('should use current date by default', async () => {
         mockDb.where.mockResolvedValue([testRecurringNeed]);
 
-        const result = await needsRepository.findMemberNeedsDueForReplenishment();
+        // @ts-ignore
+        const _result = await needsRepository.findMemberNeedsDueForReplenishment();
 
         expect(mockDb.where).toHaveBeenCalled();
       });
@@ -798,7 +794,8 @@ describe('NeedsRepository', () => {
       it('should only return recurring active council needs', async () => {
         mockDb.where.mockResolvedValue([]);
 
-        const result = await needsRepository.findCouncilNeedsDueForFulfillment();
+        // @ts-ignore
+        const _result = await needsRepository.findCouncilNeedsDueForFulfillment();
 
         expect(mockDb.where).toHaveBeenCalled();
       });
@@ -824,7 +821,8 @@ describe('NeedsRepository', () => {
       it('should use current date by default', async () => {
         mockDb.where.mockResolvedValue([]);
 
-        const result = await needsRepository.findCouncilNeedsDueForReplenishment();
+        // @ts-ignore
+        const _result = await needsRepository.findCouncilNeedsDueForReplenishment();
 
         expect(mockDb.where).toHaveBeenCalled();
       });

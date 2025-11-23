@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { User, UserPreferences, UpdateUserPreferencesDto, SearchUsersParams, SearchUsersResponse, SearchUser, MyInvitesResponse, SavedImage, TrustTimelineResponse, TrustSummary } from '@/types/user.types';
+import type { User, UserPreferences, UpdateUserPreferencesDto, SearchUsersParams, SearchUsersResponse, SearchUser, MyInvitesResponse, SavedImage, TrustTimelineResponse, TrustSummary, DashboardSummaryResponse } from '@/types/user.types';
 import type { Community } from '@/types/community.types';
 
 class UsersService {
@@ -50,6 +50,10 @@ class UsersService {
 
   async getMyTrustSummary(): Promise<TrustSummary> {
     return apiClient.get(`${this.basePath}/me/trust/summary`);
+  }
+
+  async getCommunitiesSummary(): Promise<DashboardSummaryResponse> {
+    return apiClient.get(`/api/v1/user/communities/summary`);
   }
 }
 

@@ -10,6 +10,7 @@ import { trustHistoryRepository } from '../repositories/trustHistory.repository'
 import { trustLevelRepository } from '../repositories/trustLevel.repository';
 import { resolveTrustRequirement } from '../utils/trustResolver';
 import { openFGAService } from './openfga.service';
+import { getDecayInfo } from '../utils/trustDecay';
 
 export type TrustMeResult = {
   trusted: boolean;
@@ -80,29 +81,30 @@ export class TrustService {
 
       // Build thresholds map - extract .value from each config
       const thresholds = {
-        trust_trust_viewer: community.minTrustToViewTrust?.value ?? 0,
-        trust_trust_granter: community.minTrustToAwardTrust?.value ?? 15,
-        trust_wealth_viewer: community.minTrustToViewWealth?.value ?? 0,
-        trust_wealth_creator: community.minTrustForWealth?.value ?? 10,
-        trust_needs_viewer: community.minTrustToViewNeeds?.value ?? 0,
-        trust_needs_publisher: community.minTrustForNeeds?.value ?? 5,
-        trust_poll_viewer: community.minTrustToViewPolls?.value ?? 0,
-        trust_poll_creator: community.minTrustForPolls?.value ?? 15,
-        trust_dispute_viewer: community.minTrustToViewDisputes?.value ?? 0,
-        trust_dispute_handler: community.minTrustForDisputes?.value ?? 20,
-        trust_pool_viewer: community.minTrustToViewPools?.value ?? 0,
-        trust_pool_creator: community.minTrustForPoolCreation?.value ?? 20,
-        trust_council_viewer: community.minTrustToViewCouncils?.value ?? 0,
-        trust_council_creator: community.minTrustForCouncilCreation?.value ?? 25,
-        trust_forum_viewer: community.minTrustToViewForum?.value ?? 0,
-        trust_forum_manager: community.minTrustForForumModeration?.value ?? 30,
-        trust_thread_creator: community.minTrustForThreadCreation?.value ?? 10,
-        trust_attachment_uploader: community.minTrustForAttachments?.value ?? 15,
-        trust_content_flagger: community.minTrustForFlagging?.value ?? 15,
-        trust_flag_reviewer: community.minTrustForFlagReview?.value ?? 30,
-        trust_item_viewer: community.minTrustToViewItems?.value ?? 0,
-        trust_item_manager: community.minTrustForItemManagement?.value ?? 20,
-        trust_analytics_viewer: community.minTrustForHealthAnalytics?.value ?? 20,
+        trust_trust_viewer: (community.minTrustToViewTrust as any)?.value ?? 0,
+        trust_trust_granter: (community.minTrustToAwardTrust as any)?.value ?? 15,
+        trust_wealth_viewer: (community.minTrustToViewWealth as any)?.value ?? 0,
+        trust_wealth_creator: (community.minTrustForWealth as any)?.value ?? 10,
+        trust_needs_viewer: (community.minTrustToViewNeeds as any)?.value ?? 0,
+        trust_needs_publisher: (community.minTrustForNeeds as any)?.value ?? 5,
+        trust_poll_viewer: (community.minTrustToViewPolls as any)?.value ?? 0,
+        trust_poll_creator: (community.minTrustForPolls as any)?.value ?? 15,
+        trust_dispute_viewer: (community.minTrustForDisputeVisibility as any)?.value ?? 20,
+        trust_dispute_handler: (community.minTrustForDisputeVisibility as any)?.value ?? 20,
+        trust_pool_viewer: (community.minTrustToViewPools as any)?.value ?? 0,
+        trust_pool_creator: (community.minTrustForPoolCreation as any)?.value ?? 20,
+        trust_council_viewer: (community.minTrustToViewCouncils as any)?.value ?? 0,
+        trust_council_creator: (community.minTrustForCouncilCreation as any)?.value ?? 25,
+        trust_forum_viewer: (community.minTrustToViewForum as any)?.value ?? 0,
+        trust_forum_manager: (community.minTrustForForumModeration as any)?.value ?? 30,
+        trust_thread_creator: (community.minTrustForThreadCreation as any)?.value ?? 10,
+        trust_attachment_uploader: (community.minTrustForAttachments as any)?.value ?? 15,
+        trust_content_flagger: (community.minTrustForFlagging as any)?.value ?? 15,
+        trust_flag_reviewer: (community.minTrustForFlagReview as any)?.value ?? 30,
+        trust_item_viewer: (community.minTrustToViewItems as any)?.value ?? 0,
+        trust_item_manager: (community.minTrustForItemManagement as any)?.value ?? 20,
+        trust_analytics_viewer: (community.minTrustForHealthAnalytics as any)?.value ?? 20,
+        trust_skill_endorser: (community.minTrustToEndorseSkills as any)?.value ?? 10,
       };
 
       // Sync trust roles in OpenFGA
@@ -160,7 +162,9 @@ export class TrustService {
       trustEventRepository.listByUserB(communityId, userId, limit, offset),
     ]);
     // merge and sort desc by createdAt
+
     const merged = [...a, ...b].sort(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (x: any, y: any) => new Date(y.createdAt).getTime() - new Date(x.createdAt).getTime()
     );
     return merged.slice(0, limit);
@@ -179,6 +183,7 @@ export class TrustService {
         userId,
         points: 0,
         updatedAt: new Date(),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         id: undefined as any,
       }
     );
@@ -320,6 +325,7 @@ export class TrustService {
       communityId,
       type: 'share_redeemed',
       entityType: params.entityType ?? 'share',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       entityId: (params.entityId as any) ?? null,
       actorUserId: params.actorUserId ?? null,
       subjectUserIdA: giverUserId,
@@ -679,7 +685,10 @@ export class TrustService {
     }
 
     // Check trust threshold
-    const threshold = await resolveTrustRequirement(communityId, community.minTrustForDisputes);
+    const threshold = await resolveTrustRequirement(
+      communityId,
+      community.minTrustForDisputeVisibility
+    );
     return points >= threshold;
   }
 
@@ -797,8 +806,8 @@ export class TrustService {
       resolveTrustRequirement(communityId, community.minTrustToViewItems),
       resolveTrustRequirement(communityId, community.minTrustForItemManagement),
       // Dispute permissions
-      resolveTrustRequirement(communityId, community.minTrustToViewDisputes),
-      resolveTrustRequirement(communityId, community.minTrustForDisputes),
+      resolveTrustRequirement(communityId, community.minTrustForDisputeVisibility),
+      resolveTrustRequirement(communityId, community.minTrustForDisputeVisibility),
       // Poll permissions
       resolveTrustRequirement(communityId, community.minTrustToViewPolls),
       resolveTrustRequirement(communityId, community.minTrustForPolls),
@@ -893,6 +902,96 @@ export class TrustService {
     return {
       userTrustScore,
       timeline,
+    };
+  }
+
+  // ========== TRUST DECAY METHODS ==========
+
+  /**
+   * Get all decaying endorsements granted by the current user
+   */
+  async getDecayingEndorsements(communityId: string, userId: string) {
+    const role = await this.getUserRole(communityId, userId);
+    if (!role) {
+      throw new AppError('Forbidden: not a member of this community', 403);
+    }
+
+    const endorsements = await trustAwardRepository.getDecayingEndorsementsByGrantor(
+      communityId,
+      userId
+    );
+
+    return endorsements.map(
+      (e: {
+        toUserId: string;
+        recipientName: string | null;
+        recipientUsername: string;
+        updatedAt: Date;
+      }) => {
+        const decayInfo = getDecayInfo(e.updatedAt);
+        return {
+          recipientId: e.toUserId,
+          recipientName: e.recipientName || e.recipientUsername,
+          recipientUsername: e.recipientUsername,
+          lastUpdated: e.updatedAt,
+          ...decayInfo,
+        };
+      }
+    );
+  }
+
+  /**
+   * Recertify trust endorsements (bulk)
+   * Resets the updatedAt timestamp, stopping decay
+   */
+  async recertifyTrust(communityId: string, fromUserId: string, toUserIds: string[]) {
+    const role = await this.getUserRole(communityId, fromUserId);
+    if (!role) {
+      throw new AppError('Forbidden: not a member of this community', 403);
+    }
+
+    if (toUserIds.length === 0) {
+      throw new AppError('No users specified for recertification', 400);
+    }
+
+    // Recertify the awards
+    const updated = await trustAwardRepository.recertify(communityId, fromUserId, toUserIds);
+
+    // Recalculate trust scores and sync OpenFGA for each recipient
+    for (const userId of toUserIds) {
+      await trustViewRepository.recalculatePoints(communityId, userId);
+      await this.syncTrustRoles(userId, communityId);
+    }
+
+    // Log to history
+    for (const toUserId of toUserIds) {
+      await trustHistoryRepository.logAction({
+        communityId,
+        fromUserId,
+        toUserId,
+        action: 'recertify',
+        pointsDelta: 0,
+      });
+    }
+
+    return { recertified: updated.length };
+  }
+
+  /**
+   * Get trust status for a specific endorsement (including decay info)
+   */
+  async getTrustStatus(communityId: string, fromUserId: string, toUserId: string) {
+    const award = await trustAwardRepository.getAward(communityId, fromUserId, toUserId);
+
+    if (!award) {
+      return null;
+    }
+
+    const decayInfo = getDecayInfo(award.updatedAt);
+    return {
+      hasTrust: true,
+      lastUpdated: award.updatedAt,
+      ...decayInfo,
     };
   }
 }

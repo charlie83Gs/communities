@@ -8,9 +8,10 @@ interface ApiWealthOverviewResponse {
   activeCategories: number;
   timeSeriesData: Array<{
     date: string;
-    shares: number;
-    requests: number;
-    fulfilled: number;
+    openShares: number;
+    dailyRequests: number;
+    dailyFulfilled: number;
+    dailyValueContributed: number;
   }>;
 }
 
@@ -27,14 +28,16 @@ interface ApiWealthItemResponse {
 }
 
 interface ApiTrustOverviewResponse {
+  totalPeerTrust: number;
+  totalAdminTrust: number;
   totalTrust: number;
   averageTrust: number;
   trustPerDay: number;
   timeSeriesData: Array<{
     date: string;
-    trustAwarded: number;
-    trustRemoved: number;
-    netTrust: number;
+    cumulativePeerTrust: number;
+    cumulativeAdminTrust: number;
+    cumulativeTotal: number;
   }>;
 }
 
@@ -58,8 +61,8 @@ interface ApiNeedsOverviewResponse {
   };
   timeSeriesData: Array<{
     date: string;
-    needs: number;
-    wants: number;
+    cumulativeNeeds: number;
+    cumulativeWants: number;
   }>;
 }
 
@@ -77,8 +80,8 @@ class HealthService {
   private readonly basePath = '/api/v1/communities';
 
   async getWealthOverview(communityId: string, range: TimeRange = '30d'): Promise<WealthHealthData['overview']> {
-    const params = new URLSearchParams({ range });
-    const response = await apiClient.get<ApiWealthOverviewResponse>(
+    const params = new URLSearchParams({ timeRange: range });
+    const response: ApiWealthOverviewResponse = await apiClient.get(
       `${this.basePath}/${communityId}/health/wealth/overview?${params}`
     );
 
@@ -88,55 +91,57 @@ class HealthService {
       totalShares: response.totalShares,
       activeCategories: response.activeCategories,
       timeSeries: {
-        shares: response.timeSeriesData.map(d => ({ date: d.date, value: d.shares })),
-        requests: response.timeSeriesData.map(d => ({ date: d.date, value: d.requests })),
-        fulfilled: response.timeSeriesData.map(d => ({ date: d.date, value: d.fulfilled })),
+        openShares: response.timeSeriesData.map((d: { date: string; openShares: number }) => ({ date: d.date, value: d.openShares })),
+        dailyRequests: response.timeSeriesData.map((d: { date: string; dailyRequests: number }) => ({ date: d.date, value: d.dailyRequests })),
+        dailyFulfilled: response.timeSeriesData.map((d: { date: string; dailyFulfilled: number }) => ({ date: d.date, value: d.dailyFulfilled })),
+        dailyValueContributed: response.timeSeriesData.map((d: { date: string; dailyValueContributed: number }) => ({ date: d.date, value: d.dailyValueContributed })),
       },
     };
   }
 
   async getWealthItems(communityId: string, range: TimeRange = '30d'): Promise<WealthHealthData['items']> {
-    const params = new URLSearchParams({ range });
-    const response = await apiClient.get<{ items: ApiWealthItemResponse[] }>(
+    const params = new URLSearchParams({ timeRange: range });
+    const response: { items: ApiWealthItemResponse[] } = await apiClient.get(
       `${this.basePath}/${communityId}/health/wealth/items?${params}`
     );
 
     // Transform API response to match frontend types
-    return response.items.map(item => ({
+    return response.items.map((item: ApiWealthItemResponse) => ({
       category: item.categoryName,
       subcategory: item.subcategoryName,
       shareCount: item.shareCount,
       valuePoints: item.valuePoints,
-      trend: item.trend.map(t => t.count), // Extract just the count values
+      trend: item.trend.map((t: { date: string; count: number }) => t.count), // Extract just the count values
     }));
   }
 
   async getTrustOverview(communityId: string, range: TimeRange = '30d'): Promise<TrustHealthData['overview']> {
-    const params = new URLSearchParams({ range });
-    const response = await apiClient.get<ApiTrustOverviewResponse>(
+    const params = new URLSearchParams({ timeRange: range });
+    const response: ApiTrustOverviewResponse = await apiClient.get(
       `${this.basePath}/${communityId}/health/trust/overview?${params}`
     );
 
     // Transform API response to match frontend types
     return {
+      totalPeerTrust: response.totalPeerTrust,
+      totalAdminTrust: response.totalAdminTrust,
       totalTrust: response.totalTrust,
       averageTrust: response.averageTrust,
       trustPerDay: response.trustPerDay,
       timeSeries: {
-        awarded: response.timeSeriesData.map(d => ({ date: d.date, value: d.trustAwarded })),
-        removed: response.timeSeriesData.map(d => ({ date: d.date, value: d.trustRemoved })),
-        net: response.timeSeriesData.map(d => ({ date: d.date, value: d.netTrust })),
+        cumulativePeerTrust: response.timeSeriesData.map((d: { date: string; cumulativePeerTrust: number }) => ({ date: d.date, value: d.cumulativePeerTrust })),
+        cumulativeAdminTrust: response.timeSeriesData.map((d: { date: string; cumulativeAdminTrust: number }) => ({ date: d.date, value: d.cumulativeAdminTrust })),
       },
     };
   }
 
   async getTrustDistribution(communityId: string): Promise<TrustHealthData['distribution']> {
-    const response = await apiClient.get<ApiTrustDistributionResponse>(
+    const response: ApiTrustDistributionResponse = await apiClient.get(
       `${this.basePath}/${communityId}/health/trust/distribution`
     );
 
     // Transform API response to match frontend types
-    return response.distribution.map(item => ({
+    return response.distribution.map((item: { trustLevel: string; minScore: number; maxScore: number; userCount: number }) => ({
       levelName: item.trustLevel,
       scoreRange: item.maxScore === 999999
         ? `${item.minScore}+`
@@ -147,7 +152,7 @@ class HealthService {
 
   async getNeedsOverview(communityId: string, range: TimeRange = '30d'): Promise<NeedsHealthData['overview']> {
     const params = new URLSearchParams({ timeRange: range });
-    const response = await apiClient.get<ApiNeedsOverviewResponse>(
+    const response: ApiNeedsOverviewResponse = await apiClient.get(
       `${this.basePath}/${communityId}/health/needs/overview?${params}`
     );
 
@@ -159,15 +164,15 @@ class HealthService {
       activeCouncils: response.activeCouncils,
       objectsVsServices: response.objectsVsServices,
       timeSeries: {
-        needs: response.timeSeriesData.map(d => ({ date: d.date, value: d.needs })),
-        wants: response.timeSeriesData.map(d => ({ date: d.date, value: d.wants })),
+        cumulativeNeeds: response.timeSeriesData.map((d: { date: string; cumulativeNeeds: number }) => ({ date: d.date, value: d.cumulativeNeeds })),
+        cumulativeWants: response.timeSeriesData.map((d: { date: string; cumulativeWants: number }) => ({ date: d.date, value: d.cumulativeWants })),
       },
     };
   }
 
   async getNeedsItems(communityId: string, range: TimeRange = '30d'): Promise<NeedsHealthData['items']> {
     const params = new URLSearchParams({ timeRange: range });
-    const response = await apiClient.get<{ items: ApiNeedsItemResponse[] }>(
+    const response: { items: ApiNeedsItemResponse[] } = await apiClient.get(
       `${this.basePath}/${communityId}/health/needs/items?${params}`
     );
 
@@ -176,21 +181,15 @@ class HealthService {
   }
 
   async getAggregatedNeeds(communityId: string): Promise<import('@/types/health.types').AggregatedNeedsData[]> {
-    const response = await apiClient.get<import('@/types/health.types').AggregatedNeedsData[]>(
+    return apiClient.get(
       `${this.basePath}/${communityId}/health/needs/aggregated`
     );
-
-    // Response is an array of aggregated data groups
-    return response;
   }
 
   async getAggregatedWealth(communityId: string): Promise<import('@/types/health.types').AggregatedWealthData[]> {
-    const response = await apiClient.get<import('@/types/health.types').AggregatedWealthData[]>(
+    return apiClient.get(
       `${this.basePath}/${communityId}/health/wealth/aggregated`
     );
-
-    // Response is an array of aggregated wealth items
-    return response;
   }
 }
 

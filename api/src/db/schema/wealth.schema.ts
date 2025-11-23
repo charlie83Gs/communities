@@ -110,13 +110,42 @@ export const wealthRequests = pgTable('wealth_requests', {
   updatedAt: timestamp('updated_at').defaultNow(),
 });
 
-export const wealthRequestsRelations = relations(wealthRequests, ({ one }) => ({
+export const wealthRequestsRelations = relations(wealthRequests, ({ one, many }) => ({
   wealth: one(wealth, {
     fields: [wealthRequests.wealthId],
     references: [wealth.id],
   }),
   requester: one(appUsers, {
     fields: [wealthRequests.requesterId],
+    references: [appUsers.id],
+  }),
+  messages: many(wealthRequestMessages),
+}));
+
+/**
+ * wealth_request_messages
+ * - private message thread between requester and wealth owner
+ * - only visible to the two parties involved
+ */
+export const wealthRequestMessages = pgTable('wealth_request_messages', {
+  id: uuid('id').defaultRandom().primaryKey(),
+
+  requestId: uuid('request_id').references(() => wealthRequests.id, { onDelete: 'cascade' }).notNull(),
+  authorId: text('author_id').references(() => appUsers.id).notNull(),
+
+  // Rich text content (HTML)
+  content: text('content').notNull(),
+
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const wealthRequestMessagesRelations = relations(wealthRequestMessages, ({ one }) => ({
+  request: one(wealthRequests, {
+    fields: [wealthRequestMessages.requestId],
+    references: [wealthRequests.id],
+  }),
+  author: one(appUsers, {
+    fields: [wealthRequestMessages.authorId],
     references: [appUsers.id],
   }),
 }));

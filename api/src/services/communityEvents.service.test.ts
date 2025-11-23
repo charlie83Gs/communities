@@ -5,12 +5,11 @@ import type { CommunityEventsRepository } from '../repositories/communityEvents.
 describe('CommunityEventsService', () => {
   let service: CommunityEventsService;
   let mockRepository: CommunityEventsRepository;
-  let mockCommunityMemberRepository: any;
 
   beforeEach(() => {
     // Mock repository
     mockRepository = {
-      create: async (params) => ({
+      create: async (params: any) => ({
         id: '123e4567-e89b-12d3-a456-426614174000',
         ...params,
         createdAt: new Date(),
@@ -43,12 +42,12 @@ describe('CommunityEventsService', () => {
       const result = await service.createEvent(params);
 
       expect(result).toBeDefined();
-      expect(result.id).toBe('123e4567-e89b-12d3-a456-426614174000');
-      expect(result.communityId).toBe(params.communityId);
-      expect(result.userId).toBe(params.userId);
-      expect(result.eventType).toBe(params.eventType);
-      expect(result.entityType).toBe(params.entityType);
-      expect(result.entityId).toBe(params.entityId);
+      expect(result?.id).toBe('123e4567-e89b-12d3-a456-426614174000');
+      expect(result?.communityId).toBe(params.communityId);
+      expect(result?.userId).toBe(params.userId);
+      expect(result?.eventType).toBe(params.eventType);
+      expect(result?.entityType).toBe(params.entityType);
+      expect(result?.entityId).toBe(params.entityId);
     });
   });
 });

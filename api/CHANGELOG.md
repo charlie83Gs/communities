@@ -1,5 +1,64 @@
 # Changelog
 
+## [1.6.0](https://github.com/charlie83Gs/communities/compare/communities-api-v1.5.3...communities-api-v1.6.0) (2025-11-17)
+
+
+### Features
+
+* add multi-language support to items (EN, ES, HI) ([e2eabc6](https://github.com/charlie83Gs/communities/commit/e2eabc6f336ded901013c5a0494259c7aa9ef668))
+* **api:** expand default items catalog from 60 to 400 items ([e27d5ad](https://github.com/charlie83Gs/communities/commit/e27d5ad9a8c93393a2acd373bfddb3228a6d6feb))
+* **contributions:** FT-16 Community Value Recognition System ([#25](https://github.com/charlie83Gs/communities/issues/25)) ([83c4fe1](https://github.com/charlie83Gs/communities/commit/83c4fe1a6aa0a84d63ba28a760ad1c44eb64b67d))
+* **items:** enable editing and deletion of default items ([2f5005c](https://github.com/charlie83Gs/communities/commit/2f5005c630461ef92aacbe14bb4b56c39169c28e))
+
+
+### Bug Fixes
+
+* **api:** flatten item translations to name/description in responses ([93c680c](https://github.com/charlie83Gs/communities/commit/93c680cba8b6d7e88ab13512d994e1b2831fb5e2))
+* **api:** resolve all TypeScript compilation errors ([b4d125e](https://github.com/charlie83Gs/communities/commit/b4d125efe8e08781b83a2682e7cbb91584cf0346))
+* **tests:** fix failing unit tests ([cb824b0](https://github.com/charlie83Gs/communities/commit/cb824b061ac83a1b64f45e9653396d8417232a38))
+* **tests:** remove unused _result variables in test files ([81ce225](https://github.com/charlie83Gs/communities/commit/81ce2259dcacf6c7c7b8c44fc0270adb66bc2b4f))
+
+## [1.5.3](https://github.com/charlie83Gs/communities/compare/communities-api-v1.5.2...communities-api-v1.5.3) (2025-11-12)
+
+
+### Bug Fixes
+
+* **api:** resolve all 59 failing unit tests ([c7459b6](https://github.com/charlie83Gs/communities/commit/c7459b6c04c4f4cb40644fa1d0aeef1e1487bc87))
+
+## [1.5.2](https://github.com/charlie83Gs/communities/compare/communities-api-v1.5.1...communities-api-v1.5.2) (2025-11-12)
+
+
+### Bug Fixes
+
+* **api:** restore BASE_ROLES import that was incorrectly prefixed ([83fa2fe](https://github.com/charlie83Gs/communities/commit/83fa2fe068d16c5813b3a7110fbac68186603f61))
+
+## [1.5.1](https://github.com/charlie83Gs/communities/compare/communities-api-v1.5.0...communities-api-v1.5.1) (2025-11-12)
+
+
+### Bug Fixes
+
+* **api:** resolve all ESLint warnings to enable clean CI builds ([4fda367](https://github.com/charlie83Gs/communities/commit/4fda367e3e8cfaf92e251a616cc2fa3c5b39377e))
+
+## [1.5.0](https://github.com/charlie83Gs/communities/compare/communities-api-v1.4.1...communities-api-v1.5.0) (2025-11-12)
+
+
+### Features
+
+* **config:** implement database-backed runtime configuration system ([406f634](https://github.com/charlie83Gs/communities/commit/406f6341392fda16961a0e25fbf86a2f145af1e7))
+
+
+### Bug Fixes
+
+* **api:** replace == with === in wealth service lint error ([1b01ab8](https://github.com/charlie83Gs/communities/commit/1b01ab8cd38ffe12d5e6366c05ff20d9f3e29da7))
+* **keycloak:** use 'communities-app' as client ID and consolidate clients ([967df3a](https://github.com/charlie83Gs/communities/commit/967df3ad92b6e47b29710d1cb915455819c7ceb2))
+
+## [1.4.1](https://github.com/charlie83Gs/communities/compare/communities-api-v1.4.0...communities-api-v1.4.1) (2025-11-09)
+
+
+### Bug Fixes
+
+* **api:** skip OpenFGA migrations in production environment ([a0d8d59](https://github.com/charlie83Gs/communities/commit/a0d8d590b50f208830e641ae12a6c3bb837f5c95))
+
 ## [1.4.0](https://github.com/charlie83Gs/communities/compare/communities-api-v1.3.1...communities-api-v1.4.0) (2025-11-09)
 
 

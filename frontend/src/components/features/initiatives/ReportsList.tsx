@@ -6,6 +6,7 @@ import { initiativesDict } from './initiatives.i18n';
 
 interface ReportsListProps {
   communityId: string;
+  councilId: string;
   initiativeId: string;
 }
 
@@ -13,7 +14,11 @@ export const ReportsList: Component<ReportsListProps> = (props) => {
   const t = makeTranslator(initiativesDict, 'initiatives');
   const [expandedReportId, setExpandedReportId] = createSignal<string | null>(null);
 
-  const reportsQuery = useInitiativeReportsQuery(() => props.communityId, () => props.initiativeId);
+  const reportsQuery = useInitiativeReportsQuery(
+    () => props.communityId,
+    () => props.councilId,
+    () => props.initiativeId
+  );
 
   const formatDateTime = (dateString: string) => {
     return new Date(dateString).toLocaleString();
@@ -84,7 +89,12 @@ export const ReportsList: Component<ReportsListProps> = (props) => {
                   {/* Report detail - expanded */}
                   <Show when={expandedReportId() === report.id}>
                     <div class="p-4 bg-white dark:bg-stone-900 border-t border-stone-200 dark:border-stone-700">
-                      <ReportDetail communityId={props.communityId} report={report} />
+                      <ReportDetail
+                        communityId={props.communityId}
+                        councilId={props.councilId}
+                        initiativeId={props.initiativeId}
+                        report={report}
+                      />
                     </div>
                   </Show>
                 </div>

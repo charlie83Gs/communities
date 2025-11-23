@@ -130,8 +130,8 @@ describe('TrustSyncService', () => {
             relation: 'trust_level_20',
             object: 'community:comm-123',
           },
-        },
-      ]);
+        } as any,
+      ] as any);
       mockOpenFGAService.batchWrite.mockResolvedValue(undefined);
 
       await trustSyncService.syncCommunityTrustScores('comm-123');
@@ -196,10 +196,10 @@ describe('TrustSyncService', () => {
   describe('getUserTrustLevel', () => {
     it('should return highest trust level', async () => {
       // Mock checks: level 100 fails, 99 fails, ..., 50 succeeds
-      mockOpenFGAService.check.mockImplementation(async ({ relation }: any) => {
+      mockOpenFGAService.check.mockImplementation((async ({ relation }: any) => {
         const level = parseInt(relation.replace('trust_level_', ''));
         return level === 50;
-      });
+      }) as any);
 
       const result = await trustSyncService.getUserTrustLevel('comm-123', 'user-123');
 
@@ -215,10 +215,10 @@ describe('TrustSyncService', () => {
     });
 
     it('should return 0 if user has level 0', async () => {
-      mockOpenFGAService.check.mockImplementation(async ({ relation }: any) => {
+      mockOpenFGAService.check.mockImplementation((async ({ relation }: any) => {
         const level = parseInt(relation.replace('trust_level_', ''));
         return level === 0;
-      });
+      }) as any);
 
       const result = await trustSyncService.getUserTrustLevel('comm-123', 'user-123');
 

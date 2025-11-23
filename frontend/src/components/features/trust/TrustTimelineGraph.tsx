@@ -35,7 +35,7 @@ interface TrustTimelineGraphProps {
 }
 
 interface ChartDataPoint {
-  x: string;
+  x: number;
   y: number;
   communityName: string;
 }
@@ -59,7 +59,7 @@ export const TrustTimelineGraph: Component<TrustTimelineGraphProps> = (props) =>
       }
 
       communitiesMap.get(communityId)!.push({
-        x: event.timestamp,
+        x: new Date(event.timestamp).getTime(),
         y: event.cumulativeTrust,
         communityName: event.communityName,
       });
@@ -121,7 +121,9 @@ export const TrustTimelineGraph: Component<TrustTimelineGraphProps> = (props) =>
           tooltip: {
             callbacks: {
               title: (context) => {
-                const date = new Date(context[0].parsed.x);
+                const xValue = context[0].parsed.x;
+                if (xValue === null) return '';
+                const date = new Date(xValue);
                 return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
               },
               label: (context) => {

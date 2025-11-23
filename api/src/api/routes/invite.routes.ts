@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { verifyToken, verifyTokenOptional } from '../middleware/auth.middleware';
+import { verifyToken } from '../middleware/auth.middleware';
 import { inviteController } from '@api/controllers/invite.controller';
 import {
   validateCreateUserInvite,

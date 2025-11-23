@@ -16,17 +16,17 @@ const testWealth: WealthRecord = {
   itemId: 'item-123',
   title: 'Test Wealth',
   description: 'Test description',
-  image: null,
+  image: null as any,
   durationType: 'unlimited',
-  endDate: null,
-  distributionType: 'request_based',
-  unitsAvailable: null,
-  maxUnitsPerUser: null,
+  endDate: null as any,
+  distributionType: 'unit_based' as any,
+  unitsAvailable: null as any,
+  maxUnitsPerUser: null as any,
   automationEnabled: false,
   status: 'active',
   createdAt: new Date('2024-01-01'),
   updatedAt: new Date('2024-01-01'),
-};
+} as any;
 
 const testWealthUnitBased: WealthRecord = {
   id: 'wealth-456',
@@ -35,9 +35,9 @@ const testWealthUnitBased: WealthRecord = {
   itemId: 'item-456',
   title: 'Unit Based Wealth',
   description: 'Test description',
-  image: null,
+  image: null as any,
   durationType: 'unlimited',
-  endDate: null,
+  endDate: null as any,
   distributionType: 'unit_based',
   unitsAvailable: 10,
   maxUnitsPerUser: 2,
@@ -45,7 +45,7 @@ const testWealthUnitBased: WealthRecord = {
   status: 'active',
   createdAt: new Date('2024-01-01'),
   updatedAt: new Date('2024-01-01'),
-};
+} as any;
 
 const testRequest: WealthRequestRecord = {
   id: 'request-123',
@@ -63,7 +63,7 @@ describe('WealthRepository', () => {
     // Reset all mocks and setup default chains
     setupMockDbChains(mockDb);
     // Instantiate repository with the per-test mock DB
-    wealthRepository = new WealthRepository(mockDb as any);
+    wealthRepository = new WealthRepository(mockDb);
   });
 
   afterEach(() => {
@@ -81,7 +81,7 @@ describe('WealthRepository', () => {
           itemId: 'item-123',
           title: 'Test Wealth',
           durationType: 'unlimited',
-          distributionType: 'request_based',
+          distributionType: 'unit_based' as any,
           status: 'active',
         });
 
@@ -106,7 +106,7 @@ describe('WealthRepository', () => {
           title: 'Test Wealth',
           durationType: 'timebound',
           endDate: new Date('2024-12-31'),
-          distributionType: 'request_based',
+          distributionType: 'unit_based' as any,
           status: 'active',
         });
 
@@ -372,7 +372,7 @@ describe('WealthRepository', () => {
 
         const result = await wealthRepository.search({
           communityIds: ['comm-123'],
-          distributionType: 'request_based',
+          distributionType: 'unit_based' as any,
         });
 
         expect(result.rows).toHaveLength(1);
@@ -600,6 +600,53 @@ describe('WealthRepository', () => {
         const result = await wealthRepository.failRequest('request-123');
 
         expect(result?.status).toBe('failed');
+      });
+    });
+
+    describe('listPoolDistributionRequests', () => {
+      const poolDistributionRequest = {
+        id: 'request-pool-123',
+        wealthId: 'wealth-pool-123',
+        requesterId: 'user-456',
+        message: 'Pool distribution',
+        unitsRequested: 5,
+        status: 'fulfilled' as const,
+        createdAt: new Date('2024-01-01'),
+        updatedAt: new Date('2024-01-01'),
+        sourcePoolId: 'pool-123',
+        poolName: 'Test Pool',
+        wealthTitle: 'Distributed Wealth',
+      };
+
+      it('should list pool distribution requests for user without status filter', async () => {
+        mockDb.orderBy.mockResolvedValue([poolDistributionRequest]);
+
+        const result = await wealthRepository.listPoolDistributionRequests('user-456');
+
+        expect(result).toHaveLength(1);
+        expect(result[0]).toEqual(poolDistributionRequest);
+        expect(mockDb.innerJoin).toHaveBeenCalled();
+        expect(mockDb.leftJoin).toHaveBeenCalled();
+      });
+
+      it('should list pool distribution requests with status filter', async () => {
+        mockDb.orderBy.mockResolvedValue([poolDistributionRequest]);
+
+        const result = await wealthRepository.listPoolDistributionRequests('user-456', [
+          'fulfilled',
+        ]);
+
+        expect(result).toHaveLength(1);
+        expect(result[0].sourcePoolId).toBe('pool-123');
+        expect(result[0].poolName).toBe('Test Pool');
+      });
+
+      it('should return empty array when no pool distributions exist', async () => {
+        mockDb.orderBy.mockResolvedValue([]);
+
+        const result = await wealthRepository.listPoolDistributionRequests('user-456');
+
+        expect(result).toHaveLength(0);
       });
     });
   });

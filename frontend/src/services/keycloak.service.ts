@@ -27,12 +27,6 @@ class KeycloakService {
       clientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'share-app-frontend',
     });
 
-    // Set up token refresh callback
-    this.keycloak.onTokenExpired = () => {
-      console.log('Token expired, refreshing...');
-      this.refreshToken();
-    };
-
     return this.keycloak;
   }
 
@@ -59,11 +53,6 @@ class KeycloakService {
 
       this.initialized = true;
 
-      // Set up automatic token refresh
-      if (authenticated) {
-        this.setupTokenRefresh();
-      }
-
       return authenticated;
     } catch (error) {
       console.error('Failed to initialize Keycloak:', error);
@@ -72,31 +61,23 @@ class KeycloakService {
   }
 
   /**
-   * Setup automatic token refresh
+   * Ensure token is valid (refresh if needed)
+   * This should be called before making API requests
+   * @param minValidity - Minimum validity in seconds (default 30)
+   * @returns true if token was refreshed, false otherwise
    */
-  private setupTokenRefresh(): void {
-    // Refresh token when it expires in 30 seconds or less
-    setInterval(() => {
-      this.refreshToken();
-    }, 30000); // Check every 30 seconds
-  }
-
-  /**
-   * Refresh access token
-   */
-  async refreshToken(): Promise<boolean> {
-    if (!this.keycloak) return false;
+  async ensureTokenValidity(minValidity: number = 30): Promise<boolean> {
+    if (!this.keycloak || !this.keycloak.authenticated) {
+      return false;
+    }
 
     try {
-      const refreshed = await this.keycloak.updateToken(30);
-      if (refreshed) {
-        console.log('Token refreshed successfully');
-      }
+      const refreshed = await this.keycloak.updateToken(minValidity);
       return refreshed;
     } catch (error) {
       console.error('Failed to refresh token:', error);
-      // Token refresh failed - likely session expired
-      this.logout();
+      // Token refresh failed - likely session expired, redirect to login
+      await this.logout();
       return false;
     }
   }
@@ -117,7 +98,7 @@ class KeycloakService {
 
     await this.keycloak!.login({
       redirectUri: options?.redirectUri || window.location.origin,
-      prompt: options?.prompt,
+      prompt: options?.prompt as 'none' | 'login' | undefined,
       maxAge: options?.maxAge,
       loginHint: options?.loginHint,
       scope: options?.scope,
@@ -156,18 +137,18 @@ class KeycloakService {
       return null;
     }
 
-    const tokenParsed = this.keycloak.tokenParsed;
-    const realmAccess = tokenParsed?.realm_access || {};
-    const resourceAccess = tokenParsed?.resource_access || {};
+    const tokenParsed = this.keycloak.tokenParsed as Record<string, unknown> | undefined;
+    const realmAccess = (tokenParsed?.realm_access as { roles?: string[] }) || {};
+    const resourceAccess = (tokenParsed?.resource_access as Record<string, { roles?: string[] }>) || {};
     const clientId = this.keycloak.clientId || '';
     const clientAccess = resourceAccess[clientId] || {};
 
     return {
-      id: tokenParsed?.sub || '',
-      email: tokenParsed?.email || '',
-      username: tokenParsed?.preferred_username || '',
-      firstName: tokenParsed?.given_name,
-      lastName: tokenParsed?.family_name,
+      id: (tokenParsed?.sub as string) || '',
+      email: (tokenParsed?.email as string) || '',
+      username: (tokenParsed?.preferred_username as string) || '',
+      firstName: tokenParsed?.given_name as string | undefined,
+      lastName: tokenParsed?.family_name as string | undefined,
       roles: [...(realmAccess.roles || []), ...(clientAccess.roles || [])],
     };
   }

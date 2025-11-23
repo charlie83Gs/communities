@@ -1,4 +1,6 @@
 import { db as realDb } from '@db/index';
+type DbClient = typeof realDb;
+
 import { communityUserInvites, communityLinkInvites } from '@db/schema';
 import { and, eq, lt, or, gt, isNull } from 'drizzle-orm';
 
@@ -22,9 +24,9 @@ export type CreateLinkInviteInput = {
 };
 
 export class InviteRepository {
-  private db: any;
+  private db: DbClient;
 
-  constructor(db: any) {
+  constructor(db: DbClient) {
     this.db = db;
   }
   async createUserInvite(input: CreateUserInviteInput): Promise<UserInviteRecord> {

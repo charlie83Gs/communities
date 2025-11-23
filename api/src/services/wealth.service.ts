@@ -1,12 +1,19 @@
 import { wealthRepository } from '@repositories/wealth.repository';
 import { appUserRepository } from '@repositories/appUser.repository';
 import { itemsRepository } from '@repositories/items.repository';
+import {
+  wealthRequestMessageRepository,
+  WealthRequestMessageWithAuthor,
+} from '@repositories/wealthRequestMessage.repository';
+import { notificationRepository } from '@repositories/notification.repository';
 import { AppError } from '@utils/errors';
 import { openFGAService } from './openfga.service';
+import { valueRecognitionService } from './valueRecognition.service';
 import {
   WealthRecord,
   WealthRequestRecord,
   WealthSearchFilters,
+  PoolDistributionRequestRecord,
 } from '@repositories/wealth.repository';
 
 export type CreateWealthDto = {
@@ -80,20 +87,28 @@ export class WealthService {
   }
 
   async createWealth(dto: CreateWealthDto, userId: string): Promise<WealthRecord> {
-    // Check if user has permission to create wealth
-    const canCreate = await openFGAService.checkAccess(
+    // Check if user has permission to share wealth (unrestricted giving)
+    const canShare = await openFGAService.checkAccess(
       userId,
       'community',
       dto.communityId,
-      'can_create_wealth'
+      'can_view_wealth'
     );
-    if (!canCreate) {
-      throw new AppError('Forbidden: you do not have permission to create wealth', 403);
+    if (!canShare) {
+      throw new AppError('Forbidden: you do not have permission to share wealth', 403);
     }
 
     // Validation
     if (dto.durationType === 'timebound' && !dto.endDate) {
       throw new AppError('endDate is required for timebound wealth', 400);
+    }
+
+    // Validate unitsAvailable (distribution is always unit_based)
+    if (dto.unitsAvailable === undefined || dto.unitsAvailable === null) {
+      throw new AppError('unitsAvailable must be a positive integer', 400);
+    }
+    if (!Number.isInteger(dto.unitsAvailable) || dto.unitsAvailable < 1) {
+      throw new AppError('unitsAvailable must be a positive integer', 400);
     }
 
     // Validate recurrent settings
@@ -145,7 +160,7 @@ export class WealthService {
 
     // Assign creator a per-resource role on this wealth (so we can use OpenFGA if needed)
     try {
-      await openFGAService.assignRole(userId, 'wealth', wealthItem.id, 'admin');
+      await openFGAService.assignBaseRole(userId, 'wealth', wealthItem.id, 'admin');
     } catch {
       // non-fatal
     }
@@ -352,6 +367,7 @@ export class WealthService {
       unitsAvailable: patch.unitsAvailable,
       maxUnitsPerUser: patch.maxUnitsPerUser,
       automationEnabled: patch.automationEnabled,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       status: patch.status as any,
     });
 
@@ -393,14 +409,14 @@ export class WealthService {
     const wealthItem = await wealthRepository.findById(wealthId);
     if (!wealthItem) throw new AppError('Wealth not found', 404);
 
-    // Check if user has permission to view wealth (required to request)
-    const canView = await openFGAService.checkAccess(
+    // Check if user has permission to request wealth (trust-gated receiving)
+    const canRequest = await openFGAService.checkAccess(
       userId,
       'community',
       wealthItem.communityId,
-      'can_view_wealth'
+      'can_create_wealth'
     );
-    if (!canView) {
+    if (!canRequest) {
       throw new AppError('Forbidden: you do not have permission to request wealth', 403);
     }
 
@@ -409,7 +425,7 @@ export class WealthService {
     }
 
     if (wealthItem.distributionType === 'unit_based') {
-      if (unitsRequested == null || unitsRequested <= 0) {
+      if (unitsRequested === null || unitsRequested === undefined || unitsRequested <= 0) {
         throw new AppError('unitsRequested must be a positive integer for unit_based wealth', 400);
       }
       if ((wealthItem.unitsAvailable ?? 0) < unitsRequested) {
@@ -493,6 +509,23 @@ export class WealthService {
     const updatedReq = await wealthRepository.acceptRequest(requestId);
     if (!updatedReq) throw new AppError('Failed to accept request', 500);
 
+    // Create notification for requester that their request was accepted
+    try {
+      await notificationRepository.create({
+        userId: req.requesterId,
+        communityId: wealthItem.communityId,
+        type: 'wealth_request_status',
+        title: 'Request Accepted',
+        message: `Your request for "${wealthItem.title}" has been accepted`,
+        resourceType: 'wealth_request',
+        resourceId: requestId,
+        actorId: userId, // the owner who accepted
+      });
+    } catch (error) {
+      // Log error but don't fail the accept operation
+      console.error('Failed to create notification for accepted request:', error);
+    }
+
     return {
       wealth: wealthItem,
       request: {
@@ -523,6 +556,27 @@ export class WealthService {
 
     const updatedReq = await wealthRepository.markRequestFulfilled(requestId);
     if (!updatedReq) throw new AppError('Failed to update request', 500);
+
+    // Create contribution for the wealth owner who fulfilled the request
+    try {
+      await valueRecognitionService.logContribution({
+        communityId: wealthItem.communityId,
+        contributorId: wealthItem.createdBy, // The wealth owner
+        itemId: wealthItem.itemId,
+        units: req.unitsRequested,
+        description: `Fulfilled wealth share: ${wealthItem.title}`,
+        sourceType: 'system_logged',
+        sourceId: requestId,
+      });
+    } catch (error) {
+      // Log error but don't fail the fulfillment - contribution tracking is secondary
+      console.error('Failed to create contribution for fulfilled wealth request', {
+        error: error instanceof Error ? error.message : String(error),
+        requestId,
+        wealthId,
+        itemId: wealthItem.itemId,
+      });
+    }
 
     return {
       ...updatedReq,
@@ -560,6 +614,7 @@ export class WealthService {
     statuses?: Array<'pending' | 'accepted' | 'rejected' | 'cancelled' | 'fulfilled'>
   ): Promise<WealthRequestRecord[]> {
     // A user can view their own requests across all wealth; no further checks needed
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const requests = await wealthRepository.listRequestsByUser(userId, statuses as any);
     return requests.map((r) => ({
       ...r,
@@ -576,6 +631,7 @@ export class WealthService {
     })[]
   > {
     // Get all requests for wealth items owned by this user
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const requests = await wealthRepository.listIncomingRequestsByOwner(userId, statuses as any);
 
     // Fetch requester details and wealth details for each request
@@ -604,6 +660,16 @@ export class WealthService {
       requesterDisplayName: userDetailsMap.get(r.requesterId)?.displayName,
       wealthTitle: wealthDetailsMap.get(r.wealthId)?.title,
     }));
+  }
+
+  async listPoolDistributionRequests(
+    userId: string,
+    statuses?: Array<'pending' | 'accepted' | 'rejected' | 'cancelled' | 'fulfilled'>
+  ): Promise<PoolDistributionRequestRecord[]> {
+    // A user can view their own pool distribution requests; no further checks needed
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const requests = await wealthRepository.listPoolDistributionRequests(userId, statuses as any);
+    return requests;
   }
 
   async cancelRequest(
@@ -668,6 +734,16 @@ export class WealthService {
     // Mark request as fulfilled
     const updatedReq = await wealthRepository.confirmRequest(requestId);
     if (!updatedReq) throw new AppError('Failed to confirm request', 500);
+
+    // Auto-log contribution if enabled
+    // We do this asynchronously and don't block the response if it fails
+    // But we await it here to ensure it completes before returning for consistency in this context
+    try {
+      await valueRecognitionService.autoLogFromWealthFulfillment(wealthId);
+    } catch (error) {
+      // Log error but don't fail the confirmation
+      console.error('Failed to auto-log contribution from wealth fulfillment:', error);
+    }
 
     return {
       wealth: updatedWealth,
@@ -756,6 +832,108 @@ export class WealthService {
     }
 
     return results;
+  }
+
+  // Request Messages
+
+  async addRequestMessage(
+    wealthId: string,
+    requestId: string,
+    userId: string,
+    content: string
+  ): Promise<WealthRequestMessageWithAuthor> {
+    const wealthItem = await wealthRepository.findById(wealthId);
+    if (!wealthItem) throw new AppError('Wealth not found', 404);
+
+    const request = await wealthRepository.findRequestById(requestId);
+    if (!request || request.wealthId !== wealthId) {
+      throw new AppError('Request not found for this wealth', 404);
+    }
+
+    // Only requester or wealth owner can send messages
+    const isRequester = request.requesterId === userId;
+    const isOwner = wealthItem.createdBy === userId;
+
+    if (!isRequester && !isOwner) {
+      throw new AppError('Forbidden: only the requester or wealth owner can send messages', 403);
+    }
+
+    // Messages can only be sent when status is pending or accepted
+    if (request.status !== 'pending' && request.status !== 'accepted') {
+      throw new AppError('Messages can only be sent for pending or accepted requests', 400);
+    }
+
+    // Create the message
+    const message = await wealthRequestMessageRepository.create({
+      requestId,
+      authorId: userId,
+      content,
+    });
+
+    // Get author details for response
+    const user = await appUserRepository.findById(userId);
+    const authorDisplayName = user?.displayName || user?.username || 'Unknown';
+
+    // Mark any existing unread notifications for this request as read for the sender
+    await notificationRepository.markResourceNotificationsAsRead(
+      'wealth_request',
+      requestId,
+      userId
+    );
+
+    // Create notification for the other party
+    const recipientId = isOwner ? request.requesterId : wealthItem.createdBy;
+    const senderName = authorDisplayName;
+
+    await notificationRepository.create({
+      userId: recipientId,
+      communityId: wealthItem.communityId,
+      type: 'wealth_request_message',
+      title: `New message from ${senderName}`,
+      message: content.length > 100 ? content.substring(0, 100) + '...' : content,
+      resourceType: 'wealth_request',
+      resourceId: requestId,
+      actorId: userId,
+    });
+
+    return {
+      ...message,
+      author: {
+        id: userId,
+        displayName: authorDisplayName,
+      },
+    };
+  }
+
+  async getRequestMessages(
+    wealthId: string,
+    requestId: string,
+    userId: string
+  ): Promise<WealthRequestMessageWithAuthor[]> {
+    const wealthItem = await wealthRepository.findById(wealthId);
+    if (!wealthItem) throw new AppError('Wealth not found', 404);
+
+    const request = await wealthRepository.findRequestById(requestId);
+    if (!request || request.wealthId !== wealthId) {
+      throw new AppError('Request not found for this wealth', 404);
+    }
+
+    // Only requester or wealth owner can view messages
+    const isRequester = request.requesterId === userId;
+    const isOwner = wealthItem.createdBy === userId;
+
+    if (!isRequester && !isOwner) {
+      throw new AppError('Forbidden: only the requester or wealth owner can view messages', 403);
+    }
+
+    // Mark any unread notifications for this request as read
+    await notificationRepository.markResourceNotificationsAsRead(
+      'wealth_request',
+      requestId,
+      userId
+    );
+
+    return await wealthRequestMessageRepository.listByRequestId(requestId);
   }
 }
 

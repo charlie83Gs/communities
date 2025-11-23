@@ -105,6 +105,16 @@ export const forumDict = {
       threadUnlocked: 'Thread unlocked',
       bestAnswerSet: 'Best answer marked',
       bestAnswerUnset: 'Best answer unmarked',
+
+      // Homepage pin
+      pinToHomepage: 'Pin to Homepage',
+      unpinFromHomepage: 'Unpin from Homepage',
+      homepagePinnedBadge: 'Homepage',
+      homepagePinPriority: 'Priority (0-100)',
+      homepagePinPriorityPlaceholder: 'Higher = appears first',
+      homepagePinned: 'Thread pinned to homepage',
+      homepageUnpinned: 'Thread unpinned from homepage',
+      errorHomepagePin: 'Error updating homepage pin',
     },
   },
   es: {
@@ -211,6 +221,16 @@ export const forumDict = {
       threadUnlocked: 'Tema desbloqueado',
       bestAnswerSet: 'Mejor respuesta marcada',
       bestAnswerUnset: 'Mejor respuesta desmarcada',
+
+      // Homepage pin
+      pinToHomepage: 'Fijar en Inicio',
+      unpinFromHomepage: 'Desfijar de Inicio',
+      homepagePinnedBadge: 'Inicio',
+      homepagePinPriority: 'Prioridad (0-100)',
+      homepagePinPriorityPlaceholder: 'Mayor = aparece primero',
+      homepagePinned: 'Tema fijado en inicio',
+      homepageUnpinned: 'Tema desfijado de inicio',
+      errorHomepagePin: 'Error al actualizar fijado en inicio',
     },
   },
   hi: {
@@ -317,6 +337,16 @@ export const forumDict = {
       threadUnlocked: 'विषय अनलॉक किया गया',
       bestAnswerSet: 'सर्वोत्तम उत्तर चिह्नित किया गया',
       bestAnswerUnset: 'सर्वोत्तम उत्तर अचिह्नित किया गया',
+
+      // Homepage pin
+      pinToHomepage: 'होमपेज पर पिन करें',
+      unpinFromHomepage: 'होमपेज से अनपिन करें',
+      homepagePinnedBadge: 'होमपेज',
+      homepagePinPriority: 'प्राथमिकता (0-100)',
+      homepagePinPriorityPlaceholder: 'अधिक = पहले दिखाई देता है',
+      homepagePinned: 'विषय होमपेज पर पिन किया गया',
+      homepageUnpinned: 'विषय होमपेज से अनपिन किया गया',
+      errorHomepagePin: 'होमपेज पिन अपडेट करने में त्रुटि',
     },
   },
 } as const satisfies Dict;

@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, text, pgEnum, boolean, timestamp, numeric } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, pgEnum, boolean, timestamp, numeric, jsonb } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { appUsers } from './app_users.schema';
 import { communities } from './communities.schema';
@@ -17,6 +17,15 @@ export const itemKindEnum = pgEnum('item_kind', ['object', 'service']);
  * When users share wealth, they select an Item (e.g., "Carrots", "Car Repair Service").
  * This allows aggregation like "10 users shared Carrots = total carrots available."
  *
+ * NOW ALSO USED FOR CONTRIBUTION TRACKING:
+ * - Items serve dual purpose: wealth categories AND contribution categories
+ * - wealthValue is used for BOTH wealth statistics AND contribution recognition
+ * - contributionMetadata stores contribution-specific data
+ *
+ * ALSO USED FOR SKILLS ENDORSEMENT SUGGESTIONS (FT-19):
+ * - relatedSkills: Array of skill names that relate to this item
+ * - Used for contextual skill endorsement suggestions in wealth flow
+ *
  * Authorization:
  * - Creating/editing/deleting items requires `can_manage_items` permission
  * - Viewing items requires community membership
@@ -25,8 +34,8 @@ export const itemKindEnum = pgEnum('item_kind', ['object', 'service']);
  * Features:
  * - Soft delete support (deletedAt)
  * - Unique constraint on (communityId, name) - case insensitive
- * - Referenced by wealth items (foreign key)
- * - wealth_value: Numeric value for aggregate community wealth statistics
+ * - Referenced by wealth items AND recognized_contributions (foreign keys)
+ * - wealthValue: Numeric value for wealth statistics AND contribution value per unit
  */
 export const items = pgTable('items', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -35,13 +44,28 @@ export const items = pgTable('items', {
     .references(() => communities.id, { onDelete: 'cascade' })
     .notNull(),
 
-  name: varchar('name', { length: 200 }).notNull(),
-  description: text('description'),
+  // Multi-language translations
+  // Structure: { en: {name, description?}, es: {name, description?}, hi: {name, description?} }
+  translations: jsonb('translations').notNull(),
 
   kind: itemKindEnum('kind').notNull(),
 
-  // Value for aggregate wealth statistics
+  // Value for aggregate wealth statistics AND contribution recognition
+  // For wealth: monetary/barter value
+  // For contributions: recognition value per unit (hours, sessions, items, etc.)
   wealthValue: numeric('wealth_value', { precision: 10, scale: 2 }).notNull().default('1.0'),
+
+  // Contribution-specific metadata (optional, for contribution categories)
+  // Structure: {
+  //   categoryType: 'care' | 'community_building' | 'creative' | 'knowledge' | 'maintenance' | 'material' | 'invisible_labor',
+  //   examples: ['Example activity 1', 'Example activity 2']
+  // }
+  contributionMetadata: jsonb('contribution_metadata'),
+
+  // Related skills for contextual endorsement suggestions (FT-19)
+  // Array of skill names (e.g., ["Carpentry", "Woodworking", "Furniture Making"])
+  // Used to suggest skills when endorsing after wealth transactions
+  relatedSkills: text('related_skills').array(),
 
   // Default items (like "Other") cannot be deleted
   isDefault: boolean('is_default').default(false).notNull(),

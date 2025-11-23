@@ -1,0 +1,184 @@
+### FT-21: Sharing Markets - Checkout Links API Tests
+
+# Replace these variables with actual values from your environment
+@baseUrl = http://localhost:3000/api/v1
+@token = YOUR_JWT_TOKEN_HERE
+@poolId = YOUR_POOL_ID_HERE
+@shareId = YOUR_WEALTH_SHARE_ID_HERE
+@itemId = YOUR_ITEM_ID_HERE
+@linkId = YOUR_LINK_ID_HERE
+@linkCode = YOUR_LINK_CODE_HERE
+
+### ========== Pool Checkout Links ==========
+
+### 1. Create Pool Checkout Link
+POST {{baseUrl}}/pools/{{poolId}}/checkout-links
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemId": "{{itemId}}",
+  "maxUnitsPerCheckout": 5
+}
+
+### 2. List Pool Checkout Links
+GET {{baseUrl}}/pools/{{poolId}}/checkout-links
+Authorization: Bearer {{token}}
+
+### 3. Revoke Pool Checkout Link
+POST {{baseUrl}}/pools/{{poolId}}/checkout-links/{{linkId}}/revoke
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "reason": "QR code damaged, needs replacement"
+}
+
+### 4. Regenerate Pool Checkout Link
+POST {{baseUrl}}/pools/{{poolId}}/checkout-links/{{linkId}}/regenerate
+Authorization: Bearer {{token}}
+
+### ========== Share Checkout Links ==========
+
+### 5. Create Share Checkout Link
+POST {{baseUrl}}/wealth/{{shareId}}/checkout-link
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "maxUnitsPerCheckout": 3
+}
+
+### 6. Get Share Checkout Link Info
+GET {{baseUrl}}/wealth/{{shareId}}/checkout-link
+Authorization: Bearer {{token}}
+
+### 7. Revoke Share Checkout Link
+DELETE {{baseUrl}}/wealth/{{shareId}}/checkout-link
+Authorization: Bearer {{token}}
+
+### ========== Public Checkout Endpoints ==========
+
+### 8. Get Checkout Details (PUBLIC - no auth)
+GET {{baseUrl}}/checkout/{{linkCode}}
+
+### 9. Complete Checkout (Requires auth)
+POST {{baseUrl}}/checkout/{{linkCode}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "units": 2
+}
+
+### ========== Test Scenarios ==========
+
+### Scenario: Farmer's Market Setup
+# 1. Create a pool for "Community Garden Vegetables"
+# 2. Create checkout links for each vegetable:
+#    - Carrots (5kg max)
+#    - Potatoes (10kg max)
+#    - Tomatoes (3kg max)
+# 3. Print QR codes
+# 4. Place QR codes at market
+
+### Scenario: Event Leftovers
+# 1. Create a share for "Fresh Bread - 20 loaves"
+# 2. Create checkout link (unlimited per checkout)
+# 3. Print QR code
+# 4. Leave at community center
+# 5. Monitor as units deplete
+
+### Scenario: Tool Library
+# 1. Create pool for "Tool Library"
+# 2. Create checkout link for each tool (limit: 1 unit)
+# 3. Attach QR codes to tool handles
+# 4. Members scan when borrowing
+
+### Error Cases to Test
+
+### Error: Create link for non-existent pool
+POST {{baseUrl}}/pools/00000000-0000-0000-0000-000000000000/checkout-links
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemId": "{{itemId}}",
+  "maxUnitsPerCheckout": 5
+}
+
+### Error: Create link without council permission
+# Use token from user who is NOT a council member
+POST {{baseUrl}}/pools/{{poolId}}/checkout-links
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "itemId": "{{itemId}}",
+  "maxUnitsPerCheckout": 5
+}
+
+### Error: Create duplicate share checkout link
+# Create link for share that already has one
+POST {{baseUrl}}/wealth/{{shareId}}/checkout-link
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "maxUnitsPerCheckout": 3
+}
+
+### Error: Checkout with invalid link code
+GET {{baseUrl}}/checkout/invalid-link-code-12345
+
+### Error: Complete checkout without auth
+POST {{baseUrl}}/checkout/{{linkCode}}
+Content-Type: application/json
+
+{
+  "units": 2
+}
+
+### Notes for Testing
+
+# Pool Checkout Links:
+# - Permanent links for ongoing sharing (farmer's market, tool library)
+# - Council members or admins can create/manage
+# - Each link tied to one item type
+# - Stats tracked: total checkouts, units distributed, last checkout time
+
+# Share Checkout Links:
+# - Temporary links for individual shares (event leftovers)
+# - Share owner or admin can create/manage
+# - Auto-deactivates when share closes or units = 0
+# - One link per share (unique constraint)
+
+# Public Checkout:
+# - GET /checkout/:linkCode - Works without auth (shows details)
+# - POST /checkout/:linkCode - Requires auth (community member + trust threshold)
+# - Rate limited: 5 checkouts per user per hour per link
+# - Cooldown: configurable minutes between checkouts (default 5)
+
+# QR Code Data:
+# - QR codes encode full URL: https://app.domain.com/checkout/{linkCode}
+# - Base64 data URL returned in qrCodeDataUrl field
+# - Can be saved/printed directly
+# - 512x512px PNG with error correction level M
+
+# Success Response Example:
+# {
+#   "success": true,
+#   "data": {
+#     "id": "uuid",
+#     "linkCode": "abc123...",
+#     "qrCodeDataUrl": "data:image/png;base64,...",
+#     "checkoutUrl": "https://app.domain.com/checkout/abc123...",
+#     "maxUnitsPerCheckout": 5,
+#     "item": {
+#       "id": "uuid",
+#       "name": "Carrots",
+#       "unit": "kg"
+#     },
+#     "createdAt": "2025-01-22T10:00:00Z"
+#   }
+# }

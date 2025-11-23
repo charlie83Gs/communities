@@ -124,7 +124,7 @@ export const NeedCreateForm: Component<NeedCreateFormProps> = (props) => {
             <ItemSelector
               communityId={props.communityId}
               selectedItemId={itemId()}
-              kind={itemTypeFilter() === 'all' ? undefined : itemTypeFilter()}
+              kind={itemTypeFilter() === 'all' ? undefined : (itemTypeFilter() as 'object' | 'service')}
               canManageItems={props.canManageItems ?? false}
               onChange={setItemId}
               error={!itemId() && error() ? t('itemRequired') : undefined}

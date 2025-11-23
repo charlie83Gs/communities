@@ -1,7 +1,18 @@
-import type { Item } from './items.types';
+import type { Item } from "./items.types";
 
-export type DistributionType = 'manual' | 'needs_based';
-export type FulfillmentStrategy = 'full' | 'partial' | 'equal';
+export type FulfillmentStrategy = "full" | "partial" | "equal";
+
+/**
+ * Allowed item in pool whitelist
+ */
+export interface AllowedItem {
+  id: string;
+  name: string;
+  categoryId: string;
+  categoryName: string;
+  subcategoryId?: string;
+  subcategoryName?: string;
+}
 
 /**
  * Pool entity
@@ -13,11 +24,14 @@ export interface Pool {
   councilName: string;
   name: string;
   description: string;
-  primaryItem?: { id: string; name: string };
-  distributionType: DistributionType;
   maxUnitsPerUser?: number;
   minimumContribution?: number;
-  inventory: Array<{ itemId: string; itemName: string; unitsAvailable: number }>;
+  allowedItems?: AllowedItem[];
+  inventory: Array<{
+    itemId: string;
+    itemName: string;
+    unitsAvailable: number;
+  }>;
   createdBy: string;
   createdAt: string;
   updatedAt: string;
@@ -30,10 +44,9 @@ export interface Pool {
 export interface CreatePoolRequest {
   name: string;
   description: string;
-  primaryItemId?: string;
-  distributionType: DistributionType;
   maxUnitsPerUser?: number;
   minimumContribution?: number;
+  allowedItemIds?: string[];
 }
 
 /**
@@ -45,6 +58,7 @@ export interface UpdatePoolRequest {
   description?: string;
   maxUnitsPerUser?: number;
   minimumContribution?: number;
+  allowedItemIds?: string[];
 }
 
 /**
@@ -94,7 +108,23 @@ export interface NeedPreview {
   itemId: string;
   itemName: string;
   unitsNeeded: number;
-  priority: 'need' | 'want';
+  priority: "need" | "want";
+}
+
+/**
+ * Mass distribution preview response from API
+ * GET /api/communities/:communityId/pools/:poolId/distributions/mass/preview
+ */
+export interface MassDistributePreviewResponse {
+  totalAvailable: number;
+  totalNeeded: number;
+  potentialRecipients: Array<{
+    userId: string;
+    userName: string;
+    unitsNeeded: number;
+    unitsWillReceive: number;
+    priority: "need" | "want";
+  }>;
 }
 
 /**
@@ -148,8 +178,36 @@ export interface MassDistributionPlan {
     userName: string;
     unitsNeeded: number;
     unitsToReceive: number;
-    priority: 'need' | 'want';
+    priority: "need" | "want";
   }>;
   fulfillmentStrategy: FulfillmentStrategy;
   maxUnitsPerUser?: number;
+}
+
+/**
+ * Pool needs item breakdown
+ */
+export interface PoolNeedsItem {
+  itemId: string;
+  itemName: string;
+  categoryName: string;
+  totalNeedsCount: number;
+  totalWantsCount: number;
+  totalNeedsUnits: number;
+  totalWantsUnits: number;
+  poolInventoryUnits: number;
+  recurrenceBreakdown: {
+    oneTime: { needs: number; wants: number };
+    daily: { needs: number; wants: number };
+    weekly: { needs: number; wants: number };
+    monthly: { needs: number; wants: number };
+  };
+}
+
+/**
+ * Pool needs response
+ * GET /api/communities/:communityId/pools/:poolId/needs
+ */
+export interface PoolNeedsResponse {
+  items: PoolNeedsItem[];
 }

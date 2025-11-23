@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import { communityController } from '@/api/controllers/community.controller';
 import { communityService } from '@/services/community.service';
 import { AppError } from '@/utils/errors';
+
 import {
   createMockAuthenticatedRequest,
   createMockResponse,
@@ -390,7 +391,7 @@ describe('CommunityController', () => {
       const res = createMockResponse();
       const next = createMockNext();
 
-      mockCommunityService.getUserRoleInCommunity.mockResolvedValue(null);
+      mockCommunityService.getUserRoleInCommunity.mockResolvedValue(null as any);
 
       await communityController.getMemberById(req, res, next);
 

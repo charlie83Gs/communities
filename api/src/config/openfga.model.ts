@@ -49,6 +49,7 @@ export const authorizationModel = {
      * - poll_creator: Can create polls
      * - dispute_viewer: Can view disputes
      * - dispute_handler: Can handle disputes
+     * - dispute_participant: Can create disputes
      * - pool_viewer: Can view pools
      * - pool_creator: Can create pools
      * - council_viewer: Can view councils
@@ -64,23 +65,33 @@ export const authorizationModel = {
      * - analytics_viewer: Can view analytics
      * - needs_viewer: Can view needs
      * - needs_publisher: Can publish needs
+     * - contribution_viewer: Can view contribution profiles
+     * - contribution_logger: Can log self-reported contributions
+     * - recognition_granter: Can grant peer recognition
+     * - contribution_verifier: Can verify contributions
+     * - recognition_manager: Can manage recognition system and calibrate values
      *
      * Trust Roles (auto-granted when trust >= threshold):
      * - trust_trust_viewer, trust_trust_granter, trust_wealth_viewer, trust_wealth_creator,
      * - trust_poll_viewer, trust_poll_creator, trust_dispute_viewer, trust_dispute_handler,
+     *   trust_dispute_participant,
      * - trust_pool_viewer, trust_pool_creator, trust_council_viewer, trust_council_creator,
      * - trust_forum_viewer, trust_forum_manager, trust_thread_creator,
      * - trust_attachment_uploader, trust_content_flagger, trust_flag_reviewer,
      * - trust_item_viewer, trust_item_manager, trust_analytics_viewer,
-     * - trust_needs_viewer, trust_needs_publisher
+     * - trust_needs_viewer, trust_needs_publisher, trust_contribution_viewer,
+     * - trust_contribution_logger, trust_recognition_granter, trust_contribution_verifier,
+     * - trust_recognition_manager
      *
      * Permissions (union of admin + regular_role + trust_role):
      * - can_view_trust, can_award_trust, can_view_wealth, can_create_wealth,
-     * - can_view_poll, can_create_poll, can_view_dispute, can_handle_dispute,
+     * - can_view_poll, can_create_poll, can_view_dispute, can_handle_dispute, can_create_dispute,
      * - can_view_pool, can_create_pool, can_view_council, can_create_council,
      * - can_view_forum, can_manage_forum, can_create_thread, can_upload_attachment,
      * - can_flag_content, can_review_flag, can_view_item, can_manage_item,
-     * - can_view_analytics, can_view_needs, can_publish_needs
+     * - can_view_analytics, can_view_needs, can_publish_needs, can_view_contributions,
+     * - can_log_contributions, can_grant_peer_recognition, can_verify_contributions,
+     * - can_manage_recognition
      */
     {
       type: 'community',
@@ -98,6 +109,7 @@ export const authorizationModel = {
         poll_creator: { this: {} },
         dispute_viewer: { this: {} },
         dispute_handler: { this: {} },
+        dispute_participant: { this: {} },
         pool_viewer: { this: {} },
         pool_creator: { this: {} },
         council_viewer: { this: {} },
@@ -113,6 +125,12 @@ export const authorizationModel = {
         analytics_viewer: { this: {} },
         needs_viewer: { this: {} },
         needs_publisher: { this: {} },
+        contribution_viewer: { this: {} },
+        contribution_logger: { this: {} },
+        recognition_granter: { this: {} },
+        contribution_verifier: { this: {} },
+        recognition_manager: { this: {} },
+        skill_endorser: { this: {} },
 
         // ========== TRUST ROLES (Auto-Granted) ==========
         trust_trust_viewer: { this: {} },
@@ -123,6 +141,7 @@ export const authorizationModel = {
         trust_poll_creator: { this: {} },
         trust_dispute_viewer: { this: {} },
         trust_dispute_handler: { this: {} },
+        trust_dispute_participant: { this: {} },
         trust_pool_viewer: { this: {} },
         trust_pool_creator: { this: {} },
         trust_council_viewer: { this: {} },
@@ -138,6 +157,12 @@ export const authorizationModel = {
         trust_analytics_viewer: { this: {} },
         trust_needs_viewer: { this: {} },
         trust_needs_publisher: { this: {} },
+        trust_contribution_viewer: { this: {} },
+        trust_contribution_logger: { this: {} },
+        trust_recognition_granter: { this: {} },
+        trust_contribution_verifier: { this: {} },
+        trust_recognition_manager: { this: {} },
+        trust_skill_endorser: { this: {} },
 
         // ========== PERMISSIONS (UNIONS) ==========
         // Basic community permissions
@@ -267,6 +292,15 @@ export const authorizationModel = {
             ],
           },
         },
+        can_create_dispute: {
+          union: {
+            child: [
+              { computedUserset: { relation: 'admin' } },
+              { computedUserset: { relation: 'dispute_participant' } },
+              { computedUserset: { relation: 'trust_dispute_participant' } },
+            ],
+          },
+        },
         can_create_pool: {
           union: {
             child: [
@@ -366,6 +400,60 @@ export const authorizationModel = {
             ],
           },
         },
+        can_view_contributions: {
+          union: {
+            child: [
+              { computedUserset: { relation: 'admin' } },
+              { computedUserset: { relation: 'contribution_viewer' } },
+              { computedUserset: { relation: 'trust_contribution_viewer' } },
+            ],
+          },
+        },
+        can_log_contributions: {
+          union: {
+            child: [
+              { computedUserset: { relation: 'admin' } },
+              { computedUserset: { relation: 'contribution_logger' } },
+              { computedUserset: { relation: 'trust_contribution_logger' } },
+            ],
+          },
+        },
+        can_grant_peer_recognition: {
+          union: {
+            child: [
+              { computedUserset: { relation: 'admin' } },
+              { computedUserset: { relation: 'recognition_granter' } },
+              { computedUserset: { relation: 'trust_recognition_granter' } },
+            ],
+          },
+        },
+        can_verify_contributions: {
+          union: {
+            child: [
+              { computedUserset: { relation: 'admin' } },
+              { computedUserset: { relation: 'contribution_verifier' } },
+              { computedUserset: { relation: 'trust_contribution_verifier' } },
+            ],
+          },
+        },
+        can_manage_recognition: {
+          union: {
+            child: [
+              { computedUserset: { relation: 'admin' } },
+              { computedUserset: { relation: 'recognition_manager' } },
+              { computedUserset: { relation: 'trust_recognition_manager' } },
+            ],
+          },
+        },
+        can_endorse_skills: {
+          union: {
+            child: [
+              { computedUserset: { relation: 'admin' } },
+              { computedUserset: { relation: 'skill_endorser' } },
+              { computedUserset: { relation: 'trust_skill_endorser' } },
+            ],
+          },
+        },
       },
       metadata: {
         relations: {
@@ -384,6 +472,7 @@ export const authorizationModel = {
           dispute_handler: {
             directly_related_user_types: [{ type: 'user' }, { type: 'council' }],
           },
+          dispute_participant: { directly_related_user_types: [{ type: 'user' }] },
           pool_viewer: { directly_related_user_types: [{ type: 'user' }] },
           pool_creator: { directly_related_user_types: [{ type: 'user' }] },
           council_viewer: { directly_related_user_types: [{ type: 'user' }] },
@@ -399,6 +488,12 @@ export const authorizationModel = {
           analytics_viewer: { directly_related_user_types: [{ type: 'user' }] },
           needs_viewer: { directly_related_user_types: [{ type: 'user' }] },
           needs_publisher: { directly_related_user_types: [{ type: 'user' }] },
+          contribution_viewer: { directly_related_user_types: [{ type: 'user' }] },
+          contribution_logger: { directly_related_user_types: [{ type: 'user' }] },
+          recognition_granter: { directly_related_user_types: [{ type: 'user' }] },
+          contribution_verifier: { directly_related_user_types: [{ type: 'user' }] },
+          recognition_manager: { directly_related_user_types: [{ type: 'user' }] },
+          skill_endorser: { directly_related_user_types: [{ type: 'user' }] },
 
           // Trust roles (auto-granted)
           trust_trust_viewer: { directly_related_user_types: [{ type: 'user' }] },
@@ -411,6 +506,7 @@ export const authorizationModel = {
           trust_dispute_handler: {
             directly_related_user_types: [{ type: 'user' }, { type: 'council' }],
           },
+          trust_dispute_participant: { directly_related_user_types: [{ type: 'user' }] },
           trust_pool_viewer: { directly_related_user_types: [{ type: 'user' }] },
           trust_pool_creator: { directly_related_user_types: [{ type: 'user' }] },
           trust_council_viewer: { directly_related_user_types: [{ type: 'user' }] },
@@ -426,6 +522,12 @@ export const authorizationModel = {
           trust_analytics_viewer: { directly_related_user_types: [{ type: 'user' }] },
           trust_needs_viewer: { directly_related_user_types: [{ type: 'user' }] },
           trust_needs_publisher: { directly_related_user_types: [{ type: 'user' }] },
+          trust_contribution_viewer: { directly_related_user_types: [{ type: 'user' }] },
+          trust_contribution_logger: { directly_related_user_types: [{ type: 'user' }] },
+          trust_recognition_granter: { directly_related_user_types: [{ type: 'user' }] },
+          trust_contribution_verifier: { directly_related_user_types: [{ type: 'user' }] },
+          trust_recognition_manager: { directly_related_user_types: [{ type: 'user' }] },
+          trust_skill_endorser: { directly_related_user_types: [{ type: 'user' }] },
         },
       },
     },
@@ -502,7 +604,36 @@ export const authorizationModel = {
           },
         },
         can_manage: {
-          computedUserset: { relation: 'member' },
+          union: {
+            child: [
+              { computedUserset: { relation: 'member' } },
+              {
+                tupleToUserset: {
+                  tupleset: { relation: 'parent_community' },
+                  computedUserset: { relation: 'admin' },
+                },
+              },
+            ],
+          },
+        },
+        can_update: {
+          union: {
+            child: [
+              { computedUserset: { relation: 'member' } },
+              {
+                tupleToUserset: {
+                  tupleset: { relation: 'parent_community' },
+                  computedUserset: { relation: 'admin' },
+                },
+              },
+            ],
+          },
+        },
+        can_delete: {
+          tupleToUserset: {
+            tupleset: { relation: 'parent_community' },
+            computedUserset: { relation: 'admin' },
+          },
         },
       },
       metadata: {

@@ -3,18 +3,18 @@ import { useParams, useNavigate } from '@solidjs/router';
 import { Meta, Title } from '@solidjs/meta';
 import { NeedCreateForm } from '@/components/features/needs/NeedCreateForm';
 import { Button } from '@/components/common/Button';
+import { CommunityProvider, useCommunity } from '@/contexts/CommunityContext';
 
-const CreateNeedPage: Component = () => {
-  const params = useParams();
+const CreateNeedPageContent: Component<{ communityId: string }> = (props) => {
   const navigate = useNavigate();
-  const communityId = () => params.id;
+  const { canManageItems } = useCommunity();
 
   const handleCreated = () => {
-    navigate(`/communities/${communityId()}/needs`);
+    navigate(`/communities/${props.communityId}/needs`);
   };
 
   const handleCancel = () => {
-    navigate(`/communities/${communityId()}/needs`);
+    navigate(`/communities/${props.communityId}/needs`);
   };
 
   return (
@@ -30,12 +30,23 @@ const CreateNeedPage: Component = () => {
         </div>
 
         <NeedCreateForm
-          communityId={communityId()}
-          canManageItems={true}
+          communityId={props.communityId}
+          canManageItems={canManageItems()}
           onCreated={handleCreated}
         />
       </div>
     </>
+  );
+};
+
+const CreateNeedPage: Component = () => {
+  const params = useParams();
+  const communityId = () => params.id;
+
+  return (
+    <CommunityProvider communityId={communityId()}>
+      <CreateNeedPageContent communityId={communityId()} />
+    </CommunityProvider>
   );
 };
 

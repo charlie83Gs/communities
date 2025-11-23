@@ -1,6 +1,17 @@
 import { db as realDb } from '../db/index';
-import { wealth, wealthRequests, trustHistory, items, needs, councilNeeds } from '../db/schema';
-import { eq, and, gte, sql, desc, count, isNull } from 'drizzle-orm';
+type DbClient = typeof realDb;
+
+import {
+  wealth,
+  wealthRequests,
+  trustHistory,
+  items,
+  needs,
+  councilNeeds,
+  adminTrustGrants,
+  recognizedContributions,
+} from '../db/schema';
+import { eq, and, gte, sql, count, isNull } from 'drizzle-orm';
 
 export type TimeRange = '7d' | '30d' | '90d' | '1y';
 
@@ -10,9 +21,10 @@ export interface WealthOverviewData {
   activeCategories: number;
   timeSeriesData: Array<{
     date: string;
-    shares: number;
-    requests: number;
-    fulfilled: number;
+    openShares: number; // cumulative shares - cumulative fulfilled (available shares)
+    dailyRequests: number; // requests created on this day (not cumulative)
+    dailyFulfilled: number; // requests fulfilled on this day (not cumulative)
+    dailyValueContributed: number; // value points contributed on this day
   }>;
 }
 
@@ -29,14 +41,16 @@ export interface WealthItemData {
 }
 
 export interface TrustOverviewData {
+  totalPeerTrust: number;
+  totalAdminTrust: number;
   totalTrust: number;
   averageTrust: number;
   trustPerDay: number;
   timeSeriesData: Array<{
     date: string;
-    trustAwarded: number;
-    trustRemoved: number;
-    netTrust: number;
+    cumulativePeerTrust: number;
+    cumulativeAdminTrust: number;
+    cumulativeTotal: number;
   }>;
 }
 
@@ -58,8 +72,8 @@ export interface NeedsOverviewData {
   };
   timeSeriesData: Array<{
     date: string;
-    needs: number;
-    wants: number;
+    cumulativeNeeds: number;
+    cumulativeWants: number;
   }>;
 }
 
@@ -97,9 +111,9 @@ export interface AggregatedWealthData {
 }
 
 export class HealthAnalyticsRepository {
-  private db: any;
+  private db: DbClient;
 
-  constructor(db: any) {
+  constructor(db: DbClient) {
     this.db = db;
   }
 
@@ -156,12 +170,13 @@ export class HealthAnalyticsRepository {
 
     const activeCategories = activeCategoriesResult.length;
 
-    // Get time series data - shares, requests, and fulfilled per day
+    // Get time series data - open shares (cumulative shares - cumulative fulfilled), daily requests, daily fulfilled, daily value contributed
     const timeSeriesResult = await this.db.execute<{
       date: string;
-      shares: string;
-      requests: string;
-      fulfilled: string;
+      open_shares: string;
+      daily_requests: string;
+      daily_fulfilled: string;
+      daily_value_contributed: string;
     }>(sql`
       WITH date_series AS (
         SELECT generate_series(
@@ -170,53 +185,90 @@ export class HealthAnalyticsRepository {
           '1 day'::interval
         )::date AS date
       ),
+      -- Calculate daily shares (all historical data)
       shares_per_day AS (
         SELECT
           DATE(created_at) AS date,
-          COUNT(*) AS shares
+          COUNT(*) AS daily_shares
         FROM ${wealth}
         WHERE community_id = ${communityId}
-          AND created_at >= ${dateCutoffStr}::timestamp
         GROUP BY DATE(created_at)
       ),
+      -- Calculate daily requests (all historical data)
       requests_per_day AS (
         SELECT
           DATE(wr.created_at) AS date,
-          COUNT(*) AS requests
+          COUNT(*) AS daily_requests
         FROM ${wealthRequests} wr
         JOIN ${wealth} w ON wr.wealth_id = w.id
         WHERE w.community_id = ${communityId}
-          AND wr.created_at >= ${dateCutoffStr}::timestamp
         GROUP BY DATE(wr.created_at)
       ),
+      -- Calculate daily fulfilled (all historical data)
       fulfilled_per_day AS (
         SELECT
           DATE(wr.updated_at) AS date,
-          COUNT(*) AS fulfilled
+          COUNT(*) AS daily_fulfilled
         FROM ${wealthRequests} wr
         JOIN ${wealth} w ON wr.wealth_id = w.id
         WHERE w.community_id = ${communityId}
           AND wr.status = 'fulfilled'
-          AND wr.updated_at >= ${dateCutoffStr}::timestamp
         GROUP BY DATE(wr.updated_at)
+      ),
+      -- Calculate daily value contributed from recognized_contributions
+      value_per_day AS (
+        SELECT
+          DATE(created_at) AS date,
+          COALESCE(SUM(CAST(total_value AS numeric)), 0) AS daily_value
+        FROM ${recognizedContributions}
+        WHERE community_id = ${communityId}
+          AND deleted_at IS NULL
+        GROUP BY DATE(created_at)
+      ),
+      -- Generate all dates from the earliest data to now
+      all_dates AS (
+        SELECT generate_series(
+          LEAST(
+            COALESCE((SELECT MIN(DATE(created_at)) FROM ${wealth} WHERE community_id = ${communityId}), CURRENT_DATE),
+            COALESCE((SELECT MIN(DATE(wr.created_at)) FROM ${wealthRequests} wr JOIN ${wealth} w ON wr.wealth_id = w.id WHERE w.community_id = ${communityId}), CURRENT_DATE),
+            COALESCE((SELECT MIN(DATE(created_at)) FROM ${recognizedContributions} WHERE community_id = ${communityId} AND deleted_at IS NULL), CURRENT_DATE)
+          ),
+          CURRENT_DATE,
+          '1 day'::interval
+        )::date AS date
+      ),
+      -- Calculate cumulative values for all historical dates and keep daily values
+      cumulative_data AS (
+        SELECT
+          ad.date,
+          SUM(COALESCE(spd.daily_shares, 0)) OVER (ORDER BY ad.date ROWS UNBOUNDED PRECEDING) AS cumulative_shares,
+          SUM(COALESCE(fpd.daily_fulfilled, 0)) OVER (ORDER BY ad.date ROWS UNBOUNDED PRECEDING) AS cumulative_fulfilled,
+          COALESCE(rpd.daily_requests, 0) AS daily_requests,
+          COALESCE(fpd.daily_fulfilled, 0) AS daily_fulfilled,
+          COALESCE(vpd.daily_value, 0) AS daily_value_contributed
+        FROM all_dates ad
+        LEFT JOIN shares_per_day spd ON ad.date = spd.date
+        LEFT JOIN requests_per_day rpd ON ad.date = rpd.date
+        LEFT JOIN fulfilled_per_day fpd ON ad.date = fpd.date
+        LEFT JOIN value_per_day vpd ON ad.date = vpd.date
       )
       SELECT
         ds.date::text,
-        COALESCE(spd.shares, 0)::text AS shares,
-        COALESCE(rpd.requests, 0)::text AS requests,
-        COALESCE(fpd.fulfilled, 0)::text AS fulfilled
+        (COALESCE(cd.cumulative_shares, 0) - COALESCE(cd.cumulative_fulfilled, 0))::text AS open_shares,
+        COALESCE(cd.daily_requests, 0)::text AS daily_requests,
+        COALESCE(cd.daily_fulfilled, 0)::text AS daily_fulfilled,
+        COALESCE(cd.daily_value_contributed, 0)::text AS daily_value_contributed
       FROM date_series ds
-      LEFT JOIN shares_per_day spd ON ds.date = spd.date
-      LEFT JOIN requests_per_day rpd ON ds.date = rpd.date
-      LEFT JOIN fulfilled_per_day fpd ON ds.date = fpd.date
+      LEFT JOIN cumulative_data cd ON ds.date = cd.date
       ORDER BY ds.date
     `);
 
     const timeSeriesData = (timeSeriesResult as any[]).map((row) => ({
       date: row.date,
-      shares: parseInt(row.shares, 10),
-      requests: parseInt(row.requests, 10),
-      fulfilled: parseInt(row.fulfilled, 10),
+      openShares: parseInt(row.open_shares, 10),
+      dailyRequests: parseInt(row.daily_requests, 10),
+      dailyFulfilled: parseInt(row.daily_fulfilled, 10),
+      dailyValueContributed: parseFloat(row.daily_value_contributed),
     }));
 
     return {
@@ -249,7 +301,7 @@ export class HealthAnalyticsRepository {
     }>(sql`
       SELECT
         i.id AS item_id,
-        i.name AS item_name,
+        COALESCE(i.translations->'en'->>'name', i.translations->'es'->>'name', 'Unknown') AS item_name,
         i.kind AS item_kind,
         COUNT(w.id)::text AS share_count,
         (i.wealth_value * COUNT(w.id))::text AS value_points
@@ -258,7 +310,7 @@ export class HealthAnalyticsRepository {
         AND w.community_id = ${communityId}
       WHERE i.community_id = ${communityId}
         AND i.deleted_at IS NULL
-      GROUP BY i.id, i.name, i.kind, i.wealth_value
+      GROUP BY i.id, i.translations, i.kind, i.wealth_value
       HAVING COUNT(w.id) > 0
       ORDER BY COUNT(w.id) DESC
     `);
@@ -302,6 +354,7 @@ export class HealthAnalyticsRepository {
         itemName: item.item_name,
         shareCount: parseInt(item.share_count, 10),
         valuePoints: parseFloat(item.value_points || '0'),
+
         trend: (trendResult as any[]).map((row) => ({
           date: row.date,
           count: parseInt(row.count, 10),
@@ -322,8 +375,8 @@ export class HealthAnalyticsRepository {
     const dateCutoff = this.getDateCutoff(timeRange);
     const dateCutoffStr = dateCutoff.toISOString();
 
-    // Get total trust awards in time range
-    const totalTrustResult = await this.db.execute<{ total: string }>(sql`
+    // Get total peer trust awards in time range
+    const totalPeerTrustResult = await this.db.execute<{ total: string }>(sql`
       SELECT COALESCE(SUM(points_delta), 0)::text AS total
       FROM ${trustHistory}
       WHERE community_id = ${communityId}
@@ -331,9 +384,22 @@ export class HealthAnalyticsRepository {
         AND created_at >= ${dateCutoffStr}::timestamp
     `);
 
-    const totalTrust = parseInt((totalTrustResult as any[])[0]?.total || '0', 10);
+    const totalPeerTrust = parseInt((totalPeerTrustResult as any[])[0]?.total || '0', 10);
 
-    // Get average trust per user (only considering users with positive trust scores)
+    // Get total admin trust grants in time range (active grants only)
+    const totalAdminTrustResult = await this.db.execute<{ total: string }>(sql`
+      SELECT COALESCE(SUM(trust_amount), 0)::text AS total
+      FROM ${adminTrustGrants}
+      WHERE community_id = ${communityId}
+        AND created_at >= ${dateCutoffStr}::timestamp
+    `);
+
+    const totalAdminTrust = parseInt((totalAdminTrustResult as any[])[0]?.total || '0', 10);
+
+    // Combined total trust
+    const totalTrust = totalPeerTrust + totalAdminTrust;
+
+    // Get average trust per user (considering both peer and admin trust)
     const averageTrustResult = await this.db.execute<{
       average: string;
       count: string;
@@ -343,12 +409,30 @@ export class HealthAnalyticsRepository {
         COUNT(*)::text AS count
       FROM (
         SELECT
-          to_user_id,
-          SUM(CASE WHEN action = 'award' THEN points_delta ELSE -points_delta END) AS total_trust
-        FROM ${trustHistory}
-        WHERE community_id = ${communityId}
-        GROUP BY to_user_id
-        HAVING SUM(CASE WHEN action = 'award' THEN points_delta ELSE -points_delta END) > 0
+          user_id,
+          SUM(trust) AS total_trust
+        FROM (
+          -- Peer trust from trust_history (points_delta is already signed)
+          -- Only include 'award' and 'remove' actions, not 'admin_grant'
+          SELECT
+            to_user_id AS user_id,
+            SUM(points_delta) AS trust
+          FROM ${trustHistory}
+          WHERE community_id = ${communityId}
+            AND action IN ('award', 'remove')
+          GROUP BY to_user_id
+
+          UNION ALL
+
+          -- Admin trust from admin_trust_grants
+          SELECT
+            to_user_id AS user_id,
+            trust_amount AS trust
+          FROM ${adminTrustGrants}
+          WHERE community_id = ${communityId}
+        ) combined
+        GROUP BY user_id
+        HAVING SUM(trust) > 0
       ) user_trust
     `);
 
@@ -358,12 +442,12 @@ export class HealthAnalyticsRepository {
     const daysInRange = Math.ceil((Date.now() - dateCutoff.getTime()) / (1000 * 60 * 60 * 24));
     const trustPerDay = daysInRange > 0 ? totalTrust / daysInRange : 0;
 
-    // Get time series data
+    // Get time series data with cumulative peer and admin trust
     const timeSeriesResult = await this.db.execute<{
       date: string;
-      trust_awarded: string;
-      trust_removed: string;
-      net_trust: string;
+      cumulative_peer_trust: string;
+      cumulative_admin_trust: string;
+      cumulative_total: string;
     }>(sql`
       WITH date_series AS (
         SELECT generate_series(
@@ -372,35 +456,68 @@ export class HealthAnalyticsRepository {
           '1 day'::interval
         )::date AS date
       ),
-      trust_per_day AS (
+      -- Calculate daily peer trust changes (all historical data)
+      -- points_delta is already signed: positive for awards, negative for removals
+      -- Only include 'award' and 'remove' actions, not 'admin_grant'
+      peer_trust_per_day AS (
         SELECT
           DATE(created_at) AS date,
-          SUM(CASE WHEN action = 'award' THEN points_delta ELSE 0 END) AS trust_awarded,
-          SUM(CASE WHEN action = 'remove' THEN points_delta ELSE 0 END) AS trust_removed,
-          SUM(CASE WHEN action = 'award' THEN points_delta ELSE -points_delta END) AS net_trust
+          SUM(points_delta) AS daily_peer_trust
         FROM ${trustHistory}
         WHERE community_id = ${communityId}
-          AND created_at >= ${dateCutoffStr}::timestamp
+          AND action IN ('award', 'remove')
         GROUP BY DATE(created_at)
+      ),
+      -- Calculate daily admin trust grants (all historical data)
+      admin_trust_per_day AS (
+        SELECT
+          DATE(created_at) AS date,
+          SUM(trust_amount) AS daily_admin_trust
+        FROM ${adminTrustGrants}
+        WHERE community_id = ${communityId}
+        GROUP BY DATE(created_at)
+      ),
+      -- Generate all dates from the earliest data to now
+      all_dates AS (
+        SELECT generate_series(
+          LEAST(
+            COALESCE((SELECT MIN(DATE(created_at)) FROM ${trustHistory} WHERE community_id = ${communityId}), CURRENT_DATE),
+            COALESCE((SELECT MIN(DATE(created_at)) FROM ${adminTrustGrants} WHERE community_id = ${communityId}), CURRENT_DATE)
+          ),
+          CURRENT_DATE,
+          '1 day'::interval
+        )::date AS date
+      ),
+      -- Calculate cumulative values for all historical dates
+      cumulative_data AS (
+        SELECT
+          ad.date,
+          SUM(COALESCE(ptpd.daily_peer_trust, 0)) OVER (ORDER BY ad.date ROWS UNBOUNDED PRECEDING) AS cumulative_peer_trust,
+          SUM(COALESCE(atpd.daily_admin_trust, 0)) OVER (ORDER BY ad.date ROWS UNBOUNDED PRECEDING) AS cumulative_admin_trust
+        FROM all_dates ad
+        LEFT JOIN peer_trust_per_day ptpd ON ad.date = ptpd.date
+        LEFT JOIN admin_trust_per_day atpd ON ad.date = atpd.date
       )
       SELECT
         ds.date::text,
-        COALESCE(tpd.trust_awarded, 0)::text AS trust_awarded,
-        COALESCE(tpd.trust_removed, 0)::text AS trust_removed,
-        COALESCE(tpd.net_trust, 0)::text AS net_trust
+        COALESCE(cd.cumulative_peer_trust, 0)::text AS cumulative_peer_trust,
+        COALESCE(cd.cumulative_admin_trust, 0)::text AS cumulative_admin_trust,
+        (COALESCE(cd.cumulative_peer_trust, 0) + COALESCE(cd.cumulative_admin_trust, 0))::text AS cumulative_total
       FROM date_series ds
-      LEFT JOIN trust_per_day tpd ON ds.date = tpd.date
+      LEFT JOIN cumulative_data cd ON ds.date = cd.date
       ORDER BY ds.date
     `);
 
     const timeSeriesData = (timeSeriesResult as any[]).map((row) => ({
       date: row.date,
-      trustAwarded: parseInt(row.trust_awarded, 10),
-      trustRemoved: parseInt(row.trust_removed, 10),
-      netTrust: parseInt(row.net_trust, 10),
+      cumulativePeerTrust: parseInt(row.cumulative_peer_trust, 10),
+      cumulativeAdminTrust: parseInt(row.cumulative_admin_trust, 10),
+      cumulativeTotal: parseInt(row.cumulative_total, 10),
     }));
 
     return {
+      totalPeerTrust,
+      totalAdminTrust,
       totalTrust,
       averageTrust: Math.round(averageTrust * 100) / 100,
       trustPerDay: Math.round(trustPerDay * 100) / 100,
@@ -415,17 +532,33 @@ export class HealthAnalyticsRepository {
     communityId: string,
     trustLevels: Array<{ name: string; minScore: number }>
   ): Promise<TrustDistributionData[]> {
-    // Get user trust scores
+    // Get user trust scores (combining peer and admin trust)
     const userTrustResult = await this.db.execute<{
       user_id: string;
       trust_score: string;
     }>(sql`
       SELECT
-        to_user_id AS user_id,
-        SUM(CASE WHEN action = 'award' THEN points_delta ELSE -points_delta END)::text AS trust_score
-      FROM ${trustHistory}
-      WHERE community_id = ${communityId}
-      GROUP BY to_user_id
+        user_id,
+        SUM(trust)::text AS trust_score
+      FROM (
+        -- Peer trust from trust_history
+        SELECT
+          to_user_id AS user_id,
+          SUM(CASE WHEN action = 'award' THEN points_delta ELSE -points_delta END) AS trust
+        FROM ${trustHistory}
+        WHERE community_id = ${communityId}
+        GROUP BY to_user_id
+
+        UNION ALL
+
+        -- Admin trust from admin_trust_grants
+        SELECT
+          to_user_id AS user_id,
+          trust_amount AS trust
+        FROM ${adminTrustGrants}
+        WHERE community_id = ${communityId}
+      ) combined
+      GROUP BY user_id
     `);
 
     const userTrustScores = (userTrustResult as any[]).map((row) => ({
@@ -547,14 +680,15 @@ export class HealthAnalyticsRepository {
 
     const objectsVsServices = {
       objects: parseInt((objectsVsServicesResult as any[])[0]?.objects || '0', 10),
+
       services: parseInt((objectsVsServicesResult as any[])[0]?.services || '0', 10),
     };
 
-    // Get time series data - needs and wants created per day
+    // Get time series data - cumulative needs and wants
     const timeSeriesResult = await this.db.execute<{
       date: string;
-      needs: string;
-      wants: string;
+      cumulative_needs: string;
+      cumulative_wants: string;
     }>(sql`
       WITH date_series AS (
         SELECT generate_series(
@@ -563,35 +697,54 @@ export class HealthAnalyticsRepository {
           '1 day'::interval
         )::date AS date
       ),
+      -- Calculate daily needs and wants (all historical data)
       needs_per_day AS (
         SELECT
           DATE(created_at) AS date,
-          COUNT(CASE WHEN priority = 'need' THEN 1 END) AS needs,
-          COUNT(CASE WHEN priority = 'want' THEN 1 END) AS wants
+          COUNT(CASE WHEN priority = 'need' THEN 1 END) AS daily_needs,
+          COUNT(CASE WHEN priority = 'want' THEN 1 END) AS daily_wants
         FROM (
           SELECT created_at, priority FROM ${needs}
           WHERE community_id = ${communityId}
-            AND created_at >= ${dateCutoffStr}::timestamp
           UNION ALL
           SELECT created_at, priority FROM ${councilNeeds}
           WHERE community_id = ${communityId}
-            AND created_at >= ${dateCutoffStr}::timestamp
         ) all_needs
         GROUP BY DATE(created_at)
+      ),
+      -- Generate all dates from the earliest data to now
+      all_dates AS (
+        SELECT generate_series(
+          LEAST(
+            COALESCE((SELECT MIN(DATE(created_at)) FROM ${needs} WHERE community_id = ${communityId}), CURRENT_DATE),
+            COALESCE((SELECT MIN(DATE(created_at)) FROM ${councilNeeds} WHERE community_id = ${communityId}), CURRENT_DATE)
+          ),
+          CURRENT_DATE,
+          '1 day'::interval
+        )::date AS date
+      ),
+      -- Calculate cumulative values for all historical dates
+      cumulative_data AS (
+        SELECT
+          ad.date,
+          SUM(COALESCE(npd.daily_needs, 0)) OVER (ORDER BY ad.date ROWS UNBOUNDED PRECEDING) AS cumulative_needs,
+          SUM(COALESCE(npd.daily_wants, 0)) OVER (ORDER BY ad.date ROWS UNBOUNDED PRECEDING) AS cumulative_wants
+        FROM all_dates ad
+        LEFT JOIN needs_per_day npd ON ad.date = npd.date
       )
       SELECT
         ds.date::text,
-        COALESCE(npd.needs, 0)::text AS needs,
-        COALESCE(npd.wants, 0)::text AS wants
+        COALESCE(cd.cumulative_needs, 0)::text AS cumulative_needs,
+        COALESCE(cd.cumulative_wants, 0)::text AS cumulative_wants
       FROM date_series ds
-      LEFT JOIN needs_per_day npd ON ds.date = npd.date
+      LEFT JOIN cumulative_data cd ON ds.date = cd.date
       ORDER BY ds.date
     `);
 
     const timeSeriesData = (timeSeriesResult as any[]).map((row) => ({
       date: row.date,
-      needs: parseInt(row.needs, 10),
-      wants: parseInt(row.wants, 10),
+      cumulativeNeeds: parseInt(row.cumulative_needs, 10),
+      cumulativeWants: parseInt(row.cumulative_wants, 10),
     }));
 
     return {
@@ -607,7 +760,10 @@ export class HealthAnalyticsRepository {
   /**
    * Get needs items with aggregation
    */
-  async getNeedsItems(communityId: string, timeRange: TimeRange = '30d'): Promise<NeedsItemData[]> {
+  async getNeedsItems(
+    communityId: string,
+    _timeRange: TimeRange = '30d'
+  ): Promise<NeedsItemData[]> {
     // Get member needs aggregation
     const memberNeedsResult = await this.db.execute<{
       item_id: string;
@@ -621,7 +777,7 @@ export class HealthAnalyticsRepository {
     }>(sql`
       SELECT
         n.item_id,
-        i.name AS item_name,
+        COALESCE(i.translations->'en'->>'name', i.translations->'es'->>'name', 'Unknown') AS item_name,
         i.kind AS item_kind,
         n.priority,
         n.recurrence,
@@ -633,7 +789,7 @@ export class HealthAnalyticsRepository {
       WHERE n.community_id = ${communityId}
         AND n.status = 'active'
         AND n.deleted_at IS NULL
-      GROUP BY n.item_id, i.name, i.kind, n.priority, n.recurrence, n.is_recurring
+      GROUP BY n.item_id, i.translations, i.kind, n.priority, n.recurrence, n.is_recurring
     `);
 
     // Get council needs aggregation
@@ -649,7 +805,7 @@ export class HealthAnalyticsRepository {
     }>(sql`
       SELECT
         cn.item_id,
-        i.name AS item_name,
+        COALESCE(i.translations->'en'->>'name', i.translations->'es'->>'name', 'Unknown') AS item_name,
         i.kind AS item_kind,
         cn.priority,
         cn.recurrence,
@@ -661,7 +817,7 @@ export class HealthAnalyticsRepository {
       WHERE cn.community_id = ${communityId}
         AND cn.status = 'active'
         AND cn.deleted_at IS NULL
-      GROUP BY cn.item_id, i.name, i.kind, cn.priority, cn.recurrence, cn.is_recurring
+      GROUP BY cn.item_id, i.translations, i.kind, cn.priority, cn.recurrence, cn.is_recurring
     `);
 
     // Merge results by item_id + priority + recurrence
@@ -753,7 +909,7 @@ export class HealthAnalyticsRepository {
       SELECT
         recurrence_pattern,
         cn.item_id,
-        i.name as item_name,
+        COALESCE(i.translations->'en'->>'name', i.translations->'es'->>'name', 'Unknown') as item_name,
         i.kind as item_kind,
         SUM(CASE WHEN priority = 'need' THEN units_needed ELSE 0 END)::text as needs_total,
         SUM(CASE WHEN priority = 'want' THEN units_needed ELSE 0 END)::text as wants_total,
@@ -761,7 +917,7 @@ export class HealthAnalyticsRepository {
         COUNT(DISTINCT participant_id)::text as participant_count
       FROM combined_needs cn
       JOIN ${items} i ON cn.item_id = i.id
-      GROUP BY recurrence_pattern, cn.item_id, i.name, i.kind
+      GROUP BY recurrence_pattern, cn.item_id, i.translations, i.kind
       ORDER BY recurrence_pattern, SUM(units_needed) DESC
     `);
 
@@ -773,6 +929,7 @@ export class HealthAnalyticsRepository {
     }));
 
     // Populate groups with data
+
     for (const row of aggregatedResult as any[]) {
       // Transform NULL recurrence to 'one-time' in JavaScript
       const recurrence = row.recurrence_pattern || 'one-time';
@@ -811,7 +968,7 @@ export class HealthAnalyticsRepository {
     }>(sql`
       SELECT
         w.item_id,
-        i.name as item_name,
+        COALESCE(i.translations->'en'->>'name', i.translations->'es'->>'name', 'Unknown') as item_name,
         i.kind as item_kind,
         COUNT(w.id)::text as active_shares,
         SUM(i.wealth_value * COALESCE(w.units_available, 1))::text as total_value_points,
@@ -821,7 +978,7 @@ export class HealthAnalyticsRepository {
       INNER JOIN ${items} i ON w.item_id = i.id
       WHERE w.community_id = ${communityId}
         AND w.status = 'active'
-      GROUP BY w.item_id, i.name, i.kind
+      GROUP BY w.item_id, i.translations, i.kind
       ORDER BY COUNT(w.id) DESC
     `);
 

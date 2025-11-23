@@ -33,6 +33,8 @@ spec:
       - "--import-realm"
       - "--health-enabled=true"
       - "--metrics-enabled=true"
+      - "--vault=file"
+      - "--vault-dir=/vault/secrets"
 
     # Extra environment variables
     extraEnv: |
@@ -94,11 +96,20 @@ spec:
       - name: realm-import
         configMap:
           name: keycloak-realm
+      - name: vault-secrets
+        secret:
+          secretName: keycloak-sendgrid
+          items:
+            - key: api-key
+              path: share-app_smtp.password
 
     # Extra volume mounts
     extraVolumeMounts: |
       - name: realm-import
         mountPath: /opt/keycloak/data/import
+        readOnly: true
+      - name: vault-secrets
+        mountPath: /vault/secrets
         readOnly: true
 
     # Service configuration

@@ -1,4 +1,4 @@
-import express, { Application, Request, Response, NextFunction } from 'express';
+import express, { Application, Request, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
@@ -28,6 +28,12 @@ import initiativeRoutes from '@api/routes/initiative.routes';
 import needsRoutes from '@api/routes/needs.routes';
 import communityEventsRoutes from '@api/routes/communityEvents.routes';
 import poolsRoutes from '@api/routes/pools.routes';
+import disputeRoutes from '@api/routes/dispute.routes';
+import valueRecognitionRoutes from '@api/routes/valueRecognition.routes';
+import userDashboardRoutes from '@api/routes/userDashboard.routes';
+import notificationRoutes from '@api/routes/notification.routes';
+import checkoutLinksRoutes from '@api/routes/checkoutLinks.routes';
+import skillsRoutes from '@api/routes/skills.routes';
 // Keycloak authentication routes
 import authRoutes from '@api/routes/auth.routes';
 
@@ -48,14 +54,10 @@ export const initPromise = (async () => {
     throw new Error('Cannot start application without database migrations');
   }
 
-  // Run OpenFGA database migrations
-  try {
-    const { runOpenFGAMigrations } = await import('@utils/openfga-migrate');
-    await runOpenFGAMigrations();
-  } catch (error) {
-    console.error('[App] CRITICAL: Failed to run OpenFGA migrations:', error);
-    throw new Error('Cannot start application without OpenFGA migrations');
-  }
+  // Note: OpenFGA database schema migrations are handled by infrastructure:
+  // - Docker Compose: openfga_migrate service
+  // - Kubernetes: init containers or pre-deployment Jobs
+  // Application only manages authorization models via OpenFGA API
 
   console.log('[App] Initializing authentication and authorization services...');
 
@@ -149,7 +151,7 @@ app.use('/api/', limiter);
  *       500:
  *         description: Internal server error
  */
-app.get('/health', (req: Request, res: Response) => {
+app.get('/health', (_req: Request, res: Response) => {
   res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
@@ -167,6 +169,8 @@ app.use('/api/v1/communities', trustLevelRoutes);
 // - /api/v1/user/trust/events
 // - /api/v1/users/trust/communities
 app.use('/api/v1', trustGlobalRoutes);
+// User dashboard routes - mounted at /api/v1/user (singular)
+app.use('/api/v1/user', userDashboardRoutes);
 app.use('/api/v1/users', usersRoutes);
 app.use('/api/v1/invites', inviteRoutes);
 app.use('/api/v1/items', itemsRoutes);
@@ -183,18 +187,28 @@ app.use('/api/v1/needs', needsRoutes);
 app.use('/api/v1/communities', communityEventsRoutes);
 // Pools routes
 app.use('/api/v1', poolsRoutes);
+// Dispute routes
+app.use('/api/v1', disputeRoutes);
+// Value Recognition routes
+app.use('/api/v1', valueRecognitionRoutes);
+// Notifications routes
+app.use('/api/v1/notifications', notificationRoutes);
+// Checkout Links routes (FT-21: Sharing Markets)
+app.use('/api/v1', checkoutLinksRoutes);
+// Skills & Endorsements routes (FT-19)
+app.use('/api/v1', skillsRoutes);
 
 // Swagger docs
 app.use('/openapi/docs', swaggerUi.serve, swaggerUi.setup(specs));
 
 // Swagger JSON endpoint
-app.get('/openapi/json', (req: Request, res: Response) => {
+app.get('/openapi/json', (_req: Request, res: Response) => {
   res.setHeader('Content-Type', 'application/json');
   res.send(specs);
 });
 
 // 404 handler
-app.use((req: Request, res: Response, next: NextFunction) => {
+app.use((_req: Request, res: Response) => {
   res.status(404).json({ error: 'Route not found' });
 });
 

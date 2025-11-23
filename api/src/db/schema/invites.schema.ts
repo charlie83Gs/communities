@@ -1,6 +1,5 @@
-import { relations } from 'drizzle-orm';
-
-export { inviteStatusEnum } from './communityUserInvites.schema';
+// Re-export inviteStatusEnum with unique alias to avoid conflict
+export { inviteStatusEnum as userInviteStatusEnum } from './communityUserInvites.schema';
 export { inviteStatusEnum as linkInviteStatusEnum } from './communityLinkInvites.schema';
 
 export type { communityUserInvites as UserInviteTable } from './communityUserInvites.schema';

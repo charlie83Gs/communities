@@ -23,4 +23,8 @@ export class ApiResponse {
       message,
     });
   }
+
+  static noContent(res: Response) {
+    return res.status(204).send();
+  }
 }

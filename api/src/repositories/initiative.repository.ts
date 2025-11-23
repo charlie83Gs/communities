@@ -1,4 +1,6 @@
 import { db as realDb } from '../db';
+
+type DbClient = typeof realDb;
 import {
   initiatives,
   initiativeReports,
@@ -6,7 +8,7 @@ import {
   initiativeComments,
   initiativeReportComments,
 } from '../db/schema';
-import { eq, and, desc, sql, count } from 'drizzle-orm';
+import { eq, and, desc, sql, count, inArray } from 'drizzle-orm';
 import {
   CreateInitiativeDto,
   UpdateInitiativeDto,
@@ -14,9 +16,9 @@ import {
 } from '../types/initiative.types';
 
 export class InitiativeRepository {
-  private db: any;
+  private db: DbClient;
 
-  constructor(db: any) {
+  constructor(db: DbClient) {
     this.db = db;
   }
 
@@ -123,7 +125,7 @@ export class InitiativeRepository {
         .from(initiativeVotes)
         .where(
           and(
-            sql`${initiativeVotes.initiativeId} = ANY(${initiativeIds})`,
+            inArray(initiativeVotes.initiativeId, initiativeIds),
             eq(initiativeVotes.userId, userId)
           )
         );

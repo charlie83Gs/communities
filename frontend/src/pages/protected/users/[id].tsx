@@ -1,4 +1,4 @@
-import { Component, Show, createMemo, For } from 'solid-js';
+import { Component, Show, createMemo, For, createSignal } from 'solid-js';
 import { Title, Meta } from '@solidjs/meta';
 import { useParams, useNavigate } from '@solidjs/router';
 import { createQuery } from '@tanstack/solid-query';
@@ -8,6 +8,8 @@ import { Card } from '@/components/common/Card';
 import { usersService } from '@/services/api/users.service';
 import { useUserPreferencesByIdQuery } from '@/hooks/queries/useUserPreferencesByIdQuery';
 import { useUserCommunitiesQuery } from '@/hooks/queries/useUserCommunitiesQuery';
+import { useMyTrustSummaryQuery } from '@/hooks/queries/useMyTrustSummaryQuery';
+import { SkillsProfile } from '@/components/features/skills/SkillsProfile';
 import type { SearchUser, UserPreferences } from '@/types/user.types';
 import type { Community } from '@/types/community.types';
 import { makeTranslator } from '@/i18n/makeTranslator';
@@ -30,6 +32,23 @@ const UserProfile: Component = () => {
   const communitiesQuery = useUserCommunitiesQuery(userId);
 
   const isOwnProfile = createMemo(() => currentUser()?.id === userId());
+
+  // Skills section state
+  const [selectedCommunityId, setSelectedCommunityId] = createSignal<string | undefined>(undefined);
+
+  // Auto-select first community when communities load
+  createMemo(() => {
+    const communities = communitiesQuery.data;
+    if (communities && communities.length > 0 && !selectedCommunityId()) {
+      setSelectedCommunityId(communities[0].id);
+    }
+  });
+
+  // Get trust summary for the selected community to check endorsement permission
+  const trustSummaryQuery = useMyTrustSummaryQuery(() => selectedCommunityId());
+
+  // Check permission to endorse skills (using canAwardTrust as proxy - same threshold)
+  const canEndorse = () => trustSummaryQuery.data?.canAwardTrust || false;
 
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(userId())) {
     navigate('/not-found', { replace: true });
@@ -150,6 +169,59 @@ const UserProfile: Component = () => {
                 </Show>
                   <Show when={communitiesQuery.isLoading}>
                     <div class="text-center py-4 text-stone-600 dark:text-stone-300">{t('loadingCommunities')}</div>
+                  </Show>
+                </div>
+
+                {/* Skills & Endorsements Section */}
+                <div class="mb-6">
+                  <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 bg-ocean-100 dark:bg-ocean-900 rounded-full flex items-center justify-center">
+                      <span class="text-xl">🎯</span>
+                    </div>
+                    <h2 class="text-xl font-semibold text-stone-900 dark:text-stone-100">{t('skillsTitle')}</h2>
+                  </div>
+
+                  <Show
+                    when={!communitiesQuery.isLoading && communitiesQuery.data && communitiesQuery.data.length > 0}
+                    fallback={
+                      <p class="text-stone-500 dark:text-stone-400">{t('noCommunitiesForSkills')}</p>
+                    }
+                  >
+                    {/* Community selector if user is in multiple communities */}
+                    <Show when={(communitiesQuery.data?.length || 0) > 1}>
+                      <div class="mb-4">
+                        <label class="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-2">
+                          {t('selectCommunity')}
+                        </label>
+                        <select
+                          class="w-full md:w-auto px-3 py-2 border border-stone-300 dark:border-stone-600 rounded-md bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-ocean-500"
+                          value={selectedCommunityId()}
+                          onChange={(e) => setSelectedCommunityId(e.currentTarget.value)}
+                        >
+                          <For each={communitiesQuery.data}>
+                            {(community) => (
+                              <option value={community.id}>{community.name}</option>
+                            )}
+                          </For>
+                        </select>
+                      </div>
+                    </Show>
+
+                    {/* Display selected community name if only one */}
+                    <Show when={(communitiesQuery.data?.length || 0) === 1}>
+                      <p class="text-sm text-stone-600 dark:text-stone-400 mb-4">
+                        {t('skillsDescription')} <strong>{communitiesQuery.data?.[0]?.name}</strong>
+                      </p>
+                    </Show>
+
+                    {/* Skills Profile Component */}
+                    <Show when={selectedCommunityId()}>
+                      <SkillsProfile
+                        userId={userId()!}
+                        communityId={selectedCommunityId()!}
+                        canEndorseSkills={canEndorse()}
+                      />
+                    </Show>
                   </Show>
                 </div>
               </div>

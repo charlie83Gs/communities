@@ -7,7 +7,7 @@ import { MetaProvider } from '@solidjs/meta';
 import { QueryClient, QueryClientProvider } from '@tanstack/solid-query';
 import { Router } from '@solidjs/router';
 
-import KeycloakApp from './keycloak-app';
+import { AuthProvider, KeycloakApp } from '@/components/auth';
 import { keycloakRoutes } from './keycloak-routes';
 
 const queryClient = new QueryClient({
@@ -35,7 +35,9 @@ render(
   () => (
     <MetaProvider>
       <QueryClientProvider client={queryClient}>
-        <Router root={(props) => <KeycloakApp>{props.children}</KeycloakApp>}>{keycloakRoutes}</Router>
+        <AuthProvider>
+          <Router root={(props) => <KeycloakApp>{props.children}</KeycloakApp>}>{keycloakRoutes}</Router>
+        </AuthProvider>
       </QueryClientProvider>
     </MetaProvider>
   ),

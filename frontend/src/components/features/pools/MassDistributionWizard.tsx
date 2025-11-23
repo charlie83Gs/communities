@@ -49,15 +49,15 @@ export const MassDistributionWizard: Component<MassDistributionWizardProps> = (p
   });
 
   const totalNeeded = createMemo(() => {
-    if (!needsPreview.data) return 0;
-    return needsPreview.data
+    if (!needsPreview.data?.potentialRecipients) return 0;
+    return needsPreview.data.potentialRecipients
       .filter((n) => n.priority === 'need')
       .reduce((sum, n) => sum + n.unitsNeeded, 0);
   });
 
   const totalWanted = createMemo(() => {
-    if (!needsPreview.data) return 0;
-    return needsPreview.data
+    if (!needsPreview.data?.potentialRecipients) return 0;
+    return needsPreview.data.potentialRecipients
       .filter((n) => n.priority === 'want')
       .reduce((sum, n) => sum + n.unitsNeeded, 0);
   });
@@ -283,13 +283,13 @@ export const MassDistributionWizard: Component<MassDistributionWizardProps> = (p
             </div>
 
             {/* Recipients List */}
-            <Show when={needsPreview.data && needsPreview.data.length > 0}>
+            <Show when={needsPreview.data?.potentialRecipients && needsPreview.data.potentialRecipients.length > 0}>
               <div>
                 <h4 class="text-sm font-semibold text-stone-900 dark:text-stone-100 mb-2">
-                  {t('recipientsTitle').replace('{count}', String(needsPreview.data!.length))}
+                  {t('recipientsTitle').replace('{count}', String(needsPreview.data?.potentialRecipients?.length ?? 0))}
                 </h4>
                 <div class="max-h-64 overflow-y-auto border border-stone-200 dark:border-stone-700 rounded-md">
-                  <For each={needsPreview.data}>
+                  <For each={needsPreview.data?.potentialRecipients ?? []}>
                     {(recipient) => (
                       <div class="flex items-center justify-between p-3 border-b border-stone-200 dark:border-stone-700 last:border-b-0">
                         <span class="text-sm font-medium text-stone-900 dark:text-stone-100">
@@ -313,7 +313,7 @@ export const MassDistributionWizard: Component<MassDistributionWizardProps> = (p
               </div>
             </Show>
 
-            <Show when={needsPreview.data && needsPreview.data.length === 0}>
+            <Show when={needsPreview.data?.potentialRecipients?.length === 0}>
               <p class="text-sm text-stone-600 dark:text-stone-400 text-center py-8">
                 {t('noNeeds')}
               </p>
@@ -324,7 +324,7 @@ export const MassDistributionWizard: Component<MassDistributionWizardProps> = (p
               <Button
                 type="button"
                 onClick={handleSubmit}
-                disabled={distributeMutation.isPending || !needsPreview.data || needsPreview.data.length === 0}
+                disabled={distributeMutation.isPending || !needsPreview.data?.potentialRecipients || needsPreview.data.potentialRecipients.length === 0}
               >
                 {distributeMutation.isPending ? t('distributing') : t('submit')}
               </Button>

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { verifyToken, verifyTokenOptional } from '../middleware/auth.middleware';
+import { verifyToken } from '../middleware/auth.middleware';
 import { trustLevelController } from '../controllers/trustLevel.controller';
 import {
   validateCreateTrustLevel,

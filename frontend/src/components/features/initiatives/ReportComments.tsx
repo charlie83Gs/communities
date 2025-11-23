@@ -9,6 +9,8 @@ import { Button } from '@/components/common/Button';
 
 interface ReportCommentsProps {
   communityId: string;
+  councilId: string;
+  initiativeId: string;
   reportId: string;
 }
 
@@ -16,7 +18,12 @@ export const ReportComments: Component<ReportCommentsProps> = (props) => {
   const t = makeTranslator(initiativesDict, 'initiatives');
   const [commentText, setCommentText] = createSignal('');
 
-  const commentsQuery = useReportCommentsQuery(() => props.communityId, () => props.reportId);
+  const commentsQuery = useReportCommentsQuery(
+    () => props.communityId,
+    () => props.councilId,
+    () => props.initiativeId,
+    () => props.reportId
+  );
   const createCommentMutation = useCreateReportCommentMutation();
 
   const handleSubmit = async (e: Event) => {
@@ -27,6 +34,8 @@ export const ReportComments: Component<ReportCommentsProps> = (props) => {
     try {
       await createCommentMutation.mutateAsync({
         communityId: props.communityId,
+        councilId: props.councilId,
+        initiativeId: props.initiativeId,
         reportId: props.reportId,
         dto: { content },
       });

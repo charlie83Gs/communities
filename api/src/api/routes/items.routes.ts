@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { verifyToken, verifyTokenOptional } from '../middleware/auth.middleware';
+import { verifyToken } from '../middleware/auth.middleware';
 import { itemsController } from '@api/controllers/items.controller';
 import * as validators from '@api/validators/items.validator';
 

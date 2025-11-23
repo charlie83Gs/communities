@@ -3,6 +3,7 @@ import cron from 'node-cron';
 import { communityRepository } from './repositories/community.repository';
 import { runWealthReplenishmentJob } from './jobs/wealthReplenishment.job';
 import { runNeedsReplenishmentJob } from './jobs/needsReplenishment.job';
+import { runTrustDecayJob } from './jobs/trustDecay.job';
 
 const PORT = process.env.PORT || 3000;
 
@@ -46,9 +47,19 @@ const startServer = async () => {
         }
       });
 
+      // Trust decay job: Run daily at 3 AM to handle trust decay notifications and OpenFGA sync
+      cron.schedule('0 3 * * *', async () => {
+        try {
+          await runTrustDecayJob();
+        } catch (err) {
+          console.error('Trust decay job failed:', err);
+        }
+      });
+
       console.log('🧹 Cleanup job scheduled: Daily at midnight for old deleted communities');
       console.log('🔄 Wealth replenishment job scheduled: Daily at 1 AM for recurrent services');
       console.log('📋 Needs replenishment job scheduled: Daily at 2 AM for recurring needs tracking');
+      console.log('⏳ Trust decay job scheduled: Daily at 3 AM for trust decay and OpenFGA sync');
     });
   } catch (error) {
     console.error('[Server] FATAL: Failed to start server:', error);

@@ -1,38 +1,40 @@
 import { Component, createSignal, createEffect } from 'solid-js';
-import { keycloakService } from '@/services/keycloak.service';
+import { useAuth } from '@/components/auth';
 import { useNavigate } from '@solidjs/router';
 import axios from 'axios';
 
 const KeycloakDashboard: Component = () => {
   const navigate = useNavigate();
-  const [user, setUser] = createSignal(keycloakService.getUser());
+  const auth = useAuth();
   const [profile, setProfile] = createSignal<any>(null);
   const [loading, setLoading] = createSignal(true);
 
-  createEffect(async () => {
-    try {
-      // Fetch full user profile from backend
-      const token = keycloakService.getToken();
-      const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/api/auth/me`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      setProfile(response.data.user);
-    } catch (error) {
-      console.error('Failed to load profile:', error);
-    } finally {
-      setLoading(false);
-    }
+  createEffect(() => {
+    void (async () => {
+      try {
+        // Fetch full user profile from backend
+        const token = auth.getToken();
+        const response = await axios.get(
+          `${import.meta.env.VITE_API_URL}/api/auth/me`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        setProfile(response.data.user);
+      } catch (error) {
+        console.error('Failed to load profile:', error);
+      } finally {
+        setLoading(false);
+      }
+    })();
   });
 
   const handleLogout = async () => {
-    await keycloakService.logout();
+    await auth.logout();
   };
 
   const handleManageAccount = () => {
-    window.open(keycloakService.getAccountUrl(), '_blank');
+    window.open(auth.getAccountUrl(), '_blank');
   };
 
   return (

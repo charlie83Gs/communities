@@ -51,12 +51,13 @@ export const useCouncilInitiativesQuery = (
 
 export const useInitiativeDetailQuery = (
   communityId: Accessor<string | undefined>,
+  councilId: Accessor<string | undefined>,
   initiativeId: Accessor<string | undefined>
 ) => {
   return createQuery(() => ({
-    queryKey: ['initiatives', 'detail', communityId(), initiativeId()],
-    queryFn: () => initiativesService.getInitiative(communityId()!, initiativeId()!),
-    enabled: !!communityId() && !!initiativeId(),
+    queryKey: ['initiatives', 'detail', communityId(), councilId(), initiativeId()],
+    queryFn: () => initiativesService.getInitiative(communityId()!, councilId()!, initiativeId()!),
+    enabled: !!communityId() && !!councilId() && !!initiativeId(),
     staleTime: 30000, // 30 seconds
     gcTime: 5 * 60 * 1000, // 5 minutes
   }));
@@ -64,6 +65,7 @@ export const useInitiativeDetailQuery = (
 
 export const useInitiativeReportsQuery = (
   communityId: Accessor<string | undefined>,
+  councilId: Accessor<string | undefined>,
   initiativeId: Accessor<string | undefined>,
   params?: {
     page?: Accessor<number | undefined>;
@@ -73,41 +75,45 @@ export const useInitiativeReportsQuery = (
   return createQuery(() => ({
     queryKey: [
       'initiatives',
+      councilId(),
       initiativeId(),
       'reports',
       params?.page?.(),
       params?.limit?.(),
     ],
     queryFn: () =>
-      initiativesService.listReports(communityId()!, initiativeId()!, {
+      initiativesService.listReports(communityId()!, councilId()!, initiativeId()!, {
         page: params?.page?.(),
         limit: params?.limit?.(),
       }),
-    enabled: !!communityId() && !!initiativeId(),
+    enabled: !!communityId() && !!councilId() && !!initiativeId(),
     staleTime: 30000, // 30 seconds
   }));
 };
 
 export const useInitiativeCommentsQuery = (
   communityId: Accessor<string | undefined>,
+  councilId: Accessor<string | undefined>,
   initiativeId: Accessor<string | undefined>
 ) => {
   return createQuery(() => ({
-    queryKey: ['initiatives', initiativeId(), 'comments'],
-    queryFn: () => initiativesService.listInitiativeComments(communityId()!, initiativeId()!),
-    enabled: !!communityId() && !!initiativeId(),
+    queryKey: ['initiatives', councilId(), initiativeId(), 'comments'],
+    queryFn: () => initiativesService.listInitiativeComments(communityId()!, councilId()!, initiativeId()!),
+    enabled: !!communityId() && !!councilId() && !!initiativeId(),
     staleTime: 30000, // 30 seconds
   }));
 };
 
 export const useReportCommentsQuery = (
   communityId: Accessor<string | undefined>,
+  councilId: Accessor<string | undefined>,
+  initiativeId: Accessor<string | undefined>,
   reportId: Accessor<string | undefined>
 ) => {
   return createQuery(() => ({
-    queryKey: ['reports', reportId(), 'comments'],
-    queryFn: () => initiativesService.listReportComments(communityId()!, reportId()!),
-    enabled: !!communityId() && !!reportId(),
+    queryKey: ['reports', councilId(), initiativeId(), reportId(), 'comments'],
+    queryFn: () => initiativesService.listReportComments(communityId()!, councilId()!, initiativeId()!, reportId()!),
+    enabled: !!communityId() && !!councilId() && !!initiativeId() && !!reportId(),
     staleTime: 30000, // 30 seconds
   }));
 };
@@ -132,13 +138,14 @@ export const useUpdateInitiativeMutation = () => {
   return createMutation(() => ({
     mutationFn: (vars: {
       communityId: string;
+      councilId: string;
       initiativeId: string;
       dto: Partial<CreateInitiativeDto> & { status?: 'active' | 'completed' | 'cancelled' };
-    }) => initiativesService.updateInitiative(vars.communityId, vars.initiativeId, vars.dto),
+    }) => initiativesService.updateInitiative(vars.communityId, vars.councilId, vars.initiativeId, vars.dto),
     onSuccess: (_data, vars) => {
       // Invalidate initiative detail
       void qc.invalidateQueries({
-        queryKey: ['initiatives', 'detail', vars.communityId, vars.initiativeId],
+        queryKey: ['initiatives', 'detail', vars.communityId, vars.councilId, vars.initiativeId],
       });
       // Invalidate all initiatives lists
       void qc.invalidateQueries({
@@ -152,8 +159,8 @@ export const useUpdateInitiativeMutation = () => {
 export const useDeleteInitiativeMutation = () => {
   const qc = useQueryClient();
   return createMutation(() => ({
-    mutationFn: (vars: { communityId: string; initiativeId: string; councilId: string }) =>
-      initiativesService.deleteInitiative(vars.communityId, vars.initiativeId),
+    mutationFn: (vars: { communityId: string; councilId: string; initiativeId: string }) =>
+      initiativesService.deleteInitiative(vars.communityId, vars.councilId, vars.initiativeId),
     onSuccess: (_data, vars) => {
       // Invalidate initiatives lists
       void qc.invalidateQueries({
@@ -162,7 +169,7 @@ export const useDeleteInitiativeMutation = () => {
       });
       // Remove initiative detail from cache
       void qc.removeQueries({
-        queryKey: ['initiatives', 'detail', vars.communityId, vars.initiativeId],
+        queryKey: ['initiatives', 'detail', vars.communityId, vars.councilId, vars.initiativeId],
       });
     },
   }));
@@ -171,12 +178,12 @@ export const useDeleteInitiativeMutation = () => {
 export const useVoteInitiativeMutation = () => {
   const qc = useQueryClient();
   return createMutation(() => ({
-    mutationFn: (vars: { communityId: string; initiativeId: string; dto: VoteInitiativeDto }) =>
-      initiativesService.voteInitiative(vars.communityId, vars.initiativeId, vars.dto),
+    mutationFn: (vars: { communityId: string; councilId: string; initiativeId: string; dto: VoteInitiativeDto }) =>
+      initiativesService.voteInitiative(vars.communityId, vars.councilId, vars.initiativeId, vars.dto),
     onSuccess: (_data, vars) => {
       // Invalidate initiative detail to refresh vote counts
       void qc.invalidateQueries({
-        queryKey: ['initiatives', 'detail', vars.communityId, vars.initiativeId],
+        queryKey: ['initiatives', 'detail', vars.communityId, vars.councilId, vars.initiativeId],
       });
       // Invalidate initiatives lists to update vote counts in lists
       void qc.invalidateQueries({
@@ -190,12 +197,12 @@ export const useVoteInitiativeMutation = () => {
 export const useRemoveVoteMutation = () => {
   const qc = useQueryClient();
   return createMutation(() => ({
-    mutationFn: (vars: { communityId: string; initiativeId: string }) =>
-      initiativesService.removeVote(vars.communityId, vars.initiativeId),
+    mutationFn: (vars: { communityId: string; councilId: string; initiativeId: string }) =>
+      initiativesService.removeVote(vars.communityId, vars.councilId, vars.initiativeId),
     onSuccess: (_data, vars) => {
       // Invalidate initiative detail to refresh vote counts
       void qc.invalidateQueries({
-        queryKey: ['initiatives', 'detail', vars.communityId, vars.initiativeId],
+        queryKey: ['initiatives', 'detail', vars.communityId, vars.councilId, vars.initiativeId],
       });
       // Invalidate initiatives lists to update vote counts in lists
       void qc.invalidateQueries({
@@ -211,13 +218,14 @@ export const useCreateReportMutation = () => {
   return createMutation(() => ({
     mutationFn: (vars: {
       communityId: string;
+      councilId: string;
       initiativeId: string;
       dto: CreateInitiativeReportDto;
-    }) => initiativesService.createReport(vars.communityId, vars.initiativeId, vars.dto),
+    }) => initiativesService.createReport(vars.communityId, vars.councilId, vars.initiativeId, vars.dto),
     onSuccess: (_data, vars) => {
       // Invalidate reports list for the initiative
       void qc.invalidateQueries({
-        queryKey: ['initiatives', vars.initiativeId, 'reports'],
+        queryKey: ['initiatives', vars.councilId, vars.initiativeId, 'reports'],
         exact: false,
       });
     },
@@ -227,12 +235,12 @@ export const useCreateReportMutation = () => {
 export const useCreateInitiativeCommentMutation = () => {
   const qc = useQueryClient();
   return createMutation(() => ({
-    mutationFn: (vars: { communityId: string; initiativeId: string; dto: CreateCommentDto }) =>
-      initiativesService.createInitiativeComment(vars.communityId, vars.initiativeId, vars.dto),
+    mutationFn: (vars: { communityId: string; councilId: string; initiativeId: string; dto: CreateCommentDto }) =>
+      initiativesService.createInitiativeComment(vars.communityId, vars.councilId, vars.initiativeId, vars.dto),
     onSuccess: (_data, vars) => {
       // Invalidate comments list for the initiative
       void qc.invalidateQueries({
-        queryKey: ['initiatives', vars.initiativeId, 'comments'],
+        queryKey: ['initiatives', vars.councilId, vars.initiativeId, 'comments'],
       });
     },
   }));
@@ -241,12 +249,12 @@ export const useCreateInitiativeCommentMutation = () => {
 export const useCreateReportCommentMutation = () => {
   const qc = useQueryClient();
   return createMutation(() => ({
-    mutationFn: (vars: { communityId: string; reportId: string; dto: CreateCommentDto }) =>
-      initiativesService.createReportComment(vars.communityId, vars.reportId, vars.dto),
+    mutationFn: (vars: { communityId: string; councilId: string; initiativeId: string; reportId: string; dto: CreateCommentDto }) =>
+      initiativesService.createReportComment(vars.communityId, vars.councilId, vars.initiativeId, vars.reportId, vars.dto),
     onSuccess: (_data, vars) => {
       // Invalidate comments list for the report
       void qc.invalidateQueries({
-        queryKey: ['reports', vars.reportId, 'comments'],
+        queryKey: ['reports', vars.councilId, vars.initiativeId, vars.reportId, 'comments'],
       });
     },
   }));

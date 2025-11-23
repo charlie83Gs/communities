@@ -16,6 +16,7 @@ import { councilRepository } from '@/repositories/council.repository';
 import { communityMemberRepository } from '@/repositories/communityMember.repository';
 import { appUserRepository } from '@/repositories/appUser.repository';
 import { itemsRepository } from '@/repositories/items.repository';
+import { poolsRepository } from '@/repositories/pools.repository';
 import { openFGAService } from './openfga.service';
 
 // Mock repositories
@@ -45,6 +46,8 @@ const mockCommunityMemberRepository = {
 
 const mockOpenFGAService = {
   checkAccess: mock(),
+  assignRelation: mock(),
+  revokeRelation: mock(),
 };
 
 const mockAppUserRepository = {
@@ -53,6 +56,11 @@ const mockAppUserRepository = {
 
 const mockItemsRepository = {
   findById: mock(),
+};
+
+const mockPoolsRepository = {
+  listByCouncil: mock(),
+  getInventory: mock(),
 };
 
 describe('CouncilService', () => {
@@ -67,6 +75,7 @@ describe('CouncilService', () => {
     Object.values(mockOpenFGAService).forEach((m) => m.mockReset());
     Object.values(mockAppUserRepository).forEach((m) => m.mockReset());
     Object.values(mockItemsRepository).forEach((m) => m.mockReset());
+    Object.values(mockPoolsRepository).forEach((m) => m.mockReset());
 
     // Replace dependencies with mocks
     (councilRepository.create as any) = mockCouncilRepository.create;
@@ -77,8 +86,6 @@ describe('CouncilService', () => {
     (councilRepository.getTrustScore as any) = mockCouncilRepository.getTrustScore;
     (councilRepository.getMemberCount as any) = mockCouncilRepository.getMemberCount;
     (councilRepository.getManagers as any) = mockCouncilRepository.getManagers;
-    (councilRepository.getInventory as any) = mockCouncilRepository.getInventory;
-    (councilRepository.getTransactions as any) = mockCouncilRepository.getTransactions;
     (councilRepository.addManager as any) = mockCouncilRepository.addManager;
     (councilRepository.removeManager as any) = mockCouncilRepository.removeManager;
     (councilRepository.isManager as any) = mockCouncilRepository.isManager;
@@ -88,12 +95,17 @@ describe('CouncilService', () => {
     (communityMemberRepository.getUserRole as any) = mockCommunityMemberRepository.getUserRole;
     (communityMemberRepository.isAdmin as any) = mockCommunityMemberRepository.isAdmin;
     (openFGAService.checkAccess as any) = mockOpenFGAService.checkAccess;
+    (openFGAService.assignRelation as any) = mockOpenFGAService.assignRelation;
+    (openFGAService.revokeRelation as any) = mockOpenFGAService.revokeRelation;
     (appUserRepository.findById as any) = mockAppUserRepository.findById;
     (itemsRepository.findById as any) = mockItemsRepository.findById;
+    (poolsRepository.listByCouncil as any) = mockPoolsRepository.listByCouncil;
+    (poolsRepository.getInventory as any) = mockPoolsRepository.getInventory;
 
     // Default mock behaviors
     mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
     mockOpenFGAService.checkAccess.mockResolvedValue(false);
+    mockPoolsRepository.listByCouncil.mockResolvedValue([]);
   });
 
   describe('createCouncil', () => {
@@ -119,7 +131,7 @@ describe('CouncilService', () => {
           communityId: validCommunityId,
           name: 'Food Council',
           description: 'Manages food resources in the community',
-        },
+        } as any,
         validUserId
       );
 
@@ -144,7 +156,7 @@ describe('CouncilService', () => {
             communityId: validCommunityId,
             name: 'Food Council',
             description: 'Manages food resources',
-          },
+          } as any,
           validUserId
         )
       ).rejects.toThrow('Forbidden');
@@ -167,7 +179,7 @@ describe('CouncilService', () => {
             communityId: validCommunityId,
             name: 'AB', // Too short
             description: 'Valid description here for testing',
-          },
+          } as any,
           validUserId
         )
       ).rejects.toThrow('Council name must be between 3 and 100 characters');
@@ -200,7 +212,7 @@ describe('CouncilService', () => {
     });
 
     it('should reject non-member from listing councils', async () => {
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
+      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null as any);
 
       await expect(councilService.listCouncils(validCommunityId, validUserId)).rejects.toThrow(
         'Forbidden'
@@ -222,7 +234,7 @@ describe('CouncilService', () => {
       mockCouncilRepository.getTrustScore.mockResolvedValue(15);
       mockCouncilRepository.getMemberCount.mockResolvedValue(5);
       mockCouncilRepository.getManagers.mockResolvedValue([]);
-      mockCouncilRepository.getInventory.mockResolvedValue([]);
+      mockPoolsRepository.listByCouncil.mockResolvedValue([]);
 
       const result = await councilService.getCouncil(validCouncilId, validUserId);
 
@@ -238,7 +250,7 @@ describe('CouncilService', () => {
         createdBy: validUserId,
         createdAt: new Date(),
       });
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
+      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null as any);
 
       await expect(councilService.getCouncil(validCouncilId, validUserId)).rejects.toThrow(
         'Forbidden'
@@ -246,7 +258,7 @@ describe('CouncilService', () => {
     });
 
     it('should handle non-existent council', async () => {
-      mockCouncilRepository.findById.mockResolvedValue(null);
+      mockCouncilRepository.findById.mockResolvedValue(null as any);
 
       await expect(councilService.getCouncil(validCouncilId, validUserId)).rejects.toThrow(
         'Council not found'
@@ -394,7 +406,7 @@ describe('CouncilService', () => {
         createdBy: validUserId,
         createdAt: new Date(),
       });
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
+      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null as any);
 
       await expect(councilService.awardTrust(validCouncilId, validUserId)).rejects.toThrow(
         'Forbidden'
@@ -536,56 +548,6 @@ describe('CouncilService', () => {
         validCouncilId,
         'can_delete'
       );
-    });
-  });
-
-  describe('Inventory and Transactions', () => {
-    it('should allow member to get council inventory', async () => {
-      mockCouncilRepository.findById.mockResolvedValue({
-        id: validCouncilId,
-        name: 'Food Council',
-        communityId: validCommunityId,
-        createdBy: validUserId,
-        createdAt: new Date(),
-      });
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
-      mockCouncilRepository.getInventory.mockResolvedValue([
-        {
-          itemId: '550e8400-e29b-41d4-a716-446655440005',
-          quantity: 5,
-          unit: 'kg',
-        },
-      ]);
-      mockItemsRepository.findById.mockResolvedValue({
-        id: '550e8400-e29b-41d4-a716-446655440005',
-        name: 'Carrots',
-      });
-
-      const result = await councilService.getInventory(validCouncilId, validUserId);
-
-      expect(result).toBeDefined();
-      expect(result.inventory).toBeDefined();
-      expect(Array.isArray(result.inventory)).toBe(true);
-    });
-
-    it('should allow member to get council transactions', async () => {
-      mockCouncilRepository.findById.mockResolvedValue({
-        id: validCouncilId,
-        name: 'Food Council',
-        communityId: validCommunityId,
-        createdBy: validUserId,
-        createdAt: new Date(),
-      });
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue('member');
-      mockCouncilRepository.getTransactions.mockResolvedValue({
-        transactions: [],
-        total: 0,
-      });
-
-      const result = await councilService.getTransactions(validCouncilId, validUserId);
-
-      expect(result).toBeDefined();
-      expect(result.total).toBe(0);
     });
   });
 });

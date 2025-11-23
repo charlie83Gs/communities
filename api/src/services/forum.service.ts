@@ -9,9 +9,7 @@ import {
   UpdateThreadDto,
   CreatePostDto,
   UpdatePostDto,
-  CreateVoteDto,
 } from '@repositories/forum.repository';
-import { communityRepository } from '@repositories/community.repository';
 import { communityMemberRepository } from '@repositories/communityMember.repository';
 import { appUserRepository } from '@repositories/appUser.repository';
 import { openFGAService } from './openfga.service';
@@ -561,6 +559,73 @@ export class ForumService {
     }
 
     return await forumRepository.getVoteCounts(undefined, postId);
+  }
+
+  // ===== HOMEPAGE PIN =====
+
+  async updateHomepagePin(
+    userId: string,
+    communityId: string,
+    threadId: string,
+    isPinned: boolean,
+    priority: number = 0
+  ): Promise<ForumThreadRecord> {
+    // Verify thread exists and belongs to this community
+    const thread = await forumRepository.findThreadById(threadId);
+    if (!thread) throw new AppError('Thread not found', 404);
+
+    const threadCommunityId = await this.getCommunityIdFromThread(threadId);
+    if (threadCommunityId !== communityId) {
+      throw new AppError('Thread does not belong to this community', 400);
+    }
+
+    // Check if user has forum management permission (same as existing pin/lock)
+    const canManage = await openFGAService.checkAccess(
+      userId,
+      'community',
+      communityId,
+      'can_manage_forum'
+    );
+    if (!canManage) {
+      throw new AppError(
+        'Forbidden: only admins or forum managers can pin threads to homepage',
+        403
+      );
+    }
+
+    // Clamp priority to 0-100
+    const clampedPriority = Math.max(0, Math.min(100, priority));
+
+    const updated = await forumRepository.updateHomepagePin(threadId, isPinned, clampedPriority);
+    if (!updated) throw new AppError('Thread not found', 404);
+
+    return updated;
+  }
+
+  async getHomepagePinnedThreads(
+    userId: string,
+    communityId: string
+  ): Promise<
+    Array<{
+      id: string;
+      title: string;
+      postCount: number;
+      authorId: string;
+      authorDisplayName: string;
+      priority: number;
+      createdAt: string;
+    }>
+  > {
+    // Check user can view forum (use existing membership check)
+    await this.ensureMemberOrAdmin(communityId, userId);
+
+    const threads = await forumRepository.getHomepagePinnedThreads(communityId);
+
+    // Format createdAt as ISO string
+    return threads.map((thread) => ({
+      ...thread,
+      createdAt: thread.createdAt?.toISOString() ?? new Date().toISOString(),
+    }));
   }
 
   // ===== HELPERS =====

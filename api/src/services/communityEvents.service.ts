@@ -33,6 +33,7 @@ export class CommunityEventsService {
     eventType: CommunityEventType;
     entityType: CommunityEntityType;
     entityId: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     metadata?: Record<string, any>;
   }) {
     try {
@@ -42,8 +43,10 @@ export class CommunityEventsService {
       );
       return event;
     } catch (error) {
+      // Silently log and swallow errors - event creation is non-critical
+      // and shouldn't break the main application flow
       logger.error('[CommunityEventsService] Error creating event:', error);
-      throw error;
+      return null;
     }
   }
 

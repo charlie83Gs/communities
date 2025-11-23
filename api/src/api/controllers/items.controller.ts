@@ -21,6 +21,13 @@ export class ItemsController {
    *           format: uuid
    *         description: Community ID
    *       - in: query
+   *         name: language
+   *         schema:
+   *           type: string
+   *           enum: [en, es, hi]
+   *           default: en
+   *         description: Language for item names/descriptions
+   *       - in: query
    *         name: includeDeleted
    *         schema:
    *           type: boolean
@@ -37,12 +44,13 @@ export class ItemsController {
    */
   async list(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const userId = req.user?.id;
-      const { communityId, includeDeleted } = req.query;
+      const userId = req.user?.id!;
+      const { communityId, language = 'en', includeDeleted } = req.query;
 
       const items = await itemsService.listItems(
         communityId as string,
         userId,
+        language as 'en' | 'es' | 'hi',
         includeDeleted === 'true'
       );
 
@@ -68,6 +76,13 @@ export class ItemsController {
    *           type: string
    *           format: uuid
    *         description: Item ID
+   *       - in: query
+   *         name: language
+   *         schema:
+   *           type: string
+   *           enum: [en, es, hi]
+   *           default: en
+   *         description: Language for item names/descriptions
    *     responses:
    *       200:
    *         description: Item details
@@ -80,10 +95,11 @@ export class ItemsController {
    */
   async getById(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const userId = req.user?.id;
+      const userId = req.user?.id!;
       const { id } = req.params;
+      const { language = 'en' } = req.query;
 
-      const item = await itemsService.getItemById(id, userId);
+      const item = await itemsService.getItemById(id, userId, language as 'en' | 'es' | 'hi');
 
       return ApiResponse.success(res, item);
     } catch (err) {
@@ -107,7 +123,7 @@ export class ItemsController {
    *             type: object
    *             required:
    *               - communityId
-   *               - name
+   *               - translations
    *               - kind
    *               - wealthValue
    *             properties:
@@ -115,15 +131,42 @@ export class ItemsController {
    *                 type: string
    *                 format: uuid
    *                 example: "123e4567-e89b-12d3-a456-426614174000"
-   *               name:
-   *                 type: string
-   *                 minLength: 1
-   *                 maxLength: 200
-   *                 example: "Carrots"
-   *               description:
-   *                 type: string
-   *                 nullable: true
-   *                 example: "Fresh organic carrots"
+   *               translations:
+   *                 type: object
+   *                 required:
+   *                   - en
+   *                 properties:
+   *                   en:
+   *                     type: object
+   *                     required:
+   *                       - name
+   *                     properties:
+   *                       name:
+   *                         type: string
+   *                         minLength: 1
+   *                         maxLength: 200
+   *                         example: "Carrots"
+   *                       description:
+   *                         type: string
+   *                         example: "Fresh organic carrots"
+   *                   es:
+   *                     type: object
+   *                     properties:
+   *                       name:
+   *                         type: string
+   *                         example: "Zanahorias"
+   *                       description:
+   *                         type: string
+   *                         example: "Zanahorias orgánicas frescas"
+   *                   hi:
+   *                     type: object
+   *                     properties:
+   *                       name:
+   *                         type: string
+   *                         example: "गाजर"
+   *                       description:
+   *                         type: string
+   *                         example: "ताजा जैविक गाजर"
    *               kind:
    *                 type: string
    *                 enum: [object, service]
@@ -147,9 +190,9 @@ export class ItemsController {
    *       404:
    *         description: Community not found
    */
-  async create(req: Request, res: Response, next: NextFunction) {
+  async create(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id!;
       const item = await itemsService.createItem(req.body, userId);
 
       return ApiResponse.created(res, item, 'Item created successfully');
@@ -213,9 +256,9 @@ export class ItemsController {
    *       404:
    *         description: Item not found
    */
-  async update(req: Request, res: Response, next: NextFunction) {
+  async update(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id!;
       const { id } = req.params;
 
       const item = await itemsService.updateItem(id, req.body, userId);
@@ -254,9 +297,9 @@ export class ItemsController {
    *       404:
    *         description: Item not found
    */
-  async delete(req: Request, res: Response, next: NextFunction) {
+  async delete(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id!;
       const { id } = req.params;
 
       await itemsService.deleteItem(id, userId);
@@ -284,6 +327,13 @@ export class ItemsController {
    *           format: uuid
    *         description: Community ID
    *       - in: query
+   *         name: language
+   *         schema:
+   *           type: string
+   *           enum: [en, es, hi]
+   *           default: en
+   *         description: Language to search in
+   *       - in: query
    *         name: query
    *         schema:
    *           type: string
@@ -304,14 +354,15 @@ export class ItemsController {
    *       403:
    *         description: Forbidden - not a community member
    */
-  async search(req: Request, res: Response, next: NextFunction) {
+  async search(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const userId = (req as any).user?.id;
-      const { communityId, query, kind } = req.query;
+      const userId = req.user?.id!;
+      const { communityId, language = 'en', query, kind } = req.query;
 
       const items = await itemsService.searchItems(
         communityId as string,
         userId,
+        language as 'en' | 'es' | 'hi',
         query as string | undefined,
         kind as 'object' | 'service' | undefined
       );
@@ -354,9 +405,9 @@ export class ItemsController {
    *       401:
    *         description: Unauthorized
    */
-  async canManage(req: Request, res: Response, next: NextFunction) {
+  async canManage(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const userId = (req as any).user?.id;
+      const userId = req.user?.id!;
       const { communityId } = req.query;
 
       if (!communityId || typeof communityId !== 'string') {

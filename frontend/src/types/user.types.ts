@@ -78,3 +78,82 @@ export interface TrustSummary {
     trustPoints: number;
   }[];
 }
+
+// Dashboard Summary Types
+export interface DashboardCommunitySummary {
+  id: string;
+  name: string;
+  description?: string;
+  userTrustScore: number;
+  memberCount: number;
+  pendingIncoming: number;
+  pendingOutgoing: number;
+  lastActivityAt?: string;
+}
+
+export interface DashboardIncomingRequest {
+  id: string;
+  wealthId: string;
+  wealthTitle: string;
+  communityId: string;
+  communityName: string;
+  requesterDisplayName: string;
+  unitsRequested?: number;
+  createdAt: string;
+}
+
+export interface DashboardAcceptedOutgoing {
+  id: string;
+  wealthId: string;
+  wealthTitle: string;
+  communityId: string;
+  communityName: string;
+  unitsRequested?: number;
+  createdAt: string;
+}
+
+export interface DashboardPoolDistribution {
+  id: string;
+  wealthId: string;
+  wealthTitle: string;
+  poolId: string;
+  poolName: string;
+  communityId: string;
+  communityName: string;
+  unitsRequested?: number;
+  createdAt: string;
+}
+
+export interface DashboardPendingActions {
+  incomingRequests: DashboardIncomingRequest[];
+  acceptedOutgoing: DashboardAcceptedOutgoing[];
+  poolDistributions: DashboardPoolDistribution[];
+}
+
+export interface DashboardInvite {
+  id: string;
+  communityId: string;
+  communityName: string;
+  inviterDisplayName: string;
+  createdAt: string;
+}
+
+export interface DashboardNotification {
+  id: string;
+  type: string;  // 'wealth_request_message', 'wealth_request_status', etc.
+  title: string;
+  message?: string;
+  communityId: string;
+  communityName?: string;
+  resourceType: string;
+  resourceId: string;
+  actionUrl: string;  // e.g., '/wealth/uuid-here'
+  createdAt: string;
+}
+
+export interface DashboardSummaryResponse {
+  communities: DashboardCommunitySummary[];
+  pendingActions: DashboardPendingActions;
+  invites: DashboardInvite[];
+  notifications: DashboardNotification[];
+}

@@ -14,13 +14,12 @@ describe('TrustAnalyticsRepository', () => {
   const testUserId1 = 'testUserId1';
   const testUserId2 = 'testUserId2';
   const testUserId3 = 'testUserId3';
-  const adminUserId = 'adminUserId';
 
   beforeEach(() => {
     // Reset all mocks and setup default chains
     setupMockDbChains(mockDb);
     // Instantiate repository with the per-test mock DB
-    trustAnalyticsRepository = new TrustAnalyticsRepository(mockDb as any);
+    trustAnalyticsRepository = new TrustAnalyticsRepository(mockDb);
   });
 
   afterEach(() => {
@@ -344,8 +343,8 @@ describe('TrustAnalyticsRepository', () => {
 
       expect(summary.trustByCommunity).toHaveLength(2);
 
-      const comm1 = summary.trustByCommunity.find((c) => c.communityId === testCommunityId1);
-      const comm2 = summary.trustByCommunity.find((c) => c.communityId === testCommunityId2);
+      const comm1 = summary.trustByCommunity.find((c: any) => c.communityId === testCommunityId1);
+      const comm2 = summary.trustByCommunity.find((c: any) => c.communityId === testCommunityId2);
 
       expect(comm1?.trustPoints).toBe(2);
       expect(comm2?.trustPoints).toBe(1);

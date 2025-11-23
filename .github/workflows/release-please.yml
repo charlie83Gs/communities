@@ -54,6 +54,8 @@ jobs:
             type=semver,pattern={{major}}.{{minor}},value=${{ needs.release-please.outputs.api-tag-name }}
             type=semver,pattern={{major}},value=${{ needs.release-please.outputs.api-tag-name }}
             type=raw,value=latest
+          flavor: |
+            latest=false
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
@@ -97,6 +99,8 @@ jobs:
             type=semver,pattern={{major}}.{{minor}},value=${{ needs.release-please.outputs.frontend-tag-name }}
             type=semver,pattern={{major}},value=${{ needs.release-please.outputs.frontend-tag-name }}
             type=raw,value=latest
+          flavor: |
+            latest=false
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
@@ -106,5 +110,10 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VITE_API_URL=https://api.communities.plv.it.com
+            VITE_KEYCLOAK_URL=https://auth.plv.it.com
+            VITE_KEYCLOAK_REALM=share-app
+            VITE_KEYCLOAK_CLIENT_ID=communities-app
           cache-from: type=gha
           cache-to: type=gha,mode=max

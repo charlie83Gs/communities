@@ -8,19 +8,27 @@
 @itemId = YOUR_ITEM_ID
 @wealthId = YOUR_WEALTH_ID
 
-### 1. Create a Pool
+### 1. Create a Pool (with allowed items)
 POST {{baseUrl}}/communities/{{communityId}}/councils/{{councilId}}/pools
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "name": "Community Tomatoes Pool",
-  "description": "Aggregation point for community tomato sharing",
-  "primaryItemId": "{{itemId}}",
-  "distributionLocation": "Community Center, Main Hall",
-  "distributionType": "needs_based",
+  "name": "Community Produce Pool",
+  "description": "Aggregation point for community produce sharing",
   "maxUnitsPerUser": 5,
-  "minimumContribution": 1
+  "minimumContribution": 1,
+  "allowedItemIds": ["{{itemId}}"]
+}
+
+### 1b. Create a Pool (allow all items)
+POST {{baseUrl}}/communities/{{communityId}}/councils/{{councilId}}/pools
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "General Community Pool",
+  "description": "Accepts any community items"
 }
 
 ### 2. List Community Pools
@@ -31,15 +39,46 @@ Authorization: Bearer {{token}}
 GET {{baseUrl}}/communities/{{communityId}}/pools/{{poolId}}
 Authorization: Bearer {{token}}
 
-### 4. Update Pool
+### 4. Update Pool (basic fields)
 PATCH {{baseUrl}}/communities/{{communityId}}/pools/{{poolId}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "name": "Updated Tomatoes Pool",
+  "name": "Updated Produce Pool",
   "maxUnitsPerUser": 10,
-  "distributionLocation": "New Community Center"
+  "description": "Updated description"
+}
+
+### 4b. Update Pool (set specific allowed items)
+PATCH {{baseUrl}}/communities/{{communityId}}/pools/{{poolId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "allowedItemIds": ["item-uuid-1", "item-uuid-2", "item-uuid-3"]
+}
+
+### 4c. Update Pool (allow all items)
+PATCH {{baseUrl}}/communities/{{communityId}}/pools/{{poolId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "allowedItemIds": []
+}
+
+### 4d. Update Pool (everything at once)
+PATCH {{baseUrl}}/communities/{{communityId}}/pools/{{poolId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Comprehensive Update",
+  "description": "Updated with new allowed items",
+  "maxUnitsPerUser": 15,
+  "minimumContribution": 2,
+  "allowedItemIds": ["item-uuid-1", "item-uuid-2"]
 }
 
 ### 5. Delete Pool

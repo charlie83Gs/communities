@@ -41,6 +41,20 @@ export default [
       'eqeqeq': ['error', 'always'],
     },
   },
+  // Relax rules for test files
+  {
+    files: ['**/*.test.ts', '**/tests/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
+  // Relax rules for repository files (database query type inference is complex)
+  {
+    files: ['**/repositories/*.repository.ts'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
   {
     ignores: [
       'node_modules/',

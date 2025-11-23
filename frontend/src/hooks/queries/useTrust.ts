@@ -4,7 +4,9 @@ import { trustService } from '@/services/api/trust.service';
 import type {
   TrustAward,
   AdminTrustGrant,
-  TrustHistoryEntry
+  TrustHistoryEntry,
+  DecayingEndorsement,
+  TrustDecayStatus
 } from '@/types/trust.types';
 
 // Trust Award Queries
@@ -118,6 +120,48 @@ export const useDeleteAdminGrantMutation = () => {
       queryClient.invalidateQueries({ queryKey: ['trust', 'admin', 'grants', variables.communityId] });
       queryClient.invalidateQueries({ queryKey: ['trust', 'users', variables.communityId] });
       queryClient.invalidateQueries({ queryKey: ['trust', 'history', variables.communityId, variables.toUserId] });
+    },
+  }));
+};
+
+// Trust Decay Queries
+export const useDecayingEndorsementsQuery = (
+  communityId: Accessor<string | undefined>
+) => {
+  return createQuery(() => ({
+    queryKey: ['trust', 'decaying', communityId()],
+    queryFn: () => trustService.getDecayingEndorsements(communityId()!),
+    enabled: !!communityId(),
+  })) as ReturnType<typeof createQuery<DecayingEndorsement[], Error>>;
+};
+
+export const useTrustDecayStatusQuery = (
+  communityId: Accessor<string | undefined>,
+  toUserId: Accessor<string | undefined>
+) => {
+  return createQuery(() => ({
+    queryKey: ['trust', 'decay-status', communityId(), toUserId()],
+    queryFn: () => trustService.getTrustDecayStatus(communityId()!, toUserId()!),
+    enabled: !!communityId() && !!toUserId(),
+  })) as ReturnType<typeof createQuery<TrustDecayStatus | null, Error>>;
+};
+
+// Trust Decay Mutations
+export const useRecertifyTrustMutation = () => {
+  const queryClient = useQueryClient();
+
+  return createMutation(() => ({
+    mutationFn: ({ communityId, userIds }: { communityId: string; userIds: string[] }) =>
+      trustService.recertifyTrust(communityId, userIds),
+    onSuccess: (_, variables) => {
+      // Invalidate related queries
+      queryClient.invalidateQueries({ queryKey: ['trust', 'decaying', variables.communityId] });
+      queryClient.invalidateQueries({ queryKey: ['trust', 'awards', 'my', variables.communityId] });
+      queryClient.invalidateQueries({ queryKey: ['trust', 'users', variables.communityId] });
+      // Invalidate decay status for each user
+      variables.userIds.forEach((userId) => {
+        queryClient.invalidateQueries({ queryKey: ['trust', 'decay-status', variables.communityId, userId] });
+      });
     },
   }));
 };

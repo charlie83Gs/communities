@@ -53,7 +53,7 @@ export const jwksClientInstance = jwksClient({
  * Get the signing key from JWKS endpoint
  * Used for JWT token verification
  */
-export const getSigningKey = (header: any): Promise<string> => {
+export const getSigningKey = (header: { kid: string; alg: string }): Promise<string> => {
   return new Promise((resolve, reject) => {
     jwksClientInstance.getSigningKey(header.kid, (err, key) => {
       if (err) {

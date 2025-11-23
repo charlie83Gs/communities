@@ -1,14 +1,9 @@
-import { pgTable, uuid, varchar, text, pgEnum, integer, timestamp } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, integer, timestamp } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { communities } from './communities.schema';
 import { councils } from './councils.schema';
 import { items } from './items.schema';
 import { appUsers } from './app_users.schema';
-
-/**
- * Pool Distribution Type Enum
- */
-export const poolDistributionTypeEnum = pgEnum('pool_distribution_type', ['manual', 'needs_based']);
 
 /**
  * Pools - Resource aggregation endpoints managed by councils
@@ -27,11 +22,7 @@ export const pools = pgTable('pools', {
   name: varchar('name', { length: 200 }).notNull(),
   description: text('description').notNull(),
 
-  // Primary item this pool handles (optional but recommended)
-  primaryItemId: uuid('primary_item_id').references(() => items.id),
-
   // Distribution settings
-  distributionType: poolDistributionTypeEnum('distribution_type').default('manual').notNull(),
   maxUnitsPerUser: integer('max_units_per_user'),
 
   // Contribution settings
@@ -62,6 +53,22 @@ export const poolInventory = pgTable('pool_inventory', {
 });
 
 /**
+ * Pool Allowed Items - Junction table for pool item whitelist
+ * Defines which items can be contributed to or distributed from a pool
+ * If a pool has no entries here, any item is allowed
+ */
+export const poolAllowedItems = pgTable('pool_allowed_items', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  poolId: uuid('pool_id')
+    .references(() => pools.id, { onDelete: 'cascade' })
+    .notNull(),
+  itemId: uuid('item_id')
+    .references(() => items.id, { onDelete: 'cascade' })
+    .notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+/**
  * Relations
  */
 export const poolsRelations = relations(pools, ({ one, many }) => ({
@@ -73,15 +80,12 @@ export const poolsRelations = relations(pools, ({ one, many }) => ({
     fields: [pools.councilId],
     references: [councils.id],
   }),
-  primaryItem: one(items, {
-    fields: [pools.primaryItemId],
-    references: [items.id],
-  }),
   creator: one(appUsers, {
     fields: [pools.createdBy],
     references: [appUsers.id],
   }),
   inventory: many(poolInventory),
+  allowedItems: many(poolAllowedItems),
 }));
 
 export const poolInventoryRelations = relations(poolInventory, ({ one }) => ({
@@ -91,6 +95,17 @@ export const poolInventoryRelations = relations(poolInventory, ({ one }) => ({
   }),
   item: one(items, {
     fields: [poolInventory.itemId],
+    references: [items.id],
+  }),
+}));
+
+export const poolAllowedItemsRelations = relations(poolAllowedItems, ({ one }) => ({
+  pool: one(pools, {
+    fields: [poolAllowedItems.poolId],
+    references: [pools.id],
+  }),
+  item: one(items, {
+    fields: [poolAllowedItems.itemId],
     references: [items.id],
   }),
 }));

@@ -489,6 +489,145 @@ class ForumController {
       next(error);
     }
   }
+
+  // ===== HOMEPAGE PIN =====
+
+  /**
+   * @swagger
+   * /api/communities/{communityId}/forum/threads/{threadId}/homepage-pin:
+   *   put:
+   *     summary: Pin or unpin a thread to homepage
+   *     tags: [Forum]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: communityId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *       - in: path
+   *         name: threadId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - isPinned
+   *             properties:
+   *               isPinned:
+   *                 type: boolean
+   *               priority:
+   *                 type: integer
+   *                 minimum: 0
+   *                 maximum: 100
+   *                 default: 0
+   *     responses:
+   *       200:
+   *         description: Thread updated successfully
+   *       400:
+   *         description: Validation error
+   *       401:
+   *         description: Unauthorized
+   *       403:
+   *         description: Forbidden
+   *       404:
+   *         description: Thread not found
+   */
+  async updateHomepagePin(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { communityId, threadId } = req.params;
+      const userId = (req as any).user?.id;
+      const { isPinned, priority } = req.body;
+
+      const thread = await forumService.updateHomepagePin(
+        userId,
+        communityId,
+        threadId,
+        isPinned,
+        priority ?? 0
+      );
+
+      return res.status(200).json({
+        status: 'success',
+        data: { thread },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * @swagger
+   * /api/communities/{communityId}/forum/homepage-pinned:
+   *   get:
+   *     summary: Get threads pinned to homepage
+   *     tags: [Forum]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: communityId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *     responses:
+   *       200:
+   *         description: List of homepage pinned threads
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 threads:
+   *                   type: array
+   *                   items:
+   *                     type: object
+   *                     properties:
+   *                       id:
+   *                         type: string
+   *                         format: uuid
+   *                       title:
+   *                         type: string
+   *                       postCount:
+   *                         type: integer
+   *                       authorId:
+   *                         type: string
+   *                       authorDisplayName:
+   *                         type: string
+   *                       priority:
+   *                         type: integer
+   *                       createdAt:
+   *                         type: string
+   *                         format: date-time
+   *       401:
+   *         description: Unauthorized
+   *       403:
+   *         description: Forbidden
+   */
+  async getHomepagePinnedThreads(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { communityId } = req.params;
+      const userId = (req as any).user?.id;
+
+      const threads = await forumService.getHomepagePinnedThreads(userId, communityId);
+
+      return res.status(200).json({
+        status: 'success',
+        data: { threads },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export const forumController = new ForumController();

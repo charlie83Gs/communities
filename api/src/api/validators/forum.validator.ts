@@ -126,6 +126,23 @@ export const updatePostSchema = z.object({
   }),
 });
 
+export const updateHomepagePinSchema = z.object({
+  params: z.object({
+    communityId: z.string().uuid(),
+    threadId: z.string().uuid(),
+  }),
+  body: z.object({
+    isPinned: z.boolean(),
+    priority: z.number().int().min(0).max(100).optional(),
+  }),
+});
+
+export const communityIdParamSchema = z.object({
+  params: z.object({
+    communityId: z.string().uuid(),
+  }),
+});
+
 // ===== VALIDATOR MIDDLEWARE =====
 
 function validate(schema: z.ZodSchema) {
@@ -142,7 +159,7 @@ function validate(schema: z.ZodSchema) {
         return res.status(400).json({
           status: 'error',
           message: 'Validation error',
-          errors: error.errors,
+          errors: error.issues,
         });
       }
       next(error);
@@ -168,3 +185,6 @@ export const validateVote = validate(voteSchema);
 export const validateCreatePost = validate(createPostSchema);
 export const validatePostIdParam = validate(postIdParamSchema);
 export const validateUpdatePost = validate(updatePostSchema);
+
+export const validateUpdateHomepagePin = validate(updateHomepagePinSchema);
+export const validateCommunityIdParam = validate(communityIdParamSchema);

@@ -203,3 +203,45 @@ export const useSetBestAnswerMutation = () => {
     },
   }));
 };
+
+// Homepage pinned threads
+export const useHomepagePinnedThreadsQuery = (communityId: Accessor<string | undefined>) => {
+  return createQuery(() => {
+    const id = communityId();
+    const isValidUUID =
+      id && id !== 'undefined' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+
+    return {
+      queryKey: ['forum', 'homepage-pinned', id],
+      queryFn: () => forumService.getHomepagePinnedThreads(id!),
+      enabled: !!isValidUUID,
+      staleTime: 30000,
+      gcTime: 300000,
+    };
+  });
+};
+
+export const useUpdateHomepagePinMutation = () => {
+  const queryClient = useQueryClient();
+
+  return createMutation(() => ({
+    mutationFn: ({
+      communityId,
+      threadId,
+      isPinned,
+      priority,
+      categoryId,
+    }: {
+      communityId: string;
+      threadId: string;
+      isPinned: boolean;
+      priority?: number;
+      categoryId: string;
+    }) => forumService.updateHomepagePin(communityId, threadId, isPinned, priority),
+    onSuccess: (_, variables) => {
+      void queryClient.invalidateQueries({ queryKey: ['forum', 'homepage-pinned', variables.communityId] });
+      void queryClient.invalidateQueries({ queryKey: ['forum', 'thread', variables.communityId, variables.threadId] });
+      void queryClient.invalidateQueries({ queryKey: ['forum', 'threads', variables.communityId, variables.categoryId], exact: false });
+    },
+  }));
+};

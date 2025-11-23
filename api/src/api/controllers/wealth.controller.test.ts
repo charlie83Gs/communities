@@ -387,7 +387,7 @@ describe('WealthController', () => {
       const next = createMockNext();
 
       const requests = [{ id: 'request-123', status: 'pending' }];
-      mockWealthService.listRequests.mockResolvedValue(requests);
+      mockWealthService.listRequests.mockResolvedValue(requests as any);
 
       await wealthController.listRequests(req, res, next);
 
@@ -534,7 +534,7 @@ describe('WealthController', () => {
       const next = createMockNext();
 
       const requests = [{ id: 'request-123', status: 'pending' }];
-      mockWealthService.listRequestsByUser.mockResolvedValue(requests);
+      mockWealthService.listRequestsByUser.mockResolvedValue(requests as any);
 
       await wealthController.listMyRequests(req, res, next);
 
@@ -613,7 +613,7 @@ describe('WealthController', () => {
       const next = createMockNext();
 
       const comments = [{ id: 'comment-123', content: 'Great wealth!' }];
-      mockWealthCommentService.getCommentsByWealthId.mockResolvedValue(comments);
+      mockWealthCommentService.getCommentsByWealthId.mockResolvedValue(comments as any);
 
       await wealthController.listComments(req, res, next);
 

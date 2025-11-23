@@ -2,11 +2,6 @@ import { z } from 'zod';
 import { Request, Response, NextFunction } from 'express';
 
 /**
- * Pool Distribution Type Schema
- */
-const poolDistributionTypeSchema = z.enum(['manual', 'needs_based']);
-
-/**
  * Fulfillment Strategy Schema
  */
 const fulfillmentStrategySchema = z.enum(['full', 'partial', 'equal']);
@@ -23,10 +18,9 @@ export const createPoolSchema = z
     body: z.object({
       name: z.string().min(1).max(200),
       description: z.string().min(1),
-      primaryItemId: z.string().uuid().optional(),
-      distributionType: poolDistributionTypeSchema,
       maxUnitsPerUser: z.number().int().positive().optional(),
       minimumContribution: z.number().int().positive().optional(),
+      allowedItemIds: z.array(z.string().uuid()).optional(),
     }),
   })
   .passthrough();
@@ -55,6 +49,18 @@ export const listCommunityPoolsSchema = z
   .passthrough();
 
 /**
+ * Get Council Pools Schema
+ */
+export const getCouncilPoolsSchema = z
+  .object({
+    params: z.object({
+      communityId: z.string().uuid(),
+      councilId: z.string().uuid(),
+    }),
+  })
+  .passthrough();
+
+/**
  * Update Pool Schema
  */
 export const updatePoolSchema = z
@@ -66,10 +72,9 @@ export const updatePoolSchema = z
     body: z.object({
       name: z.string().min(1).max(200).optional(),
       description: z.string().min(1).optional(),
-      primaryItemId: z.string().uuid().optional(),
-      distributionType: poolDistributionTypeSchema.optional(),
       maxUnitsPerUser: z.number().int().positive().optional(),
       minimumContribution: z.number().int().positive().optional(),
+      allowedItemIds: z.array(z.string().uuid()).optional(),
     }),
   })
   .passthrough();
@@ -240,6 +245,9 @@ export const validateGetPool = (req: Request, res: Response, next: NextFunction)
 export const validateListCommunityPools = (req: Request, res: Response, next: NextFunction) =>
   handleZod(() => listCommunityPoolsSchema.parse(req), res, next);
 
+export const validateGetCouncilPools = (req: Request, res: Response, next: NextFunction) =>
+  handleZod(() => getCouncilPoolsSchema.parse(req), res, next);
+
 export const validateUpdatePool = (req: Request, res: Response, next: NextFunction) =>
   handleZod(() => updatePoolSchema.parse(req), res, next);
 
@@ -269,3 +277,18 @@ export const validatePreviewMassDistribution = (req: Request, res: Response, nex
 
 export const validateGetPoolInventory = (req: Request, res: Response, next: NextFunction) =>
   handleZod(() => getPoolInventorySchema.parse(req), res, next);
+
+/**
+ * Get Pool Needs Schema
+ */
+export const getPoolNeedsSchema = z
+  .object({
+    params: z.object({
+      communityId: z.string().uuid(),
+      poolId: z.string().uuid(),
+    }),
+  })
+  .passthrough();
+
+export const validateGetPoolNeeds = (req: Request, res: Response, next: NextFunction) =>
+  handleZod(() => getPoolNeedsSchema.parse(req), res, next);

@@ -37,6 +37,8 @@ export const forumThreads = pgTable('forum_threads', {
   authorId: text('author_id').references(() => appUsers.id, { onDelete: 'cascade' }).notNull(),
   isPinned: boolean('is_pinned').default(false).notNull(),
   isLocked: boolean('is_locked').default(false).notNull(),
+  isPinnedToHomepage: boolean('is_pinned_to_homepage').default(false).notNull(),
+  homepagePinPriority: integer('homepage_pin_priority').default(0).notNull(),
   bestAnswerPostId: uuid('best_answer_post_id'),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),

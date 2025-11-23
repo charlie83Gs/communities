@@ -1,4 +1,4 @@
-import { eq, ilike, or, sql } from 'drizzle-orm';
+import { and, eq, ilike, ne, or, sql } from 'drizzle-orm';
 import { db as realDb } from '@db/index';
 import { appUsers } from '@db/schema';
 
@@ -7,10 +7,12 @@ export type NewAppUser = typeof appUsers.$inferInsert;
 
 export type UpdateAppUser = Partial<Omit<NewAppUser, 'id' | 'createdAt'>>;
 
-export class AppUserRepository {
-  private db: any;
+type DbClient = typeof realDb;
 
-  constructor(db: any) {
+export class AppUserRepository {
+  private db: DbClient;
+
+  constructor(db: DbClient) {
     this.db = db;
   }
   /**
@@ -132,16 +134,16 @@ export class AppUserRepository {
    * Check if username is taken (case-insensitive)
    */
   async isUsernameTaken(username: string, excludeUserId?: string): Promise<boolean> {
-    let query = this.db
+    const conditions = excludeUserId
+      ? and(sql`LOWER(${appUsers.username}) = LOWER(${username})`, ne(appUsers.id, excludeUserId))
+      : sql`LOWER(${appUsers.username}) = LOWER(${username})`;
+
+    const [result] = await this.db
       .select({ id: appUsers.id })
       .from(appUsers)
-      .where(sql`LOWER(${appUsers.username}) = LOWER(${username})`);
+      .where(conditions)
+      .limit(1);
 
-    if (excludeUserId) {
-      query = query.where(sql`${appUsers.id} != ${excludeUserId}`) as any;
-    }
-
-    const [result] = await query.limit(1);
     return !!result;
   }
 
@@ -149,13 +151,16 @@ export class AppUserRepository {
    * Check if email is taken
    */
   async isEmailTaken(email: string, excludeUserId?: string): Promise<boolean> {
-    let query = this.db.select({ id: appUsers.id }).from(appUsers).where(eq(appUsers.email, email));
+    const conditions = excludeUserId
+      ? and(eq(appUsers.email, email), ne(appUsers.id, excludeUserId))
+      : eq(appUsers.email, email);
 
-    if (excludeUserId) {
-      query = query.where(sql`${appUsers.id} != ${excludeUserId}`) as any;
-    }
+    const [result] = await this.db
+      .select({ id: appUsers.id })
+      .from(appUsers)
+      .where(conditions)
+      .limit(1);
 
-    const [result] = await query.limit(1);
     return !!result;
   }
 

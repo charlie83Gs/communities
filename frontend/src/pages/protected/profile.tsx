@@ -1,14 +1,17 @@
-import { Component, Show, createSignal, createMemo } from 'solid-js';
+import { Component, Show, createSignal, createMemo, For } from 'solid-js';
 import { Title, Meta } from '@solidjs/meta';
 import { createQuery } from '@tanstack/solid-query';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserPreferencesQuery } from '@/hooks/queries/useUserPreferencesQuery';
 import { useUpdateUserPreferences } from '@/hooks/queries/useUpdateUserPreferences';
 import { useUploadProfileImageMutation } from '@/hooks/queries/useUploadProfileImageMutation';
+import { useUserCommunitiesQuery } from '@/hooks/queries/useUserCommunitiesQuery';
+import { useMyTrustSummaryQuery } from '@/hooks/queries/useMyTrustSummaryQuery';
 import { Button } from '@/components/common/Button';
 import { Input } from '@/components/common/Input';
 import { CredentialedImage } from '@/components/common/CredentialedImage';
 import { LanguageSwitcher } from '@/components/common/LanguageSwitcher';
+import { SkillsProfile } from '@/components/features/skills/SkillsProfile';
 import { i18nLocale } from '@/stores/i18n.store';
 import { usersService } from '@/services/api/users.service';
 import type { User, UserPreferences, UpdateUserPreferencesDto, SearchUser } from '@/types/user.types';
@@ -26,12 +29,32 @@ const Profile: Component = () => {
   const preferencesQuery = useUserPreferencesQuery();
   const updatePreferencesMutation = useUpdateUserPreferences();
   const uploadProfileImageMutation = useUploadProfileImageMutation();
+  const userCommunitiesQuery = useUserCommunitiesQuery(userId);
   const [isEditing, setIsEditing] = createSignal(false);
+  const [selectedCommunityId, setSelectedCommunityId] = createSignal<string | undefined>(undefined);
   const [formData, setFormData] = createSignal<UpdateUserPreferencesDto>({
     displayName: '',
     description: '',
   });
   const t = makeTranslator(profileDict, 'profile');
+
+  // Auto-select first community when loaded
+  const selectedCommunity = createMemo(() => {
+    const communities = userCommunitiesQuery.data;
+    if (!communities || communities.length === 0) return undefined;
+
+    const selected = selectedCommunityId();
+    if (selected) {
+      return communities.find(c => c.id === selected);
+    }
+
+    // Auto-select first community
+    const first = communities[0];
+    setSelectedCommunityId(first.id);
+    return first;
+  });
+
+  const trustSummaryQuery = useMyTrustSummaryQuery(() => selectedCommunity()?.id);
 
   const handleDisplayNameChange = (e: Event) => {
     const target = e.target as HTMLInputElement;
@@ -244,6 +267,50 @@ const Profile: Component = () => {
                   </Show>
                 </div>
               </div>
+
+              {/* Skills Section */}
+              <Show when={userCommunitiesQuery.data && userCommunitiesQuery.data.length > 0}>
+                <div class="mt-6">
+                  <div class="bg-stone-50 dark:bg-stone-800 shadow-md rounded-lg max-w-2xl mx-auto border border-stone-200 dark:border-stone-700 relative overflow-hidden">
+                    <div class="absolute inset-0 bg-gradient-to-r from-forest-600/10 to-ocean-600/10 dark:from-forest-500/20 dark:to-ocean-500/20"></div>
+                    <div class="relative p-6">
+                      <div class="flex items-center gap-3 mb-4">
+                        <div class="w-10 h-10 bg-forest-100 dark:bg-forest-900 rounded-full flex items-center justify-center">
+                          <span class="text-xl">🎯</span>
+                        </div>
+                        <h2 class="text-xl font-semibold text-stone-900 dark:text-stone-100">Skills</h2>
+                      </div>
+
+                      <Show when={userCommunitiesQuery.data && userCommunitiesQuery.data.length > 1}>
+                        <div class="mb-4">
+                          <label class="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-2">
+                            Select Community:
+                          </label>
+                          <select
+                            class="w-full px-3 py-2 border border-stone-300 dark:border-stone-600 rounded-md bg-white dark:bg-stone-700 text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-ocean-500 dark:focus:ring-ocean-400"
+                            value={selectedCommunityId() || ''}
+                            onChange={(e) => setSelectedCommunityId(e.currentTarget.value)}
+                          >
+                            <For each={userCommunitiesQuery.data}>
+                              {(community) => (
+                                <option value={community.id}>{community.name}</option>
+                              )}
+                            </For>
+                          </select>
+                        </div>
+                      </Show>
+
+                      <Show when={selectedCommunity() && userId()}>
+                        <SkillsProfile
+                          userId={userId()!}
+                          communityId={selectedCommunity()!.id}
+                          canEndorseSkills={trustSummaryQuery.data?.canAwardTrust || false}
+                        />
+                      </Show>
+                    </div>
+                  </div>
+                </div>
+              </Show>
             </Show>
           )}
         </Show>

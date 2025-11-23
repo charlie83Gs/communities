@@ -5,6 +5,7 @@ import { initiativesDict } from './initiatives.i18n';
 
 interface VoteButtonsProps {
   communityId: string;
+  councilId: string;
   initiativeId: string;
   upvotes: number;
   downvotes: number;
@@ -21,12 +22,14 @@ export const VoteButtons: Component<VoteButtonsProps> = (props) => {
       // Remove upvote
       await removeVoteMutation.mutateAsync({
         communityId: props.communityId,
+        councilId: props.councilId,
         initiativeId: props.initiativeId,
       });
     } else {
       // Add upvote (or change from downvote)
       await voteMutation.mutateAsync({
         communityId: props.communityId,
+        councilId: props.councilId,
         initiativeId: props.initiativeId,
         dto: { voteType: 'upvote' },
       });
@@ -38,12 +41,14 @@ export const VoteButtons: Component<VoteButtonsProps> = (props) => {
       // Remove downvote
       await removeVoteMutation.mutateAsync({
         communityId: props.communityId,
+        councilId: props.councilId,
         initiativeId: props.initiativeId,
       });
     } else {
       // Add downvote (or change from upvote)
       await voteMutation.mutateAsync({
         communityId: props.communityId,
+        councilId: props.councilId,
         initiativeId: props.initiativeId,
         dto: { voteType: 'downvote' },
       });

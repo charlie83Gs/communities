@@ -9,7 +9,7 @@ import {
 
 // Mock the service
 const mockCouncilService = {
-  listCouncils: mock(() => Promise.resolve([])),
+  listCouncils: mock(() => Promise.resolve([] as any[])),
   getCouncil: mock(() => Promise.resolve({ id: 'council-123', name: 'Food Council' })),
   createCouncil: mock(() => Promise.resolve({ id: 'council-123', name: 'Food Council' })),
   updateCouncil: mock(() => Promise.resolve({ id: 'council-123', name: 'Updated Council' })),
@@ -19,8 +19,8 @@ const mockCouncilService = {
   getTrustStatus: mock(() => Promise.resolve({ trustScore: 15, userHasTrusted: true })),
   addManager: mock(() => Promise.resolve({ success: true })),
   removeManager: mock(() => Promise.resolve({ success: true })),
-  getInventory: mock(() => Promise.resolve([])),
-  getTransactions: mock(() => Promise.resolve({ transactions: [], total: 0 })),
+  getInventory: mock(() => Promise.resolve([] as any[])),
+  getTransactions: mock(() => Promise.resolve({ transactions: [] as any[], total: 0 })),
 };
 
 describe('CouncilController', () => {
@@ -43,7 +43,7 @@ describe('CouncilController', () => {
       const res = createMockResponse();
       const next = createMockNext();
 
-      const councils = [{ id: 'council-123', name: 'Food Council' }];
+      const councils = [{ id: 'council-123', name: 'Food Council' }] as any[];
       mockCouncilService.listCouncils.mockResolvedValue(councils);
 
       await councilController.list(req, res, next);
@@ -380,74 +380,4 @@ describe('CouncilController', () => {
     });
   });
 
-  describe('getInventory', () => {
-    test('should get inventory successfully', async () => {
-      const req = createMockAuthenticatedRequest('user-123', {
-        params: { communityId: 'comm-123', councilId: 'council-123' },
-      });
-      const res = createMockResponse();
-      const next = createMockNext();
-
-      const inventory = [{ itemId: 'item-123', quantity: 5 }];
-      mockCouncilService.getInventory.mockResolvedValue(inventory);
-
-      await councilController.getInventory(req, res, next);
-
-      expect(mockCouncilService.getInventory).toHaveBeenCalledWith('council-123', 'user-123');
-      expect(res.json).toHaveBeenCalled();
-    });
-
-    test('should handle errors', async () => {
-      const req = createMockAuthenticatedRequest('user-123', {
-        params: { communityId: 'comm-123', councilId: 'council-123' },
-      });
-      const res = createMockResponse();
-      const next = createMockNext();
-
-      const error = new Error('Forbidden');
-      mockCouncilService.getInventory.mockRejectedValue(error);
-
-      await councilController.getInventory(req, res, next);
-
-      expect(next).toHaveBeenCalled();
-    });
-  });
-
-  describe('getTransactions', () => {
-    test('should get transactions successfully', async () => {
-      const req = createMockAuthenticatedRequest('user-123', {
-        params: { communityId: 'comm-123', councilId: 'council-123' },
-        query: { page: '1', limit: '20' },
-      });
-      const res = createMockResponse();
-      const next = createMockNext();
-
-      const result = { transactions: [], total: 0 };
-      mockCouncilService.getTransactions.mockResolvedValue(result);
-
-      await councilController.getTransactions(req, res, next);
-
-      expect(mockCouncilService.getTransactions).toHaveBeenCalledWith('council-123', 'user-123', {
-        page: 1,
-        limit: 20,
-      });
-      expect(res.json).toHaveBeenCalled();
-    });
-
-    test('should handle errors', async () => {
-      const req = createMockAuthenticatedRequest('user-123', {
-        params: { communityId: 'comm-123', councilId: 'council-123' },
-        query: {},
-      });
-      const res = createMockResponse();
-      const next = createMockNext();
-
-      const error = new Error('Forbidden');
-      mockCouncilService.getTransactions.mockRejectedValue(error);
-
-      await councilController.getTransactions(req, res, next);
-
-      expect(next).toHaveBeenCalled();
-    });
-  });
 });

@@ -99,6 +99,118 @@
       "when": 1762657199177,
       "tag": "0013_complex_misty_knight",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1762955820281,
+      "tag": "0014_old_speed_demon",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1762955000000,
+      "tag": "0015_items_translations",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1762956000000,
+      "tag": "0016_value_recognition",
+      "breakpoints": false
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1762960000000,
+      "tag": "0017_integrate_contributions_with_items",
+      "breakpoints": false
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1762965000000,
+      "tag": "0018_disputes_system",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1762970000000,
+      "tag": "0019_add_dispute_privacy",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1762975000000,
+      "tag": "0020_add_feature_flags",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1762980000000,
+      "tag": "0021_remove_primary_item_id",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1762985000000,
+      "tag": "0022_add_pool_allowed_items",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1762990000000,
+      "tag": "0023_request_messages_notifications",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1762995000000,
+      "tag": "0024_council_usage_reports",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1763000000000,
+      "tag": "0025_add_homepage_pin_fields",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1763005000000,
+      "tag": "0026_report_items",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1763010000000,
+      "tag": "0027_remove_pool_distribution_type",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1763015000000,
+      "tag": "0029_pool_consumptions",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1763020000000,
+      "tag": "0030_pool_contribution_source_type",
+      "breakpoints": true
     }
   ]
 }

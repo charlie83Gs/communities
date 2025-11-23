@@ -5,27 +5,27 @@ import { communityMemberRepository } from '@/repositories/communityMember.reposi
 import { appUserRepository } from '@repositories/appUser.repository';
 import { trustViewRepository } from '@/repositories/trustView.repository';
 import { openFGAService } from '@/services/openfga.service';
-import { AppError } from '@/utils/errors';
+
 import { testData } from '../../tests/helpers/testUtils';
 
 // Mock repositories
 const mockCommunityRepository = {
-  create: mock(() => Promise.resolve(testData.community)),
-  findById: mock(() => Promise.resolve(testData.community)),
-  update: mock(() => Promise.resolve(testData.community)),
-  delete: mock(() => Promise.resolve(testData.community)),
-  search: mock(() => Promise.resolve({ rows: [testData.community], total: 1 })),
+  create: mock(() => Promise.resolve(testData.community as any)),
+  findById: mock(() => Promise.resolve(testData.community as any)),
+  update: mock(() => Promise.resolve(testData.community as any)),
+  delete: mock(() => Promise.resolve(testData.community as any)),
+  search: mock(() => Promise.resolve({ rows: [testData.community], total: 1 } as any)),
 };
 
 const mockCommunityMemberRepository = {
-  addMember: mock(() => Promise.resolve()),
-  getUserRole: mock(() => Promise.resolve('admin')),
-  getUserRoles: mock(() => Promise.resolve(['admin'])),
+  addMember: mock(() => Promise.resolve() as any),
+  getUserRole: mock(() => Promise.resolve('admin' as any)),
+  getUserRoles: mock(() => Promise.resolve(['admin'] as any)),
   isAdmin: mock(() => Promise.resolve(true)),
-  findByUser: mock(() => Promise.resolve([{ resourceId: 'comm-123', role: 'admin' }])),
-  findByCommunity: mock(() => Promise.resolve([{ userId: 'user-123', role: 'admin' }])),
-  removeMember: mock(() => Promise.resolve()),
-  updateRole: mock(() => Promise.resolve()),
+  findByUser: mock(() => Promise.resolve([{ resourceId: 'comm-123', role: 'admin' }] as any)),
+  findByCommunity: mock(() => Promise.resolve([{ userId: 'user-123', role: 'admin' }] as any)),
+  removeMember: mock(() => Promise.resolve() as any),
+  updateRole: mock(() => Promise.resolve() as any),
 };
 
 const mockAppUserRepository = {
@@ -43,17 +43,17 @@ const mockAppUserRepository = {
       lastSeenAt: null,
       createdAt: new Date(),
       updatedAt: new Date(),
-    })
+    } as any)
   ),
 };
 
 const mockTrustViewRepository = {
-  getBatchForUser: mock(() => Promise.resolve(new Map([['comm-123', 25]]))),
-  get: mock(() => Promise.resolve({ points: 25 })),
+  getBatchForUser: mock(() => Promise.resolve(new Map([['comm-123', 25]]) as any)),
+  get: mock(() => Promise.resolve({ points: 25 } as any)),
 };
 
 const mockOpenFGAService = {
-  syncTrustRoles: mock(() => Promise.resolve()),
+  syncTrustRoles: mock(() => Promise.resolve() as any),
 };
 
 describe('CommunityService', () => {
@@ -115,12 +115,12 @@ describe('CommunityService', () => {
         'user-123'
       );
 
-      expect(result).toEqual(testData.community);
+      expect(result).toEqual(testData.community as any);
       expect(mockCommunityRepository.create).toHaveBeenCalledWith({
         name: 'Test Community',
         description: 'Test',
         createdBy: 'user-123',
-      });
+      } as any);
       expect(mockCommunityMemberRepository.addMember).toHaveBeenCalledWith(
         'comm-123',
         'user-123',
@@ -180,7 +180,7 @@ describe('CommunityService', () => {
       });
       mockCommunityRepository.create.mockResolvedValue(testData.community);
       mockCommunityMemberRepository.addMember.mockResolvedValue(undefined);
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
+      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null as any);
 
       await expect(
         communityService.createCommunity(
@@ -198,16 +198,16 @@ describe('CommunityService', () => {
 
       const result = await communityService.getCommunity('comm-123', 'user-123');
 
-      expect(result).toEqual(testData.community);
+      expect(result).toEqual(testData.community as any);
       expect(mockCommunityRepository.findById).toHaveBeenCalledWith('comm-123');
       expect(mockCommunityMemberRepository.getUserRole).toHaveBeenCalledWith(
         'comm-123',
         'user-123'
-      );
+      ) as any;
     });
 
     it('should throw 404 if community not found', async () => {
-      mockCommunityRepository.findById.mockResolvedValue(null);
+      mockCommunityRepository.findById.mockResolvedValue(null as any);
 
       await expect(communityService.getCommunity('comm-123', 'user-123')).rejects.toThrow(
         'Community not found'
@@ -224,7 +224,7 @@ describe('CommunityService', () => {
 
     it('should throw 403 if user has no role in community', async () => {
       mockCommunityRepository.findById.mockResolvedValue(testData.community);
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
+      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null as any);
 
       await expect(communityService.getCommunity('comm-123', 'user-123')).rejects.toThrow(
         'Forbidden: no access to this community'
@@ -253,7 +253,7 @@ describe('CommunityService', () => {
       const result = await communityService.listCommunities(1, 10, 'user-123');
 
       expect(result.data).toHaveLength(1);
-      expect(result.data[0]).toEqual(testData.community);
+      expect(result.data[0]).toEqual(testData.community as any);
       expect(result.total).toBe(1);
     });
 
@@ -421,7 +421,7 @@ describe('CommunityService', () => {
 
     it('should throw 404 if community not found before update', async () => {
       mockCommunityMemberRepository.isAdmin.mockResolvedValue(true);
-      mockCommunityRepository.findById.mockResolvedValue(null);
+      mockCommunityRepository.findById.mockResolvedValue(null as any);
 
       await expect(
         communityService.updateCommunity('comm-123', { name: 'Updated Community' }, 'user-123')
@@ -431,7 +431,7 @@ describe('CommunityService', () => {
     it('should throw 404 if community not found after update', async () => {
       mockCommunityMemberRepository.isAdmin.mockResolvedValue(true);
       mockCommunityRepository.findById.mockResolvedValue(testData.community);
-      mockCommunityRepository.update.mockResolvedValue(null);
+      mockCommunityRepository.update.mockResolvedValue(null as any);
 
       await expect(
         communityService.updateCommunity('comm-123', { name: 'Updated Community' }, 'user-123')
@@ -580,7 +580,7 @@ describe('CommunityService', () => {
 
       const result = await communityService.deleteCommunity('comm-123', 'user-123');
 
-      expect(result).toEqual(testData.community);
+      expect(result).toEqual(testData.community as any);
       expect(mockCommunityRepository.delete).toHaveBeenCalledWith('comm-123');
     });
 
@@ -600,10 +600,12 @@ describe('CommunityService', () => {
         { userId: 'user-123', role: 'admin' },
         { userId: 'user-456', role: 'member' },
       ]);
-      mockCommunityMemberRepository.getUserRoles.mockImplementation(async (_, userId) => {
-        return userId === 'user-123' ? ['admin'] : ['member'];
-      });
-      mockAppUserRepository.findById.mockImplementation(async (userId) => {
+      (mockCommunityMemberRepository.getUserRoles.mockImplementation as any)(
+        async (_: any, userId: any) => {
+          return userId === 'user-123' ? ['admin'] : ['member'];
+        }
+      );
+      (mockAppUserRepository.findById.mockImplementation as any)(async (userId: any) => {
         return userId === 'user-123' ? testData.user : { ...testData.user, id: userId };
       });
 
@@ -636,7 +638,7 @@ describe('CommunityService', () => {
     });
 
     it('should throw 403 if user has no role', async () => {
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
+      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null as any);
 
       await expect(communityService.getMembers('comm-123', 'user-123')).rejects.toThrow(
         'Forbidden: only community admins and members can view members'
@@ -687,7 +689,7 @@ describe('CommunityService', () => {
 
     it('should throw 404 if target user is not a member', async () => {
       mockCommunityMemberRepository.isAdmin.mockResolvedValue(true);
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
+      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null as any);
 
       await expect(
         communityService.removeMember('comm-123', 'user-456', 'user-123')
@@ -733,7 +735,7 @@ describe('CommunityService', () => {
 
     it('should throw 404 if target user is not a member', async () => {
       mockCommunityMemberRepository.isAdmin.mockResolvedValue(true);
-      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null);
+      mockCommunityMemberRepository.getUserRole.mockResolvedValue(null as any);
 
       await expect(
         communityService.updateMemberRole('comm-123', 'user-456', 'admin', 'user-123')

@@ -6,6 +6,9 @@ async function getAuthHeaders() {
   const headers: Record<string, string> = {};
   try {
     if (keycloakService.isAuthenticated()) {
+      // Proactively refresh token if it expires within 30 seconds
+      await keycloakService.ensureTokenValidity(30);
+
       const token = keycloakService.getToken();
       if (token) {
         headers.Authorization = `Bearer ${token}`;

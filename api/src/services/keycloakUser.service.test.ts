@@ -8,7 +8,6 @@
  */
 
 import { describe, it, expect, beforeEach, mock } from 'bun:test';
-import { keycloakUserService } from './keycloakUser.service';
 
 // Mock external Keycloak API calls
 const mockKeycloakAPI = {

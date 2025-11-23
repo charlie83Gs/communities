@@ -5,7 +5,6 @@ import {
   validateTrustRequirement,
 } from './trustResolver';
 import { trustLevelRepository } from '../repositories/trustLevel.repository';
-import { AppError } from './errors';
 
 // Mock trustLevelRepository
 const mockFindByName = mock(() => Promise.resolve(null));
@@ -13,12 +12,13 @@ const mockFindByName = mock(() => Promise.resolve(null));
 describe('trustResolver', () => {
   beforeEach(() => {
     mockFindByName.mockReset();
+
     (trustLevelRepository.findByName as any) = mockFindByName;
   });
 
   describe('resolveTrustRequirement', () => {
     it('should return 0 for null requirement', async () => {
-      const result = await resolveTrustRequirement('comm-123', null);
+      const result = await resolveTrustRequirement('comm-123', null as any);
       expect(result).toBe(0);
     });
 
@@ -47,7 +47,7 @@ describe('trustResolver', () => {
         threshold: 50,
         createdAt: new Date(),
         updatedAt: new Date(),
-      });
+      } as any);
 
       const result = await resolveTrustRequirement('comm-123', requirement);
       expect(result).toBe(50);
@@ -94,7 +94,7 @@ describe('trustResolver', () => {
         threshold: 10,
         createdAt: new Date(),
         updatedAt: new Date(),
-      });
+      } as any);
 
       const result = await resolveTrustRequirementDetailed('comm-123', requirement);
 
@@ -108,7 +108,7 @@ describe('trustResolver', () => {
     });
 
     it('should throw error for null/undefined requirement', async () => {
-      await expect(resolveTrustRequirementDetailed('comm-123', null)).rejects.toThrow(
+      await expect(resolveTrustRequirementDetailed('comm-123', null as any)).rejects.toThrow(
         'Invalid trust requirement'
       );
     });
@@ -143,11 +143,15 @@ describe('trustResolver', () => {
     });
 
     it('should throw error for null requirement', () => {
-      expect(() => validateTrustRequirement(null)).toThrow('Trust requirement must be an object');
+      expect(() => validateTrustRequirement(null as any)).toThrow(
+        'Trust requirement must be an object'
+      );
     });
 
     it('should throw error for non-object requirement', () => {
-      expect(() => validateTrustRequirement(42)).toThrow('Trust requirement must be an object');
+      expect(() => validateTrustRequirement(42 as any)).toThrow(
+        'Trust requirement must be an object'
+      );
     });
 
     it('should throw error for invalid type', () => {
