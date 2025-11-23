@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.7.1](https://github.com/charlie83Gs/communities/compare/communities-api-v1.7.0...communities-api-v1.7.1) (2025-11-23)
+
+
+### Bug Fixes
+
+* remove manual journal insert from migration 0032 ([526ca1c](https://github.com/charlie83Gs/communities/commit/526ca1c5d8361f002015684e1a0efa63494424c3))
+* update migration journal to include missing migrations 0028, 0031-0033 ([30c6fd8](https://github.com/charlie83Gs/communities/commit/30c6fd85b0c749f01b457537ed729586f019cf83))
+
 ## [1.7.0](https://github.com/charlie83Gs/communities/compare/communities-api-v1.6.0...communities-api-v1.7.0) (2025-11-23)
 
 
