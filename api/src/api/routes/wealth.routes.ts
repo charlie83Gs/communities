@@ -14,6 +14,7 @@ import {
   validateListComments,
   validateUpdateComment,
   validateDeleteComment,
+  validateCreateRequestMessage,
 } from '@api/validators/wealth.validator';
 
 const router = Router();
@@ -32,6 +33,9 @@ router.get('/requests/me', validateWealthRequestStatusesQuery, wealthController.
 
 // List incoming wealth requests (requests to my wealth items)
 router.get('/requests/incoming', validateWealthRequestStatusesQuery, wealthController.listIncomingRequests);
+
+// List pool distribution requests (wealth received from pool distributions)
+router.get('/requests/pool-distributions', validateWealthRequestStatusesQuery, wealthController.listPoolDistributions);
 
 // Create wealth
 router.post('/', validateCreateWealth, wealthController.create);
@@ -68,6 +72,10 @@ router.post('/:id/requests/:requestId/confirm', validateRequestIdParams, wealthC
 
 // Mark a request as failed (requester only)
 router.post('/:id/requests/:requestId/fail', validateRequestIdParams, wealthController.failRequest);
+
+// Request messages
+router.post('/:id/requests/:requestId/messages', validateCreateRequestMessage, wealthController.createRequestMessage);
+router.get('/:id/requests/:requestId/messages', validateRequestIdParams, wealthController.listRequestMessages);
 
 router.post(
   '/:wealthId/comments',

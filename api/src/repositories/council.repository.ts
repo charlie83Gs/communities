@@ -5,8 +5,6 @@ import {
   councilTrustScores,
   councilTrustAwards,
   councilTrustHistory,
-  councilInventory,
-  councilTransactions,
 } from '../db/schema';
 import { eq, and, desc, asc, isNull, count } from 'drizzle-orm';
 
@@ -308,42 +306,6 @@ export class CouncilRepository {
       .where(eq(councilTrustScores.councilId, councilId));
 
     return Number(trustCount);
-  }
-
-  /**
-   * Get council inventory
-   */
-  async getInventory(councilId: string) {
-    return await this.db
-      .select()
-      .from(councilInventory)
-      .where(eq(councilInventory.councilId, councilId));
-  }
-
-  /**
-   * Get council transactions
-   */
-  async getTransactions(councilId: string, options: { page?: number; limit?: number } = {}) {
-    const { page = 1, limit = 20 } = options;
-    const offset = (page - 1) * limit;
-
-    const transactions = await this.db
-      .select()
-      .from(councilTransactions)
-      .where(eq(councilTransactions.councilId, councilId))
-      .orderBy(desc(councilTransactions.createdAt))
-      .limit(limit)
-      .offset(offset);
-
-    const [{ count: total }] = await this.db
-      .select({ count: count() })
-      .from(councilTransactions)
-      .where(eq(councilTransactions.councilId, councilId));
-
-    return {
-      transactions,
-      total: Number(total),
-    };
   }
 
   /**

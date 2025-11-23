@@ -9,6 +9,7 @@ import { inviteLinkFormDict } from './InviteLinkForm.i18n';
 interface InviteLinkFormProps {
   communityId: string;
   onSuccess?: () => void;
+  embedded?: boolean;
 }
 
 export const InviteLinkForm: Component<InviteLinkFormProps> = (props) => {
@@ -18,7 +19,18 @@ export const InviteLinkForm: Component<InviteLinkFormProps> = (props) => {
   const [selectedDate, setSelectedDate] = createSignal(tomorrow.toISOString().split('T')[0]);
   const [role, setRole] = createSignal<'member' | 'admin'>('member');
   const [title, setTitle] = createSignal('');
+  const [copied, setCopied] = createSignal(false);
   const inviteMutation = useCreateLinkInviteMutation();
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
 
   const handleInvite = () => {
     const data: CreateLinkInviteDto = {
@@ -32,9 +44,11 @@ export const InviteLinkForm: Component<InviteLinkFormProps> = (props) => {
 
   const created = () => inviteMutation.data as CommunityInvite | undefined;
 
-  return (
-    <div class="p-4 border border-stone-200 dark:border-stone-700 rounded-lg bg-white dark:bg-stone-800">
-      <h3 class="font-semibold mb-4 text-stone-900 dark:text-stone-100">{t('title')}</h3>
+  const formContent = (
+    <>
+      <Show when={!props.embedded}>
+        <h3 class="font-semibold mb-4 text-stone-900 dark:text-stone-100">{t('title')}</h3>
+      </Show>
       <div class="space-y-3">
         <Input
           label={t('inviteTitleLabel')}
@@ -70,13 +84,32 @@ export const InviteLinkForm: Component<InviteLinkFormProps> = (props) => {
           <div class="mt-4 p-3 bg-stone-100 dark:bg-stone-700 rounded-lg">
             <p class="text-green-500 dark:text-green-400 text-sm mb-2">{t('success')}</p>
             <Show when={created()?.secret}>
-              <code class="block bg-stone-800 dark:bg-stone-900 text-white px-3 py-1 rounded text-sm font-mono break-all">
-                {`${window.location.origin}/invite/${created()!.secret}`}
-              </code>
+              <div class="space-y-2">
+                <code class="block bg-stone-800 dark:bg-stone-900 text-white px-3 py-2 rounded text-sm font-mono break-all">
+                  {`${window.location.origin}/invite/${created()!.secret}`}
+                </code>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => copyToClipboard(`${window.location.origin}/invite/${created()!.secret}`)}
+                >
+                  {copied() ? t('copied') : t('copyLink')}
+                </Button>
+              </div>
             </Show>
           </div>
         </Show>
       </div>
+    </>
+  );
+
+  if (props.embedded) {
+    return <div>{formContent}</div>;
+  }
+
+  return (
+    <div class="p-4 border border-stone-200 dark:border-stone-700 rounded-lg bg-white dark:bg-stone-800">
+      {formContent}
     </div>
   );
 };

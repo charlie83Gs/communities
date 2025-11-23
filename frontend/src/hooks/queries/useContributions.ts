@@ -159,6 +159,16 @@ export const useMyPeerGrantsQuery = (
   })) as ReturnType<typeof createQuery<PeerRecognitionGrant[], Error>>;
 };
 
+export const useMyPeerRecognitionQuery = (
+  communityId: Accessor<string | undefined>
+) => {
+  return createQuery(() => ({
+    queryKey: ['peer-recognition', 'my', communityId()],
+    queryFn: () => contributionsService.getMyPeerRecognition(communityId()!),
+    enabled: !!communityId(),
+  }));
+};
+
 export const usePeerRecognitionLimitsQuery = (communityId: Accessor<string | undefined>) => {
   return createQuery(() => ({
     queryKey: ['peer-recognition-limits', communityId()],

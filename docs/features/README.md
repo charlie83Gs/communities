@@ -33,6 +33,13 @@ This directory contains detailed documentation for each feature of the community
 ### Contribution Tracking
 16. [FT-16: Value Contribution System](./16-value-contribution.md) - Economic contribution scoring and analytics (Status: Planned)
 
+### Communication
+17. [FT-17: Matrix Chat Integration](./17-matrix-chat.md) - Real-time messaging with Matrix protocol (Status: Planned)
+18. [FT-18: Notifications System](./18-notifications.md) - In-app activity notifications and feed (Status: Planned)
+
+### Member Capabilities
+19. [FT-19: Skills & Endorsements](./19-skills-endorsements.md) - Skill declarations and community endorsements (Status: Implemented)
+
 ## Implementation Status Legend
 - **Implemented**: Core tables exist, feature is functional
 - **Partial**: Some tables implemented, feature partially functional

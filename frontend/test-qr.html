@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Test</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .qr-container {
+            border: 2px solid #ccc;
+            padding: 20px;
+            margin: 20px 0;
+            background: #f5f5f5;
+        }
+        img {
+            display: block;
+            margin: 20px auto;
+            border: 2px solid #333;
+            max-width: 100%;
+        }
+        .info {
+            background: #e3f2fd;
+            padding: 15px;
+            margin: 10px 0;
+            border-left: 4px solid #2196f3;
+        }
+        .error {
+            background: #ffebee;
+            padding: 15px;
+            margin: 10px 0;
+            border-left: 4px solid #f44336;
+        }
+    </style>
+</head>
+<body>
+    <h1>QR Code Image Test</h1>
+
+    <div class="info">
+        <h3>Testing base64 data URL image display</h3>
+        <p>This page tests whether the QR code data URL from the API works correctly in the browser.</p>
+    </div>
+
+    <div class="qr-container">
+        <h2>QR Code Image</h2>
+        <img
+            id="qrImage"
+            src="data:image/png;base64,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"
+            alt="Test QR Code"
+        />
+        <p><strong>Image loaded:</strong> <span id="loadStatus">Waiting...</span></p>
+        <p><strong>Data URL length:</strong> <span id="dataLength"></span></p>
+        <p><strong>Data URL prefix:</strong> <span id="dataPrefix"></span></p>
+    </div>
+
+    <div id="errorContainer" style="display: none;" class="error">
+        <h3>Error Details</h3>
+        <p id="errorText"></p>
+    </div>
+
+    <script>
+        const img = document.getElementById('qrImage');
+        const dataUrl = img.src;
+
+        // Display data URL info
+        document.getElementById('dataLength').textContent = dataUrl.length + ' characters';
+        document.getElementById('dataPrefix').textContent = dataUrl.substring(0, 50) + '...';
+
+        img.onload = function() {
+            console.log('✅ Image loaded successfully');
+            console.log('Image dimensions:', img.naturalWidth, 'x', img.naturalHeight);
+            document.getElementById('loadStatus').textContent = '✅ Success (' + img.naturalWidth + 'x' + img.naturalHeight + ')';
+            document.getElementById('loadStatus').style.color = 'green';
+        };
+
+        img.onerror = function(e) {
+            console.error('❌ Image failed to load:', e);
+            document.getElementById('loadStatus').textContent = '❌ Failed to load';
+            document.getElementById('loadStatus').style.color = 'red';
+            document.getElementById('errorContainer').style.display = 'block';
+            document.getElementById('errorText').textContent = 'Image failed to load. Check console for details.';
+        };
+
+        // Log to console
+        console.log('Data URL:', dataUrl.substring(0, 100) + '...');
+        console.log('Data URL length:', dataUrl.length);
+    </script>
+</body>
+</html>

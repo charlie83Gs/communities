@@ -1,7 +1,5 @@
 import { Component, Show, createMemo } from 'solid-js';
-import { useNavigate } from '@solidjs/router';
-import { Card } from '@/components/common/Card';
-import { Badge } from '@/components/common/Badge';
+import { A } from '@solidjs/router';
 import type { Wealth } from '@/types/wealth.types';
 import { makeTranslator } from '@/i18n/makeTranslator';
 import { wealthCardDict } from '@/components/features/wealth/WealthCard.i18n';
@@ -11,7 +9,6 @@ interface WealthCardProps {
 }
 
 export const WealthCard: Component<WealthCardProps> = (props) => {
-  const navigate = useNavigate();
   const t = makeTranslator(wealthCardDict, 'wealthCard');
 
   const isActive = createMemo(() => props.wealth.status === 'active');
@@ -23,8 +20,11 @@ export const WealthCard: Component<WealthCardProps> = (props) => {
   const distLabel = () =>
     props.wealth.distributionType === 'unit_based' ? t('unit_based') : t('request_based');
 
-  const statusVariant = () =>
-    isActive() ? 'success' : props.wealth.status === 'fulfilled' ? 'secondary' : 'warning';
+  const statusBadgeClass = () => {
+    if (isActive()) return 'bg-success-100 dark:bg-success-900 text-success-700 dark:text-success-300';
+    if (props.wealth.status === 'fulfilled') return 'bg-stone-100 dark:bg-stone-700 text-stone-700 dark:text-stone-300';
+    return 'bg-warning-100 dark:bg-warning-900 text-warning-700 dark:text-warning-300';
+  };
 
   const statusLabel = () => {
     const key = props.wealth.status as keyof typeof wealthCardDict.en.wealthCard.statuses;
@@ -32,56 +32,49 @@ export const WealthCard: Component<WealthCardProps> = (props) => {
   };
 
   return (
-    <Card
-      class="w-full h-64 overflow-hidden cursor-pointer hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors relative group"
-      onClick={() => navigate(`/wealth/${props.wealth.id}`)}
+    <A
+      href={`/wealth/${props.wealth.id}`}
+      class="block p-3 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg hover:border-ocean-400 dark:hover:border-ocean-600 transition-colors"
     >
-      <div class="p-4 space-y-3 h-full flex flex-col">
-        <div class="flex items-center gap-2 mb-1">
-          <div class="w-8 h-8 bg-ocean-100 dark:bg-ocean-900 rounded-full flex items-center justify-center flex-shrink-0">
-            <span class="text-sm">{props.wealth.item?.kind === 'object' ? '📦' : '🛠️'}</span>
-          </div>
-          <h4 class="text-lg font-semibold text-stone-900 dark:text-stone-100">
+      {/* Header with title and status */}
+      <div class="flex items-start justify-between gap-2 mb-2">
+        <div class="flex items-center gap-2 min-w-0 flex-1">
+          <span class="text-sm flex-shrink-0">
+            {props.wealth.item?.kind === 'object' ? '📦' : '🛠️'}
+          </span>
+          <h3
+            class="text-sm font-medium text-stone-900 dark:text-stone-100 truncate"
+            title={props.wealth.title}
+          >
             {props.wealth.title}
-          </h4>
+          </h3>
         </div>
+        <span class={`px-1.5 py-0.5 text-xs rounded flex-shrink-0 ${statusBadgeClass()}`}>
+          {statusLabel()}
+        </span>
+      </div>
 
-        <Show when={props.wealth.item}>
-          <div class="flex items-center gap-1 text-sm text-stone-600 dark:text-stone-400">
-            <span>{props.wealth.item?.name}</span>
-            <Badge variant={props.wealth.item?.kind === 'object' ? 'ocean' : 'forest'} class="text-xs">
-              {props.wealth.item?.kind}
-            </Badge>
+      {/* Item name */}
+      <Show when={props.wealth.item}>
+        <p class="text-xs text-stone-600 dark:text-stone-400 truncate mb-2">
+          {props.wealth.item?.name}
+        </p>
+      </Show>
+
+      {/* Key info */}
+      <div class="text-xs text-stone-500 dark:text-stone-400 space-y-0.5">
+        <Show when={isUnitBased()}>
+          <div class="font-medium text-ocean-600 dark:text-ocean-400">
+            {props.wealth.unitsAvailable ?? 0} {t('unitsAvailable')}
           </div>
         </Show>
-
-        <div class="flex flex-wrap gap-2">
-          <Badge class="bg-sage-100 dark:bg-sage-900 text-sage-800 dark:text-sage-200">
-            {t('badges.time')}: {timeLabel()}
-          </Badge>
-          <Badge class="bg-sky-100 dark:bg-sky-900 text-sky-800 dark:text-sky-200">
-            {t('badges.type')}: {distLabel()}
-          </Badge>
-          <Badge variant={statusVariant()}>
-            {t('badges.status')}: {statusLabel()}
-          </Badge>
+        <div class="flex items-center gap-2">
+          <span>{timeLabel()}</span>
+          <span>•</span>
+          <span>{distLabel()}</span>
         </div>
-
-        <Show when={props.wealth.description}>
-          <p class="text-sm text-stone-600 dark:text-stone-300 overflow-hidden text-ellipsis line-clamp-3">{props.wealth.description}</p>
-        </Show>
-
-        <Show when={isUnitBased()}>
-          <p class="text-xs text-stone-500 dark:text-stone-400">
-            {t('unitsAvailable')}: {props.wealth.unitsAvailable ?? '-'}
-            {props.wealth.maxUnitsPerUser ? ` • ${t('maxPerUser')}: ${props.wealth.maxUnitsPerUser}` : ''}
-          </p>
-        </Show>
-
-        {/* Actions and requests moved to Wealth Details page */}
-        <div class="pt-2 mt-auto"></div>
       </div>
-    </Card>
+    </A>
   );
 };
 

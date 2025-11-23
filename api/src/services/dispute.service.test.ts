@@ -23,6 +23,9 @@ const mockDisputeRepository = {
   createHistory: mock(() => Promise.resolve(testHistory)),
   findParticipant: mock(() => Promise.resolve(undefined)),
   findMediatorProposal: mock(() => Promise.resolve(undefined)),
+  findParticipantsByDispute: mock(() => Promise.resolve([])),
+  findMediatorsByDispute: mock(() => Promise.resolve([])),
+  findResolutionsByDispute: mock(() => Promise.resolve([])),
 };
 
 const mockCommunityRepository = {
@@ -143,10 +146,46 @@ describe('DisputeService', () => {
     (disputeRepository.createHistory as any) = mockDisputeRepository.createHistory;
     (disputeRepository.findParticipant as any) = mockDisputeRepository.findParticipant;
     (disputeRepository.findMediatorProposal as any) = mockDisputeRepository.findMediatorProposal;
+    (disputeRepository.findParticipantsByDispute as any) =
+      mockDisputeRepository.findParticipantsByDispute;
+    (disputeRepository.findMediatorsByDispute as any) =
+      mockDisputeRepository.findMediatorsByDispute;
+    (disputeRepository.findResolutionsByDispute as any) =
+      mockDisputeRepository.findResolutionsByDispute;
 
     (communityRepository.findById as any) = mockCommunityRepository.findById;
     (communityMemberRepository.isMember as any) = mockCommunityMemberRepository.isMember;
     (openFGAService.checkAccess as any) = mockOpenFGAService.checkAccess;
+
+    // Reset default mock return values
+    mockDisputeRepository.createDispute.mockResolvedValue(testDispute);
+    mockDisputeRepository.findDisputeById.mockResolvedValue(testDispute);
+    mockDisputeRepository.findDisputesByCommunity.mockResolvedValue({
+      disputes: [testDispute],
+      total: 1,
+    });
+    mockDisputeRepository.addParticipant.mockResolvedValue(testParticipant);
+    mockDisputeRepository.isParticipant.mockResolvedValue(false);
+    mockDisputeRepository.proposeMediator.mockResolvedValue(testMediator);
+    mockDisputeRepository.findMediatorById.mockResolvedValue(testMediator);
+    mockDisputeRepository.updateMediatorStatus.mockResolvedValue(testMediatorAccepted);
+    mockDisputeRepository.isAcceptedMediator.mockResolvedValue(false);
+    mockDisputeRepository.createResolution.mockResolvedValue(testResolution);
+    mockDisputeRepository.updateDispute.mockResolvedValue(testDisputeResolved);
+    mockDisputeRepository.createMessage.mockResolvedValue(testMessage);
+    mockDisputeRepository.findMessagesByDispute.mockResolvedValue({
+      messages: [testMessage],
+      total: 1,
+    });
+    mockDisputeRepository.createHistory.mockResolvedValue(testHistory);
+    mockDisputeRepository.findParticipant.mockResolvedValue(undefined);
+    mockDisputeRepository.findMediatorProposal.mockResolvedValue(undefined);
+    mockDisputeRepository.findParticipantsByDispute.mockResolvedValue([]);
+    mockDisputeRepository.findMediatorsByDispute.mockResolvedValue([]);
+    mockDisputeRepository.findResolutionsByDispute.mockResolvedValue([]);
+    mockCommunityRepository.findById.mockResolvedValue(testCommunity);
+    mockCommunityMemberRepository.isMember.mockResolvedValue(true);
+    mockOpenFGAService.checkAccess.mockResolvedValue(true);
 
     disputeService = new DisputeService();
   });
@@ -165,6 +204,7 @@ describe('DisputeService', () => {
         communityId: 'comm-123',
         title: 'Test Dispute',
         description: 'Test description',
+        privacyType: 'open',
         createdBy: 'user-123',
       });
       expect(mockDisputeRepository.addParticipant).toHaveBeenCalled();
@@ -172,7 +212,7 @@ describe('DisputeService', () => {
     });
 
     it('should throw error if community not found', async () => {
-      mockCommunityRepository.findById.mockResolvedValue(null);
+      mockCommunityRepository.findById.mockResolvedValue(null as any);
 
       await expect(
         disputeService.createDispute('comm-123', 'user-123', {
@@ -206,7 +246,7 @@ describe('DisputeService', () => {
     });
 
     it('should throw error if dispute not found', async () => {
-      mockDisputeRepository.findDisputeById.mockResolvedValue(undefined);
+      mockDisputeRepository.findDisputeById.mockResolvedValue(null as any);
 
       await expect(disputeService.getDisputeById('dispute-123', 'user-123')).rejects.toThrow(
         AppError
@@ -246,7 +286,7 @@ describe('DisputeService', () => {
 
     it('should throw error if user already proposed', async () => {
       mockOpenFGAService.checkAccess.mockResolvedValue(true);
-      mockDisputeRepository.findMediatorProposal.mockResolvedValue(testMediator);
+      mockDisputeRepository.findMediatorProposal.mockResolvedValue(testMediator as any);
 
       await expect(disputeService.proposeAsMediator('dispute-123', 'user-456')).rejects.toThrow(
         AppError
@@ -267,6 +307,7 @@ describe('DisputeService', () => {
 
       expect(result).toEqual(testMediatorAccepted);
       expect(mockDisputeRepository.updateMediatorStatus).toHaveBeenCalledWith('mediator-123', {
+        mediatorId: 'mediator-123',
         status: 'accepted',
         respondedBy: 'user-123',
       });

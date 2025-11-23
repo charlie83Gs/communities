@@ -275,7 +275,7 @@ describe('ValueRecognitionService', () => {
 
       expect(checkAccessMock).toHaveBeenCalledWith('user-123', 'community', 'community-123', 'can_grant_peer_recognition');
       expect(createGrantMock).toHaveBeenCalled();
-      expect(createContributionMock).toHaveBeenCalled();
+      // Note: Peer recognition grants are tracked separately, not as contributions
       expect(updateSummaryMock).toHaveBeenCalled();
     });
 
@@ -368,9 +368,11 @@ describe('ValueRecognitionService', () => {
       const getMonthlyTotalMock = mock(() =>
         Promise.resolve({ totalGranted: '12', grantCount: 3 })
       );
+      const findByFromUserAndMonthMock = mock(() => Promise.resolve([]));
 
       (communityRepository.findById as any) = findByIdMock;
       (peerRecognitionGrantRepository.getMonthlyTotalByFromUser as any) = getMonthlyTotalMock;
+      (peerRecognitionGrantRepository.findByFromUserAndMonth as any) = findByFromUserAndMonthMock;
 
       const result = await valueRecognitionService.checkPeerRecognitionLimits(
         'user-123',
@@ -378,8 +380,7 @@ describe('ValueRecognitionService', () => {
       );
 
       expect(result.monthlyLimit).toBe(20);
-      expect(result.used).toBe(12);
-      expect(result.remaining).toBe(8);
+      expect(result.usedThisMonth).toBe(12);
     });
   });
 });

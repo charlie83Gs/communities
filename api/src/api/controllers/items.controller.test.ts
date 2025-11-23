@@ -20,6 +20,7 @@ const mockItem: Item = {
   kind: 'object',
   wealthValue: '5.00',
   contributionMetadata: null,
+  relatedSkills: null,
   isDefault: false,
   createdBy: 'user-123',
   createdAt: new Date('2024-01-01'),

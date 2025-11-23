@@ -5,7 +5,6 @@ import {
 } from '../repositories/council.repository';
 import { communityMemberRepository } from '../repositories/communityMember.repository';
 import { appUserRepository } from '../repositories/appUser.repository';
-import { itemsRepository } from '../repositories/items.repository';
 import { AppError } from '../utils/errors';
 import { openFGAService } from './openfga.service';
 import logger from '../utils/logger';
@@ -22,12 +21,6 @@ export type CouncilWithDetails = {
     userId: string;
     userName: string;
     addedAt: Date | null;
-  }>;
-  inventory?: Array<{
-    itemId: string;
-    itemName: string;
-    quantity: number;
-    unit: string | null;
   }>;
 };
 
@@ -83,9 +76,36 @@ export class CouncilService {
 
     logger.info(`[CouncilService createCouncil] Council created with id: ${council.id}`);
 
+    // Create OpenFGA relationships for the council
+    try {
+      // Link council to parent community
+      await openFGAService.createRelationship(
+        'council',
+        council.id,
+        'parent_community',
+        'community',
+        data.communityId
+      );
+      logger.info(
+        `[CouncilService createCouncil] OpenFGA parent_community relation created for council: ${council.id}`
+      );
+    } catch (err) {
+      logger.error(
+        `[CouncilService createCouncil] Failed to create OpenFGA parent_community relation:`,
+        err
+      );
+      // Rollback: delete the council since permissions won't work
+      await councilRepository.delete(council.id);
+      throw new AppError('Failed to create council: authorization setup failed', 500);
+    }
+
     // Auto-assign creator as council manager
     try {
       await councilRepository.addManager(council.id, userId);
+
+      // Assign OpenFGA member relation for can_manage permission
+      await openFGAService.assignRelation(userId, 'user', 'member', 'council', council.id);
+
       logger.info(
         `[CouncilService createCouncil] Creator auto-assigned as manager for council: ${council.id}`
       );
@@ -139,20 +159,6 @@ export class CouncilService {
       })
     );
 
-    // Get inventory with item details
-    const inventory = await councilRepository.getInventory(councilId);
-    const inventoryWithDetails = await Promise.all(
-      inventory.map(async (inv) => {
-        const item = await itemsRepository.findById(inv.itemId);
-        return {
-          itemId: inv.itemId,
-          itemName: (item?.translations as any)?.en?.name || 'Unknown',
-          quantity: inv.quantity,
-          unit: inv.unit,
-        };
-      })
-    );
-
     return {
       id: council.id,
       name: council.name,
@@ -162,7 +168,6 @@ export class CouncilService {
       createdAt: council.createdAt,
       createdBy: council.createdBy,
       managers: managersWithDetails,
-      inventory: inventoryWithDetails,
     };
   }
 
@@ -367,9 +372,18 @@ export class CouncilService {
     const userHasTrusted = await councilRepository.hasAwardedTrust(councilId, userId);
     const trustScore = await councilRepository.getTrustScore(councilId);
 
+    // Check if user can award trust (same permission as awarding trust to users)
+    const canAwardTrust = await openFGAService.checkAccess(
+      userId,
+      'community',
+      council.communityId,
+      'can_award_trust'
+    );
+
     return {
       userHasTrusted,
       trustScore,
+      canAwardTrust,
     };
   }
 
@@ -409,6 +423,19 @@ export class CouncilService {
     }
 
     await councilRepository.addManager(councilId, targetUserId);
+
+    // Assign OpenFGA member relation for can_manage permission
+    try {
+      await openFGAService.assignRelation(targetUserId, 'user', 'member', 'council', councilId);
+      logger.info(
+        `[CouncilService addManager] OpenFGA member relation assigned for user: ${targetUserId} on council: ${councilId}`
+      );
+    } catch (err) {
+      logger.error(`[CouncilService addManager] Failed to assign OpenFGA member relation:`, err);
+      // Rollback the database change
+      await councilRepository.removeManager(councilId, targetUserId);
+      throw new AppError('Failed to add manager: authorization setup failed', 500);
+    }
 
     // Get updated managers list
     const managers = await councilRepository.getManagers(councilId);
@@ -458,91 +485,18 @@ export class CouncilService {
 
     await councilRepository.removeManager(councilId, targetUserId);
 
+    // Revoke OpenFGA member relation
+    try {
+      await openFGAService.revokeRelation(targetUserId, 'user', 'member', 'council', councilId);
+      logger.info(
+        `[CouncilService removeManager] OpenFGA member relation revoked for user: ${targetUserId} on council: ${councilId}`
+      );
+    } catch (err) {
+      logger.error(`[CouncilService removeManager] Failed to revoke OpenFGA member relation:`, err);
+      // Non-critical: the DB change is done, log the error but don't fail
+    }
+
     return { success: true };
-  }
-
-  /**
-   * Get council inventory
-   */
-  async getInventory(councilId: string, userId: string) {
-    const council = await councilRepository.findById(councilId);
-    if (!council) {
-      throw new AppError('Council not found', 404);
-    }
-
-    // Check user is member of the community
-    const userRole = await communityMemberRepository.getUserRole(council.communityId, userId);
-    if (!userRole) {
-      throw new AppError('Forbidden: not a member of this community', 403);
-    }
-
-    const inventory = await councilRepository.getInventory(councilId);
-
-    // Add item details
-    const inventoryWithDetails = await Promise.all(
-      inventory.map(async (inv) => {
-        const item = await itemsRepository.findById(inv.itemId);
-        return {
-          itemId: inv.itemId,
-          itemName: (item?.translations as any)?.en?.name || 'Unknown',
-          quantity: inv.quantity,
-          unit: inv.unit,
-        };
-      })
-    );
-
-    return { inventory: inventoryWithDetails };
-  }
-
-  /**
-   * Get council transactions
-   */
-  async getTransactions(
-    councilId: string,
-    userId: string,
-    options: { page?: number; limit?: number } = {}
-  ) {
-    const council = await councilRepository.findById(councilId);
-    if (!council) {
-      throw new AppError('Council not found', 404);
-    }
-
-    // Check user is member of the community
-    const userRole = await communityMemberRepository.getUserRole(council.communityId, userId);
-    if (!userRole) {
-      throw new AppError('Forbidden: not a member of this community', 403);
-    }
-
-    const result = await councilRepository.getTransactions(councilId, options);
-
-    // Add item and user details
-    const transactionsWithDetails = await Promise.all(
-      result.transactions.map(async (tx) => {
-        const item = await itemsRepository.findById(tx.itemId);
-        let fromUser = undefined;
-        if (tx.relatedUserId) {
-          const user = await appUserRepository.findById(tx.relatedUserId);
-          fromUser = user?.displayName || user?.email || 'Unknown';
-        }
-
-        return {
-          id: tx.id,
-          type: tx.type,
-          itemId: tx.itemId,
-          itemName: (item?.translations as any)?.en?.name || 'Unknown',
-          quantity: tx.quantity,
-          description: tx.description,
-          fromUser,
-          toPool: tx.relatedPoolId,
-          createdAt: tx.createdAt,
-        };
-      })
-    );
-
-    return {
-      transactions: transactionsWithDetails,
-      total: result.total,
-    };
   }
 }
 

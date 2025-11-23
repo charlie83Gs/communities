@@ -7,6 +7,7 @@ import { initiativesDict } from './initiatives.i18n';
 
 interface CreateReportModalProps {
   communityId: string;
+  councilId: string;
   initiativeId: string;
   isOpen: boolean;
   onClose: () => void;
@@ -53,6 +54,7 @@ export const CreateReportModal: Component<CreateReportModalProps> = (props) => {
     try {
       await createReportMutation.mutateAsync({
         communityId: props.communityId,
+        councilId: props.councilId,
         initiativeId: props.initiativeId,
         dto: {
           title: titleValue,

@@ -31,10 +31,29 @@ export const routes: RouteDefinition[] = [
     path: '/communities',
     component: AuthGuard,
     children: [
+      // Main community page with tab-based navigation
       {
         path: ':id',
         component: lazy(() => import('./pages/protected/community/[id]')),
       },
+      // Tab routes - all handled by the same page component
+      {
+        path: ':id/resources',
+        component: lazy(() => import('./pages/protected/community/[id]')),
+      },
+      {
+        path: ':id/members',
+        component: lazy(() => import('./pages/protected/community/[id]')),
+      },
+      {
+        path: ':id/discussion',
+        component: lazy(() => import('./pages/protected/community/[id]')),
+      },
+      {
+        path: ':id/settings',
+        component: lazy(() => import('./pages/protected/community/[id]')),
+      },
+      // Legacy/sub-pages that remain separate
       {
         path: ':id/health',
         component: lazy(() => import('./pages/protected/community/health')),
@@ -42,6 +61,10 @@ export const routes: RouteDefinition[] = [
       {
         path: ':id/settings/trust-levels',
         component: lazy(() => import('./pages/protected/community/trust-levels')),
+      },
+      {
+        path: ':id/polls/new',
+        component: lazy(() => import('./pages/protected/community/polls/new')),
       },
       {
         path: ':id/polls/:pollId',
@@ -59,11 +82,18 @@ export const routes: RouteDefinition[] = [
         path: ':id/needs/aggregate',
         component: lazy(() => import('./pages/protected/community/needs/aggregate')),
       },
-      // Pools are now embedded in the community page via the sidebar
-      // {
-      //   path: ':id/pools',
-      //   component: lazy(() => import('./pages/protected/community/pools')),
-      // },
+      {
+        path: ':id/wealth',
+        component: lazy(() => import('./pages/protected/community/wealth')),
+      },
+      {
+        path: ':id/wealth/create',
+        component: lazy(() => import('./pages/protected/community/wealth/create')),
+      },
+      {
+        path: ':id/pools',
+        component: lazy(() => import('./pages/protected/community/pools')),
+      },
       {
         path: ':id/pools/create',
         component: lazy(() => import('./pages/protected/community/pools/create')),
@@ -71,6 +101,10 @@ export const routes: RouteDefinition[] = [
       {
         path: ':id/pools/:poolId',
         component: lazy(() => import('./pages/protected/community/pools/[poolId]')),
+      },
+      {
+        path: ':id/items',
+        component: lazy(() => import('./pages/protected/community/items')),
       },
       {
         path: ':id/disputes',
@@ -84,6 +118,20 @@ export const routes: RouteDefinition[] = [
         path: ':id/disputes/:disputeId',
         component: lazy(() => import('./pages/protected/community/disputes/[disputeId]')),
       },
+      {
+        path: ':id/contributions',
+        component: lazy(() => import('./pages/protected/community/contributions')),
+      },
+      {
+        path: ':id/councils/:councilId',
+        component: lazy(() => import('./pages/protected/community/councils/[councilId]')),
+      },
+      {
+        path: ':id/councils/:councilId/initiatives/:initiativeId',
+        component: lazy(
+          () => import('./pages/protected/community/councils/initiatives/[initiativeId]')
+        ),
+      },
     ],
   },
   {
@@ -93,6 +141,10 @@ export const routes: RouteDefinition[] = [
   {
     path: '/register',
     component: Register,
+  },
+  {
+    path: '/checkout/:linkCode',
+    component: lazy(() => import('./pages/public/checkout/[linkCode]')),
   },
   {
     path: '/dashboard',
@@ -151,20 +203,6 @@ export const routes: RouteDefinition[] = [
       {
         path: ':id',
         component: lazy(() => import('./pages/protected/users/[id]')),
-      },
-    ],
-  },
-  {
-    path: '/councils',
-    component: AuthGuard,
-    children: [
-      {
-        path: ':id/needs',
-        component: lazy(() => import('./pages/protected/council/needs')),
-      },
-      {
-        path: ':id/needs/create',
-        component: lazy(() => import('./pages/protected/council/needs/create')),
       },
     ],
   },

@@ -113,13 +113,20 @@ export class CommunityMemberRepository {
 
   /**
    * Get all roles for a user in a community
-   * Note: In the new model, users have ONE base role (admin or member)
+   * Returns both base roles (admin/member) and feature roles (forum_manager, etc.)
    */
   async getUserRoles(communityId: string, userId: string): Promise<string[]> {
-    const role = await this.openFGAService.getUserBaseRole(userId, 'community', communityId, {
+    // Get base roles (admin/member)
+    const baseRole = await this.openFGAService.getUserBaseRole(userId, 'community', communityId, {
       returnAll: true,
     });
-    return Array.isArray(role) ? role : role ? [role] : [];
+    const baseRoles = Array.isArray(baseRole) ? baseRole : baseRole ? [baseRole] : [];
+
+    // Get feature roles (forum_manager, wealth_creator, etc.)
+    const featureRoles = await this.openFGAService.getUserFeatureRoles(userId, communityId);
+
+    // Combine and return all roles
+    return [...baseRoles, ...featureRoles];
   }
 
   /**

@@ -602,5 +602,52 @@ describe('WealthRepository', () => {
         expect(result?.status).toBe('failed');
       });
     });
+
+    describe('listPoolDistributionRequests', () => {
+      const poolDistributionRequest = {
+        id: 'request-pool-123',
+        wealthId: 'wealth-pool-123',
+        requesterId: 'user-456',
+        message: 'Pool distribution',
+        unitsRequested: 5,
+        status: 'fulfilled' as const,
+        createdAt: new Date('2024-01-01'),
+        updatedAt: new Date('2024-01-01'),
+        sourcePoolId: 'pool-123',
+        poolName: 'Test Pool',
+        wealthTitle: 'Distributed Wealth',
+      };
+
+      it('should list pool distribution requests for user without status filter', async () => {
+        mockDb.orderBy.mockResolvedValue([poolDistributionRequest]);
+
+        const result = await wealthRepository.listPoolDistributionRequests('user-456');
+
+        expect(result).toHaveLength(1);
+        expect(result[0]).toEqual(poolDistributionRequest);
+        expect(mockDb.innerJoin).toHaveBeenCalled();
+        expect(mockDb.leftJoin).toHaveBeenCalled();
+      });
+
+      it('should list pool distribution requests with status filter', async () => {
+        mockDb.orderBy.mockResolvedValue([poolDistributionRequest]);
+
+        const result = await wealthRepository.listPoolDistributionRequests('user-456', [
+          'fulfilled',
+        ]);
+
+        expect(result).toHaveLength(1);
+        expect(result[0].sourcePoolId).toBe('pool-123');
+        expect(result[0].poolName).toBe('Test Pool');
+      });
+
+      it('should return empty array when no pool distributions exist', async () => {
+        mockDb.orderBy.mockResolvedValue([]);
+
+        const result = await wealthRepository.listPoolDistributionRequests('user-456');
+
+        expect(result).toHaveLength(0);
+      });
+    });
   });
 });

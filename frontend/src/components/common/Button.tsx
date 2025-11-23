@@ -7,14 +7,14 @@ export interface ButtonProps extends JSX.ButtonHTMLAttributes<HTMLButtonElement>
 }
 
 export const Button: Component<ButtonProps> = (props) => {
-  const [local, rest] = splitProps(props, ['variant', 'size', 'loading', 'children']);
+  const [local, rest] = splitProps(props, ['variant', 'size', 'loading', 'children', 'class']);
 
-  const baseClasses = 'inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors';
+  const baseClasses = 'inline-flex items-center px-4 py-2 border text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed';
   const variants = {
-    primary: 'bg-ocean-600 text-white hover:bg-ocean-700 focus:ring-ocean-500',
-    secondary: 'bg-white text-stone-700 hover:bg-stone-50 border-stone-300 focus:ring-ocean-500',
-    danger: 'bg-danger-600 text-white hover:bg-danger-700 focus:ring-danger-500',
-    success: 'bg-success-600 text-white hover:bg-success-700 focus:ring-success-500',
+    primary: 'bg-ocean-600 text-white border-ocean-600 hover:bg-ocean-700 hover:border-ocean-700 active:bg-ocean-800 focus:ring-ocean-500 dark:bg-ocean-500 dark:border-ocean-500 dark:hover:bg-ocean-600 dark:hover:border-ocean-600',
+    secondary: 'bg-white text-stone-700 border-stone-300 hover:bg-stone-100 hover:border-stone-400 active:bg-stone-200 focus:ring-ocean-500 dark:bg-stone-700 dark:text-stone-100 dark:border-stone-600 dark:hover:bg-stone-600 dark:hover:border-stone-500',
+    danger: 'bg-danger-600 text-white border-danger-600 hover:bg-danger-700 hover:border-danger-700 active:bg-danger-800 focus:ring-danger-500 dark:bg-danger-500 dark:border-danger-500 dark:hover:bg-danger-600 dark:hover:border-danger-600',
+    success: 'bg-success-600 text-white border-success-600 hover:bg-success-700 hover:border-success-700 active:bg-success-800 focus:ring-success-500 dark:bg-success-500 dark:border-success-500 dark:hover:bg-success-600 dark:hover:border-success-600',
   };
   const sizes = {
     sm: 'px-2 py-1 text-xs',
@@ -24,7 +24,7 @@ export const Button: Component<ButtonProps> = (props) => {
 
   return (
     <button
-      class={`${baseClasses} ${variants[local.variant || 'primary']} ${sizes[local.size || 'md']}`}
+      class={`${baseClasses} ${variants[local.variant || 'primary']} ${sizes[local.size || 'md']} ${local.class || ''}`}
       disabled={local.loading}
       {...rest}
     >

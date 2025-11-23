@@ -1,6 +1,6 @@
 import { db as realDb } from '../db/index';
 import { recognizedContributions, items, appUsers } from '../db/schema';
-import { eq, and, isNull, desc, gte, sql, inArray } from 'drizzle-orm';
+import { eq, and, isNull, desc, gte, lte, sql, inArray } from 'drizzle-orm';
 
 export type CreateRecognizedContributionDto = {
   communityId: string;
@@ -16,7 +16,7 @@ export type CreateRecognizedContributionDto = {
   beneficiaryIds?: string[];
   witnessIds?: string[];
   testimonial?: string;
-  sourceType: 'system_logged' | 'peer_grant' | 'self_reported';
+  sourceType: 'system_logged' | 'peer_grant' | 'self_reported' | 'pool_contribution';
   sourceId?: string;
 };
 
@@ -118,7 +118,7 @@ export class RecognizedContributionRepository {
         and(
           eq(recognizedContributions.itemId, itemId),
           gte(recognizedContributions.createdAt, startDate),
-          sql`${recognizedContributions.createdAt} <= ${endDate}`,
+          lte(recognizedContributions.createdAt, endDate),
           isNull(recognizedContributions.deletedAt)
         )
       )

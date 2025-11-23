@@ -1,0 +1,87 @@
+### Get User Communities Summary
+### Returns aggregated dashboard data for the authenticated user's communities
+### Includes: community stats, pending requests, pool distributions, and invites
+
+@baseUrl = http://localhost:3000/api/v1
+@token = {{$dotenv KEYCLOAK_TEST_TOKEN}}
+
+### Get Communities Summary
+# GET /api/v1/user/communities/summary
+# Returns:
+# - communities: Array of user's communities with member counts, trust scores, pending request counts
+# - pendingActions.incomingRequests: Requests TO user's wealth (pending)
+# - pendingActions.acceptedOutgoing: User's requests that were accepted (awaiting fulfillment)
+# - pendingActions.poolDistributions: Pool distribution requests for user (pending/accepted)
+# - invites: Pending community invites for user
+
+GET {{baseUrl}}/user/communities/summary
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+###
+
+### Example response:
+# {
+#   "status": "success",
+#   "data": {
+#     "communities": [
+#       {
+#         "id": "uuid",
+#         "name": "Community Name",
+#         "description": "Optional description",
+#         "userTrustScore": 25,
+#         "memberCount": 42,
+#         "pendingIncoming": 3,
+#         "pendingOutgoing": 1,
+#         "lastActivityAt": "2025-01-15T10:30:00.000Z"
+#       }
+#     ],
+#     "pendingActions": {
+#       "incomingRequests": [
+#         {
+#           "id": "request-uuid",
+#           "wealthId": "wealth-uuid",
+#           "wealthTitle": "Fresh Tomatoes",
+#           "communityId": "community-uuid",
+#           "communityName": "Garden Community",
+#           "requesterDisplayName": "Alice Johnson",
+#           "unitsRequested": 5,
+#           "createdAt": "2025-01-15T08:00:00.000Z"
+#         }
+#       ],
+#       "acceptedOutgoing": [
+#         {
+#           "id": "request-uuid",
+#           "wealthId": "wealth-uuid",
+#           "wealthTitle": "Bicycle Repair Service",
+#           "communityId": "community-uuid",
+#           "communityName": "Local Exchange",
+#           "unitsRequested": 1,
+#           "createdAt": "2025-01-14T15:00:00.000Z"
+#         }
+#       ],
+#       "poolDistributions": [
+#         {
+#           "id": "request-uuid",
+#           "wealthId": "wealth-uuid",
+#           "wealthTitle": "Community Tool Kit",
+#           "poolId": "pool-uuid",
+#           "poolName": "Tool Library",
+#           "communityId": "community-uuid",
+#           "communityName": "Maker Space",
+#           "unitsRequested": 1,
+#           "createdAt": "2025-01-13T12:00:00.000Z"
+#         }
+#       ]
+#     },
+#     "invites": [
+#       {
+#         "id": "invite-uuid",
+#         "communityId": "community-uuid",
+#         "communityName": "New Community",
+#         "inviterDisplayName": "Bob Smith",
+#         "createdAt": "2025-01-12T09:00:00.000Z"
+#       }
+#     ]
+#   }
+# }

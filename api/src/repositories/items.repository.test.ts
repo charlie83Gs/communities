@@ -18,6 +18,7 @@ const testItem = {
   kind: 'object' as const,
   wealthValue: '10.50',
   contributionMetadata: null,
+  relatedSkills: null,
   isDefault: false,
   createdBy: 'user-123',
   createdAt: new Date('2024-01-01'),

@@ -5,13 +5,12 @@ import type {
   CreateCouncilDto,
   UpdateCouncilDto,
   CouncilsListResponse,
-  CouncilInventoryResponse,
-  CouncilTransactionsResponse,
   CouncilTrustStatusResponse,
   AwardCouncilTrustResponse,
   RemoveCouncilTrustResponse,
   AddCouncilManagerResponse,
   RemoveCouncilManagerResponse,
+  CouncilPoolsResponse,
 } from '@/types/council.types';
 
 class CouncilsService {
@@ -144,28 +143,15 @@ class CouncilsService {
   }
 
   /**
-   * Get council inventory
-   * GET /api/v1/communities/:communityId/councils/:councilId/inventory
+   * Get pools owned by a council
+   * GET /api/v1/communities/:communityId/councils/:councilId/pools
    */
-  async getInventory(communityId: string, councilId: string): Promise<CouncilInventoryResponse> {
-    return apiClient.get(`${this.basePath}/${communityId}/councils/${councilId}/inventory`);
-  }
-
-  /**
-   * Get council transaction history
-   * GET /api/v1/communities/:communityId/councils/:councilId/transactions
-   */
-  async getTransactions(
+  async getCouncilPools(
     communityId: string,
-    councilId: string,
-    params?: { page?: number; limit?: number }
-  ): Promise<CouncilTransactionsResponse> {
-    const search = new URLSearchParams();
-    if (params?.page) search.set('page', params.page.toString());
-    if (params?.limit) search.set('limit', params.limit.toString());
-    const qs = search.toString();
+    councilId: string
+  ): Promise<CouncilPoolsResponse> {
     return apiClient.get(
-      `${this.basePath}/${communityId}/councils/${councilId}/transactions${qs ? `?${qs}` : ''}`
+      `${this.basePath}/${communityId}/councils/${councilId}/pools`
     );
   }
 }

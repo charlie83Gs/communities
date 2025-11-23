@@ -1,6 +1,7 @@
 import { Component, createSignal, For, Show } from 'solid-js';
 import { StatCard } from '@/components/common/StatCard';
-import { LineChart } from '@/components/common/LineChart';
+import { AreaChart } from '@/components/common/AreaChart';
+import { BarChart } from '@/components/common/BarChart';
 import { useWealthOverviewQuery, useWealthItemsQuery, useAggregatedWealthQuery } from '@/hooks/queries/useHealthQueries';
 import type { TimeRange, AggregatedWealthData } from '@/types/health.types';
 import { makeTranslator } from '@/i18n/makeTranslator';
@@ -149,29 +150,58 @@ export const WealthStatistics: Component<WealthStatisticsProps> = (props) => {
         </div>
       </Show>
 
-      {/* Time Series Chart */}
+      {/* Open Shares Area Chart */}
       <Show when={!overviewQuery.isLoading && overviewQuery.data}>
-        <LineChart
-          title={t('chartTitle')}
+        <AreaChart
+          title={t('openSharesChartTitle')}
           datasets={[
             {
-              label: t('shares'),
-              data: overviewQuery.data!.timeSeries.shares,
+              label: t('openSharesLine'),
+              data: overviewQuery.data!.timeSeries.openShares,
               color: '#0284c7', // ocean-600
             },
+          ]}
+          yAxisLabel={t('count')}
+          height={250}
+          loading={overviewQuery.isLoading}
+        />
+      </Show>
+
+      {/* Daily Requests & Fulfilled Bar Chart */}
+      <Show when={!overviewQuery.isLoading && overviewQuery.data}>
+        <BarChart
+          title={t('requestsChartTitle')}
+          datasets={[
             {
               label: t('requests'),
-              data: overviewQuery.data!.timeSeries.requests,
+              data: overviewQuery.data!.timeSeries.dailyRequests,
               color: '#16a34a', // forest-600
             },
             {
               label: t('fulfilled'),
-              data: overviewQuery.data!.timeSeries.fulfilled,
+              data: overviewQuery.data!.timeSeries.dailyFulfilled,
               color: '#059669', // success-600
             },
           ]}
           yAxisLabel={t('count')}
-          height={300}
+          height={250}
+          loading={overviewQuery.isLoading}
+        />
+      </Show>
+
+      {/* Value Contributed Over Time Chart */}
+      <Show when={!overviewQuery.isLoading && overviewQuery.data}>
+        <AreaChart
+          title={t('valueContributedChartTitle')}
+          datasets={[
+            {
+              label: t('valueContributedLine'),
+              data: overviewQuery.data!.timeSeries.dailyValueContributed,
+              color: '#d97706', // amber-600
+            },
+          ]}
+          yAxisLabel={t('valuePointsLabel')}
+          height={250}
           loading={overviewQuery.isLoading}
         />
       </Show>

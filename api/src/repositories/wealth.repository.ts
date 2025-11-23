@@ -7,7 +7,8 @@ import {
   wealthDistributionTypeEnum,
 } from '@db/schema/wealth.schema';
 import { items } from '@db/schema/items.schema';
-import { and, eq, inArray, ilike, or, gte, lte, desc, sql } from 'drizzle-orm';
+import { pools } from '@db/schema/pools.schema';
+import { and, eq, inArray, ilike, or, gte, lte, desc, sql, isNull, isNotNull } from 'drizzle-orm';
 
 export type WealthRecord = typeof wealth.$inferSelect;
 export type CreateWealthInput = typeof wealth.$inferInsert;
@@ -21,6 +22,12 @@ export type CreateWealthRequestInput = {
   requesterId: string;
   message?: string | null;
   unitsRequested?: number | null;
+};
+
+export type PoolDistributionRequestRecord = WealthRequestRecord & {
+  sourcePoolId: string;
+  poolName: string;
+  wealthTitle: string;
 };
 
 export type WealthSearchFilters = {
@@ -220,26 +227,16 @@ export class WealthRepository {
     requesterId: string,
     statuses?: (typeof wealthRequestStatusEnum.enumValues)[number][]
   ): Promise<WealthRequestRecord[]> {
-    const where =
-      statuses && statuses.length > 0
-        ? and(
-            eq(wealthRequests.requesterId, requesterId),
-            inArray(wealthRequests.status, statuses as any)
-          )
-        : eq(wealthRequests.requesterId, requesterId);
+    // Join with wealth to exclude pool distribution requests (where sourcePoolId is not null)
+    const whereParts: any[] = [
+      eq(wealthRequests.requesterId, requesterId),
+      isNull(wealth.sourcePoolId), // Exclude pool distributions
+    ];
 
-    return await this.db
-      .select()
-      .from(wealthRequests)
-      .where(where)
-      .orderBy(desc(wealthRequests.createdAt));
-  }
+    if (statuses && statuses.length > 0) {
+      whereParts.push(inArray(wealthRequests.status, statuses as any));
+    }
 
-  async listIncomingRequestsByOwner(
-    ownerId: string,
-    statuses?: (typeof wealthRequestStatusEnum.enumValues)[number][]
-  ): Promise<WealthRequestRecord[]> {
-    // Join wealthRequests with wealth to filter by owner
     const query = this.db
       .select({
         id: wealthRequests.id,
@@ -253,11 +250,79 @@ export class WealthRepository {
       })
       .from(wealthRequests)
       .innerJoin(wealth, eq(wealthRequests.wealthId, wealth.id))
-      .where(
-        statuses && statuses.length > 0
-          ? and(eq(wealth.createdBy, ownerId), inArray(wealthRequests.status, statuses as any))
-          : eq(wealth.createdBy, ownerId)
-      )
+      .where(and(...whereParts))
+      .orderBy(desc(wealthRequests.createdAt));
+
+    return await query;
+  }
+
+  async listIncomingRequestsByOwner(
+    ownerId: string,
+    statuses?: (typeof wealthRequestStatusEnum.enumValues)[number][]
+  ): Promise<WealthRequestRecord[]> {
+    // Join wealthRequests with wealth to filter by owner
+    // Exclude pool distribution requests (where sourcePoolId is not null)
+    const whereParts: any[] = [
+      eq(wealth.createdBy, ownerId),
+      isNull(wealth.sourcePoolId), // Exclude pool distributions
+    ];
+
+    if (statuses && statuses.length > 0) {
+      whereParts.push(inArray(wealthRequests.status, statuses as any));
+    }
+
+    const query = this.db
+      .select({
+        id: wealthRequests.id,
+        wealthId: wealthRequests.wealthId,
+        requesterId: wealthRequests.requesterId,
+        message: wealthRequests.message,
+        unitsRequested: wealthRequests.unitsRequested,
+        status: wealthRequests.status,
+        createdAt: wealthRequests.createdAt,
+        updatedAt: wealthRequests.updatedAt,
+      })
+      .from(wealthRequests)
+      .innerJoin(wealth, eq(wealthRequests.wealthId, wealth.id))
+      .where(and(...whereParts))
+      .orderBy(desc(wealthRequests.createdAt));
+
+    return await query;
+  }
+
+  async listPoolDistributionRequests(
+    requesterId: string,
+    statuses?: (typeof wealthRequestStatusEnum.enumValues)[number][]
+  ): Promise<PoolDistributionRequestRecord[]> {
+    // Join wealthRequests with wealth and pools to get pool distribution requests
+    // Only includes requests where wealth.sourcePoolId IS NOT NULL
+    const whereParts: any[] = [
+      eq(wealthRequests.requesterId, requesterId),
+      isNotNull(wealth.sourcePoolId), // Only pool distributions
+    ];
+
+    if (statuses && statuses.length > 0) {
+      whereParts.push(inArray(wealthRequests.status, statuses as any));
+    }
+
+    const query = this.db
+      .select({
+        id: wealthRequests.id,
+        wealthId: wealthRequests.wealthId,
+        requesterId: wealthRequests.requesterId,
+        message: wealthRequests.message,
+        unitsRequested: wealthRequests.unitsRequested,
+        status: wealthRequests.status,
+        createdAt: wealthRequests.createdAt,
+        updatedAt: wealthRequests.updatedAt,
+        sourcePoolId: wealth.sourcePoolId,
+        poolName: pools.name,
+        wealthTitle: wealth.title,
+      })
+      .from(wealthRequests)
+      .innerJoin(wealth, eq(wealthRequests.wealthId, wealth.id))
+      .leftJoin(pools, eq(wealth.sourcePoolId, pools.id))
+      .where(and(...whereParts))
       .orderBy(desc(wealthRequests.createdAt));
 
     return await query;

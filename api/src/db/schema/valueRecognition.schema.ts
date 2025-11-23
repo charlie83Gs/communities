@@ -16,7 +16,8 @@ export const verificationStatusEnum = pgEnum('verification_status', [
 export const sourceTypeEnum = pgEnum('source_type', [
   'system_logged',
   'peer_grant',
-  'self_reported'
+  'self_reported',
+  'pool_contribution'
 ]);
 
 /**

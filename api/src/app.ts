@@ -30,6 +30,10 @@ import communityEventsRoutes from '@api/routes/communityEvents.routes';
 import poolsRoutes from '@api/routes/pools.routes';
 import disputeRoutes from '@api/routes/dispute.routes';
 import valueRecognitionRoutes from '@api/routes/valueRecognition.routes';
+import userDashboardRoutes from '@api/routes/userDashboard.routes';
+import notificationRoutes from '@api/routes/notification.routes';
+import checkoutLinksRoutes from '@api/routes/checkoutLinks.routes';
+import skillsRoutes from '@api/routes/skills.routes';
 // Keycloak authentication routes
 import authRoutes from '@api/routes/auth.routes';
 
@@ -165,6 +169,8 @@ app.use('/api/v1/communities', trustLevelRoutes);
 // - /api/v1/user/trust/events
 // - /api/v1/users/trust/communities
 app.use('/api/v1', trustGlobalRoutes);
+// User dashboard routes - mounted at /api/v1/user (singular)
+app.use('/api/v1/user', userDashboardRoutes);
 app.use('/api/v1/users', usersRoutes);
 app.use('/api/v1/invites', inviteRoutes);
 app.use('/api/v1/items', itemsRoutes);
@@ -185,6 +191,12 @@ app.use('/api/v1', poolsRoutes);
 app.use('/api/v1', disputeRoutes);
 // Value Recognition routes
 app.use('/api/v1', valueRecognitionRoutes);
+// Notifications routes
+app.use('/api/v1/notifications', notificationRoutes);
+// Checkout Links routes (FT-21: Sharing Markets)
+app.use('/api/v1', checkoutLinksRoutes);
+// Skills & Endorsements routes (FT-19)
+app.use('/api/v1', skillsRoutes);
 
 // Swagger docs
 app.use('/openapi/docs', swaggerUi.serve, swaggerUi.setup(specs));

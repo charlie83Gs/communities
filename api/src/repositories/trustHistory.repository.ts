@@ -2,7 +2,7 @@ import { db as realDb } from '../db/index';
 import { and, eq, desc } from 'drizzle-orm';
 import { trustHistory } from '../db/schema/trustHistory.schema';
 
-export type TrustHistoryAction = 'award' | 'remove' | 'admin_grant';
+export type TrustHistoryAction = 'award' | 'remove' | 'admin_grant' | 'recertify';
 
 export interface LogActionParams {
   communityId: string;

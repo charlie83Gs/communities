@@ -130,6 +130,7 @@ export const authorizationModel = {
         recognition_granter: { this: {} },
         contribution_verifier: { this: {} },
         recognition_manager: { this: {} },
+        skill_endorser: { this: {} },
 
         // ========== TRUST ROLES (Auto-Granted) ==========
         trust_trust_viewer: { this: {} },
@@ -161,6 +162,7 @@ export const authorizationModel = {
         trust_recognition_granter: { this: {} },
         trust_contribution_verifier: { this: {} },
         trust_recognition_manager: { this: {} },
+        trust_skill_endorser: { this: {} },
 
         // ========== PERMISSIONS (UNIONS) ==========
         // Basic community permissions
@@ -443,6 +445,15 @@ export const authorizationModel = {
             ],
           },
         },
+        can_endorse_skills: {
+          union: {
+            child: [
+              { computedUserset: { relation: 'admin' } },
+              { computedUserset: { relation: 'skill_endorser' } },
+              { computedUserset: { relation: 'trust_skill_endorser' } },
+            ],
+          },
+        },
       },
       metadata: {
         relations: {
@@ -482,6 +493,7 @@ export const authorizationModel = {
           recognition_granter: { directly_related_user_types: [{ type: 'user' }] },
           contribution_verifier: { directly_related_user_types: [{ type: 'user' }] },
           recognition_manager: { directly_related_user_types: [{ type: 'user' }] },
+          skill_endorser: { directly_related_user_types: [{ type: 'user' }] },
 
           // Trust roles (auto-granted)
           trust_trust_viewer: { directly_related_user_types: [{ type: 'user' }] },
@@ -515,6 +527,7 @@ export const authorizationModel = {
           trust_recognition_granter: { directly_related_user_types: [{ type: 'user' }] },
           trust_contribution_verifier: { directly_related_user_types: [{ type: 'user' }] },
           trust_recognition_manager: { directly_related_user_types: [{ type: 'user' }] },
+          trust_skill_endorser: { directly_related_user_types: [{ type: 'user' }] },
         },
       },
     },
@@ -591,7 +604,36 @@ export const authorizationModel = {
           },
         },
         can_manage: {
-          computedUserset: { relation: 'member' },
+          union: {
+            child: [
+              { computedUserset: { relation: 'member' } },
+              {
+                tupleToUserset: {
+                  tupleset: { relation: 'parent_community' },
+                  computedUserset: { relation: 'admin' },
+                },
+              },
+            ],
+          },
+        },
+        can_update: {
+          union: {
+            child: [
+              { computedUserset: { relation: 'member' } },
+              {
+                tupleToUserset: {
+                  tupleset: { relation: 'parent_community' },
+                  computedUserset: { relation: 'admin' },
+                },
+              },
+            ],
+          },
+        },
+        can_delete: {
+          tupleToUserset: {
+            tupleset: { relation: 'parent_community' },
+            computedUserset: { relation: 'admin' },
+          },
         },
       },
       metadata: {

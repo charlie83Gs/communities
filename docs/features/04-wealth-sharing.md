@@ -2,9 +2,9 @@
 id: FT-04
 title: Community Wealth & Resource Sharing
 status: partial
-version: 1.3
-last_updated: 2025-01-12
-related_features: [FT-01, FT-02, FT-03, FT-05, FT-06]
+version: 1.6
+last_updated: 2025-11-18
+related_features: [FT-01, FT-02, FT-03, FT-05, FT-06, FT-18]
 ---
 
 # Community Wealth & Resource Sharing
@@ -19,10 +19,23 @@ The wealth system enables members to share products, services, and resources wit
 2. **Council**: Direct transfer to a specific council
 3. **Pool**: Instant transfer to a pool (automatically fulfilled, cannot be cancelled)
 
-## Wealth Publications
-- Access is trust-gated: admins configure the minimum trust score required
+## Permission Model
+
+### Sharing Wealth (Creating Offers)
+- **No trust requirement**: Any community member can share/offer items or services
+- **Philosophy**: Giving is unrestricted - encourages generosity and builds trust
+- **Permission**: Requires `can_view_wealth` (basic community membership)
+
+### Requesting Wealth (Receiving)
+- **Trust-gated**: Admins configure minimum trust score required to request items (`minTrustForWealth`)
+- **Default threshold**: 10 trust points
+- **Philosophy**: Receiving requires proven trustworthiness in the community
+- **Permission**: Requires `can_create_wealth` (trust-based)
+- **Rationale**: Prevents new/untrusted users from taking resources before establishing relationships
+
+### Comments and Visibility
 - Wealth publications support comments
-- Members with sufficient trust can publish wealth items
+- All members can view available wealth (visibility not restricted)
 
 ## Wealth Types
 All wealth items are unit-based and categorized as either:
@@ -108,11 +121,38 @@ Users can filter available resources by:
 - Trust requirement (items I can access, all items, items requiring 20+, etc.)
 - Availability status (available, pending, fulfilled)
 - Recurrent status (recurrent services only)
+- **Pool Contributions**: Advanced filter to show/hide contributions to pools (disabled by default - pool contributions are hidden from main wealth table)
 
 ## Wealth Requests
 - Members and councils can request publicly shared wealth items
 - The owner (creator of the wealth item) decides whether to accept or reject requests
 - Pool shares bypass the request system (instant fulfillment)
+
+### Private Request Messaging
+Each wealth request has a private message thread between the requester and wealth owner:
+
+**Purpose:**
+- Coordinate delivery details (time, location)
+- Ask clarifying questions about the item/service
+- Discuss specific requirements or conditions
+- Follow up on accepted requests
+
+**Features:**
+- Private to requester and owner only (not visible to other community members)
+- Rich text support with link formatting
+- Messages preserved throughout request lifecycle
+- Read-only in terminal states (fulfilled, rejected, cancelled, failed)
+- Active messaging in pending and accepted states
+
+**Activity Indicators:**
+- Visual indicator on requests with unread messages
+- Shown to both requester and owner
+- Cleared when message thread is viewed
+
+**Relationship to Comments:**
+- Request messages are PRIVATE (only requester + owner)
+- Wealth comments are PUBLIC (all community members)
+- Different purposes: coordination vs. community discussion
 
 ## Disputes
 
@@ -151,6 +191,12 @@ Available when delivery of accepted wealth is not completed.
 - `wealth_requests` - Requests for publicly shared wealth items
   - `unitsRequested` - Required for all requests (default: 1)
 - `wealth_comments` - Comments on wealth
+- `wealth_request_messages` - Private message threads on requests
+  - `requestId` - Reference to wealth_requests
+  - `authorId` - Message author (requester or owner)
+  - `content` - Rich text message content
+- `notifications` - Activity notifications (see FT-18)
+  - Used to track unread messages on requests
 
 ### Planned
 - `wealth_categories` - Hierarchical resource categorization

@@ -909,6 +909,61 @@ export class WealthController {
 
   /**
    * @swagger
+   * /api/v1/wealths/requests/pool-distributions:
+   *   get:
+   *     summary: List pool distribution requests
+   *     description: Returns wealth requests that came from pool distributions (where wealth.sourcePoolId is not null). These are auto-created fulfilled requests when a pool distributes to users.
+   *     tags: [Wealths]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: query
+   *         name: statuses
+   *         schema:
+   *           oneOf:
+   *             - type: string
+   *               enum: [pending, accepted, rejected, cancelled, fulfilled]
+   *             - type: array
+   *               items:
+   *                 type: string
+   *                 enum: [pending, accepted, rejected, cancelled, fulfilled]
+   *         description: Optional status or comma-separated statuses to filter requests.
+   *     responses:
+   *       200:
+   *         description: List of pool distribution requests
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: array
+   *               items:
+   *                 allOf:
+   *                   - $ref: '#/components/schemas/WealthRequest'
+   *                   - type: object
+   *                     properties:
+   *                       sourcePoolId:
+   *                         type: string
+   *                         format: uuid
+   *                         description: The pool that distributed this wealth
+   *                       poolName:
+   *                         type: string
+   *                         description: Name of the source pool
+   *                       wealthTitle:
+   *                         type: string
+   *                         description: Title of the distributed wealth
+   */
+  async listPoolDistributions(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = (req as any).user?.id;
+      const statuses = (req as any).parsedStatuses as Array<'pending' | 'accepted' | 'rejected' | 'cancelled' | 'fulfilled'> | undefined;
+      const requests = await wealthService.listPoolDistributionRequests(userId, statuses);
+      return ApiResponse.success(res, requests);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
+   * @swagger
    * /api/v1/wealths/{wealthId}/comments:
    *   post:
    *     summary: Create a comment on a wealth
@@ -1127,6 +1182,165 @@ export class WealthController {
       const { commentId } = req.params;
       await wealthCommentService.deleteComment(commentId, userId);
       return ApiResponse.success(res, null, 'Comment deleted successfully');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
+   * @swagger
+   * /api/v1/wealth/{id}/requests/{requestId}/messages:
+   *   post:
+   *     summary: Send a message in a wealth request thread
+   *     description: Only the requester and wealth owner can send messages. Messages can only be sent when the request is pending or accepted.
+   *     tags: [Wealths]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Wealth ID
+   *       - in: path
+   *         name: requestId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Request ID
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - content
+   *             properties:
+   *               content:
+   *                 type: string
+   *                 maxLength: 5000
+   *                 description: Message content (supports HTML)
+   *     responses:
+   *       201:
+   *         description: Message created successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 id:
+   *                   type: string
+   *                   format: uuid
+   *                 requestId:
+   *                   type: string
+   *                   format: uuid
+   *                 authorId:
+   *                   type: string
+   *                 content:
+   *                   type: string
+   *                 createdAt:
+   *                   type: string
+   *                   format: date-time
+   *                 author:
+   *                   type: object
+   *                   properties:
+   *                     id:
+   *                       type: string
+   *                     displayName:
+   *                       type: string
+   *       400:
+   *         description: Invalid request status for sending messages
+   *       403:
+   *         description: Forbidden (not requester or owner)
+   *       404:
+   *         description: Wealth or request not found
+   */
+  async createRequestMessage(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = (req as any).user?.id;
+      const { id, requestId } = req.params;
+      const { content } = req.body;
+
+      const message = await wealthService.addRequestMessage(id, requestId, userId, content);
+      return ApiResponse.created(res, message, 'Message sent successfully');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  /**
+   * @swagger
+   * /api/v1/wealth/{id}/requests/{requestId}/messages:
+   *   get:
+   *     summary: Get messages for a wealth request
+   *     description: Only the requester and wealth owner can view messages. Also marks notifications as read.
+   *     tags: [Wealths]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Wealth ID
+   *       - in: path
+   *         name: requestId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *         description: Request ID
+   *     responses:
+   *       200:
+   *         description: List of messages
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 messages:
+   *                   type: array
+   *                   items:
+   *                     type: object
+   *                     properties:
+   *                       id:
+   *                         type: string
+   *                         format: uuid
+   *                       requestId:
+   *                         type: string
+   *                         format: uuid
+   *                       authorId:
+   *                         type: string
+   *                       content:
+   *                         type: string
+   *                       createdAt:
+   *                         type: string
+   *                         format: date-time
+   *                       author:
+   *                         type: object
+   *                         properties:
+   *                           id:
+   *                             type: string
+   *                           displayName:
+   *                             type: string
+   *       403:
+   *         description: Forbidden (not requester or owner)
+   *       404:
+   *         description: Wealth or request not found
+   */
+  async listRequestMessages(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = (req as any).user?.id;
+      const { id, requestId } = req.params;
+
+      const messages = await wealthService.getRequestMessages(id, requestId, userId);
+      return ApiResponse.success(res, { messages });
     } catch (err) {
       next(err);
     }

@@ -1,6 +1,6 @@
 import { db as realDb } from '../db/index';
 import { peerRecognitionGrants, appUsers } from '../db/schema';
-import { eq, and, sql, desc } from 'drizzle-orm';
+import { eq, and, sql, desc, gte } from 'drizzle-orm';
 
 export type CreatePeerRecognitionGrantDto = {
   communityId: string;
@@ -44,6 +44,24 @@ export class PeerRecognitionGrantRepository {
       .where(
         and(
           eq(peerRecognitionGrants.toUserId, toUserId),
+          eq(peerRecognitionGrants.communityId, communityId)
+        )
+      )
+      .orderBy(desc(peerRecognitionGrants.createdAt))
+      .limit(limit);
+  }
+
+  async findByFromUser(fromUserId: string, communityId: string, limit = 50) {
+    return await this.db
+      .select({
+        grant: peerRecognitionGrants,
+        toUser: appUsers,
+      })
+      .from(peerRecognitionGrants)
+      .leftJoin(appUsers, eq(peerRecognitionGrants.toUserId, appUsers.id))
+      .where(
+        and(
+          eq(peerRecognitionGrants.fromUserId, fromUserId),
           eq(peerRecognitionGrants.communityId, communityId)
         )
       )
@@ -118,6 +136,23 @@ export class PeerRecognitionGrantRepository {
       .where(eq(peerRecognitionGrants.communityId, communityId))
       .orderBy(desc(peerRecognitionGrants.createdAt))
       .limit(limit);
+  }
+
+  async getTotalValueReceivedSince(toUserId: string, communityId: string, since: Date) {
+    const [result] = await this.db
+      .select({
+        totalValue: sql<string>`COALESCE(SUM(${peerRecognitionGrants.valueUnits}), 0)::text`,
+      })
+      .from(peerRecognitionGrants)
+      .where(
+        and(
+          eq(peerRecognitionGrants.toUserId, toUserId),
+          eq(peerRecognitionGrants.communityId, communityId),
+          gte(peerRecognitionGrants.createdAt, since)
+        )
+      );
+
+    return parseFloat(result?.totalValue || '0');
   }
 }
 

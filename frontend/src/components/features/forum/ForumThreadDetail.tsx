@@ -12,6 +12,7 @@ import {
   useVoteOnThreadMutation,
   useVoteOnPostMutation,
   useSetBestAnswerMutation,
+  useUpdateHomepagePinMutation,
 } from '@/hooks/queries/useForumQueries';
 import { authStore } from '@/stores/auth.store';
 import { makeTranslator } from '@/i18n/makeTranslator';
@@ -42,6 +43,7 @@ export const ForumThreadDetail: Component<ForumThreadDetailProps> = (props) => {
   const voteOnThreadMutation = useVoteOnThreadMutation();
   const voteOnPostMutation = useVoteOnPostMutation();
   const setBestAnswerMutation = useSetBestAnswerMutation();
+  const homepagePinMutation = useUpdateHomepagePinMutation();
 
   const isThreadAuthor = createMemo(() => {
     const thread = threadQuery.data?.thread;
@@ -125,6 +127,23 @@ export const ForumThreadDetail: Component<ForumThreadDetailProps> = (props) => {
       });
     } catch (error) {
       console.error('Error locking thread:', error);
+    }
+  };
+
+  const handleHomepagePin = async () => {
+    const thread = threadQuery.data?.thread;
+    if (!thread) return;
+
+    try {
+      await homepagePinMutation.mutateAsync({
+        communityId: props.communityId,
+        threadId: props.threadId,
+        categoryId: thread.categoryId,
+        isPinned: !thread.isHomepagePinned,
+        priority: 50, // Default priority
+      });
+    } catch (error) {
+      console.error('Error pinning thread to homepage:', error);
     }
   };
 
@@ -255,6 +274,9 @@ export const ForumThreadDetail: Component<ForumThreadDetailProps> = (props) => {
                     </Button>
                     <Button size="sm" variant="secondary" onClick={handleLockThread}>
                       {thread().isLocked ? t('unlockThreadButton') : t('lockThreadButton')}
+                    </Button>
+                    <Button size="sm" variant="secondary" onClick={handleHomepagePin}>
+                      {thread().isHomepagePinned ? t('unpinFromHomepage') : t('pinToHomepage')}
                     </Button>
                   </Show>
 

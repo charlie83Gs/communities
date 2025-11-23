@@ -1,5 +1,4 @@
-import { Component, createSignal, Show, For } from 'solid-js';
-import { A } from '@solidjs/router';
+import { Component, createSignal, Show, For, onMount } from 'solid-js';
 import { usePools } from '@/hooks/queries/usePools';
 import { PoolCard } from './PoolCard';
 import { Button } from '@/components/common/Button';
@@ -10,17 +9,22 @@ import { poolsListDict } from './PoolsList.i18n';
 interface PoolsListProps {
   communityId: string;
   canCreatePool?: boolean;
-  onCreateClick?: () => void;
+  onCreateClick: () => void;
 }
 
 export const PoolsList: Component<PoolsListProps> = (props) => {
   const t = makeTranslator(poolsListDict, 'poolsList');
 
+  // Mount guard to ensure query only runs after component is fully mounted
+  // This prevents reactive scope issues when component is inside Show/Match
+  const [isMounted, setIsMounted] = createSignal(false);
+  onMount(() => setIsMounted(true));
+
   const [councilFilter, setCouncilFilter] = createSignal<string | undefined>(undefined);
   const [itemFilter, setItemFilter] = createSignal<string | undefined>(undefined);
 
   const pools = usePools(
-    () => props.communityId,
+    () => isMounted() ? props.communityId : undefined,
     () => ({
       councilId: councilFilter(),
       itemId: itemFilter(),
@@ -36,12 +40,10 @@ export const PoolsList: Component<PoolsListProps> = (props) => {
           <p class="text-stone-600 dark:text-stone-400 mt-1">{t('subtitle')}</p>
         </div>
         <Show when={props.canCreatePool}>
-          <A href={`/communities/${props.communityId}/pools/create`}>
-            <Button>
-              <Icon name="plus" size={20} class="mr-2" />
-              {t('createPool')}
-            </Button>
-          </A>
+          <Button onClick={props.onCreateClick}>
+            <Icon name="plus" size={20} class="mr-2" />
+            {t('createPool')}
+          </Button>
         </Show>
       </div>
 
@@ -71,12 +73,10 @@ export const PoolsList: Component<PoolsListProps> = (props) => {
               </h3>
               <p class="text-stone-600 dark:text-stone-400 mb-4">{t('noPoolsDescription')}</p>
               <Show when={props.canCreatePool}>
-                <A href={`/communities/${props.communityId}/pools/create`}>
-                  <Button variant="secondary">
-                    <Icon name="plus" size={20} class="mr-2" />
-                    {t('createFirstPool')}
-                  </Button>
-                </A>
+                <Button variant="secondary" onClick={props.onCreateClick}>
+                  <Icon name="plus" size={20} class="mr-2" />
+                  {t('createFirstPool')}
+                </Button>
               </Show>
             </div>
           }

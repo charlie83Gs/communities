@@ -30,6 +30,11 @@ const mockWealthRepository = {
   listRequestsForWealthByRequester: mock(() => Promise.resolve([])),
   listRequestsByUser: mock(() => Promise.resolve([])),
   listIncomingRequestsByOwner: mock(() => Promise.resolve([])),
+  listPoolDistributionRequests: mock(() =>
+    Promise.resolve(
+      [] as import('../repositories/wealth.repository').PoolDistributionRequestRecord[]
+    )
+  ),
   acceptRequest: mock(() => Promise.resolve({ id: 'req-123', status: 'accepted' as const })),
   markRequestFulfilled: mock(() =>
     Promise.resolve({ id: 'req-123', status: 'fulfilled' as const })
@@ -92,6 +97,8 @@ describe('WealthService', () => {
     (wealthRepository.failRequest as any) = mockWealthRepository.failRequest;
     (wealthRepository.listIncomingRequestsByOwner as any) =
       mockWealthRepository.listIncomingRequestsByOwner;
+    (wealthRepository.listPoolDistributionRequests as any) =
+      mockWealthRepository.listPoolDistributionRequests;
     (communityMemberRepository.getUserRole as any) = mockCommunityMemberRepository.getUserRole;
     (communityMemberRepository.findByUser as any) = mockCommunityMemberRepository.findByUser;
     (appUserRepository.findById as any) = mockAppUserRepository.findById;
@@ -101,7 +108,7 @@ describe('WealthService', () => {
   });
 
   describe('createWealth', () => {
-    it('should create wealth for user with can_create_wealth permission', async () => {
+    it('should create wealth for user with can_view_wealth permission', async () => {
       // Reconfigure mocks for this test
       mockOpenFGAService.checkAccess.mockResolvedValue(true);
       mockWealthRepository.createWealth.mockResolvedValue(testData.wealth);
@@ -123,13 +130,13 @@ describe('WealthService', () => {
         'user-123',
         'community',
         'comm-123',
-        'can_create_wealth'
+        'can_view_wealth'
       );
       expect(mockWealthRepository.createWealth).toHaveBeenCalled();
       expect(mockOpenFGAService.createRelationship).toHaveBeenCalled();
     });
 
-    it('should throw error for user without can_create_wealth permission', async () => {
+    it('should throw error for user without can_view_wealth permission', async () => {
       mockOpenFGAService.checkAccess.mockResolvedValue(false);
 
       await expect(
@@ -143,7 +150,7 @@ describe('WealthService', () => {
           } as any,
           'user-123'
         )
-      ).rejects.toThrow('Forbidden: you do not have permission to create wealth');
+      ).rejects.toThrow('Forbidden: you do not have permission to share wealth');
     });
 
     it('should throw error for timebound without endDate', async () => {
@@ -292,7 +299,7 @@ describe('WealthService', () => {
         'user-456',
         'community',
         'comm-123',
-        'can_view_wealth'
+        'can_create_wealth'
       );
     });
 
@@ -1244,6 +1251,59 @@ describe('WealthService', () => {
       await expect(wealthService.requestWealth('wealth-123', 'user-456', null, 10)).rejects.toThrow(
         'Not enough units available'
       );
+    });
+  });
+
+  describe('listPoolDistributionRequests', () => {
+    const poolDistributionRequest = {
+      id: 'req-pool-123',
+      wealthId: 'wealth-pool-123',
+      requesterId: 'user-123',
+      message: 'Pool distribution',
+      unitsRequested: 5,
+      status: 'fulfilled' as const,
+      createdAt: new Date('2024-01-01'),
+      updatedAt: new Date('2024-01-01'),
+      sourcePoolId: 'pool-123',
+      poolName: 'Test Pool',
+      wealthTitle: 'Distributed Wealth',
+    };
+
+    it('should list pool distribution requests for user', async () => {
+      mockWealthRepository.listPoolDistributionRequests.mockResolvedValue([
+        poolDistributionRequest,
+      ]);
+
+      const result = await wealthService.listPoolDistributionRequests('user-123');
+
+      expect(result).toHaveLength(1);
+      expect(result[0].sourcePoolId).toBe('pool-123');
+      expect(result[0].poolName).toBe('Test Pool');
+      expect(result[0].wealthTitle).toBe('Distributed Wealth');
+      expect(mockWealthRepository.listPoolDistributionRequests).toHaveBeenCalledWith(
+        'user-123',
+        undefined
+      );
+    });
+
+    it('should filter by status', async () => {
+      mockWealthRepository.listPoolDistributionRequests.mockResolvedValue([
+        poolDistributionRequest,
+      ]);
+
+      await wealthService.listPoolDistributionRequests('user-123', ['fulfilled']);
+
+      expect(mockWealthRepository.listPoolDistributionRequests).toHaveBeenCalledWith('user-123', [
+        'fulfilled',
+      ]);
+    });
+
+    it('should return empty array when no pool distributions exist', async () => {
+      mockWealthRepository.listPoolDistributionRequests.mockResolvedValue([]);
+
+      const result = await wealthService.listPoolDistributionRequests('user-123');
+
+      expect(result).toHaveLength(0);
     });
   });
 });

@@ -10,6 +10,7 @@ import {
   validateGetMemberById,
   validateRemoveMember,
   validateUpdateMemberRole,
+  validateUpdateMemberFeatureRoles,
   validateCommunitySearchQuery,
 } from '../validators/community.validator';
 
@@ -62,12 +63,23 @@ router.delete('/:id', verifyToken, communityController.delete);
 /**
  * Members endpoints (admin-only via service check)
  * - GET /:id/members (list members)
+ * - GET /:id/members/:userId (get member by id)
  * - DELETE /:id/members/:userId (remove member)
- * - PUT /:id/members/:userId (update role)
+ * - PUT /:id/members/:userId (update base role)
+ * - PUT /:id/members/:userId/feature-roles (update feature roles)
  */
 router.get('/:id/members', verifyToken, validateGetMembers, communityController.getMembers);
 router.get('/:id/members/:userId', verifyToken, validateGetMemberById, communityController.getMemberById);
 router.delete('/:id/members/:userId', verifyToken, validateRemoveMember, communityController.removeMember);
 router.put('/:id/members/:userId', verifyToken, validateUpdateMemberRole, communityController.updateMemberRole);
+router.put('/:id/members/:userId/feature-roles', verifyToken, validateUpdateMemberFeatureRoles, communityController.updateMemberFeatureRoles);
+
+/**
+ * Stats endpoints (authenticated, requires community membership):
+ * - GET /:id/stats/summary (get community statistics summary)
+ * - GET /:id/stats/pending-actions (get pending actions for user)
+ */
+router.get('/:id/stats/summary', verifyToken, communityController.getStatsSummary);
+router.get('/:id/stats/pending-actions', verifyToken, communityController.getPendingActions);
 
 export default router;

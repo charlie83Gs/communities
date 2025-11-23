@@ -44,6 +44,7 @@ export const WealthCreateForm: Component<WealthCreateFormProps> = (props) => {
   const [isUploading, setIsUploading] = createSignal(false);
 
   const [error, setError] = createSignal<string | null>(null);
+  const [fieldErrors, setFieldErrors] = createSignal<Record<string, string>>({});
 
   // Track whether selected item is a service based on the filter
   // ItemSelector handles the actual item filtering internally
@@ -82,10 +83,15 @@ export const WealthCreateForm: Component<WealthCreateFormProps> = (props) => {
   const onSubmit = async (e: Event) => {
     e.preventDefault();
     setError(null);
+    setFieldErrors({});
 
     // Simple client validation
     if (!title().trim()) {
       setError(t('titleRequired'));
+      return;
+    }
+    if (!description().trim()) {
+      setFieldErrors({ description: t('descriptionRequired') });
       return;
     }
     if (!itemId()) {
@@ -137,7 +143,7 @@ export const WealthCreateForm: Component<WealthCreateFormProps> = (props) => {
     const dto: CreateWealthDto = {
       communityId: props.communityId,
       title: title().trim(),
-      description: description().trim() || undefined,
+      description: description().trim(),
       image: imageFilename || undefined,
       durationType: durationType(),
       endDate: isTimebound() ? new Date(endDate()!).toISOString() : undefined,
@@ -172,6 +178,21 @@ export const WealthCreateForm: Component<WealthCreateFormProps> = (props) => {
       setUploadedFilename(undefined);
       props.onCreated?.();
     } catch (err: any) {
+      // Parse API validation errors
+      if (err?.response?.data?.errors && Array.isArray(err.response.data.errors)) {
+        const errors: Record<string, string> = {};
+        for (const error of err.response.data.errors) {
+          // Extract field name from path (e.g., ['body', 'description'] -> 'description')
+          if (error.path && Array.isArray(error.path) && error.path.length > 1) {
+            const fieldName = error.path[error.path.length - 1];
+            errors[fieldName] = error.message || t('validationError');
+          }
+        }
+        if (Object.keys(errors).length > 0) {
+          setFieldErrors(errors);
+          return;
+        }
+      }
       setError(err?.message ?? t('createFailed'));
     }
   };
@@ -224,12 +245,15 @@ export const WealthCreateForm: Component<WealthCreateFormProps> = (props) => {
           <div class="md:col-span-2">
             <label class="block text-sm font-medium mb-1">{t('descriptionLabel')}</label>
             <textarea
-              class="w-full border rounded px-3 py-2"
+              class={`w-full border rounded px-3 py-2 ${fieldErrors().description ? 'border-red-500' : 'border-stone-300 dark:border-stone-600'}`}
               rows={3}
               placeholder={t('descriptionPlaceholder')}
               value={description()}
               onInput={(e) => setDescription((e.target as HTMLTextAreaElement).value)}
             />
+            <Show when={fieldErrors().description}>
+              <div class="text-red-600 text-sm mt-1">{fieldErrors().description}</div>
+            </Show>
           </div>
 
           <div class="md:col-span-2">

@@ -15,6 +15,8 @@ import {
   validateCreatePost,
   validatePostIdParam,
   validateUpdatePost,
+  validateUpdateHomepagePin,
+  validateCommunityIdParam,
 } from '@api/validators/forum.validator';
 
 const router = Router();
@@ -49,6 +51,15 @@ router.delete(
   '/communities/:communityId/forum/categories/:categoryId',
   validateCategoryIdParam,
   forumController.deleteCategory.bind(forumController)
+);
+
+// ===== HOMEPAGE PINNED THREADS =====
+
+// Get homepage pinned threads (must come before parameterized routes)
+router.get(
+  '/communities/:communityId/forum/homepage-pinned',
+  validateCommunityIdParam,
+  forumController.getHomepagePinnedThreads.bind(forumController)
 );
 
 // ===== THREADS =====
@@ -93,6 +104,13 @@ router.put(
   '/communities/:communityId/forum/threads/:threadId/lock',
   validateUpdateThreadLock,
   forumController.lockThread.bind(forumController)
+);
+
+// Pin/unpin thread to homepage
+router.put(
+  '/communities/:communityId/forum/threads/:threadId/homepage-pin',
+  validateUpdateHomepagePin,
+  forumController.updateHomepagePin.bind(forumController)
 );
 
 // Set best answer

@@ -6,10 +6,11 @@ import type {
   ContributeToPoolRequest,
   ManualDistributeRequest,
   MassDistributeRequest,
-  NeedPreview,
+  MassDistributePreviewResponse,
   PoolInventoryItem,
   PendingContribution,
   PoolDistribution,
+  PoolNeedsResponse,
 } from '@/types/pools.types';
 import type { Wealth } from '@/types/wealth.types';
 
@@ -180,13 +181,24 @@ class PoolsService {
       maxUnitsPerUser?: number;
       selectedUserIds?: string[];
     }
-  ): Promise<NeedPreview[]> {
+  ): Promise<MassDistributePreviewResponse> {
     return apiClient.post(`/api/v1/communities/${communityId}/pools/${poolId}/distributions/mass/preview`, {
       itemId: params.itemId,
       fulfillmentStrategy: params.fulfillmentStrategy,
       maxUnitsPerUser: params.maxUnitsPerUser,
       selectedUserIds: params.selectedUserIds,
     });
+  }
+
+  /**
+   * Get pool needs breakdown
+   * GET /api/communities/:communityId/pools/:poolId/needs
+   */
+  async getPoolNeeds(
+    communityId: string,
+    poolId: string
+  ): Promise<PoolNeedsResponse> {
+    return apiClient.get(`/api/v1/communities/${communityId}/pools/${poolId}/needs`);
   }
 }
 

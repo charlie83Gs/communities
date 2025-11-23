@@ -6,15 +6,143 @@ import { Button } from '@/components/common/Button';
 import { Badge } from '@/components/common/Badge';
 import { Input } from '@/components/common/Input';
 import { useWealthQuery, useWealthRequestMutation, useWealthActionMutations, useUpdateWealthMutation, useWealthRequestsQuery, useManageRequestMutations } from '@/hooks/queries/useWealth';
-import type { WealthRequest } from '@/types/wealth.types';
+import { useNotificationsQuery } from '@/hooks/queries/useNotifications';
+import type { WealthRequest, WealthRequestStatus } from '@/types/wealth.types';
 import { imagesService } from '@/services/api/images.service';
 import { CredentialedImage } from '@/components/common/CredentialedImage';
 import { useAuth } from '@/hooks/useAuth';
 import { WealthEditForm } from '@/components/features/wealth/WealthEditForm';
 import { WealthRequestsPanel } from '@/components/features/wealth/WealthRequestsPanel';
 import { WealthComments } from '@/components/features/wealth/WealthComments';
+import { RequestMessageThread } from '@/components/features/wealth/RequestMessageThread';
+import { ShareCheckoutLink } from '@/components/features/wealth/ShareCheckoutLink';
+import { SkillsBadgeList } from '@/components/features/skills/SkillsBadgeList';
 import { makeTranslator } from '@/i18n/makeTranslator';
 import { wealthDetailsDict } from './[id].i18n';
+
+// Timeline component for request status
+const RequestStatusTimeline: Component<{
+  status: WealthRequestStatus;
+  t: ReturnType<typeof makeTranslator>;
+}> = (props) => {
+  // Define the happy path flow
+  const happyPath: WealthRequestStatus[] = ['pending', 'accepted', 'fulfilled'];
+  // Terminal states that end the flow early
+  const terminalStates: WealthRequestStatus[] = ['rejected', 'cancelled', 'failed'];
+
+  const isTerminal = () => terminalStates.includes(props.status);
+  const currentIndex = () => {
+    if (isTerminal()) {
+      // For terminal states, show where it ended
+      if (props.status === 'rejected') return 0; // Rejected at pending
+      if (props.status === 'cancelled') return 1; // Cancelled can happen at pending or accepted
+      if (props.status === 'failed') return 2; // Failed happens after accepted
+    }
+    return happyPath.indexOf(props.status);
+  };
+
+  const getStepStatus = (index: number, step: WealthRequestStatus) => {
+    const current = currentIndex();
+    if (isTerminal()) {
+      // Show completed steps before the terminal state
+      if (props.status === 'rejected' && index === 0) return 'terminal';
+      if (props.status === 'cancelled' && index <= 1) return index === 1 ? 'terminal' : 'completed';
+      if (props.status === 'failed' && index <= 2) return index === 2 ? 'terminal' : 'completed';
+      return index < current ? 'completed' : 'upcoming';
+    }
+    // For happy path: mark current step and all before as completed
+    // The "current" state shows what's been achieved, not what's pending
+    if (index <= current) return 'completed';
+    return 'upcoming';
+  };
+
+  const getStatusDescription = (status: WealthRequestStatus) => {
+    switch (status) {
+      case 'pending': return props.t('timeline.pendingDesc');
+      case 'accepted': return props.t('timeline.acceptedDesc');
+      case 'fulfilled': return props.t('timeline.fulfilledDesc');
+      case 'rejected': return props.t('timeline.rejectedDesc');
+      case 'cancelled': return props.t('timeline.cancelledDesc');
+      case 'failed': return props.t('timeline.failedDesc');
+      default: return '';
+    }
+  };
+
+  return (
+    <div class="mt-4">
+      <p class="text-sm font-medium text-stone-700 dark:text-stone-300 mb-3">{props.t('timeline.title')}</p>
+      <div class="flex items-center justify-between">
+        {happyPath.map((step, index) => {
+          const stepStatus = getStepStatus(index, step);
+          return (
+            <>
+              {/* Step circle */}
+              <div class="flex flex-col items-center flex-1">
+                <div
+                  class={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
+                    stepStatus === 'completed'
+                      ? 'bg-green-500 text-white'
+                      : stepStatus === 'terminal'
+                      ? 'bg-red-500 text-white'
+                      : 'bg-stone-200 dark:bg-stone-700 text-stone-500 dark:text-stone-400'
+                  }`}
+                >
+                  {stepStatus === 'completed' ? (
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                    </svg>
+                  ) : stepStatus === 'terminal' ? (
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    </svg>
+                  ) : (
+                    index + 1
+                  )}
+                </div>
+                <span
+                  class={`mt-2 text-xs font-medium ${
+                    stepStatus === 'completed'
+                      ? 'text-stone-900 dark:text-stone-100'
+                      : stepStatus === 'terminal'
+                      ? 'text-red-600 dark:text-red-400'
+                      : 'text-stone-500 dark:text-stone-400'
+                  }`}
+                >
+                  {props.t(`timeline.${step}`)}
+                </span>
+              </div>
+              {/* Connector line */}
+              {index < happyPath.length - 1 && (
+                <div
+                  class={`h-0.5 flex-1 mx-2 ${
+                    getStepStatus(index + 1, happyPath[index + 1]) === 'completed' ||
+                    getStepStatus(index, step) === 'completed'
+                      ? 'bg-green-500'
+                      : 'bg-stone-200 dark:bg-stone-700'
+                  }`}
+                />
+              )}
+            </>
+          );
+        })}
+      </div>
+      {/* Show terminal state info if applicable */}
+      <Show when={isTerminal()}>
+        <div class="mt-3 p-2 bg-red-50 dark:bg-red-900/20 rounded border border-red-200 dark:border-red-800">
+          <p class="text-xs text-red-700 dark:text-red-300">
+            <span class="font-medium">{props.t(`timeline.${props.status}`)}:</span> {getStatusDescription(props.status)}
+          </p>
+        </div>
+      </Show>
+      {/* Show current step description */}
+      <Show when={!isTerminal() && props.status !== 'fulfilled'}>
+        <p class="mt-2 text-xs text-stone-500 dark:text-stone-400 text-center">
+          {getStatusDescription(props.status)}
+        </p>
+      </Show>
+    </div>
+  );
+};
 
 const WealthDetailsPage: Component = () => {
   const t = makeTranslator(wealthDetailsDict, 'wealthDetails');
@@ -22,8 +150,40 @@ const WealthDetailsPage: Component = () => {
   const wealthId = () => params.id;
   const wealthQuery = useWealthQuery(wealthId);
   const requestsQuery = useWealthRequestsQuery(wealthId);
-  const { cancel: cancelRequestMutation } = useManageRequestMutations();
+  const { cancel: cancelRequestMutation, confirm: confirmRequestMutation, fail: failRequestMutation } = useManageRequestMutations();
   const currentRequest = createMemo(() => requestsQuery.data?.[0] ?? null);
+
+  // Memo to check if checkout link should be shown
+  const shouldShowCheckoutLink = createMemo(() => {
+    const w = wealthQuery.data;
+    if (!w) return false;
+    return (
+      user()?.id === w.createdBy &&
+      w.status === 'active' &&
+      w.distributionType === 'unit_based' &&
+      typeof w.unitsAvailable === 'number' &&
+      w.unitsAvailable > 0
+    );
+  });
+
+  // Query for unread notifications to show activity indicator
+  const notifications = useNotificationsQuery(
+    () => wealthQuery.data?.communityId,
+    () => true // unreadOnly
+  );
+
+  // Check if current request has unread messages
+  const hasUnreadMessages = createMemo(() => {
+    const request = currentRequest();
+    if (!request) return false;
+    const notifs = notifications.data?.notifications || [];
+    return notifs.some(
+      n => n.type === 'wealth_request_message' &&
+           n.resourceType === 'wealth_request' &&
+           n.resourceId === request.id &&
+           !n.isRead
+    );
+  });
 
   // Request UI state
   const { user } = useAuth();
@@ -46,7 +206,8 @@ const WealthDetailsPage: Component = () => {
         <Show when={wealthQuery.data} fallback={<div class="text-red-600 dark:text-red-400">{t('notFound')}</div>}>
           {(wealth) => (
             <Card class="p-4 space-y-4">
-              <div class="flex items-start justify-between gap-4">
+              <div class="space-y-4">
+                {/* Title and description */}
                 <div>
                   <h1 class="text-2xl font-bold text-stone-900 dark:text-stone-100">{wealth().title}</h1>
                   <Show when={wealth().description}>
@@ -64,42 +225,56 @@ const WealthDetailsPage: Component = () => {
                       {wealth().status}
                     </Badge>
                   </div>
+
+                  {/* Sharer's Skills - Show when viewing as requester (not owner) */}
+                  <Show when={user()?.id !== wealth().createdBy}>
+                    <div class="mt-4 pt-4 border-t border-stone-200 dark:border-stone-700">
+                      <p class="text-sm font-medium text-stone-700 dark:text-stone-300 mb-2">
+                        {t('sharerSkills')}
+                      </p>
+                      <SkillsBadgeList
+                        userId={wealth().createdBy}
+                        communityId={wealth().communityId}
+                        maxSkills={3}
+                      />
+                    </div>
+                  </Show>
                 </div>
-                <div class="flex items-center gap-2">
+
+                {/* Action buttons */}
+                <div class="flex flex-wrap gap-2">
                   <A href={`/communities/${wealth().communityId}`}>
                     <Button variant="secondary">{t('backToCommunity')}</Button>
                   </A>
 
                   <Show when={user()?.id === wealth().createdBy}>
-                    <div class="flex items-center gap-2">
-                      <Show when={wealth().status === 'active'}>
-                        <Button
-                          variant="secondary"
-                          onClick={() => fulfillWealth.mutateAsync(wealth().id)}
-                          disabled={fulfillWealth.isPending}
-                        >
-                          {fulfillWealth.isPending ? t('marking') : t('markFulfilled')}
-                        </Button>
-                      </Show>
-
-                      <Show when={wealth().status === 'active'}>
-                        <Button
-                          variant="danger"
-                          onClick={() => cancelWealth.mutateAsync(wealth().id)}
-                          disabled={cancelWealth.isPending}
-                        >
-                          {cancelWealth.isPending ? t('cancelling') : t('delete')}
-                        </Button>
-                      </Show>
-
+                    <Show when={wealth().status === 'active'}>
                       <Button
                         variant="secondary"
-                        onClick={() => setShowEditModal(true)}
-                        disabled={updateWealthMutation.isPending}
+                        onClick={() => fulfillWealth.mutateAsync(wealth().id)}
+                        disabled={fulfillWealth.isPending}
                       >
-                        Edit
+                        {fulfillWealth.isPending ? t('marking') : t('markFulfilled')}
                       </Button>
-                    </div>
+                    </Show>
+
+                    <Show when={wealth().status === 'active'}>
+                      <Button
+                        variant="danger"
+                        onClick={() => cancelWealth.mutateAsync(wealth().id)}
+                        disabled={cancelWealth.isPending}
+                      >
+                        {cancelWealth.isPending ? t('cancelling') : t('delete')}
+                      </Button>
+                    </Show>
+
+                    <Button
+                      variant="secondary"
+                      onClick={() => setShowEditModal(true)}
+                      disabled={updateWealthMutation.isPending}
+                    >
+                      Edit
+                    </Button>
                   </Show>
                 </div>
               </div>
@@ -205,14 +380,23 @@ const WealthDetailsPage: Component = () => {
                   <Show when={currentRequest()}>
                     <Card class="mt-4">
                       <div class="p-4 space-y-3">
-                        <h3 class="font-semibold text-stone-900 dark:text-stone-100">{t('myRequest')}</h3>
+                        <h3 class="font-semibold text-stone-900 dark:text-stone-100 flex items-center gap-2">
+                          {t('myRequest')}
+                          {/* Activity indicator for unread messages */}
+                          <Show when={hasUnreadMessages()}>
+                            <span class="w-2 h-2 bg-ocean-500 rounded-full animate-pulse" title="New messages" />
+                          </Show>
+                        </h3>
                         <Show when={currentRequest()!.message}>
                           <p class="text-sm text-stone-600 dark:text-stone-300">{currentRequest()!.message}</p>
                         </Show>
                         <Show when={currentRequest()!.unitsRequested != null}>
                           <p class="text-sm text-stone-700 dark:text-stone-300">{t('unitsRequestedPrefix')} {currentRequest()!.unitsRequested}</p>
                         </Show>
-                        <p class="text-xs text-stone-400 dark:text-stone-500">{t('statusPrefix')} {currentRequest()!.status}</p>
+
+                        {/* Status Timeline */}
+                        <RequestStatusTimeline status={currentRequest()!.status} t={t} />
+
                         <Show when={currentRequest()!.status === 'pending'}>
                           <Button
                             variant="secondary"
@@ -226,6 +410,53 @@ const WealthDetailsPage: Component = () => {
                             {t('editRequest')}
                           </Button>
                         </Show>
+
+                        {/* Action buttons for accepted requests */}
+                        <Show when={currentRequest()!.status === 'accepted'}>
+                          <div class="mt-3 p-3 bg-ocean-50 dark:bg-ocean-900/30 rounded border border-ocean-200 dark:border-ocean-800">
+                            <p class="text-sm text-ocean-700 dark:text-ocean-300 mb-3">
+                              {t('acceptedHelperText')}
+                            </p>
+                            <div class="flex flex-wrap gap-2">
+                              <Button
+                                variant="primary"
+                                size="sm"
+                                onClick={async () => {
+                                  await confirmRequestMutation.mutateAsync({
+                                    wealthId: wealth().id,
+                                    requestId: currentRequest()!.id,
+                                  });
+                                }}
+                                disabled={confirmRequestMutation.isPending}
+                              >
+                                {confirmRequestMutation.isPending ? t('confirming') : t('confirmReceipt')}
+                              </Button>
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={async () => {
+                                  await failRequestMutation.mutateAsync({
+                                    wealthId: wealth().id,
+                                    requestId: currentRequest()!.id,
+                                  });
+                                }}
+                                disabled={failRequestMutation.isPending}
+                              >
+                                {failRequestMutation.isPending ? t('marking') : t('markAsFailed')}
+                              </Button>
+                            </div>
+                          </div>
+                        </Show>
+
+                        {/* Message thread for requester */}
+                        <div class="mt-4 pt-4 border-t border-stone-200 dark:border-stone-700">
+                          <RequestMessageThread
+                            wealthId={wealth().id}
+                            requestId={currentRequest()!.id}
+                            wealthOwnerId={wealth().createdBy}
+                            requestStatus={currentRequest()!.status}
+                          />
+                        </div>
                       </div>
                     </Card>
                   </Show>
@@ -260,7 +491,17 @@ const WealthDetailsPage: Component = () => {
 
               {/* Owner-only requests panel moved from ShareCard */}
               <Show when={user()?.id === wealth().createdBy}>
-                <WealthRequestsPanel wealthId={wealth().id} />
+                <WealthRequestsPanel wealthId={wealth().id} wealthOwnerId={wealth().createdBy} communityId={wealth().communityId} />
+              </Show>
+
+              {/* Checkout Link - Owner only, active shares with units */}
+              <Show when={shouldShowCheckoutLink()}>
+                <ShareCheckoutLink
+                  shareId={wealth().id}
+                  shareName={wealth().title}
+                  shareUnitsRemaining={wealth().unitsAvailable!}
+                  itemUnit={wealth().item?.kind === 'service' ? 'hours' : 'units'}
+                />
               </Show>
 
               {/* Edit modal */}

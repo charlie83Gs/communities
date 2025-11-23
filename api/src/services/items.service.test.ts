@@ -19,6 +19,7 @@ const mockItem: Item = {
   kind: 'object',
   wealthValue: '5.00',
   contributionMetadata: null,
+  relatedSkills: null,
   isDefault: false,
   createdBy: 'user-123',
   createdAt: new Date('2024-01-01'),
@@ -591,8 +592,8 @@ describe('ItemsService', () => {
       const result = await itemsService.ensureDefaultItem('comm-123', 'user-123');
 
       expect(result).toBeDefined();
-      // Should create 400 default items (39 beverages + 72 produce + 124 objects + 94 food + 71 services)
-      expect(mockItemsRepository.create).toHaveBeenCalledTimes(400);
+      // Should create 401 default items (39 beverages + 72 produce + 125 objects + 94 food + 71 services)
+      expect(mockItemsRepository.create).toHaveBeenCalledTimes(401);
 
       // Verify items have translations structure
       const calls = mockItemsRepository.create.mock.calls as any[];
@@ -616,8 +617,8 @@ describe('ItemsService', () => {
 
       await itemsService.ensureDefaultItem('comm-123', 'user-123');
 
-      // Should create only 399 items (one already existed)
-      expect(mockItemsRepository.create).toHaveBeenCalledTimes(399);
+      // Should create only 400 items (one already existed)
+      expect(mockItemsRepository.create).toHaveBeenCalledTimes(400);
     });
 
     it('should return first default item', async () => {

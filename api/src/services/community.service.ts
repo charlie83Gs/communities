@@ -7,7 +7,14 @@ import { itemsService } from './items.service';
 import { openFGAService } from './openfga.service';
 import { resolveTrustRequirement } from '../utils/trustResolver';
 import { AppError } from '../utils/errors';
-import { CreateCommunityDto, UpdateCommunityDto, Community } from '../types/community.types';
+import {
+  CreateCommunityDto,
+  UpdateCommunityDto,
+  Community,
+  CommunityStatsSummary,
+  CommunityPendingActions,
+} from '../types/community.types';
+import { FeatureRole } from '../config/openfga.constants';
 import logger from '../utils/logger';
 
 async function isCommunityAdmin(userId: string, communityId: string): Promise<boolean> {
@@ -631,6 +638,84 @@ export class CommunityService {
     );
   }
 
+  async updateMemberFeatureRoles(
+    communityId: string,
+    targetUserId: string,
+    roles: FeatureRole[],
+    requesterId: string
+  ): Promise<void> {
+    logger.info(
+      `[CommunityService updateMemberFeatureRoles] Request - communityId: ${communityId}, targetUserId: ${targetUserId}, requesterId: ${requesterId}, roles: [${roles.join(', ')}]`
+    );
+
+    // Check requester is admin
+    const isAdmin = await isCommunityAdmin(requesterId, communityId);
+    if (!isAdmin) {
+      throw new AppError('Forbidden: only community admins can update member feature roles', 403);
+    }
+
+    // Check community exists
+    const community = await communityRepository.findById(communityId);
+    if (!community) {
+      throw new AppError('Community not found', 404);
+    }
+
+    // Check target user is a member
+    const targetRole = await communityMemberRepository.getUserRole(communityId, targetUserId);
+    if (!targetRole) {
+      throw new AppError('User is not a member of this community', 404);
+    }
+
+    // Get current feature roles for user
+    const currentRoles = await openFGAService.getUserFeatureRoles(targetUserId, communityId);
+
+    // Determine roles to revoke (in current but not in new)
+    const rolesToRevoke = currentRoles.filter((r) => !roles.includes(r));
+
+    // Determine roles to assign (in new but not in current)
+    const rolesToAssign = roles.filter((r) => !currentRoles.includes(r));
+
+    logger.debug(
+      `[CommunityService updateMemberFeatureRoles] Current roles: [${currentRoles.join(', ')}], roles to revoke: [${rolesToRevoke.join(', ')}], roles to assign: [${rolesToAssign.join(', ')}]`
+    );
+
+    // Revoke roles not in the new array
+    for (const role of rolesToRevoke) {
+      try {
+        await openFGAService.revokeFeatureRole(targetUserId, communityId, role);
+        logger.debug(
+          `[CommunityService updateMemberFeatureRoles] Revoked role ${role} from user ${targetUserId}`
+        );
+      } catch (error) {
+        logger.error(
+          `[CommunityService updateMemberFeatureRoles] Failed to revoke role ${role} from user ${targetUserId}:`,
+          error
+        );
+        throw new AppError(`Failed to revoke feature role: ${role}`, 500);
+      }
+    }
+
+    // Assign roles in the new array that aren't already assigned
+    for (const role of rolesToAssign) {
+      try {
+        await openFGAService.assignFeatureRole(targetUserId, communityId, role);
+        logger.debug(
+          `[CommunityService updateMemberFeatureRoles] Assigned role ${role} to user ${targetUserId}`
+        );
+      } catch (error) {
+        logger.error(
+          `[CommunityService updateMemberFeatureRoles] Failed to assign role ${role} to user ${targetUserId}:`,
+          error
+        );
+        throw new AppError(`Failed to assign feature role: ${role}`, 500);
+      }
+    }
+
+    logger.info(
+      `[CommunityService updateMemberFeatureRoles] Successfully updated feature roles for user ${targetUserId} in community ${communityId}. Revoked: ${rolesToRevoke.length}, assigned: ${rolesToAssign.length}`
+    );
+  }
+
   async getUserRoleInCommunity(
     communityId: string,
     userId: string,
@@ -660,6 +745,58 @@ export class CommunityService {
       email: user?.email,
       profileImage: user?.profileImage,
     };
+  }
+
+  async getStatsSummary(communityId: string, userId: string): Promise<CommunityStatsSummary> {
+    logger.debug(
+      `[CommunityService getStatsSummary] Request for communityId: ${communityId}, userId: ${userId}`
+    );
+
+    // Verify community exists
+    const community = await communityRepository.findById(communityId);
+    if (!community) {
+      throw new AppError('Community not found', 404);
+    }
+
+    // Verify user is a member
+    const role = await communityMemberRepository.getUserRole(communityId, userId);
+    if (!role) {
+      throw new AppError('Forbidden: you must be a member of this community', 403);
+    }
+
+    const stats = await communityRepository.getStatsSummary(communityId);
+
+    logger.debug(
+      `[CommunityService getStatsSummary] Success for communityId: ${communityId}, stats: ${JSON.stringify(stats)}`
+    );
+
+    return stats;
+  }
+
+  async getPendingActions(communityId: string, userId: string): Promise<CommunityPendingActions> {
+    logger.debug(
+      `[CommunityService getPendingActions] Request for communityId: ${communityId}, userId: ${userId}`
+    );
+
+    // Verify community exists
+    const community = await communityRepository.findById(communityId);
+    if (!community) {
+      throw new AppError('Community not found', 404);
+    }
+
+    // Verify user is a member
+    const role = await communityMemberRepository.getUserRole(communityId, userId);
+    if (!role) {
+      throw new AppError('Forbidden: you must be a member of this community', 403);
+    }
+
+    const pendingActions = await communityRepository.getPendingActionsCounts(communityId, userId);
+
+    logger.debug(
+      `[CommunityService getPendingActions] Success for communityId: ${communityId}, pendingActions: ${JSON.stringify(pendingActions)}`
+    );
+
+    return pendingActions;
   }
 }
 

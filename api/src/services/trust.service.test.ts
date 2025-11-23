@@ -18,7 +18,7 @@ const mockCommunityRepository = {
       name: 'Test Community',
       minTrustToAwardTrust: { type: 'number', value: 15 },
       minTrustForWealth: { type: 'number', value: 10 },
-      minTrustForDisputes: { type: 'number', value: 20 },
+      minTrustForDisputeVisibility: { type: 'number', value: 20 },
       minTrustForPolls: { type: 'number', value: 15 },
     })
   ),
@@ -258,7 +258,7 @@ describe('TrustService', () => {
         name: 'Test Community',
         minTrustToAwardTrust: { type: 'number', value: 15 },
         minTrustForWealth: { type: 'number', value: 10 },
-        minTrustForDisputes: { type: 'number', value: 20 },
+        minTrustForDisputeVisibility: { type: 'number', value: 20 },
         minTrustForPolls: { type: 'number', value: 15 },
       } as any);
       mockOpenFGAService.checkAccess.mockResolvedValue(true);
@@ -370,7 +370,7 @@ describe('TrustService', () => {
         minTrustToAwardTrust: { type: 'number', value: 15 },
         minTrustForWealth: { type: 'number', value: 10 },
         minTrustForPolls: { type: 'number', value: 15 },
-        minTrustForDisputes: { type: 'number', value: 20 },
+        minTrustForDisputeVisibility: { type: 'number', value: 20 },
         minTrustForPoolCreation: { type: 'number', value: 20 },
         minTrustForCouncilCreation: { type: 'number', value: 25 },
         minTrustForForumModeration: { type: 'number', value: 30 },
@@ -398,7 +398,7 @@ describe('TrustService', () => {
         trust_wealth_creator: 10,
         trust_poll_viewer: 0,
         trust_poll_creator: 15,
-        trust_dispute_viewer: 0,
+        trust_dispute_viewer: 20,
         trust_dispute_handler: 20,
         trust_pool_viewer: 0,
         trust_pool_creator: 20,
@@ -415,6 +415,7 @@ describe('TrustService', () => {
         trust_needs_viewer: 0,
         trust_needs_publisher: 5,
         trust_analytics_viewer: 20,
+        trust_skill_endorser: 10,
       } as any);
       expect(mockTrustHistoryRepository.logAction).toHaveBeenCalled();
     });
@@ -473,7 +474,7 @@ describe('TrustService', () => {
         minTrustToAwardTrust: { type: 'number', value: 15 },
         minTrustForWealth: { type: 'number', value: 10 },
         minTrustForPolls: { type: 'number', value: 15 },
-        minTrustForDisputes: { type: 'number', value: 20 },
+        minTrustForDisputeVisibility: { type: 'number', value: 20 },
         minTrustForPoolCreation: { type: 'number', value: 20 },
         minTrustForCouncilCreation: { type: 'number', value: 25 },
         minTrustForForumModeration: { type: 'number', value: 30 },
@@ -501,7 +502,7 @@ describe('TrustService', () => {
         trust_wealth_creator: 10,
         trust_poll_viewer: 0,
         trust_poll_creator: 15,
-        trust_dispute_viewer: 0,
+        trust_dispute_viewer: 20,
         trust_dispute_handler: 20,
         trust_pool_viewer: 0,
         trust_pool_creator: 20,
@@ -518,6 +519,7 @@ describe('TrustService', () => {
         trust_needs_viewer: 0,
         trust_needs_publisher: 5,
         trust_analytics_viewer: 20,
+        trust_skill_endorser: 10,
       } as any);
       expect(mockTrustHistoryRepository.logAction).toHaveBeenCalled();
     });
@@ -620,7 +622,7 @@ describe('TrustService', () => {
         minTrustToAwardTrust: { type: 'number', value: 15 },
         minTrustForWealth: { type: 'number', value: 10 },
         minTrustForPolls: { type: 'number', value: 15 },
-        minTrustForDisputes: { type: 'number', value: 20 },
+        minTrustForDisputeVisibility: { type: 'number', value: 20 },
         minTrustForPoolCreation: { type: 'number', value: 20 },
         minTrustForCouncilCreation: { type: 'number', value: 25 },
         minTrustForForumModeration: { type: 'number', value: 30 },
@@ -653,7 +655,7 @@ describe('TrustService', () => {
         trust_wealth_creator: 10,
         trust_poll_viewer: 0,
         trust_poll_creator: 15,
-        trust_dispute_viewer: 0,
+        trust_dispute_viewer: 20,
         trust_dispute_handler: 20,
         trust_pool_viewer: 0,
         trust_pool_creator: 20,
@@ -670,6 +672,7 @@ describe('TrustService', () => {
         trust_needs_viewer: 0,
         trust_needs_publisher: 5,
         trust_analytics_viewer: 20,
+        trust_skill_endorser: 10,
       } as any);
       expect(mockTrustHistoryRepository.logAction).toHaveBeenCalled();
     });
@@ -695,7 +698,7 @@ describe('TrustService', () => {
         minTrustToAwardTrust: { type: 'number', value: 15 },
         minTrustForWealth: { type: 'number', value: 10 },
         minTrustForPolls: { type: 'number', value: 15 },
-        minTrustForDisputes: { type: 'number', value: 20 },
+        minTrustForDisputeVisibility: { type: 'number', value: 20 },
         minTrustForPoolCreation: { type: 'number', value: 20 },
         minTrustForCouncilCreation: { type: 'number', value: 25 },
         minTrustForForumModeration: { type: 'number', value: 30 },
@@ -778,7 +781,7 @@ describe('TrustService', () => {
         minTrustToAwardTrust: { type: 'number', value: 15 },
         minTrustForWealth: { type: 'number', value: 10 },
         minTrustForPolls: { type: 'number', value: 15 },
-        minTrustForDisputes: { type: 'number', value: 20 },
+        minTrustForDisputeVisibility: { type: 'number', value: 20 },
         minTrustForPoolCreation: { type: 'number', value: 20 },
         minTrustForCouncilCreation: { type: 'number', value: 25 },
         minTrustForForumModeration: { type: 'number', value: 30 },
@@ -806,7 +809,7 @@ describe('TrustService', () => {
         trust_wealth_creator: 10,
         trust_poll_viewer: 0,
         trust_poll_creator: 15,
-        trust_dispute_viewer: 0,
+        trust_dispute_viewer: 20,
         trust_dispute_handler: 20,
         trust_pool_viewer: 0,
         trust_pool_creator: 20,
@@ -823,6 +826,7 @@ describe('TrustService', () => {
         trust_needs_viewer: 0,
         trust_needs_publisher: 5,
         trust_analytics_viewer: 20,
+        trust_skill_endorser: 10,
       } as any);
       expect(mockTrustHistoryRepository.logAction).toHaveBeenCalled();
     });
@@ -1045,7 +1049,7 @@ describe('TrustService', () => {
       mockCommunityRepository.findById.mockResolvedValue({
         id: 'comm-123',
         name: 'Test Community',
-        minTrustForDisputes: { type: 'number', value: 20 },
+        minTrustForDisputeVisibility: { type: 'number', value: 20 },
       } as any);
 
       const result = await trustService.canHandleDisputes('user-123', 'comm-123');
@@ -1063,7 +1067,7 @@ describe('TrustService', () => {
       mockCommunityRepository.findById.mockResolvedValue({
         id: 'comm-123',
         name: 'Test Community',
-        minTrustForDisputes: { type: 'number', value: 20 },
+        minTrustForDisputeVisibility: { type: 'number', value: 20 },
       } as any);
 
       const result = await trustService.canHandleDisputes('user-123', 'comm-123');
@@ -1081,7 +1085,7 @@ describe('TrustService', () => {
       mockCommunityRepository.findById.mockResolvedValue({
         id: 'comm-123',
         name: 'Test Community',
-        minTrustForDisputes: { type: 'number', value: 20 },
+        minTrustForDisputeVisibility: { type: 'number', value: 20 },
       } as any);
 
       const result = await trustService.canHandleDisputes('user-123', 'comm-123');
@@ -1184,15 +1188,26 @@ describe('TrustService', () => {
       mockCommunityRepository.findById.mockResolvedValue({
         id: 'comm-123',
         name: 'Test Community',
+        minTrustToViewTrust: { type: 'number', value: 0 },
         minTrustToAwardTrust: { type: 'number', value: 15 },
+        minTrustToViewWealth: { type: 'number', value: 0 },
         minTrustForWealth: { type: 'number', value: 10 },
-        minTrustForDisputes: { type: 'number', value: 20 },
+        minTrustToViewItems: { type: 'number', value: 0 },
+        minTrustForItemManagement: { type: 'number', value: 20 },
+        minTrustForDisputeVisibility: { type: 'number', value: 20 },
+        minTrustToViewPolls: { type: 'number', value: 0 },
         minTrustForPolls: { type: 'number', value: 15 },
+        minTrustToViewPools: { type: 'number', value: 0 },
+        minTrustForPoolCreation: { type: 'number', value: 20 },
+        minTrustToViewCouncils: { type: 'number', value: 0 },
+        minTrustForCouncilCreation: { type: 'number', value: 25 },
+        minTrustToViewForum: { type: 'number', value: 0 },
         minTrustForThreadCreation: { type: 'number', value: 10 },
         minTrustForAttachments: { type: 'number', value: 15 },
         minTrustForFlagging: { type: 'number', value: 15 },
         minTrustForFlagReview: { type: 'number', value: 30 },
         minTrustForForumModeration: { type: 'number', value: 30 },
+        minTrustForHealthAnalytics: { type: 'number', value: 20 },
       } as any);
       mockTrustLevelRepository.findByCommunityId.mockResolvedValue([
         { id: 'level-1', name: 'New', threshold: 0, communityId: 'comm-123' } as any,
@@ -1213,7 +1228,7 @@ describe('TrustService', () => {
       const result = await trustService.getTrustTimeline('comm-123', 'user-123');
 
       expect(result.userTrustScore).toBe(15);
-      expect(result.timeline).toHaveLength(6); // 0, 10, 15, 20, 30, 50
+      expect(result.timeline).toHaveLength(7); // 0, 10, 15, 20, 25, 30, 50
 
       // Check first threshold (0)
       expect(result.timeline[0].threshold).toBe(0);

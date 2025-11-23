@@ -258,6 +258,16 @@ export const OBJECTS_OTHER: DefaultItemTemplate[] = [
     wealthValue: 15,
     category: 'Tools',
     translations: {
+      en: { name: 'Tool', description: 'Generic tool' },
+      es: { name: 'Herramienta', description: 'Herramienta genérica' },
+      hi: { name: 'औज़ार', description: 'सामान्य औज़ार' },
+    },
+  },
+  {
+    kind: 'object',
+    wealthValue: 15,
+    category: 'Tools',
+    translations: {
       en: { name: 'Hand Tools', description: 'General hand tools category' },
       es: { name: 'Herramientas Manuales', description: 'Categoría general de herramientas manuales' },
       hi: { name: 'हाथ के औज़ार', description: 'सामान्य हाथ के औज़ार श्रेणी' },

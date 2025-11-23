@@ -133,6 +133,59 @@ class ValueRecognitionController {
 
   /**
    * @swagger
+   * /api/v1/communities/{communityId}/contributions/my:
+   *   get:
+   *     summary: Get current user's contributions
+   *     tags: [Value Recognition]
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: communityId
+   *         required: true
+   *         schema:
+   *           type: string
+   *           format: uuid
+   *       - in: query
+   *         name: page
+   *         schema:
+   *           type: integer
+   *           minimum: 1
+   *           default: 1
+   *       - in: query
+   *         name: limit
+   *         schema:
+   *           type: integer
+   *           minimum: 1
+   *           maximum: 100
+   *           default: 50
+   *     responses:
+   *       200:
+   *         description: List of user's contributions
+   *       401:
+   *         description: Unauthorized
+   */
+  async getMyContributions(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const { communityId } = req.params;
+      const userId = req.user!.id;
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 50;
+
+      const contributions = await valueRecognitionService.getUserContributions(
+        userId,
+        communityId,
+        limit,
+        (page - 1) * limit
+      );
+      return ApiResponse.success(res, contributions);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * @swagger
    * /api/v1/communities/{communityId}/contributions/profile/{userId}:
    *   get:
    *     summary: Get user's contribution profile
@@ -465,13 +518,12 @@ class ValueRecognitionController {
    */
   async getMyPeerRecognition(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      void req.params.communityId; // Placeholder for future implementation
-      void req.user!.id; // Placeholder for future implementation
-      void req.query.limit; // Placeholder for future implementation
+      const { communityId } = req.params;
+      const userId = req.user!.id;
+      const limit = parseInt(req.query.limit as string) || 50;
 
-      // This would be implemented in repository
-      // For now, return placeholder
-      return ApiResponse.success(res, { given: [], received: [] });
+      const result = await valueRecognitionService.getMyPeerRecognition(userId, communityId, limit);
+      return ApiResponse.success(res, result);
     } catch (error) {
       next(error);
     }

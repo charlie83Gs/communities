@@ -16,6 +16,7 @@ const mockOpenFGAService = {
   getAccessibleResourceIds: mock(() => Promise.resolve([])),
   getUserBaseRole: mock(() => Promise.resolve(null)),
   removeBaseRole: mock(() => Promise.resolve()),
+  getUserFeatureRoles: mock(() => Promise.resolve([])),
 };
 
 describe('CommunityMemberRepository', () => {
@@ -29,6 +30,7 @@ describe('CommunityMemberRepository', () => {
     mockOpenFGAService.getAccessibleResourceIds.mockResolvedValue([] as any);
     mockOpenFGAService.getUserBaseRole.mockResolvedValue(null);
     mockOpenFGAService.removeBaseRole.mockResolvedValue(undefined);
+    mockOpenFGAService.getUserFeatureRoles.mockResolvedValue([]);
 
     // Instantiate repository with the per-test mock openFGAService
     communityMemberRepository = new CommunityMemberRepository(mockOpenFGAService as any);

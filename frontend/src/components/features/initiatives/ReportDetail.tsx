@@ -7,6 +7,8 @@ import { initiativesDict } from './initiatives.i18n';
 
 interface ReportDetailProps {
   communityId: string;
+  councilId: string;
+  initiativeId: string;
   report: InitiativeReport;
 }
 
@@ -41,7 +43,12 @@ export const ReportDetail: Component<ReportDetailProps> = (props) => {
       </div>
 
       {/* Comments section */}
-      <ReportComments communityId={props.communityId} reportId={props.report.id} />
+      <ReportComments
+        communityId={props.communityId}
+        councilId={props.councilId}
+        initiativeId={props.initiativeId}
+        reportId={props.report.id}
+      />
     </div>
   );
 };

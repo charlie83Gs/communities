@@ -12,10 +12,11 @@ import type {
   ContributeToPoolRequest,
   ManualDistributeRequest,
   MassDistributeRequest,
-  NeedPreview,
+  MassDistributePreviewResponse,
   PoolInventoryItem,
   PendingContribution,
   PoolDistribution,
+  PoolNeedsResponse,
 } from '@/types/pools.types';
 import type { Wealth } from '@/types/wealth.types';
 
@@ -117,6 +118,22 @@ export const useNeedsPreview = (
     queryKey: ['communities', communityId(), 'pools', poolId(), 'needs-preview', params()],
     queryFn: () => poolsService.previewNeeds(communityId()!, poolId()!, params()!),
     enabled: !!communityId() && !!poolId() && !!params()?.itemId,
+    staleTime: 30_000,
+    gcTime: 5 * 60 * 1000,
+  }));
+};
+
+/**
+ * Query: Get pool needs breakdown (for council members)
+ */
+export const usePoolNeeds = (
+  communityId: Accessor<string | undefined>,
+  poolId: Accessor<string | undefined>
+) => {
+  return createQuery(() => ({
+    queryKey: ['communities', communityId(), 'pools', poolId(), 'needs'],
+    queryFn: () => poolsService.getPoolNeeds(communityId()!, poolId()!),
+    enabled: !!communityId() && !!poolId(),
     staleTime: 30_000,
     gcTime: 5 * 60 * 1000,
   }));

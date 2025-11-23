@@ -13,7 +13,7 @@ type HealthTab = 'wealth' | 'trust';
 const CommunityHealthContent: Component = () => {
   const t = makeTranslator(communityHealthDict, 'communityHealth');
   const { community, isLoading, error } = useCommunity();
-  const [activeTab, setActiveTab] = createSignal<HealthTab>('wealth');
+  const [activeTab, setActiveTab] = createSignal<HealthTab>('trust');
 
   return (
     <div class="min-h-screen bg-gradient-to-br from-ocean-50 via-stone-50 to-sky-100 dark:from-stone-900 dark:via-stone-800 dark:to-ocean-950">
@@ -57,19 +57,6 @@ const CommunityHealthContent: Component = () => {
                 <div class="bg-white dark:bg-stone-800 rounded-lg shadow-md border border-stone-200 dark:border-stone-700 mb-6">
                   <div class="flex border-b border-stone-200 dark:border-stone-700">
                     <button
-                      onClick={() => setActiveTab('wealth')}
-                      class={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
-                        activeTab() === 'wealth'
-                          ? 'text-ocean-600 dark:text-ocean-400 border-b-2 border-ocean-600 dark:border-ocean-400 bg-ocean-50/50 dark:bg-ocean-900/20'
-                          : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-stone-50 dark:hover:bg-stone-700/50'
-                      }`}
-                    >
-                      <div class="flex items-center justify-center gap-2">
-                        <span class="text-lg">💰</span>
-                        <span>{t('wealthTab')}</span>
-                      </div>
-                    </button>
-                    <button
                       onClick={() => setActiveTab('trust')}
                       class={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
                         activeTab() === 'trust'
@@ -80,6 +67,19 @@ const CommunityHealthContent: Component = () => {
                       <div class="flex items-center justify-center gap-2">
                         <span class="text-lg">🤝</span>
                         <span>{t('trustTab')}</span>
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('wealth')}
+                      class={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
+                        activeTab() === 'wealth'
+                          ? 'text-ocean-600 dark:text-ocean-400 border-b-2 border-ocean-600 dark:border-ocean-400 bg-ocean-50/50 dark:bg-ocean-900/20'
+                          : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-stone-50 dark:hover:bg-stone-700/50'
+                      }`}
+                    >
+                      <div class="flex items-center justify-center gap-2">
+                        <span class="text-lg">💰</span>
+                        <span>{t('wealthTab')}</span>
                       </div>
                     </button>
                   </div>

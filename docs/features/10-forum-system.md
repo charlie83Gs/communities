@@ -2,8 +2,8 @@
 id: FT-10
 title: Forum System
 status: partial
-version: 1.0
-last_updated: 2025-01-06
+version: 1.1
+last_updated: 2025-11-18
 related_features: [FT-01, FT-02, FT-03, FT-12]
 ---
 
@@ -85,6 +85,12 @@ Community admins can grant Forum Manager role to trusted members.
 ## Thread Features
 
 - **Pinned Threads**: Stay at top of category (Forum Manager only)
+- **Homepage Pinned Threads**: Threads can be pinned to the community homepage for visibility
+  - Forum Managers can pin up to 5 threads to the homepage
+  - Pinned threads display on the Overview tab with title and message count
+  - Manual priority ordering (higher priority = higher position)
+  - Visibility controlled by `minTrustToViewForum` threshold
+  - Separate from category pinning (threads can be both or either)
 - **Locked Threads**: Visible but cannot receive new posts
 - **Thread Tags**: Optional labels for filtering (e.g., "Question", "Announcement", "Resolved")
 - **Upvotes/Downvotes**: Members can vote on threads and posts
@@ -147,7 +153,7 @@ Trust score affects moderation capabilities and privileges.
 
 ### Implemented
 - `forum_categories` - Forum organization
-- `forum_threads` - Discussion threads (has isPinned, isLocked, bestAnswerPostId)
+- `forum_threads` - Discussion threads (has isPinned, isLocked, bestAnswerPostId, isPinnedToHomepage, homepagePinPriority)
 - `forum_posts` - Thread replies
 - `forum_votes` - Votes on threads/posts
 - `forum_thread_tags` - Thread labels

@@ -5,6 +5,7 @@ import { trustAwards } from '../db/schema/trustAward.schema';
 import { adminTrustGrants } from '../db/schema/adminTrustGrant.schema';
 import { trustAwardRepository } from './trustAward.repository';
 import { adminTrustGrantRepository } from './adminTrustGrant.repository';
+import { calculateTrustDecay } from '../utils/trustDecay';
 
 export class TrustViewRepository {
   private db: any;
@@ -33,17 +34,24 @@ export class TrustViewRepository {
 
   /**
    * Recalculate and update trust points for a user
-   * New formula: COUNT(trust_awards) + COALESCE(admin_trust_grants.trust_amount, 0)
+   * Formula: SUM(decayed peer awards) + admin_trust_grants.trust_amount
+   * Peer awards decay over time (100% for 0-6 months, linear decay to 0% at 12 months)
+   * Admin grants do NOT decay
    */
   async recalculatePoints(communityId: string, userId: string) {
-    // Count peer awards
-    const peerAwards = await trustAwardRepository.countAwardsToUser(communityId, userId);
+    // Get all peer awards with their timestamps for decay calculation
+    const peerAwards = await trustAwardRepository.getEndorsementsWithDecay(communityId, userId);
 
-    // Get admin grant amount (0 if none)
+    // Calculate effective peer trust (sum of decayed values)
+    const effectivePeerTrust = peerAwards.reduce((sum: number, award: { updatedAt: Date }) => {
+      return sum + calculateTrustDecay(award.updatedAt);
+    }, 0);
+
+    // Get admin grant amount (0 if none) - does NOT decay
     const adminGrant = await adminTrustGrantRepository.getGrantAmount(communityId, userId);
 
-    // Calculate total points
-    const totalPoints = peerAwards + adminGrant;
+    // Calculate total points (floor the decayed peer trust)
+    const totalPoints = Math.floor(effectivePeerTrust) + adminGrant;
 
     // Ensure row exists
     await this.upsertZero(communityId, userId);

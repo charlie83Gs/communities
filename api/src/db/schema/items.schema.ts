@@ -22,6 +22,10 @@ export const itemKindEnum = pgEnum('item_kind', ['object', 'service']);
  * - wealthValue is used for BOTH wealth statistics AND contribution recognition
  * - contributionMetadata stores contribution-specific data
  *
+ * ALSO USED FOR SKILLS ENDORSEMENT SUGGESTIONS (FT-19):
+ * - relatedSkills: Array of skill names that relate to this item
+ * - Used for contextual skill endorsement suggestions in wealth flow
+ *
  * Authorization:
  * - Creating/editing/deleting items requires `can_manage_items` permission
  * - Viewing items requires community membership
@@ -57,6 +61,11 @@ export const items = pgTable('items', {
   //   examples: ['Example activity 1', 'Example activity 2']
   // }
   contributionMetadata: jsonb('contribution_metadata'),
+
+  // Related skills for contextual endorsement suggestions (FT-19)
+  // Array of skill names (e.g., ["Carpentry", "Woodworking", "Furniture Making"])
+  // Used to suggest skills when endorsing after wealth transactions
+  relatedSkills: text('related_skills').array(),
 
   // Default items (like "Other") cannot be deleted
   isDefault: boolean('is_default').default(false).notNull(),

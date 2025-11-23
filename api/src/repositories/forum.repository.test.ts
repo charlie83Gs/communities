@@ -25,6 +25,8 @@ const testThread = {
   authorId: 'user-123',
   isPinned: false,
   isLocked: false,
+  isPinnedToHomepage: false,
+  homepagePinPriority: 0,
   bestAnswerPostId: null,
   createdAt: new Date('2024-01-01'),
   updatedAt: new Date('2024-01-01'),

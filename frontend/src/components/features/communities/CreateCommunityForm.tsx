@@ -42,6 +42,17 @@ export const CreateCommunityForm: Component<CreateCommunityFormProps> = (props) 
     minTrustToViewPools: { type: 'number', value: 0 },
     minTrustToViewCouncils: { type: 'number', value: 0 },
     minTrustToViewForum: { type: 'number', value: 0 },
+    // Feature flags - default all to enabled
+    featureFlags: {
+      poolsEnabled: true,
+      needsEnabled: true,
+      pollsEnabled: true,
+      councilsEnabled: true,
+      forumEnabled: true,
+      healthAnalyticsEnabled: true,
+      disputesEnabled: true,
+      contributionsEnabled: true,
+    },
   });
 
   const handleSubmit = (e: SubmitEvent) => {
@@ -62,6 +73,16 @@ export const CreateCommunityForm: Component<CreateCommunityFormProps> = (props) 
     setFormData(prev => ({
       ...prev,
       [key]: { type: 'number', value } as const
+    }));
+  };
+
+  const updateFeatureFlag = (flag: keyof NonNullable<CreateCommunityDto['featureFlags']>, value: boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      featureFlags: {
+        ...prev.featureFlags!,
+        [flag]: value,
+      },
     }));
   };
 
@@ -371,6 +392,118 @@ export const CreateCommunityForm: Component<CreateCommunityFormProps> = (props) 
                 placeholder="30"
               />
             </div>
+          </div>
+        </div>
+      </Collapsible>
+
+      <Collapsible title={t('featureFlagsTitle')} defaultOpen={false} class="mt-6">
+        <div class="space-y-4">
+          <p class="text-sm text-stone-600 dark:text-stone-400 mb-4">{t('featureFlagsDesc')}</p>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {/* Pools */}
+            <label class="flex items-center space-x-3 p-3 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg cursor-pointer hover:bg-stone-100 dark:hover:bg-stone-700/50 transition-colors">
+              <input
+                type="checkbox"
+                checked={formData().featureFlags?.poolsEnabled ?? true}
+                onChange={(e) => updateFeatureFlag('poolsEnabled', e.currentTarget.checked)}
+                class="w-5 h-5 text-ocean-600 bg-stone-100 dark:bg-stone-700 border-stone-300 dark:border-stone-600 rounded focus:ring-2 focus:ring-ocean-500 cursor-pointer"
+              />
+              <span class="text-sm font-medium text-stone-900 dark:text-stone-100">
+                {t('featureFlagsPools')}
+              </span>
+            </label>
+
+            {/* Needs */}
+            <label class="flex items-center space-x-3 p-3 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg cursor-pointer hover:bg-stone-100 dark:hover:bg-stone-700/50 transition-colors">
+              <input
+                type="checkbox"
+                checked={formData().featureFlags?.needsEnabled ?? true}
+                onChange={(e) => updateFeatureFlag('needsEnabled', e.currentTarget.checked)}
+                class="w-5 h-5 text-ocean-600 bg-stone-100 dark:bg-stone-700 border-stone-300 dark:border-stone-600 rounded focus:ring-2 focus:ring-ocean-500 cursor-pointer"
+              />
+              <span class="text-sm font-medium text-stone-900 dark:text-stone-100">
+                {t('featureFlagsNeeds')}
+              </span>
+            </label>
+
+            {/* Polls */}
+            <label class="flex items-center space-x-3 p-3 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg cursor-pointer hover:bg-stone-100 dark:hover:bg-stone-700/50 transition-colors">
+              <input
+                type="checkbox"
+                checked={formData().featureFlags?.pollsEnabled ?? true}
+                onChange={(e) => updateFeatureFlag('pollsEnabled', e.currentTarget.checked)}
+                class="w-5 h-5 text-ocean-600 bg-stone-100 dark:bg-stone-700 border-stone-300 dark:border-stone-600 rounded focus:ring-2 focus:ring-ocean-500 cursor-pointer"
+              />
+              <span class="text-sm font-medium text-stone-900 dark:text-stone-100">
+                {t('featureFlagsPolls')}
+              </span>
+            </label>
+
+            {/* Councils */}
+            <label class="flex items-center space-x-3 p-3 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg cursor-pointer hover:bg-stone-100 dark:hover:bg-stone-700/50 transition-colors">
+              <input
+                type="checkbox"
+                checked={formData().featureFlags?.councilsEnabled ?? true}
+                onChange={(e) => updateFeatureFlag('councilsEnabled', e.currentTarget.checked)}
+                class="w-5 h-5 text-ocean-600 bg-stone-100 dark:bg-stone-700 border-stone-300 dark:border-stone-600 rounded focus:ring-2 focus:ring-ocean-500 cursor-pointer"
+              />
+              <span class="text-sm font-medium text-stone-900 dark:text-stone-100">
+                {t('featureFlagsCouncils')}
+              </span>
+            </label>
+
+            {/* Forum */}
+            <label class="flex items-center space-x-3 p-3 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg cursor-pointer hover:bg-stone-100 dark:hover:bg-stone-700/50 transition-colors">
+              <input
+                type="checkbox"
+                checked={formData().featureFlags?.forumEnabled ?? true}
+                onChange={(e) => updateFeatureFlag('forumEnabled', e.currentTarget.checked)}
+                class="w-5 h-5 text-ocean-600 bg-stone-100 dark:bg-stone-700 border-stone-300 dark:border-stone-600 rounded focus:ring-2 focus:ring-ocean-500 cursor-pointer"
+              />
+              <span class="text-sm font-medium text-stone-900 dark:text-stone-100">
+                {t('featureFlagsForum')}
+              </span>
+            </label>
+
+            {/* Health Analytics */}
+            <label class="flex items-center space-x-3 p-3 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg cursor-pointer hover:bg-stone-100 dark:hover:bg-stone-700/50 transition-colors">
+              <input
+                type="checkbox"
+                checked={formData().featureFlags?.healthAnalyticsEnabled ?? true}
+                onChange={(e) => updateFeatureFlag('healthAnalyticsEnabled', e.currentTarget.checked)}
+                class="w-5 h-5 text-ocean-600 bg-stone-100 dark:bg-stone-700 border-stone-300 dark:border-stone-600 rounded focus:ring-2 focus:ring-ocean-500 cursor-pointer"
+              />
+              <span class="text-sm font-medium text-stone-900 dark:text-stone-100">
+                {t('featureFlagsHealthAnalytics')}
+              </span>
+            </label>
+
+            {/* Disputes */}
+            <label class="flex items-center space-x-3 p-3 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg cursor-pointer hover:bg-stone-100 dark:hover:bg-stone-700/50 transition-colors">
+              <input
+                type="checkbox"
+                checked={formData().featureFlags?.disputesEnabled ?? true}
+                onChange={(e) => updateFeatureFlag('disputesEnabled', e.currentTarget.checked)}
+                class="w-5 h-5 text-ocean-600 bg-stone-100 dark:bg-stone-700 border-stone-300 dark:border-stone-600 rounded focus:ring-2 focus:ring-ocean-500 cursor-pointer"
+              />
+              <span class="text-sm font-medium text-stone-900 dark:text-stone-100">
+                {t('featureFlagsDisputes')}
+              </span>
+            </label>
+
+            {/* Contributions */}
+            <label class="flex items-center space-x-3 p-3 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg cursor-pointer hover:bg-stone-100 dark:hover:bg-stone-700/50 transition-colors">
+              <input
+                type="checkbox"
+                checked={formData().featureFlags?.contributionsEnabled ?? true}
+                onChange={(e) => updateFeatureFlag('contributionsEnabled', e.currentTarget.checked)}
+                class="w-5 h-5 text-ocean-600 bg-stone-100 dark:bg-stone-700 border-stone-300 dark:border-stone-600 rounded focus:ring-2 focus:ring-ocean-500 cursor-pointer"
+              />
+              <span class="text-sm font-medium text-stone-900 dark:text-stone-100">
+                {t('featureFlagsContributions')}
+              </span>
+            </label>
           </div>
         </div>
       </Collapsible>

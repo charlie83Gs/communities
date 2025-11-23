@@ -1,0 +1,15 @@
+{
+  "rules": {
+    "no-restricted-imports": [
+      "error",
+      {
+        "patterns": [
+          {
+            "group": ["@/*", "@api/*", "@config/*", "@db/*", "@services/*", "@repositories/*", "@types/*", "@utils/*"],
+            "message": "Use relative imports instead of path aliases. Path aliases (@/*) don't work in Bun runtime (only during bundling). Use relative paths like '../services/...' instead."
+          }
+        ]
+      }
+    ]
+  }
+}

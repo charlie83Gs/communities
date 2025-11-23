@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { Community, CreateCommunityDto, UpdateCommunityDto, PaginatedCommunities, SearchCommunitiesParams, SearchCommunitiesResponse } from '@/types/community.types';
+import type { Community, CreateCommunityDto, UpdateCommunityDto, PaginatedCommunities, SearchCommunitiesParams, SearchCommunitiesResponse, CommunityStatsSummary, CommunityPendingActions } from '@/types/community.types';
 
 class CommunitiesService {
   private readonly basePath = '/api/v1/communities';
@@ -56,6 +56,20 @@ class CommunitiesService {
         hasMore: (response.page || 1) * (response.limit || params.limit) < (response.total || 0),
       },
     };
+  }
+
+  async getCommunityStatsSummary(communityId: string): Promise<CommunityStatsSummary> {
+    if (!communityId) {
+      throw new Error('Community ID is required');
+    }
+    return apiClient.get(`${this.basePath}/${communityId}/stats/summary`);
+  }
+
+  async getCommunityPendingActions(communityId: string): Promise<CommunityPendingActions> {
+    if (!communityId) {
+      throw new Error('Community ID is required');
+    }
+    return apiClient.get(`${this.basePath}/${communityId}/stats/pending-actions`);
   }
 }
 

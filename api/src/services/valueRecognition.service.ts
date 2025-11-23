@@ -8,6 +8,7 @@ import { itemsRepository } from '../repositories/items.repository';
 import { communityRepository } from '../repositories/community.repository';
 import { wealthRepository } from '../repositories/wealth.repository';
 import { openFGAService } from './openfga.service';
+import { notificationRepository } from '../repositories/notification.repository';
 
 export type LogContributionDto = {
   communityId: string;
@@ -55,14 +56,17 @@ export class ValueRecognitionService {
    */
   async logContribution(dto: LogContributionDto) {
     // 1. Check permission to log contributions
-    const canLog = await openFGAService.checkAccess(
-      dto.contributorId,
-      'community',
-      dto.communityId,
-      'can_log_contributions'
-    );
-    if (!canLog) {
-      throw new AppError('Forbidden: you do not have permission to log contributions', 403);
+    // Skip check for system_logged actions as they are triggered by trusted system events
+    if (dto.sourceType !== 'system_logged') {
+      const canLog = await openFGAService.checkAccess(
+        dto.contributorId,
+        'community',
+        dto.communityId,
+        'can_log_contributions'
+      );
+      if (!canLog) {
+        throw new AppError('Forbidden: you do not have permission to log contributions', 403);
+      }
     }
 
     // 2. Verify item exists and belongs to community
@@ -285,24 +289,28 @@ export class ValueRecognitionService {
       monthYear: currentMonth,
     });
 
-    // 7. Auto-create recognized contribution (auto-verified, sourceType='peer_grant')
-    // Use a generic "Peer Recognition" item or allow communities to configure this
-    // For now, we'll create the contribution with totalValue equal to valueUnits
-    const contribution = await recognizedContributionRepository.create({
-      communityId: dto.communityId,
-      contributorId: dto.toUserId,
-      itemId: '00000000-0000-0000-0000-000000000000', // Placeholder - communities should configure peer recognition item
-      units: '1',
-      valuePerUnit: dto.valueUnits.toString(),
-      totalValue: dto.valueUnits.toString(),
-      description: `Peer recognition from user: ${dto.description}`,
-      verificationStatus: 'auto_verified',
-      sourceType: 'peer_grant',
-      sourceId: grant.id,
-    });
+    // Note: Peer recognition grants are tracked separately from item-based contributions.
+    // The grant record itself serves as the recognition record.
+    // Contribution summary will be updated to include peer recognition value.
 
-    // 8. Update contribution summary
+    // 7. Update contribution summary to include peer recognition
     await this.updateContributionSummary(dto.toUserId, dto.communityId);
+
+    // 9. Create notification for recipient
+    try {
+      await notificationRepository.create({
+        userId: dto.toUserId,
+        communityId: dto.communityId,
+        type: 'peer_recognition',
+        title: 'Peer Recognition Received',
+        message: `You received ${dto.valueUnits} value units of peer recognition`,
+        resourceType: 'peer_recognition',
+        resourceId: grant.id,
+        actorId: dto.fromUserId,
+      });
+    } catch (error) {
+      logger.error('Failed to create peer recognition notification:', error);
+    }
 
     logger.info('Peer recognition granted', {
       grantId: grant.id,
@@ -311,7 +319,7 @@ export class ValueRecognitionService {
       valueUnits: dto.valueUnits,
     });
 
-    return { grant, contribution };
+    return { grant };
   }
 
   /**
@@ -334,14 +342,106 @@ export class ValueRecognitionService {
     );
 
     const totalGranted = parseFloat(monthlyStats.totalGranted || '0');
-    const remaining = Math.max(0, monthlyLimit - totalGranted);
+
+    // Get same-person limit from settings
+    const samePersonLimit = settings.peer_grant_same_person_limit || 3;
+
+    // Get grants to each user this month for the grantsToUserThisMonth map
+    const grantsThisMonth = await peerRecognitionGrantRepository.findByFromUserAndMonth(
+      userId,
+      communityId,
+      currentMonth
+    );
+
+    // Build map of userId -> count
+    const grantsToUserThisMonth: Record<string, number> = {};
+    for (const grant of grantsThisMonth) {
+      const toUserId = grant.toUserId;
+      grantsToUserThisMonth[toUserId] = (grantsToUserThisMonth[toUserId] || 0) + 1;
+    }
 
     return {
       monthlyLimit,
-      used: totalGranted,
-      remaining,
-      currentMonth,
+      samePersonLimit,
+      usedThisMonth: totalGranted,
+      grantsToUserThisMonth,
     };
+  }
+
+  /**
+   * Get my peer recognition grants (given and received)
+   */
+  async getMyPeerRecognition(userId: string, communityId: string, limit = 50) {
+    // Get grants given by this user
+    const givenGrants = await peerRecognitionGrantRepository.findByFromUser(
+      userId,
+      communityId,
+      limit
+    );
+
+    // Get grants received by this user
+    const receivedGrants = await peerRecognitionGrantRepository.findByToUser(
+      userId,
+      communityId,
+      limit
+    );
+
+    return {
+      given: givenGrants.map((g) => ({
+        id: g.grant.id,
+        communityId: g.grant.communityId,
+        fromUserId: g.grant.fromUserId,
+        toUserId: g.grant.toUserId,
+        toUserName: g.toUser?.displayName || g.toUser?.username || 'Unknown',
+        valueUnits: parseFloat(g.grant.valueUnits),
+        description: g.grant.description,
+        createdAt: g.grant.createdAt?.toISOString(),
+      })),
+      received: receivedGrants.map((g) => ({
+        id: g.grant.id,
+        communityId: g.grant.communityId,
+        fromUserId: g.grant.fromUserId,
+        fromUserName: g.fromUser?.displayName || g.fromUser?.username || 'Unknown',
+        toUserId: g.grant.toUserId,
+        valueUnits: parseFloat(g.grant.valueUnits),
+        description: g.grant.description,
+        createdAt: g.grant.createdAt?.toISOString(),
+      })),
+    };
+  }
+
+  /**
+   * Get user's contributions list
+   */
+  async getUserContributions(userId: string, communityId: string, limit = 50, offset = 0) {
+    const contributions = await recognizedContributionRepository.findByContributor(
+      userId,
+      communityId,
+      limit,
+      offset
+    );
+
+    return contributions.map((rc) => ({
+      id: rc.contribution.id,
+      communityId: rc.contribution.communityId,
+      contributorId: rc.contribution.contributorId,
+      itemId: rc.contribution.itemId,
+      itemName: (rc.item?.translations as any)?.en?.name || 'Unknown',
+      itemKind: rc.item?.kind || 'object',
+      units: parseFloat(rc.contribution.units),
+      valuePerUnit: parseFloat(rc.contribution.valuePerUnit),
+      totalValue: parseFloat(rc.contribution.totalValue),
+      description: rc.contribution.description,
+      verificationStatus: rc.contribution.verificationStatus,
+      verifiedBy: rc.contribution.verifiedBy,
+      verifiedAt: rc.contribution.verifiedAt?.toISOString(),
+      beneficiaryIds: rc.contribution.beneficiaryIds,
+      witnessIds: rc.contribution.witnessIds,
+      testimonial: rc.contribution.testimonial,
+      sourceType: rc.contribution.sourceType,
+      sourceId: rc.contribution.sourceId,
+      createdAt: rc.contribution.createdAt?.toISOString(),
+    }));
   }
 
   /**
@@ -385,24 +485,62 @@ export class ValueRecognitionService {
     // 4. Parse item breakdown from summary
     const itemBreakdown = summary?.categoryBreakdown ? JSON.parse(summary.categoryBreakdown) : {};
 
+    // 5. Get peer recognition grants received (testimonials)
+    const peerGrantsReceived = await peerRecognitionGrantRepository.findByToUser(
+      userId,
+      communityId,
+      50
+    );
+    const testimonials = peerGrantsReceived.map((pg) => pg.grant.description).filter(Boolean);
+
+    // Calculate total peer recognition value received (sum of valueUnits)
+    const peerRecognitionValueReceived = peerGrantsReceived.reduce(
+      (sum, pg) => sum + parseFloat(pg.grant.valueUnits),
+      0
+    );
+
+    // 6. Get peer recognition value for 6-month period
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    const peerRecognitionValue6Months =
+      await peerRecognitionGrantRepository.getTotalValueReceivedSince(
+        userId,
+        communityId,
+        sixMonthsAgo
+      );
+
+    // Calculate combined totals (contributions + peer recognition)
+    const contributionValue6Months = parseFloat(summary?.totalValue6Months || '0');
+    const contributionValueLifetime = parseFloat(summary?.totalValueLifetime || '0');
+
     return {
-      summary: {
-        totalValue6Months: summary?.totalValue6Months || '0',
-        totalValueLifetime: summary?.totalValueLifetime || '0',
-        itemBreakdown,
-        lastContributionAt: summary?.lastContributionAt,
-        lastCalculatedAt: summary?.lastCalculatedAt,
-      },
+      userId,
+      totalValue6Months: contributionValue6Months + peerRecognitionValue6Months,
+      totalValueLifetime: contributionValueLifetime + peerRecognitionValueReceived,
+      peerRecognitionValueReceived,
+      categoryBreakdown: itemBreakdown,
       recentContributions: recentContributions.map((rc) => ({
         id: rc.contribution.id,
+        communityId: rc.contribution.communityId,
+        contributorId: rc.contribution.contributorId,
+        itemId: rc.contribution.itemId,
         itemName: (rc.item?.translations as any)?.en?.name || 'Unknown',
-        units: rc.contribution.units,
-        totalValue: rc.contribution.totalValue,
+        itemKind: rc.item?.kind || 'object',
+        units: parseFloat(rc.contribution.units),
+        valuePerUnit: parseFloat(rc.contribution.valuePerUnit),
+        totalValue: parseFloat(rc.contribution.totalValue),
         description: rc.contribution.description,
         verificationStatus: rc.contribution.verificationStatus,
+        verifiedBy: rc.contribution.verifiedBy,
+        verifiedAt: rc.contribution.verifiedAt?.toISOString(),
+        beneficiaryIds: rc.contribution.beneficiaryIds,
+        witnessIds: rc.contribution.witnessIds,
         testimonial: rc.contribution.testimonial,
-        createdAt: rc.contribution.createdAt,
+        sourceType: rc.contribution.sourceType,
+        sourceId: rc.contribution.sourceId,
+        createdAt: rc.contribution.createdAt?.toISOString() || new Date().toISOString(),
       })),
+      testimonials,
     };
   }
 
@@ -475,25 +613,62 @@ export class ValueRecognitionService {
       throw new AppError('Wealth entry not found', 404);
     }
 
-    // 2. Skip if already logged
+    // 2. Check community settings
+    const community = await communityRepository.findById(wealth.communityId);
+    if (!community) {
+      throw new AppError('Community not found', 404);
+    }
+
+    const settings = (community.valueRecognitionSettings as any) || {};
+    if (!settings.enabled || !settings.autoVerifySystemActions) {
+      logger.info('Auto-logging disabled for community', {
+        communityId: wealth.communityId,
+        enabled: settings.enabled,
+        autoVerify: settings.autoVerifySystemActions,
+      });
+      return null;
+    }
+
+    // 3. Skip if already logged
+    // Check if there is a contribution with this sourceId
+    // Note: The repository method findByItemAndDateRange is not precise enough for sourceId check
+    // Ideally we should have findBySourceId, but for now we'll rely on the existing check logic
+    // or assume the caller ensures exactly one call per fulfillment.
+    // Let's improve the check by looking for contributions with this sourceId if possible,
+    // but since we don't have that method exposed easily, we'll stick to the date range check for now
+    // OR better: let's trust the caller (WealthService) to call this only once upon confirmation.
+    // However, to be safe against retries:
     if (wealth.createdAt) {
       const existing = await recognizedContributionRepository.findByItemAndDateRange(
         wealth.itemId,
         new Date(wealth.createdAt.getTime() - 1000),
         new Date(wealth.createdAt.getTime() + 1000)
       );
-      if (existing.length > 0) {
-        return null; // Already logged
+      // Filter by sourceId if available in the returned objects
+      const duplicate = existing.find((rc) => rc.sourceId === wealthId);
+      if (duplicate) {
+        logger.info('Contribution already logged for this wealth', { wealthId });
+        return null;
       }
     }
 
-    // 3. Fetch linked item
+    // 4. Fetch linked item
     const item = await itemsRepository.findById(wealth.itemId);
     if (!item) {
       throw new AppError('Item not found', 404);
     }
 
-    // 4. Create auto-verified contribution
+    // 5. Create auto-verified contribution
+    // Note: We use logContribution which checks permissions.
+    // Since this is a system action, we might need to bypass permission checks or ensure the user has them.
+    // The user here is the contributor (wealth creator).
+    // If they don't have 'can_log_contributions', this might fail.
+    // However, system actions should probably bypass this check or we assume wealth creators have it.
+    // For safety, let's use a direct repository call or ensure logContribution handles system_logged correctly.
+    // Looking at logContribution: it checks 'can_log_contributions'.
+    // We should probably bypass that check for system_logged events, or ensure the role exists.
+    // Let's modify logContribution to skip permission check for system_logged.
+
     const contribution = await this.logContribution({
       communityId: wealth.communityId,
       contributorId: wealth.createdBy,

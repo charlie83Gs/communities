@@ -3,12 +3,14 @@ export const myRequestsDict = {
     myRequests: {
       title: 'My Requests',
       titleTag: 'My Requests',
-      tabs: {
-        myRequests: 'My Wealth Requests',
-        incoming: 'Wealth Requests from Others',
+      sections: {
+        myRequests: 'My Requests',
+        fromPool: 'From Pool',
+        incoming: 'Requests From Others',
       },
       loading: 'Loading your requests...',
       noRequests: 'You have not made any requests yet',
+      noPoolRequests: 'No pool distributions received',
       noIncomingRequests: 'No one has requested your wealth items yet',
       filter: {
         all: 'All',
@@ -36,6 +38,8 @@ export const myRequestsDict = {
         requester: 'Requested by',
         wealthItem: 'Wealth Item',
         viewShare: 'View Wealth',
+        viewPool: 'View Pool',
+        poolName: 'Pool',
         cancel: 'Cancel Request',
         cancelling: 'Cancelling...',
         editRequest: 'Edit Request',
@@ -65,12 +69,14 @@ export const myRequestsDict = {
     myRequests: {
       title: 'Mis Solicitudes',
       titleTag: 'Mis Solicitudes',
-      tabs: {
-        myRequests: 'Mis Solicitudes de Riqueza',
+      sections: {
+        myRequests: 'Mis Solicitudes',
+        fromPool: 'Del Fondo',
         incoming: 'Solicitudes de Otros',
       },
       loading: 'Cargando tus solicitudes...',
       noRequests: 'Aún no has realizado ninguna solicitud',
+      noPoolRequests: 'No se han recibido distribuciones del fondo',
       noIncomingRequests: 'Nadie ha solicitado tus recursos aún',
       filter: {
         all: 'Todas',
@@ -98,6 +104,8 @@ export const myRequestsDict = {
         requester: 'Solicitado por',
         wealthItem: 'Artículo de Riqueza',
         viewShare: 'Ver Compartir',
+        viewPool: 'Ver Fondo',
+        poolName: 'Fondo',
         cancel: 'Cancelar Solicitud',
         cancelling: 'Cancelando...',
         editRequest: 'Editar Solicitud',
@@ -127,12 +135,14 @@ export const myRequestsDict = {
     myRequests: {
       title: 'मेरे अनुरोध',
       titleTag: 'मेरे अनुरोध',
-      tabs: {
-        myRequests: 'मेरे संपत्ति अनुरोध',
+      sections: {
+        myRequests: 'मेरे अनुरोध',
+        fromPool: 'पूल से',
         incoming: 'दूसरों से अनुरोध',
       },
       loading: 'आपके अनुरोध लोड हो रहे हैं...',
       noRequests: 'आपने अभी तक कोई अनुरोध नहीं किया है',
+      noPoolRequests: 'कोई पूल वितरण प्राप्त नहीं हुआ',
       noIncomingRequests: 'अभी तक किसी ने आपकी संपत्ति का अनुरोध नहीं किया है',
       filter: {
         all: 'सभी',
@@ -160,6 +170,8 @@ export const myRequestsDict = {
         requester: 'अनुरोधकर्ता',
         wealthItem: 'संपत्ति वस्तु',
         viewShare: 'साझा देखें',
+        viewPool: 'पूल देखें',
+        poolName: 'पूल',
         cancel: 'अनुरोध रद्द करें',
         cancelling: 'रद्द किया जा रहा है...',
         editRequest: 'अनुरोध संपादित करें',

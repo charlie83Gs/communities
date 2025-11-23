@@ -183,6 +183,9 @@ services:
       NODE_ENV: development
       PORT: 3000
 
+      # Frontend URL for generating checkout links and public-facing URLs
+      FRONTEND_URL: http://localhost:5000
+
       # Database
       DATABASE_URL: postgresql://api_user:api_password@postgres_api:5432/api_db
 
@@ -270,6 +273,25 @@ services:
     depends_on:
       - api
       - keycloak
+    networks:
+      - app_network
+    restart: unless-stopped
+
+  # ============================================================================
+  # Documentation Service
+  # ============================================================================
+
+  docs:
+    build:
+      context: ./user-docs
+      dockerfile: Dockerfile
+    container_name: communities_docs
+    volumes:
+      # Mount docs for hot-reload during development
+      - ./user-docs/docs:/docs/docs:ro
+      - ./user-docs/mkdocs.yml:/docs/mkdocs.yml:ro
+    ports:
+      - "8090:8000"
     networks:
       - app_network
     restart: unless-stopped

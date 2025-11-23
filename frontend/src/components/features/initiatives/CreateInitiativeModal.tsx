@@ -60,17 +60,19 @@ export const CreateInitiativeModal: Component<CreateInitiativeModalProps> = (pro
         },
       });
       handleClose();
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Failed to create initiative:', err);
-      setError('Failed to create initiative. Please try again.');
+      // Extract error message from API response
+      const errorMessage = (err as { message?: string })?.message
+        || 'Failed to create initiative. Please try again.';
+      setError(errorMessage);
     }
   };
 
-  if (!props.isOpen) return null;
-
   return (
-    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-      <div class="bg-white dark:bg-stone-900 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
+    <Show when={props.isOpen}>
+      <div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+        <div class="bg-white dark:bg-stone-900 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
         {/* Header */}
         <div class="sticky top-0 bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-700 p-6 z-10">
           <div class="flex justify-between items-start">
@@ -161,7 +163,8 @@ export const CreateInitiativeModal: Component<CreateInitiativeModalProps> = (pro
             </Button>
           </div>
         </form>
+        </div>
       </div>
-    </div>
+    </Show>
   );
 };

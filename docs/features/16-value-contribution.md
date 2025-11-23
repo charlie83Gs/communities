@@ -2,8 +2,8 @@
 id: FT-16
 title: Community Value Recognition System
 status: partial
-version: 2.1
-last_updated: 2025-01-14
+version: 2.2
+last_updated: 2025-11-19
 related_features: [FT-01, FT-02, FT-03, FT-04, FT-09, FT-13]
 ---
 
@@ -204,21 +204,33 @@ Result:
 
 ## Contribution Recognition Workflow
 
-### 1. Logging Contributions
+### 1. How Contributions Are Created
 
-Members can log contributions through multiple pathways:
+Contributions are created through two primary pathways:
 
-#### **A. System-Verified (Automatic)**
-Actions tracked by the platform are automatically recognized:
+#### **A. Automatic from Wealth Fulfillment (Primary)**
+When a wealth share request is fulfilled, a contribution is automatically created for the sharer:
 ```
-- Tool loans through platform (logged when fulfilled)
-- Space bookings (logged when confirmed)
-- Initiative leadership (logged monthly for active initiatives)
-- Council participation (logged per meeting attended)
-- Resource shares (logged when request fulfilled)
+Automatic Contribution Flow:
+1. Member A shares wealth (e.g., "Garden Tools" for 3 days)
+2. Member B requests to borrow
+3. Member A fulfills the request
+4. System automatically creates contribution for Member A:
+   - Item: Garden Tools
+   - Units: 3 (days)
+   - Value: 3 × wealthValue = total contribution value
+   - Status: auto_verified (system has proof)
+   - Source: wealth_fulfillment
+   - Description: Auto-generated from wealth share
 
-[No verification needed - system has proof of action]
+[No manual logging needed - sharing IS contributing]
 ```
+
+This approach:
+- Reduces friction (no double-entry)
+- Ensures accuracy (system tracks actual fulfillment)
+- Aligns incentives (sharing wealth = building contribution profile)
+- Makes contribution tracking effortless
 
 #### **B. Peer Recognition Grants (Limited, Trust-Based)**
 Any member can grant recognition to another for contributions they witnessed:
@@ -231,55 +243,47 @@ Peer Recognition:
 
 Example:
 Bob grants 10 units to Alice:
-"Alice provided emotional support during my difficult week. 
+"Alice provided emotional support during my difficult week.
 Her presence and listening made a huge difference."
 
 [Trust-based spontaneous appreciation with anti-gaming limits]
 ```
 
-#### **C. Self-Reported (Verification Required)**
-Member logs contribution and requests verification from beneficiary or witness:
-```
-Self-Report Process:
-1. Member logs contribution with details
-2. Identifies beneficiary(ies) or witness(es)
-3. System notifies them for verification
-4. Status: Pending → Verified (green) or Disputed (red)
-5. Value units granted upon verification
+This captures contributions that don't flow through the wealth system:
+- Emotional support
+- Informal help
+- Community building activities
+- Any valuable work not tracked as wealth shares
 
-Example:
-Alice logs: "Provided 3 hours elder care for Bob's mother"
-Bob receives notification to verify
-Bob confirms and adds testimonial
-Alice receives 30 value units (3 hours × 10 units/hour)
+### 2. Verification Status (Simplified)
 
-[Social validation for self-reported work]
-```
+Since self-reported contributions have been removed, verification is greatly simplified:
 
-### 2. Verification Requirements
+#### Auto-Verified (Immediate)
+- Wealth fulfillment (system tracks the transaction)
+- Peer recognition grants (trust-based, within limits)
 
-#### Immediate Verification (No Delay)
-- System-tracked actions (tool loans, meeting attendance, etc.)
-- Peer recognition grants (within monthly limits)
+#### Disputed (Error Correction)
+- Either party can mark a contribution as disputed
+- Used for error correction, not fraud prevention
+- Council or mediator reviews and resolves
 
-#### Required Verification (Pending Until Confirmed)
-- Self-reported care work
-- Self-reported community building
-- Self-reported invisible labor
-- Any contribution without automatic proof
+#### Removed States
+- ~~Pending~~ - No longer needed (no self-reported contributions requiring verification)
+- ~~Verified~~ - No longer needed (everything is auto-verified)
 
-#### Verification Options
-```
-Beneficiary Confirmation:
-"Yes, this happened. Here's what it meant to me."
+**Rationale for Simplification:**
+Since contributions now come only from:
+1. **System-logged wealth fulfillment** - System has proof, auto-verified
+2. **Peer recognition grants** - Trust-gated with limits, auto-verified
 
-Witness Confirmation:
-"I was present and can verify this occurred."
+There's no need for a pending verification queue or manual verification workflow. The dispute mechanism remains for error correction (e.g., wrong quantity, duplicate entry).
 
-Council Review:
-For unclaimed work (cleaning shared spaces, etc.)
-Council can verify contributions without specific beneficiary
-```
+**Planned Removals:**
+- Pending verifications queue and UI
+- Manual verification endpoints
+- Verification reminder settings
+- beneficiary/witness verification workflow
 
 ### 3. Anti-Gaming Mechanisms
 
@@ -561,23 +565,15 @@ While value recognition itself does NOT gate access to features, managing the re
 - Permission: `can_view_contributions`
 - Default trust threshold: 0 (all community members can view)
 
-#### Log Contribution Role
-- Regular: `contribution_logger`
-- Trust-based: `trust_contribution_logger`
-- Permission: `can_log_contributions`
-- Default trust threshold: 5 (established members can log self-reported contributions)
-
 #### Grant Recognition Role
 - Regular: `recognition_granter`
 - Trust-based: `trust_recognition_granter`
 - Permission: `can_grant_peer_recognition`
 - Default trust threshold: 10 (trusted members can grant peer recognition)
 
-#### Verify Contribution Role
-- Regular: `contribution_verifier`
-- Trust-based: `trust_contribution_verifier`
-- Permission: `can_verify_contributions`
-- Default trust threshold: 15 (members can verify contributions for which they were beneficiaries/witnesses)
+#### Removed Roles (No Longer Needed)
+- ~~Log Contribution Role~~ - Self-reported contributions removed; contributions auto-created from wealth fulfillment
+- ~~Verify Contribution Role~~ - No pending verification queue; all contributions auto-verified
 
 #### Manage Recognition System Role (Admin)
 - Regular: `recognition_manager`
@@ -588,11 +584,12 @@ While value recognition itself does NOT gate access to features, managing the re
 
 ```
 can_view_contributions = admin OR contribution_viewer OR trust_contribution_viewer
-can_log_contributions = admin OR contribution_logger OR trust_contribution_logger
 can_grant_peer_recognition = admin OR recognition_granter OR trust_recognition_granter
-can_verify_contributions = admin OR contribution_verifier OR trust_contribution_verifier
 can_manage_recognition = admin OR recognition_manager
+can_dispute_contributions = admin OR community member (for own contributions or those received)
 ```
+
+Note: `can_log_contributions` and `can_verify_contributions` have been removed as self-reported contributions are no longer supported.
 
 ### Trust Thresholds for Recognition System Actions
 
@@ -600,14 +597,14 @@ Stored in `communities` table as JSONB with structure `{ type: 'number', value: 
 
 #### Recognition System Participation
 - `minTrustToViewRecognition` (default: 0) - View contribution profiles and community statistics
-- `minTrustToLogContributions` (default: 5) - Log self-reported contributions
 - `minTrustToGrantPeerRecognition` (default: 10) - Grant peer recognition to others
-- `minTrustToVerifyContributions` (default: 15) - Verify contributions as beneficiary/witness
 - `minTrustForRecognitionManagement` (default: 25) - Manage recognition categories and values (typically admin/council)
-
-#### Special Verification Permissions
-- `minTrustForCouncilVerification` (default: 20) - Council members can verify unclaimed work (e.g., cleaning shared spaces)
 - `minTrustForDisputeReview` (default: 30) - Review and mediate disputed contributions
+
+#### Removed Thresholds (No Longer Needed)
+- ~~`minTrustToLogContributions`~~ - Self-reported contributions removed
+- ~~`minTrustToVerifyContributions`~~ - Manual verification removed
+- ~~`minTrustForCouncilVerification`~~ - No verification queue to process
 
 ### Access Control Rules
 
@@ -616,21 +613,16 @@ Stored in `communities` table as JSONB with structure `{ type: 'number', value: 
 - Member must be viewing their own profile
 - Respects individual privacy settings (members can restrict visibility)
 
-#### Log Self-Reported Contribution
-- Member must have `can_log_contributions` permission
-- Member must meet trust threshold (`minTrustToLogContributions`)
-- Requires beneficiary/witness verification
-
 #### Grant Peer Recognition
 - Member must have `can_grant_peer_recognition` permission
 - Member must meet trust threshold (`minTrustToGrantPeerRecognition`)
 - Subject to monthly limits (configurable per community)
 - Cannot grant to same person more than X times per month (anti-gaming)
 
-#### Verify Contribution
-- Member must have `can_verify_contributions` permission AND
-- Member must be listed as beneficiary OR witness OR
-- Member must be council member with verification permission
+#### Dispute a Contribution
+- Member must be the contributor (disputing their own contribution) OR
+- Member must be the recipient of the contribution (for wealth fulfillment) OR
+- Member must have `can_manage_recognition` permission
 
 #### Adjust Item/Category Values
 - Member must have `can_manage_recognition` permission
@@ -641,6 +633,10 @@ Stored in `communities` table as JSONB with structure `{ type: 'number', value: 
 - Member must have `can_manage_recognition` permission OR
 - Member must have dispute review permission
 - Must meet trust threshold (`minTrustForDisputeReview`)
+
+#### Removed Access Controls
+- ~~Log Self-Reported Contribution~~ - No longer supported
+- ~~Verify Contribution~~ - No verification queue
 
 ### Important Note: Recognition Does NOT Gate Resource Access
 
@@ -704,15 +700,17 @@ Peer Grant Limits:
 - Maximum [3] grants to same person per month
 - Must include description
 
-Verification Settings:
-- Require verification for self-reported contributions: ☑ Yes
-- Auto-verify system-tracked actions: ☑ Yes
-- Allow council verification for unclaimed work: ☑ Yes
-- Verification reminder after: [7] days
+Dispute Settings:
+- Allow disputes for error correction: ☑ Yes
 
 Soft Reciprocity Nudges:
 ☐ Suggest contribution before high-value requests (optional)
 ☐ Show contribution opportunities to new members
+
+Removed Settings (No Longer Needed):
+- Verification settings (no verification queue)
+- Verification reminder days
+- Council verification settings
 
 [Community configures based on their values and needs]
 ```
@@ -761,17 +759,16 @@ CREATE TABLE recognized_contributions (
 
   description TEXT NOT NULL,
 
-  -- Verification
-  verification_status VARCHAR(20) DEFAULT 'pending',
-    -- 'auto_verified', 'pending', 'verified', 'disputed'
-  verified_by UUID REFERENCES app_users(id),
-  verified_at TIMESTAMP,
+  -- Verification (Simplified)
+  verification_status VARCHAR(20) DEFAULT 'auto_verified',
+    -- 'auto_verified', 'disputed' (pending/verified removed)
+  -- Note: verified_by and verified_at no longer needed since everything is auto-verified
 
-  -- Related parties
-  beneficiary_ids UUID[], -- Array of users who benefited
-  witness_ids UUID[], -- Array of users who can verify
+  -- Related parties (optional)
+  beneficiary_ids UUID[], -- Array of users who benefited (for reference)
+  witness_ids UUID[], -- Array of users who witnessed (for reference)
 
-  testimonial TEXT, -- From beneficiary/witness
+  testimonial TEXT, -- From peer recognition description
 
   -- Source tracking
   source_type VARCHAR(50),
@@ -883,34 +880,37 @@ ALTER TABLE communities ADD COLUMN value_recognition_settings JSONB DEFAULT '{
   "allow_peer_grants": true,
   "peer_grant_monthly_limit": 20,
   "peer_grant_same_person_limit": 3,
-  "require_verification": true,
-  "auto_verify_system_actions": true,
-  "allow_council_verification": true,
-  "verification_reminder_days": 7,
   "soft_reciprocity_nudges": false
 }'::jsonb;
+
+-- Removed settings (no longer needed):
+-- "require_verification": true,        -- All contributions auto-verified
+-- "auto_verify_system_actions": true,  -- Default behavior now
+-- "allow_council_verification": true,  -- No verification queue
+-- "verification_reminder_days": 7,     -- No pending verifications
 ```
 
 ## Implementation Phases
 
-### Phase 1: Foundation (MVP) - **IN PROGRESS**
+### Phase 1: Foundation (MVP) - **COMPLETED**
 - [x] Database schema (integrated with items table)
 - [x] Database migration created
 - [x] Repository layer (contribution repository with items joins)
-- [x] Frontend components (log contributions, view profile, peer recognition)
-- [x] Frontend integration with ItemSelector
-- [ ] Service layer (business logic, OpenFGA permissions)
-- [ ] Validators (request validation)
-- [ ] Controllers (HTTP endpoints)
-- [ ] Routes (with OpenFGA authorization)
-- [ ] Self-reported contributions with beneficiary verification
-- [ ] Basic individual recognition display (quantitative + testimonials)
-- [ ] System auto-verification for tracked actions
+- [x] Frontend components (view profile, peer recognition, contribution logs)
+- [x] Frontend integration with existing queries
+- [x] Service layer (business logic)
+- [x] Validators (request validation)
+- [x] Controllers (HTTP endpoints)
+- [x] Routes (with authorization)
+- [x] Auto-create contributions from wealth fulfillment
+- [x] Basic individual recognition display (quantitative)
+- [x] Combined log view (contributions + peer recognition received)
 - [ ] Tests (unit and integration)
 
-### Phase 2: Peer Recognition
+### Phase 2: Peer Recognition - **IN PROGRESS**
 - [x] Peer recognition UI (frontend completed)
-- [ ] Peer recognition backend (with monthly limits)
+- [x] Peer recognition backend (with monthly limits)
+- [x] Notification on peer recognition received
 - [ ] Aggregate community statistics
 - [ ] Anti-gaming pattern detection (flags only, no penalties)
 
@@ -921,10 +921,20 @@ ALTER TABLE communities ADD COLUMN value_recognition_settings JSONB DEFAULT '{
 - [ ] Privacy controls for individual profiles
 
 ### Phase 4: Integration & Polish
-- [ ] Auto-log contributions from wealth fulfillment
 - [ ] Soft reciprocity nudges (optional)
 - [ ] Trust-contribution correlation insights
 - [ ] Comprehensive documentation for communities
+
+### Simplified/Removed Features
+The following features were removed to simplify the system:
+- ❌ Self-reported contributions (replaced by auto-creation from wealth fulfillment)
+- ❌ Pending verification queue (no pending state needed)
+- ❌ Manual verification workflow (all contributions auto-verified)
+- ❌ Verification reminders (no pending verifications)
+- ❌ Council verification for unclaimed work (no verification queue)
+
+Remaining for error correction:
+- ✓ Dispute mechanism (for correcting errors in auto-created contributions)
 
 ## Usage Guidelines for Communities
 

@@ -50,13 +50,16 @@ cp .env.example .env
 ### 3. Start All Services with Docker Compose
 
 ```bash
-# Start all services (databases, Keycloak, OpenFGA, API, and Frontend)
+# Option 1: Using the dev helper script (recommended)
+./scripts/dev.sh start
+
+# Option 2: Direct docker compose
 docker compose up -d
 
 # View logs
-docker compose logs -f
-
-# View logs for specific service
+./scripts/dev.sh logs-api      # Watch API logs
+./scripts/dev.sh logs-frontend # Watch frontend logs
+# or
 docker compose logs -f api
 docker compose logs -f frontend
 ```
@@ -265,11 +268,109 @@ See the [infrastructure/README.md](./infrastructure/README.md) for full deployme
 - [infrastructure/QUICK_START.md](./infrastructure/QUICK_START.md) - Quick reference guide
 - [infrastructure/TILT.md](./infrastructure/TILT.md) - Local development with Tilt
 
+## Development Scripts
+
+We provide helper scripts for common Docker operations:
+
+```bash
+# Quick development commands
+./scripts/dev.sh start        # Start all services
+./scripts/dev.sh logs-api     # Watch API logs
+./scripts/dev.sh restart-api  # Restart API
+./scripts/dev.sh clean        # Clean node_modules volumes
+
+# See all available commands
+./scripts/dev.sh help
+```
+
+See [scripts/README.md](./scripts/README.md) for complete documentation.
+
+## Troubleshooting
+
+### "Cannot find module" Error
+
+**Symptom:** API fails to start with `Cannot find module '@/...'` or similar errors
+
+**Cause:** Stale node_modules in Docker volume after package updates
+
+**Solution:**
+
+```bash
+# Quick fix: Clean node_modules volumes and rebuild
+./scripts/docker-clean.sh -v -r
+
+# Or using the dev helper
+./scripts/dev.sh clean
+```
+
+### Container Won't Start After Dependency Update
+
+**Symptom:** Container starts but crashes after adding new packages
+
+**Cause:** Docker volume out of sync with package.json
+
+**Solution:**
+
+```bash
+# Clean volumes and rebuild
+./scripts/docker-clean.sh -v -r
+```
+
+### Need Fresh Database
+
+**Symptom:** Want to reset all data to start fresh
+
+**Solution:**
+
+```bash
+# ⚠️ WARNING: This destroys all local data
+./scripts/docker-clean.sh -a -r
+```
+
+### Hot Reload Not Working
+
+**Symptom:** Code changes don't trigger restart
+
+**Solution:**
+
+```bash
+# Check if volumes are properly mounted
+docker compose ps
+
+# Restart the affected service
+./scripts/dev.sh restart-api
+# or
+./scripts/dev.sh restart-frontend
+```
+
+### Port Already in Use
+
+**Symptom:** `Error: bind: address already in use`
+
+**Solution:**
+
+```bash
+# Check what's using the port (example for 3000)
+lsof -i :3000
+
+# Stop existing containers
+docker compose down
+
+# Start again
+docker compose up -d
+```
+
+For more troubleshooting help, see:
+- [scripts/README.md](./scripts/README.md) - Development scripts and common issues
+- [API README](./api/README.md) - API-specific troubleshooting
+- [Frontend README](./frontend/README.md) - Frontend-specific troubleshooting
+
 ## Documentation
 
 For detailed system documentation, see:
 - [CLAUDE.md](./CLAUDE.md) - Full system overview and architecture
 - [KEYCLOAK_MIGRATION_PLAN.md](./KEYCLOAK_MIGRATION_PLAN.md) - Authentication setup
+- [scripts/README.md](./scripts/README.md) - Development scripts and workflow
 
 ## License
 

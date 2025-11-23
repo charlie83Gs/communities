@@ -1,13 +1,10 @@
 import { apiClient } from './client';
 import type {
   Need,
-  CouncilNeed,
   NeedStatus,
   NeedPriority,
   CreateNeedDto,
   UpdateNeedDto,
-  CreateCouncilNeedDto,
-  UpdateCouncilNeedDto,
   CommunityNeedsAggregation,
 } from '@/types/needs.types';
 
@@ -72,59 +69,6 @@ class NeedsService {
    */
   async getAggregatedNeeds(communityId: string): Promise<CommunityNeedsAggregation> {
     return apiClient.get(`${this.basePath}/aggregated?communityId=${communityId}`);
-  }
-
-  // ========================================
-  // COUNCIL NEEDS
-  // ========================================
-
-  /**
-   * List council needs with optional filters
-   */
-  async listCouncilNeeds(params?: {
-    communityId?: string;
-    councilId?: string;
-    status?: NeedStatus;
-    priority?: NeedPriority;
-    isRecurring?: boolean;
-  }): Promise<CouncilNeed[]> {
-    const search = new URLSearchParams();
-    if (params?.communityId) search.set('communityId', params.communityId);
-    if (params?.councilId) search.set('councilId', params.councilId);
-    if (params?.status) search.set('status', params.status);
-    if (params?.priority) search.set('priority', params.priority);
-    if (params?.isRecurring !== undefined)
-      search.set('isRecurring', String(params.isRecurring));
-    const qs = search.toString();
-    return apiClient.get(`${this.basePath}/council${qs ? `?${qs}` : ''}`);
-  }
-
-  /**
-   * Get a specific council need by ID
-   */
-  async getCouncilNeed(id: string): Promise<CouncilNeed> {
-    return apiClient.get(`${this.basePath}/council/${id}`);
-  }
-
-  /**
-   * Create a new council need (council managers only)
-   */
-  async createCouncilNeed(dto: CreateCouncilNeedDto): Promise<CouncilNeed> {
-    return apiClient.post(`${this.basePath}/council`, dto);
-  }
-
-  /**
-   * Update a council need (council managers only)
-   */
-  async updateCouncilNeed(id: string, dto: UpdateCouncilNeedDto): Promise<CouncilNeed> {
-    return apiClient.put(`${this.basePath}/council/${id}`, dto);
-  }
-
-  /**
-   * Delete a council need (council managers only)
-   */
-  async deleteCouncilNeed(id: string): Promise<void> {
-    return apiClient.delete(`${this.basePath}/council/${id}`);
   }
 }
 

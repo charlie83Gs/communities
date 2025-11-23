@@ -28,6 +28,11 @@ export const userProfileDict = {
       // Preferences
       loadingPreferences: "Loading preferences...",
       errorPreferences: "Error loading preferences",
+      // Skills section
+      skillsTitle: "Skills & Endorsements",
+      skillsDescription: "Skills endorsed in this community",
+      noCommunitiesForSkills: "User is not a member of any communities",
+      selectCommunity: "Select Community:",
     },
   },
   es: {
@@ -57,6 +62,11 @@ export const userProfileDict = {
       // Preferences
       loadingPreferences: "Cargando preferencias...",
       errorPreferences: "Error al cargar preferencias",
+      // Skills section
+      skillsTitle: "Habilidades y Recomendaciones",
+      skillsDescription: "Habilidades respaldadas en esta comunidad",
+      noCommunitiesForSkills: "El usuario no es miembro de ninguna comunidad",
+      selectCommunity: "Seleccionar Comunidad:",
     },
   },
   hi: {
@@ -86,6 +96,11 @@ export const userProfileDict = {
       // Preferences
       loadingPreferences: "वरीयताएँ लोड हो रही हैं...",
       errorPreferences: "वरीयताएँ लोड करने में त्रुटि",
+      // Skills section
+      skillsTitle: "कौशल और समर्थन",
+      skillsDescription: "इस समुदाय में समर्थित कौशल",
+      noCommunitiesForSkills: "उपयोगकर्ता किसी समुदाय का सदस्य नहीं है",
+      selectCommunity: "समुदाय चुनें:",
     },
   },
 } as const satisfies Dict;

@@ -51,4 +51,9 @@ router.get('/:communityId/trust/me', verifyToken, validateGetTrustMe, trustContr
 // ========== TRUST TIMELINE ==========
 router.get('/:communityId/trust/timeline', verifyToken, validateGetTrustTimeline, trustController.getTrustTimeline);
 
+// ========== TRUST DECAY ==========
+router.get('/:communityId/trust/decaying', verifyToken, trustController.getDecayingEndorsements);
+router.post('/:communityId/trust/recertify', verifyToken, trustController.recertifyTrust);
+router.get('/:communityId/trust/status/:toUserId', verifyToken, trustController.getTrustStatus);
+
 export default router;

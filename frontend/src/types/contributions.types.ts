@@ -73,6 +73,7 @@ export interface ContributionProfile {
   profileImage?: string;
   totalValue6Months: number;
   totalValueLifetime: number;
+  peerRecognitionValueReceived: number; // Sum of valueUnits from peer recognition grants
   categoryBreakdown: Record<string, number>; // Breakdown by item name
   recentContributions: RecognizedContribution[];
   testimonials: string[]; // Unique testimonials from beneficiaries

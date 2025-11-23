@@ -11,9 +11,6 @@ const testPool = {
   councilId: 'council-123',
   name: 'Tomato Pool',
   description: 'Community tomato aggregation pool',
-  primaryItemId: 'item-tomato',
-  distributionLocation: 'Community Center',
-  distributionType: 'manual' as const,
   maxUnitsPerUser: 5,
   minimumContribution: 1,
   createdBy: 'user-123',
@@ -45,7 +42,6 @@ describe('PoolsRepository', () => {
         councilId: 'council-123',
         name: 'Tomato Pool',
         description: 'Community tomato aggregation pool',
-        distributionType: 'manual',
         createdBy: 'user-123',
       });
 
@@ -202,6 +198,84 @@ describe('PoolsRepository', () => {
       mockDb.where.mockResolvedValueOnce([{ unitsAvailable: 5 }]);
 
       const result = await poolsRepository.decrementInventory('pool-123', 'item-tomato', 10);
+
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('getAllowedItems', () => {
+    it('should get allowed items for a pool', async () => {
+      const allowedItems = [
+        { id: 'item-tomato', name: 'Tomatoes', categoryId: 'item-tomato', categoryName: 'object' },
+      ];
+      mockDb.where.mockResolvedValue(allowedItems);
+
+      const result = await poolsRepository.getAllowedItems('pool-123');
+
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe('item-tomato');
+      expect(mockDb.select).toHaveBeenCalled();
+      expect(mockDb.innerJoin).toHaveBeenCalled();
+    });
+
+    it('should return empty array if no allowed items', async () => {
+      mockDb.where.mockResolvedValue([]);
+
+      const result = await poolsRepository.getAllowedItems('pool-123');
+
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('getAllowedItemIds', () => {
+    it('should get allowed item IDs for a pool', async () => {
+      mockDb.where.mockResolvedValue([{ itemId: 'item-1' }, { itemId: 'item-2' }]);
+
+      const result = await poolsRepository.getAllowedItemIds('pool-123');
+
+      expect(result).toEqual(['item-1', 'item-2']);
+      expect(mockDb.select).toHaveBeenCalled();
+    });
+  });
+
+  describe('setAllowedItems', () => {
+    it('should set allowed items for a pool', async () => {
+      await poolsRepository.setAllowedItems('pool-123', ['item-1', 'item-2']);
+
+      expect(mockDb.delete).toHaveBeenCalled();
+      expect(mockDb.insert).toHaveBeenCalled();
+      expect(mockDb.values).toHaveBeenCalled();
+    });
+
+    it('should clear allowed items if empty array', async () => {
+      await poolsRepository.setAllowedItems('pool-123', []);
+
+      expect(mockDb.delete).toHaveBeenCalled();
+      expect(mockDb.insert).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('isItemAllowed', () => {
+    it('should return true if no whitelist (all items allowed)', async () => {
+      mockDb.where.mockResolvedValue([]);
+
+      const result = await poolsRepository.isItemAllowed('pool-123', 'any-item');
+
+      expect(result).toBe(true);
+    });
+
+    it('should return true if item is in whitelist', async () => {
+      mockDb.where.mockResolvedValue([{ itemId: 'item-1' }, { itemId: 'item-2' }]);
+
+      const result = await poolsRepository.isItemAllowed('pool-123', 'item-1');
+
+      expect(result).toBe(true);
+    });
+
+    it('should return false if item is not in whitelist', async () => {
+      mockDb.where.mockResolvedValue([{ itemId: 'item-1' }, { itemId: 'item-2' }]);
+
+      const result = await poolsRepository.isItemAllowed('pool-123', 'item-3');
 
       expect(result).toBe(false);
     });

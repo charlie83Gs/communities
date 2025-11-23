@@ -11,6 +11,8 @@ export const inviteLinkFormDict = {
       generateLink: 'Generate Link',
       error: 'Error: {{message}}',
       success: 'Link invite created!',
+      copyLink: 'Copy Link',
+      copied: 'Copied!',
     },
   },
   es: {
@@ -24,7 +26,9 @@ export const inviteLinkFormDict = {
       generating: 'Generando...',
       generateLink: 'Generar enlace',
       error: 'Error: {{message}}',
-      success: 'Enlace de invitación creado',
+      success: 'Enlace de invitacion creado',
+      copyLink: 'Copiar Enlace',
+      copied: 'Copiado!',
     },
   },
   hi: {
@@ -39,6 +43,8 @@ export const inviteLinkFormDict = {
       generateLink: 'लिंक जनरेट करें',
       error: 'त्रुटि: {{message}}',
       success: 'लिंक आमंत्रण बनाया गया!',
+      copyLink: 'लिंक कॉपी करें',
+      copied: 'कॉपी हो गया!',
     },
   },
 } as const;

@@ -524,6 +524,45 @@ export class OpenFGAService {
     await this.revokeRelation(userId, 'user', role, 'community', communityId);
   }
 
+  /**
+   * Get all feature roles for a user in a community
+   *
+   * @param userId - User ID
+   * @param communityId - Community ID
+   * @returns Array of feature roles the user has
+   */
+  async getUserFeatureRoles(userId: string, communityId: string): Promise<FeatureRole[]> {
+    const userRoles: FeatureRole[] = [];
+
+    try {
+      // Import FEATURE_ROLES from constants
+      const featureRoles = _FEATURE_ROLES;
+
+      for (const role of featureRoles) {
+        const hasRole = await this.ensureRepository().check({
+          user: `user:${userId}`,
+          relation: role,
+          object: `community:${communityId}`,
+        });
+
+        if (hasRole) {
+          userRoles.push(role);
+        }
+      }
+
+      console.log(
+        `[OpenFGA Service] User ${userId} has ${userRoles.length} feature roles in community ${communityId}: ${userRoles.join(', ')}`
+      );
+    } catch (error) {
+      console.error(
+        `[OpenFGA Service] Failed to get feature roles for user ${userId} in community ${communityId}:`,
+        error
+      );
+    }
+
+    return userRoles;
+  }
+
   // ========================================
   // TRUST ROLE SYNCHRONIZATION
   // ========================================

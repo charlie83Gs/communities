@@ -98,6 +98,38 @@ export class ContributionsService {
     return apiClient.get(url);
   }
 
+  async getMyPeerRecognition(
+    communityId: string,
+    limit?: number
+  ): Promise<{
+    given: Array<{
+      id: string;
+      communityId: string;
+      fromUserId: string;
+      toUserId: string;
+      toUserName: string;
+      valueUnits: number;
+      description: string;
+      createdAt: string;
+    }>;
+    received: Array<{
+      id: string;
+      communityId: string;
+      fromUserId: string;
+      fromUserName: string;
+      toUserId: string;
+      valueUnits: number;
+      description: string;
+      createdAt: string;
+    }>;
+  }> {
+    const params = new URLSearchParams();
+    if (limit) params.append('limit', limit.toString());
+
+    const url = `${this.basePath}/${communityId}/peer-recognition/my?${params.toString()}`;
+    return apiClient.get(url);
+  }
+
   async getPeerRecognitionLimits(communityId: string): Promise<PeerRecognitionLimits> {
     const url = `${this.basePath}/${communityId}/peer-recognition/limits`;
     return apiClient.get(url);

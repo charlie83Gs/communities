@@ -2,7 +2,8 @@ import { db as realDb } from '@db/index';
 type DbClient = typeof realDb;
 
 import { forumCategories, forumThreads, forumPosts, forumVotes, forumThreadTags } from '@db/schema';
-import { eq, and, desc, sql } from 'drizzle-orm';
+import { appUsers } from '@db/schema/app_users.schema';
+import { eq, and, desc, sql, inArray } from 'drizzle-orm';
 
 export type ForumCategoryRecord = typeof forumCategories.$inferSelect;
 export type ForumThreadRecord = typeof forumThreads.$inferSelect;
@@ -396,6 +397,85 @@ export class ForumRepository {
       upvotes: voteCounts.upvotes,
       downvotes: voteCounts.downvotes,
     };
+  }
+
+  // ===== HOMEPAGE PIN =====
+
+  async updateHomepagePin(
+    threadId: string,
+    isPinned: boolean,
+    priority: number
+  ): Promise<ForumThreadRecord | undefined> {
+    const [updated] = await this.db
+      .update(forumThreads)
+      .set({
+        isPinnedToHomepage: isPinned,
+        homepagePinPriority: priority,
+        updatedAt: new Date(),
+      })
+      .where(eq(forumThreads.id, threadId))
+      .returning();
+    return updated;
+  }
+
+  async getHomepagePinnedThreads(communityId: string): Promise<
+    Array<{
+      id: string;
+      title: string;
+      postCount: number;
+      authorId: string;
+      authorDisplayName: string;
+      priority: number;
+      createdAt: Date | null;
+    }>
+  > {
+    // Get all categories for this community
+    const categories = await this.db
+      .select({ id: forumCategories.id })
+      .from(forumCategories)
+      .where(eq(forumCategories.communityId, communityId));
+
+    if (categories.length === 0) {
+      return [];
+    }
+
+    const categoryIds = categories.map((c) => c.id);
+
+    // Get pinned threads with author info and post count
+    const results = await this.db
+      .select({
+        id: forumThreads.id,
+        title: forumThreads.title,
+        authorId: forumThreads.authorId,
+        authorDisplayName: appUsers.displayName,
+        authorUsername: appUsers.username,
+        priority: forumThreads.homepagePinPriority,
+        createdAt: forumThreads.createdAt,
+        postCount:
+          sql<number>`(SELECT COUNT(*)::int FROM ${forumPosts} WHERE ${forumPosts.threadId} = ${forumThreads.id})`.as(
+            'post_count'
+          ),
+      })
+      .from(forumThreads)
+      .leftJoin(appUsers, eq(forumThreads.authorId, appUsers.id))
+      .where(
+        and(
+          eq(forumThreads.isPinnedToHomepage, true),
+          inArray(forumThreads.categoryId, categoryIds)
+        )
+      )
+      .orderBy(desc(forumThreads.homepagePinPriority), desc(forumThreads.createdAt))
+      .limit(5);
+
+    return results.map((r) => ({
+      id: r.id,
+      title: r.title,
+      postCount: r.postCount,
+      authorId: r.authorId,
+      authorDisplayName: r.authorDisplayName ?? r.authorUsername ?? 'Unknown',
+      priority: r.priority,
+      createdAt: r.createdAt,
+    }));
   }
 }
 

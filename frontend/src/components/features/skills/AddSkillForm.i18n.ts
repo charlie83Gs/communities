@@ -1,0 +1,55 @@
+import type { Dict } from '@/i18n/makeTranslator';
+
+export const addSkillFormDict = {
+  en: {
+    addSkillForm: {
+      title: 'Add New Skill',
+      skillName: 'Skill Name',
+      placeholder: 'e.g., Carpentry, JavaScript, Gardening',
+      maxChars: 'Maximum 50 characters',
+      charsRemaining: 'characters remaining',
+      add: 'Add Skill',
+      cancel: 'Cancel',
+      adding: 'Adding...',
+      validationError: 'Only letters, numbers, spaces, hyphens, and ampersands allowed',
+      tooLong: 'Skill name must be 50 characters or less',
+      required: 'Skill name is required',
+      duplicateError: 'You already have this skill',
+      serverError: 'Failed to add skill. Please try again.',
+    },
+  },
+  es: {
+    addSkillForm: {
+      title: 'Agregar Nueva Habilidad',
+      skillName: 'Nombre de la Habilidad',
+      placeholder: 'ej., Carpintería, JavaScript, Jardinería',
+      maxChars: 'Máximo 50 caracteres',
+      charsRemaining: 'caracteres restantes',
+      add: 'Agregar Habilidad',
+      cancel: 'Cancelar',
+      adding: 'Agregando...',
+      validationError: 'Solo se permiten letras, números, espacios, guiones y ampersands',
+      tooLong: 'El nombre de la habilidad debe tener 50 caracteres o menos',
+      required: 'El nombre de la habilidad es obligatorio',
+      duplicateError: 'Ya tienes esta habilidad',
+      serverError: 'Error al agregar habilidad. Inténtalo de nuevo.',
+    },
+  },
+  hi: {
+    addSkillForm: {
+      title: 'नया कौशल जोड़ें',
+      skillName: 'कौशल का नाम',
+      placeholder: 'उदा., बढ़ईगीरी, JavaScript, बागवानी',
+      maxChars: 'अधिकतम 50 वर्ण',
+      charsRemaining: 'वर्ण शेष',
+      add: 'कौशल जोड़ें',
+      cancel: 'रद्द करें',
+      adding: 'जोड़ा जा रहा है...',
+      validationError: 'केवल अक्षर, संख्या, रिक्त स्थान, हाइफन और एम्परसेंड की अनुमति है',
+      tooLong: 'कौशल का नाम 50 वर्णों या उससे कम होना चाहिए',
+      required: 'कौशल का नाम आवश्यक है',
+      duplicateError: 'आपके पास यह कौशल पहले से है',
+      serverError: 'कौशल जोड़ने में विफल। कृपया पुनः प्रयास करें।',
+    },
+  },
+} as const satisfies Dict;

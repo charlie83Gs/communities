@@ -10,6 +10,8 @@ import type {
   CreateWealthRequestDto,
   SearchWealthParams,
   SearchWealthResponse,
+  PoolDistributionRequest,
+  WealthRequestMessage,
 } from '@/types/wealth.types';
 
 class WealthService {
@@ -137,6 +139,20 @@ class WealthService {
     return apiClient.get(`${this.basePath}/requests/incoming${qs ? `?${qs}` : ''}`);
   }
 
+  /** Get pool distribution requests received by current user */
+  async getPoolDistributionRequests(statuses?: WealthRequestStatus | WealthRequestStatus[]): Promise<PoolDistributionRequest[]> {
+    const search = new URLSearchParams();
+    if (statuses) {
+      if (Array.isArray(statuses)) {
+        statuses.forEach(s => search.append('statuses', s));
+      } else {
+        search.set('statuses', statuses);
+      }
+    }
+    const qs = search.toString();
+    return apiClient.get(`${this.basePath}/requests/pool-distributions${qs ? `?${qs}` : ''}`);
+  }
+
   // Comments
 
   /** List comments for a wealth item */
@@ -172,6 +188,25 @@ class WealthService {
   /** Delete a comment (author or wealth owner only) */
   async deleteComment(wealthId: string, commentId: string): Promise<void> {
     return apiClient.delete(`${this.basePath}/${wealthId}/comments/${commentId}`);
+  }
+
+  // Request Messages
+
+  /** Get messages for a wealth request (requester or owner only) */
+  async getRequestMessages(
+    wealthId: string,
+    requestId: string
+  ): Promise<{ messages: WealthRequestMessage[] }> {
+    return apiClient.get(`${this.basePath}/${wealthId}/requests/${requestId}/messages`);
+  }
+
+  /** Send a message on a wealth request (requester or owner only) */
+  async createRequestMessage(
+    wealthId: string,
+    requestId: string,
+    content: string
+  ): Promise<WealthRequestMessage> {
+    return apiClient.post(`${this.basePath}/${wealthId}/requests/${requestId}/messages`, { content });
   }
 }
 

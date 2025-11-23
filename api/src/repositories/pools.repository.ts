@@ -1,8 +1,9 @@
 import { db as realDb } from '@db/index';
-import { pools, poolInventory } from '@db/schema/pools.schema';
+import { pools, poolInventory, poolAllowedItems } from '@db/schema/pools.schema';
 import { councils } from '@db/schema/councils.schema';
 import { items } from '@db/schema/items.schema';
 import { eq, and, isNull, desc, sql } from 'drizzle-orm';
+import type { AllowedItemResponse } from '@/types/pools.types';
 
 export type PoolRecord = typeof pools.$inferSelect;
 export type CreatePoolInput = typeof pools.$inferInsert;
@@ -14,12 +15,12 @@ export type PoolInventoryRecord = typeof poolInventory.$inferSelect;
 
 export interface PoolWithDetails extends PoolRecord {
   councilName: string;
-  primaryItemName?: string;
   inventory: Array<{
     itemId: string;
     itemName: string;
     unitsAvailable: number;
   }>;
+  allowedItems: AllowedItemResponse[];
 }
 
 export class PoolsRepository {
@@ -49,7 +50,7 @@ export class PoolsRepository {
   }
 
   /**
-   * Find pool by ID with full details (council name, primary item, inventory)
+   * Find pool by ID with full details (council name, primary item, inventory, allowed items)
    */
   async findByIdWithDetails(id: string): Promise<PoolWithDetails | undefined> {
     const pool = await this.findById(id);
@@ -61,24 +62,17 @@ export class PoolsRepository {
       .from(councils)
       .where(eq(councils.id, pool.councilId));
 
-    // Get primary item name if exists
-    let primaryItemName: string | undefined;
-    if (pool.primaryItemId) {
-      const [item] = await this.db
-        .select({ name: sql<string>`${items.translations}->'en'->>'name'` })
-        .from(items)
-        .where(eq(items.id, pool.primaryItemId));
-      primaryItemName = item?.name;
-    }
-
     // Get inventory
     const inventory = await this.getInventory(id);
+
+    // Get allowed items
+    const allowedItems = await this.getAllowedItems(id);
 
     return {
       ...pool,
       councilName: council?.name ?? 'Unknown Council',
-      primaryItemName,
       inventory,
+      allowedItems,
     };
   }
 
@@ -221,6 +215,76 @@ export class PoolsRepository {
     totalUnits: number
   ): Promise<boolean> {
     return await this.decrementInventory(poolId, itemId, totalUnits);
+  }
+
+  /**
+   * Get allowed items for a pool with full item details
+   */
+  async getAllowedItems(poolId: string): Promise<AllowedItemResponse[]> {
+    const allowedItems = await this.db
+      .select({
+        id: items.id,
+        name: sql<string>`${items.translations}->'en'->>'name'`,
+        categoryId: items.id, // Using item id as category placeholder
+        categoryName: items.kind, // Using kind as category placeholder
+      })
+      .from(poolAllowedItems)
+      .innerJoin(items, eq(poolAllowedItems.itemId, items.id))
+      .where(eq(poolAllowedItems.poolId, poolId));
+
+    return allowedItems.map((item: any) => ({
+      id: item.id,
+      name: item.name || 'Unknown Item',
+      categoryId: item.categoryId,
+      categoryName: item.categoryName,
+    }));
+  }
+
+  /**
+   * Get allowed item IDs for a pool (simple list)
+   */
+  async getAllowedItemIds(poolId: string): Promise<string[]> {
+    const allowedItems = await this.db
+      .select({ itemId: poolAllowedItems.itemId })
+      .from(poolAllowedItems)
+      .where(eq(poolAllowedItems.poolId, poolId));
+
+    return allowedItems.map((item: any) => item.itemId);
+  }
+
+  /**
+   * Set allowed items for a pool (replaces existing)
+   */
+  async setAllowedItems(poolId: string, itemIds: string[]): Promise<void> {
+    // Delete existing allowed items
+    await this.db.delete(poolAllowedItems).where(eq(poolAllowedItems.poolId, poolId));
+
+    // Insert new allowed items if any
+    if (itemIds.length > 0) {
+      await this.db.insert(poolAllowedItems).values(
+        itemIds.map((itemId) => ({
+          poolId,
+          itemId,
+        }))
+      );
+    }
+  }
+
+  /**
+   * Check if an item is allowed in a pool
+   * Returns true if pool has no whitelist (all items allowed) or if item is in whitelist
+   */
+  async isItemAllowed(poolId: string, itemId: string): Promise<boolean> {
+    // Get all allowed items for the pool
+    const allowedItemIds = await this.getAllowedItemIds(poolId);
+
+    // If no whitelist, all items are allowed
+    if (allowedItemIds.length === 0) {
+      return true;
+    }
+
+    // Check if item is in whitelist
+    return allowedItemIds.includes(itemId);
   }
 }
 

@@ -1,4 +1,4 @@
-import { Component, For, Show, createMemo, createSignal, on } from 'solid-js';
+import { Component, For, Show, createMemo, createSignal, createEffect } from 'solid-js';
 import { Card } from '@/components/common/Card';
 import { Button } from '@/components/common/Button';
 import { Input } from '@/components/common/Input';
@@ -22,9 +22,13 @@ export const CommunityList: Component<CommunityListProps> = (props) => {
   const [limit, setLimit] = createSignal<number>(12);
 
   // Reset page to 1 when filters (except page/limit) change
-  const resetOnFilterChange = () => setPage(1);
-  const resetters = createMemo(() => [debouncedQ()]);
-  on(resetters, resetOnFilterChange);
+  // Use createEffect instead of standalone on() for proper reactive tracking
+  createEffect(() => {
+    // Track filter dependencies
+    debouncedQ();
+    // Reset page to 1 when filter changes
+    setPage(1);
+  });
 
   // Build params for search endpoint
   const params = createMemo(() => {
@@ -40,12 +44,25 @@ export const CommunityList: Component<CommunityListProps> = (props) => {
 
   const query = useSearchCommunitiesQuery(params);
 
+  // Safe accessors that handle undefined data properly
   const items = createMemo(() => query.data?.items ?? []);
   const pagination = createMemo(() => query.data?.pagination);
-  const hasMore = createMemo(() => !!pagination()?.hasMore);
-  const currentPage = createMemo(() => pagination()?.page ?? page());
-  const pageSize = createMemo(() => pagination()?.limit ?? limit());
-  const total = createMemo(() => pagination()?.total);
+  const hasMore = createMemo(() => {
+    const pag = pagination();
+    return pag ? !!pag.hasMore : false;
+  });
+  const currentPage = createMemo(() => {
+    const pag = pagination();
+    return pag?.page ?? page();
+  });
+  const pageSize = createMemo(() => {
+    const pag = pagination();
+    return pag?.limit ?? limit();
+  });
+  const total = createMemo(() => {
+    const pag = pagination();
+    return pag?.total;
+  });
 
   return (
     <div class="space-y-4">

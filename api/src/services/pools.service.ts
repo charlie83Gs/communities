@@ -4,6 +4,8 @@ import { needsRepository as defaultNeedsRepository } from '@repositories/needs.r
 import { councilRepository as defaultCouncilRepository } from '@repositories/council.repository';
 import { itemsRepository as defaultItemsRepository } from '@repositories/items.repository';
 import { appUserRepository as defaultAppUserRepository } from '@repositories/appUser.repository';
+import { recognizedContributionRepository as defaultRecognizedContributionRepository } from '@repositories/recognizedContribution.repository';
+import { contributionSummaryRepository as defaultContributionSummaryRepository } from '@repositories/contributionSummary.repository';
 import { openFGAService as defaultOpenFGAService } from './openfga.service';
 import { AppError } from '@utils/errors';
 import type {
@@ -16,6 +18,10 @@ import type {
   MassDistributePreviewResponse,
   PendingContributionResponse,
   PoolDistributionResponse,
+  PoolNeedsResponse,
+  PoolNeedsItemResponse,
+  CouncilPoolsResponse,
+  CouncilPoolSummary,
 } from '@/types/pools.types';
 
 export class PoolsService {
@@ -25,6 +31,8 @@ export class PoolsService {
   private councilRepository: typeof defaultCouncilRepository;
   private itemsRepository: typeof defaultItemsRepository;
   private appUserRepository: typeof defaultAppUserRepository;
+  private recognizedContributionRepository: typeof defaultRecognizedContributionRepository;
+  private contributionSummaryRepository: typeof defaultContributionSummaryRepository;
   private openFGAService: typeof defaultOpenFGAService;
 
   constructor(
@@ -34,6 +42,8 @@ export class PoolsService {
     councilRepository = defaultCouncilRepository,
     itemsRepository = defaultItemsRepository,
     appUserRepository = defaultAppUserRepository,
+    recognizedContributionRepository = defaultRecognizedContributionRepository,
+    contributionSummaryRepository = defaultContributionSummaryRepository,
     openFGAService = defaultOpenFGAService
   ) {
     this.poolsRepository = poolsRepository;
@@ -42,6 +52,8 @@ export class PoolsService {
     this.councilRepository = councilRepository;
     this.itemsRepository = itemsRepository;
     this.appUserRepository = appUserRepository;
+    this.recognizedContributionRepository = recognizedContributionRepository;
+    this.contributionSummaryRepository = contributionSummaryRepository;
     this.openFGAService = openFGAService;
   }
   /**
@@ -70,28 +82,30 @@ export class PoolsService {
       throw new AppError('Only council managers can create pools', 403);
     }
 
-    // 4. Verify primary item exists if provided
-    if (data.primaryItemId) {
-      const item = await this.itemsRepository.findById(data.primaryItemId);
-      if (!item || item.communityId !== communityId) {
-        throw new AppError('Primary item not found or does not belong to this community', 400);
-      }
-    }
-
-    // 5. Create pool
+    // 4. Create pool
     const pool = await this.poolsRepository.create({
       communityId,
       councilId,
       name: data.name,
       description: data.description,
-      primaryItemId: data.primaryItemId ?? null,
-      distributionType: data.distributionType,
       maxUnitsPerUser: data.maxUnitsPerUser ?? null,
       minimumContribution: data.minimumContribution ?? null,
       createdBy: userId,
     });
 
-    // 6. Create OpenFGA relationships
+    // 5. Set allowed items if provided
+    if (data.allowedItemIds && data.allowedItemIds.length > 0) {
+      // Validate that all items exist in the community
+      for (const itemId of data.allowedItemIds) {
+        const item = await this.itemsRepository.findById(itemId);
+        if (!item || item.communityId !== communityId) {
+          throw new AppError(`Item ${itemId} not found or does not belong to this community`, 400);
+        }
+      }
+      await this.poolsRepository.setAllowedItems(pool.id, data.allowedItemIds);
+    }
+
+    // 5. Create OpenFGA relationships
     try {
       // Pool-to-community relationship for hierarchical permissions
       await this.openFGAService.createRelationship(
@@ -115,7 +129,7 @@ export class PoolsService {
       // Non-fatal - pool still created
     }
 
-    // 7. Return with details
+    // 6. Return with details
     return await this.getPoolWithDetails(pool.id, userId);
   }
 
@@ -166,6 +180,67 @@ export class PoolsService {
   }
 
   /**
+   * Get pools by council ID with summary information
+   */
+  async getPoolsByCouncil(councilId: string, userId: string): Promise<CouncilPoolsResponse> {
+    // 1. Verify council exists
+    const council = await this.councilRepository.findById(councilId);
+    if (!council || council.deletedAt) {
+      throw new AppError('Council not found', 404);
+    }
+
+    // 2. Check if user has permission to view pools
+    const canView = await this.openFGAService.checkAccess(
+      userId,
+      'community',
+      council.communityId,
+      'can_view_wealth'
+    );
+
+    if (!canView) {
+      throw new AppError('You do not have permission to view pools in this community', 403);
+    }
+
+    // 3. Get pools for this council
+    const pools = await this.poolsRepository.listByCouncil(councilId);
+
+    // 4. Transform to summary format
+    const poolSummaries: CouncilPoolSummary[] = await Promise.all(
+      pools.map(async (pool) => {
+        // Get inventory
+        const inventory = await this.poolsRepository.getInventory(pool.id);
+
+        // Get allowed items with names
+        const allowedItems = await this.poolsRepository.getAllowedItems(pool.id);
+
+        // Calculate inventory summary
+        const totalItems = inventory.length;
+        const totalQuantity = inventory.reduce((sum, item) => sum + item.unitsAvailable, 0);
+
+        return {
+          id: pool.id,
+          name: pool.name,
+          description: pool.description,
+          allowedItems: allowedItems.map((item) => ({
+            itemId: item.id,
+            itemName: item.name,
+          })),
+          inventorySummary: {
+            totalItems,
+            totalQuantity,
+          },
+          createdAt: pool.createdAt.toISOString(),
+        };
+      })
+    );
+
+    return {
+      pools: poolSummaries,
+      total: poolSummaries.length,
+    };
+  }
+
+  /**
    * Update pool settings (council managers only)
    */
   async updatePool(poolId: string, data: UpdatePoolRequest, userId: string): Promise<PoolResponse> {
@@ -181,23 +256,30 @@ export class PoolsService {
       throw new AppError('Only council managers can update pools', 403);
     }
 
-    // 3. Verify primary item if provided
-    if (data.primaryItemId) {
-      const item = await this.itemsRepository.findById(data.primaryItemId);
-      if (!item || item.communityId !== pool.communityId) {
-        throw new AppError('Primary item not found or does not belong to this community', 400);
-      }
-    }
-
-    // 4. Update pool
+    // 3. Update pool
     await this.poolsRepository.update(poolId, {
       name: data.name,
       description: data.description,
-      primaryItemId: data.primaryItemId,
-      distributionType: data.distributionType,
       maxUnitsPerUser: data.maxUnitsPerUser,
       minimumContribution: data.minimumContribution,
     });
+
+    // 4. Update allowed items if provided
+    if (data.allowedItemIds !== undefined) {
+      if (data.allowedItemIds.length > 0) {
+        // Validate that all items exist in the community
+        for (const itemId of data.allowedItemIds) {
+          const item = await this.itemsRepository.findById(itemId);
+          if (!item || item.communityId !== pool.communityId) {
+            throw new AppError(
+              `Item ${itemId} not found or does not belong to this community`,
+              400
+            );
+          }
+        }
+      }
+      await this.poolsRepository.setAllowedItems(poolId, data.allowedItemIds);
+    }
 
     return await this.getPoolWithDetails(poolId, userId);
   }
@@ -238,15 +320,15 @@ export class PoolsService {
       throw new AppError('Pool not found', 404);
     }
 
-    // 2. Check if user has permission to create wealth
-    const canCreate = await this.openFGAService.checkAccess(
+    // 2. Check if user has permission to contribute (unrestricted giving)
+    const canContribute = await this.openFGAService.checkAccess(
       userId,
       'community',
       pool.communityId,
-      'can_create_wealth'
+      'can_view_wealth'
     );
 
-    if (!canCreate) {
+    if (!canContribute) {
       throw new AppError('You do not have permission to contribute to pools', 403);
     }
 
@@ -256,7 +338,13 @@ export class PoolsService {
       throw new AppError('Item not found or does not belong to this community', 400);
     }
 
-    // 4. Check minimum contribution
+    // 4. Check if item is allowed in pool whitelist
+    const isAllowed = await this.poolsRepository.isItemAllowed(poolId, data.itemId);
+    if (!isAllowed) {
+      throw new AppError('This item is not allowed in this pool', 400);
+    }
+
+    // 5. Check minimum contribution
     if (pool.minimumContribution && data.unitsOffered < pool.minimumContribution) {
       throw new AppError(`Minimum contribution is ${pool.minimumContribution} units`, 400);
     }
@@ -277,11 +365,33 @@ export class PoolsService {
       status: 'active',
     });
 
+    // 6. Record contribution for value analytics
+    // Capture value at contribution time (frozen snapshot)
+    const valuePerUnit = item.wealthValue ? String(item.wealthValue) : '1';
+    const totalValue = String(data.unitsOffered * Number(valuePerUnit));
+
+    await this.recognizedContributionRepository.create({
+      communityId: pool.communityId,
+      contributorId: userId,
+      itemId: data.itemId,
+      units: String(data.unitsOffered),
+      valuePerUnit,
+      totalValue,
+      description: `Pool contribution: ${data.title}`,
+      verificationStatus: 'auto_verified',
+      sourceType: 'pool_contribution',
+      sourceId: wealth.id,
+    });
+
+    // 7. Invalidate contribution summary cache so profile reflects new contribution
+    await this.contributionSummaryRepository.delete(userId, pool.communityId);
+
     return { wealth };
   }
 
   /**
-   * List pending contributions to pool (council managers only)
+   * List pending contributions to pool
+   * Users can see their own contributions, council managers can see all
    */
   async listPendingContributions(
     poolId: string,
@@ -293,30 +403,49 @@ export class PoolsService {
       throw new AppError('Pool not found', 404);
     }
 
-    // 2. Check if user is a council manager
+    // 2. Check if user is a council manager or has permission to view wealth
     const isManager = await this.councilRepository.isManager(pool.councilId, userId);
-    if (!isManager) {
-      throw new AppError('Only council managers can view pending contributions', 403);
+    const canView = await this.openFGAService.checkAccess(
+      userId,
+      'community',
+      pool.communityId,
+      'can_view_wealth'
+    );
+
+    if (!canView) {
+      throw new AppError('You do not have permission to view contributions', 403);
     }
 
     // 3. Get pending contributions (wealth with targetPoolId and active status, includes item)
     const wealthRecords = await this.wealthRepository.getPendingContributionsByPoolId(poolId);
 
-    // 4. Transform to response format with user names
+    // 4. Filter contributions: managers see all, others see only their own
+    const filteredRecords = isManager
+      ? wealthRecords
+      : wealthRecords.filter((wealth: any) => wealth.createdBy === userId);
+
+    // 5. Transform to response format with user names
     const contributions = await Promise.all(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      wealthRecords.map(async (wealth: any) => {
+      filteredRecords.map(async (wealth: any) => {
         // Get contributor info
         const contributor = await this.appUserRepository.findById(wealth.createdBy);
         const contributorName =
           contributor?.displayName || contributor?.username || contributor?.email || 'Unknown User';
+
+        // Extract item name from translations (fallback to 'en' locale)
+        const itemName =
+          wealth.item?.translations?.en?.name ||
+          wealth.item?.translations?.es?.name ||
+          wealth.item?.translations?.hi?.name ||
+          'Unknown Item';
 
         return {
           wealthId: wealth.id,
           contributorId: wealth.createdBy,
           contributorName,
           itemId: wealth.itemId,
-          itemName: wealth.item?.name || 'Unknown Item',
+          itemName,
           unitsOffered: wealth.unitsAvailable || 0,
           message: wealth.description,
           createdAt: wealth.createdAt,
@@ -429,7 +558,13 @@ export class PoolsService {
       throw new AppError('Item not found', 404);
     }
 
-    // 5. Check if pool has sufficient inventory
+    // 5. Check if item is allowed in pool whitelist
+    const isAllowed = await this.poolsRepository.isItemAllowed(poolId, data.itemId);
+    if (!isAllowed) {
+      throw new AppError('This item is not allowed in this pool', 400);
+    }
+
+    // 6. Check if pool has sufficient inventory
     const available = await this.poolsRepository.getInventoryForItem(poolId, data.itemId);
     if (available < data.unitsDistributed) {
       throw new AppError(
@@ -449,9 +584,9 @@ export class PoolsService {
       throw new AppError('Failed to decrement inventory (insufficient units)', 400);
     }
 
-    // 7. Create wealth entry (from council, with sourcePoolId)
+    // 7. Create wealth entry (from pool via user, with sourcePoolId)
     const wealth = await this.wealthRepository.createWealth({
-      createdBy: pool.councilId, // Council creates the wealth
+      createdBy: userId, // User (council manager) creates the wealth on behalf of pool
       communityId: pool.communityId,
       itemId: data.itemId,
       title: data.title,
@@ -602,7 +737,7 @@ export class PoolsService {
     for (const recipient of actualRecipients) {
       // Create wealth
       const wealth = await this.wealthRepository.createWealth({
-        createdBy: pool!.councilId,
+        createdBy: userId, // User (council manager) creates the wealth on behalf of pool
         communityId: pool!.communityId,
         itemId: data.itemId,
         title: `${(item!.translations as any)?.en?.name || 'Unknown'} from ${pool!.name}`,
@@ -666,12 +801,19 @@ export class PoolsService {
             recipient?.displayName || recipient?.username || recipient?.email || 'Unknown User';
         }
 
+        // Extract item name from translations (fallback to 'en' locale)
+        const itemName =
+          wealth.item?.translations?.en?.name ||
+          wealth.item?.translations?.es?.name ||
+          wealth.item?.translations?.hi?.name ||
+          'Unknown Item';
+
         return {
           wealthId: wealth.id,
           recipientId: recipientId || '',
           recipientName,
           itemId: wealth.itemId,
-          itemName: wealth.item?.name || 'Unknown Item',
+          itemName,
           unitsDistributed: wealth.unitsAvailable || 0,
           createdAt: wealth.createdAt.toISOString(),
           isMassDistribution: false, // Can be enhanced later with additional metadata
@@ -707,6 +849,107 @@ export class PoolsService {
   }
 
   /**
+   * Get aggregated needs for pool's whitelisted items (or all items if no whitelist)
+   * Only council managers can view pool needs
+   */
+  async getPoolNeeds(poolId: string, userId: string): Promise<PoolNeedsResponse> {
+    // 1. Verify pool exists
+    const pool = await this.poolsRepository.findById(poolId);
+    if (!pool || pool.deletedAt) {
+      throw new AppError('Pool not found', 404);
+    }
+
+    // 2. Check if user is a council manager
+    const isManager = await this.councilRepository.isManager(pool.councilId, userId);
+    if (!isManager) {
+      throw new AppError('Only council managers can view pool needs', 403);
+    }
+
+    // 3. Get allowed item IDs (empty array means all items allowed)
+    const allowedItemIds = await this.poolsRepository.getAllowedItemIds(poolId);
+
+    // 4. Get all active needs for the community
+    const allNeeds = await this.needsRepository.listNeeds({
+      communityId: pool.communityId,
+      status: 'active',
+    });
+
+    // 5. Filter needs by allowed items (if whitelist exists)
+    const filteredNeeds =
+      allowedItemIds.length > 0
+        ? allNeeds.filter((need) => allowedItemIds.includes(need.itemId))
+        : allNeeds;
+
+    // 6. Aggregate needs by item
+    const itemMap = new Map<string, PoolNeedsItemResponse>();
+
+    for (const need of filteredNeeds) {
+      const existing = itemMap.get(need.itemId);
+
+      // Get item details if not already in map
+      if (!existing) {
+        const item = await this.itemsRepository.findById(need.itemId);
+        const itemName = (item?.translations as any)?.en?.name || 'Unknown Item';
+        const categoryName = item?.kind || 'object';
+
+        // Get pool inventory for this item
+        const poolInventoryUnits = await this.poolsRepository.getInventoryForItem(
+          poolId,
+          need.itemId
+        );
+
+        itemMap.set(need.itemId, {
+          itemId: need.itemId,
+          itemName,
+          categoryName,
+          totalNeedsCount: 0,
+          totalWantsCount: 0,
+          totalNeedsUnits: 0,
+          totalWantsUnits: 0,
+          poolInventoryUnits,
+          recurrenceBreakdown: {
+            oneTime: { needs: 0, wants: 0 },
+            daily: { needs: 0, wants: 0 },
+            weekly: { needs: 0, wants: 0 },
+            monthly: { needs: 0, wants: 0 },
+          },
+        });
+      }
+
+      const itemData = itemMap.get(need.itemId)!;
+      const isNeed = need.priority === 'need';
+      const unitsNeeded = need.unitsNeeded || 1;
+
+      // Update counts and units
+      if (isNeed) {
+        itemData.totalNeedsCount++;
+        itemData.totalNeedsUnits += unitsNeeded;
+      } else {
+        itemData.totalWantsCount++;
+        itemData.totalWantsUnits += unitsNeeded;
+      }
+
+      // Update recurrence breakdown
+      const recurrence = need.isRecurring && need.recurrence ? need.recurrence : 'one-time';
+      const recurrenceKey = recurrence === 'one-time' ? 'oneTime' : recurrence;
+
+      if (isNeed) {
+        itemData.recurrenceBreakdown[
+          recurrenceKey as keyof typeof itemData.recurrenceBreakdown
+        ].needs += unitsNeeded;
+      } else {
+        itemData.recurrenceBreakdown[
+          recurrenceKey as keyof typeof itemData.recurrenceBreakdown
+        ].wants += unitsNeeded;
+      }
+    }
+
+    return {
+      items: Array.from(itemMap.values()),
+    };
+  }
+
+  /**
    * Helper: Get pool with full details
    */
   private async getPoolWithDetails(poolId: string, _userId: string): Promise<PoolResponse> {
@@ -722,14 +965,11 @@ export class PoolsService {
       councilName: poolWithDetails.councilName,
       name: poolWithDetails.name,
       description: poolWithDetails.description,
-      primaryItem:
-        poolWithDetails.primaryItemId && poolWithDetails.primaryItemName
-          ? { id: poolWithDetails.primaryItemId, name: poolWithDetails.primaryItemName }
-          : undefined,
-      distributionType: poolWithDetails.distributionType,
       maxUnitsPerUser: poolWithDetails.maxUnitsPerUser ?? undefined,
       minimumContribution: poolWithDetails.minimumContribution ?? undefined,
       inventory: poolWithDetails.inventory,
+      allowedItems:
+        poolWithDetails.allowedItems.length > 0 ? poolWithDetails.allowedItems : undefined,
       createdBy: poolWithDetails.createdBy,
       createdAt: poolWithDetails.createdAt.toISOString(),
       updatedAt: poolWithDetails.updatedAt.toISOString(),

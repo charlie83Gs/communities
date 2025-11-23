@@ -40,10 +40,10 @@ class InitiativesService {
 
   /**
    * Get initiative details
-   * GET /api/v1/communities/:communityId/initiatives/:initiativeId
+   * GET /api/v1/communities/:communityId/councils/:councilId/initiatives/:initiativeId
    */
-  async getInitiative(communityId: string, initiativeId: string): Promise<Initiative> {
-    return apiClient.get(`${this.basePath}/${communityId}/initiatives/${initiativeId}`);
+  async getInitiative(communityId: string, councilId: string, initiativeId: string): Promise<Initiative> {
+    return apiClient.get(`${this.basePath}/${communityId}/councils/${councilId}/initiatives/${initiativeId}`);
   }
 
   /**
@@ -63,53 +63,57 @@ class InitiativesService {
 
   /**
    * Update initiative
-   * PUT /api/v1/communities/:communityId/initiatives/:initiativeId
+   * PUT /api/v1/communities/:communityId/councils/:councilId/initiatives/:initiativeId
    */
   async updateInitiative(
     communityId: string,
+    councilId: string,
     initiativeId: string,
     dto: Partial<CreateInitiativeDto> & { status?: 'active' | 'completed' | 'cancelled' }
   ): Promise<Initiative> {
-    return apiClient.put(`${this.basePath}/${communityId}/initiatives/${initiativeId}`, dto);
+    return apiClient.put(`${this.basePath}/${communityId}/councils/${councilId}/initiatives/${initiativeId}`, dto);
   }
 
   /**
    * Delete initiative
-   * DELETE /api/v1/communities/:communityId/initiatives/:initiativeId
+   * DELETE /api/v1/communities/:communityId/councils/:councilId/initiatives/:initiativeId
    */
   async deleteInitiative(
     communityId: string,
+    councilId: string,
     initiativeId: string
   ): Promise<void> {
-    return apiClient.delete(`${this.basePath}/${communityId}/initiatives/${initiativeId}`);
+    return apiClient.delete(`${this.basePath}/${communityId}/councils/${councilId}/initiatives/${initiativeId}`);
   }
 
   /**
    * Vote on initiative
-   * POST /api/v1/communities/:communityId/initiatives/:initiativeId/vote
+   * POST /api/v1/communities/:communityId/councils/:councilId/initiatives/:initiativeId/vote
    */
   async voteInitiative(
     communityId: string,
+    councilId: string,
     initiativeId: string,
     dto: VoteInitiativeDto
   ): Promise<Initiative> {
-    return apiClient.post(`${this.basePath}/${communityId}/initiatives/${initiativeId}/vote`, dto);
+    return apiClient.post(`${this.basePath}/${communityId}/councils/${councilId}/initiatives/${initiativeId}/vote`, dto);
   }
 
   /**
    * Remove vote from initiative
-   * DELETE /api/v1/communities/:communityId/initiatives/:initiativeId/vote
+   * DELETE /api/v1/communities/:communityId/councils/:councilId/initiatives/:initiativeId/vote
    */
-  async removeVote(communityId: string, initiativeId: string): Promise<void> {
-    return apiClient.delete(`${this.basePath}/${communityId}/initiatives/${initiativeId}/vote`);
+  async removeVote(communityId: string, councilId: string, initiativeId: string): Promise<void> {
+    return apiClient.delete(`${this.basePath}/${communityId}/councils/${councilId}/initiatives/${initiativeId}/vote`);
   }
 
   /**
    * List reports for an initiative
-   * GET /api/v1/communities/:communityId/initiatives/:initiativeId/reports
+   * GET /api/v1/communities/:communityId/councils/:councilId/initiatives/:initiativeId/reports
    */
   async listReports(
     communityId: string,
+    councilId: string,
     initiativeId: string,
     params?: { page?: number; limit?: number }
   ): Promise<ReportsListResponse> {
@@ -118,21 +122,22 @@ class InitiativesService {
     if (params?.limit) search.set('limit', params.limit.toString());
     const qs = search.toString();
     return apiClient.get(
-      `${this.basePath}/${communityId}/initiatives/${initiativeId}/reports${qs ? `?${qs}` : ''}`
+      `${this.basePath}/${communityId}/councils/${councilId}/initiatives/${initiativeId}/reports${qs ? `?${qs}` : ''}`
     );
   }
 
   /**
    * Create a report for an initiative
-   * POST /api/v1/communities/:communityId/initiatives/:initiativeId/reports
+   * POST /api/v1/communities/:communityId/councils/:councilId/initiatives/:initiativeId/reports
    */
   async createReport(
     communityId: string,
+    councilId: string,
     initiativeId: string,
     dto: CreateInitiativeReportDto
   ): Promise<InitiativeReport> {
     return apiClient.post(
-      `${this.basePath}/${communityId}/initiatives/${initiativeId}/reports`,
+      `${this.basePath}/${communityId}/councils/${councilId}/initiatives/${initiativeId}/reports`,
       dto
     );
   }
@@ -147,50 +152,64 @@ class InitiativesService {
 
   /**
    * List comments for an initiative
-   * GET /api/v1/communities/:communityId/initiatives/:initiativeId/comments
+   * GET /api/v1/communities/:communityId/councils/:councilId/initiatives/:initiativeId/comments
    */
   async listInitiativeComments(
     communityId: string,
+    councilId: string,
     initiativeId: string
   ): Promise<InitiativeComment[]> {
     return apiClient.get(
-      `${this.basePath}/${communityId}/initiatives/${initiativeId}/comments`
+      `${this.basePath}/${communityId}/councils/${councilId}/initiatives/${initiativeId}/comments`
     );
   }
 
   /**
    * Create comment on initiative
-   * POST /api/v1/communities/:communityId/initiatives/:initiativeId/comments
+   * POST /api/v1/communities/:communityId/councils/:councilId/initiatives/:initiativeId/comments
    */
   async createInitiativeComment(
     communityId: string,
+    councilId: string,
     initiativeId: string,
     dto: CreateCommentDto
   ): Promise<InitiativeComment> {
     return apiClient.post(
-      `${this.basePath}/${communityId}/initiatives/${initiativeId}/comments`,
+      `${this.basePath}/${communityId}/councils/${councilId}/initiatives/${initiativeId}/comments`,
       dto
     );
   }
 
   /**
    * List comments for a report
-   * GET /api/v1/communities/:communityId/reports/:reportId/comments
+   * GET /api/v1/communities/:communityId/councils/:councilId/initiatives/:initiativeId/reports/:reportId/comments
    */
-  async listReportComments(communityId: string, reportId: string): Promise<ReportComment[]> {
-    return apiClient.get(`${this.basePath}/${communityId}/reports/${reportId}/comments`);
+  async listReportComments(
+    communityId: string,
+    councilId: string,
+    initiativeId: string,
+    reportId: string
+  ): Promise<ReportComment[]> {
+    return apiClient.get(
+      `${this.basePath}/${communityId}/councils/${councilId}/initiatives/${initiativeId}/reports/${reportId}/comments`
+    );
   }
 
   /**
    * Create comment on report
-   * POST /api/v1/communities/:communityId/reports/:reportId/comments
+   * POST /api/v1/communities/:communityId/councils/:councilId/initiatives/:initiativeId/reports/:reportId/comments
    */
   async createReportComment(
     communityId: string,
+    councilId: string,
+    initiativeId: string,
     reportId: string,
     dto: CreateCommentDto
   ): Promise<ReportComment> {
-    return apiClient.post(`${this.basePath}/${communityId}/reports/${reportId}/comments`, dto);
+    return apiClient.post(
+      `${this.basePath}/${communityId}/councils/${councilId}/initiatives/${initiativeId}/reports/${reportId}/comments`,
+      dto
+    );
   }
 }
 

@@ -102,3 +102,24 @@ export interface TrustTimeline {
   userTrustScore: number;
   timeline: TrustTimelineItem[];
 }
+
+// Trust Decay types
+export interface DecayingEndorsement {
+  recipientId: string;
+  recipientName: string;
+  recipientUsername: string;
+  lastUpdated: Date;
+  decayPercent: number;       // 0-100
+  monthsUntilExpiry: number;
+  isDecaying: boolean;
+  isExpired: boolean;
+}
+
+export interface TrustDecayStatus {
+  hasTrust: boolean;
+  lastUpdated: Date;
+  decayPercent: number;
+  monthsUntilExpiry: number;
+  isDecaying: boolean;
+  isExpired: boolean;
+}

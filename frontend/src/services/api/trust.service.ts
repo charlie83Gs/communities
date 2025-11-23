@@ -5,7 +5,9 @@ import type {
   TrustAward,
   AdminTrustGrant,
   TrustHistoryEntry,
-  TrustTimeline
+  TrustTimeline,
+  DecayingEndorsement,
+  TrustDecayStatus
 } from '@/types/trust.types';
 
 export class TrustService {
@@ -92,6 +94,22 @@ export class TrustService {
   // Trust Timeline
   async getTrustTimeline(communityId: string): Promise<TrustTimeline> {
     const url = `${this.basePath}/${communityId}/trust/timeline`;
+    return apiClient.get(url);
+  }
+
+  // Trust Decay Methods
+  async getDecayingEndorsements(communityId: string): Promise<DecayingEndorsement[]> {
+    const url = `${this.basePath}/${communityId}/trust/decaying`;
+    return apiClient.get(url);
+  }
+
+  async recertifyTrust(communityId: string, userIds: string[]): Promise<void> {
+    const url = `${this.basePath}/${communityId}/trust/recertify`;
+    await apiClient.post(url, { userIds });
+  }
+
+  async getTrustDecayStatus(communityId: string, toUserId: string): Promise<TrustDecayStatus | null> {
+    const url = `${this.basePath}/${communityId}/trust/status/${toUserId}`;
     return apiClient.get(url);
   }
 }

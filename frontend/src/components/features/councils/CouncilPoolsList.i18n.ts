@@ -1,0 +1,47 @@
+export const councilPoolsDict = {
+  en: {
+    councilPools: {
+      title: 'Council Pools',
+      createPool: 'Create Pool',
+      loading: 'Loading pools...',
+      error: 'Failed to load pools',
+      noPools: 'No pools created yet',
+      createPoolHint: 'Create a pool to aggregate and distribute resources',
+      items: 'items',
+      total: 'total',
+      allowedItems: 'Allowed items',
+      created: 'Created',
+      viewPool: 'View Pool',
+    },
+  },
+  es: {
+    councilPools: {
+      title: 'Fondos del Consejo',
+      createPool: 'Crear Fondo',
+      loading: 'Cargando fondos...',
+      error: 'Error al cargar los fondos',
+      noPools: 'No hay fondos creados',
+      createPoolHint: 'Crea un fondo para agregar y distribuir recursos',
+      items: 'articulos',
+      total: 'total',
+      allowedItems: 'Artículos permitidos',
+      created: 'Creado',
+      viewPool: 'Ver Fondo',
+    },
+  },
+  hi: {
+    councilPools: {
+      title: 'परिषद पूल',
+      createPool: 'पूल बनाएं',
+      loading: 'पूल लोड हो रहे हैं...',
+      error: 'पूल लोड करने में विफल',
+      noPools: 'अभी तक कोई पूल नहीं बनाया गया',
+      createPoolHint: 'संसाधनों को एकत्र और वितरित करने के लिए एक पूल बनाएं',
+      items: 'आइटम',
+      total: 'कुल',
+      allowedItems: 'अनुमत आइटम',
+      created: 'बनाया गया',
+      viewPool: 'पूल देखें',
+    },
+  },
+} as const;

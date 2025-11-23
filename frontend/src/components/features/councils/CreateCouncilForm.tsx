@@ -1,8 +1,10 @@
 import { Component, createSignal, Show } from 'solid-js';
 import { useCreateCouncilMutation } from '@/hooks/queries/useCouncils';
 import { Button } from '@/components/common/Button';
+import { CommunityMemberSelector } from '@/components/common/CommunityMemberSelector';
 import { makeTranslator } from '@/i18n/makeTranslator';
 import { councilsDict } from './councils.i18n';
+import { authStore } from '@/stores/auth.store';
 
 interface CreateCouncilFormProps {
   communityId: string;
@@ -16,7 +18,14 @@ export const CreateCouncilForm: Component<CreateCouncilFormProps> = (props) => {
 
   const [name, setName] = createSignal('');
   const [description, setDescription] = createSignal('');
+  const [additionalManagers, setAdditionalManagers] = createSignal<string[]>([]);
   const [error, setError] = createSignal('');
+
+  // Exclude current user from manager selection (they're automatically added as creator)
+  const excludeIds = () => {
+    const userId = authStore.user?.id;
+    return userId ? [userId] : [];
+  };
 
   const handleSubmit = async (e: Event) => {
     e.preventDefault();
@@ -39,12 +48,14 @@ export const CreateCouncilForm: Component<CreateCouncilFormProps> = (props) => {
         dto: {
           name: name().trim(),
           description: description().trim(),
+          additionalManagers: additionalManagers().length > 0 ? additionalManagers() : undefined,
         },
       });
 
       // Reset form
       setName('');
       setDescription('');
+      setAdditionalManagers([]);
 
       props.onSuccess?.();
     } catch (err) {
@@ -95,6 +106,25 @@ export const CreateCouncilForm: Component<CreateCouncilFormProps> = (props) => {
           rows={4}
           class="block w-full rounded-md border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 shadow-sm focus:border-ocean-500 focus:ring-ocean-500 sm:text-sm"
         />
+      </div>
+
+      {/* Additional Managers */}
+      <div>
+        <label class="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">
+          {t('addManager')} ({t('managersDescription')})
+        </label>
+        <CommunityMemberSelector
+          communityId={props.communityId}
+          mode="multi"
+          selectedIds={additionalManagers()}
+          onSelect={(userId) => setAdditionalManagers((prev) => [...prev, userId])}
+          onDeselect={(userId) => setAdditionalManagers((prev) => prev.filter((id) => id !== userId))}
+          excludeIds={excludeIds()}
+          placeholder={t('searchMembersPlaceholder')}
+        />
+        <p class="text-xs text-stone-500 dark:text-stone-400 mt-1">
+          You will automatically be added as a manager.
+        </p>
       </div>
 
       {/* Error message */}

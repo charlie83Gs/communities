@@ -244,15 +244,23 @@ Authorization: {{authToken}}
 # {
 #   "status": "success",
 #   "data": {
+#     "totalPeerTrust": 120,
+#     "totalAdminTrust": 30,
 #     "totalTrust": 150,
 #     "averageTrust": 18.75,
 #     "trustPerDay": 5.00,
 #     "timeSeriesData": [
 #       {
 #         "date": "2025-11-01",
-#         "trustAwarded": 10,
-#         "trustRemoved": 2,
-#         "netTrust": 8
+#         "cumulativePeerTrust": 80,
+#         "cumulativeAdminTrust": 20,
+#         "cumulativeTotal": 100
+#       },
+#       {
+#         "date": "2025-11-02",
+#         "cumulativePeerTrust": 120,
+#         "cumulativeAdminTrust": 30,
+#         "cumulativeTotal": 150
 #       },
 #       ...
 #     ]

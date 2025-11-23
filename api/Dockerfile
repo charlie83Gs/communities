@@ -27,7 +27,7 @@ COPY package.json bun.lockb* ./
 RUN bun install --frozen-lockfile
 
 # Copy configuration files
-COPY drizzle.config.ts tsconfig.json ./
+COPY drizzle.config.ts tsconfig.json bunfig.toml ./
 
 # Create necessary directories
 RUN mkdir -p logs uploads/images src/db/migrations

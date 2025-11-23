@@ -93,8 +93,20 @@ describe('DisputeRepository', () => {
 
   describe('findDisputesByCommunity', () => {
     it('should list disputes with pagination', async () => {
-      mockDb.offset.mockResolvedValue([testDispute]);
-      mockDb.where.mockResolvedValueOnce({ count: 1 });
+      // Main query chain: select().from().where().orderBy().limit().offset()
+      // Count query chain: select({count}).from().where()
+      // Setup offset for main query, then where for count query
+      let callCount = 0;
+      mockDb.offset.mockImplementation(() => Promise.resolve([testDispute]));
+      mockDb.where.mockImplementation(() => {
+        callCount++;
+        if (callCount <= 1) {
+          // First where call (main query) - return mockDb for chaining
+          return mockDb;
+        }
+        // Second where call (count query) - return count result
+        return Promise.resolve([{ count: 1 }]);
+      });
 
       const result = await disputeRepository.findDisputesByCommunity('comm-123', {
         limit: 20,
@@ -106,8 +118,15 @@ describe('DisputeRepository', () => {
     });
 
     it('should filter by status', async () => {
-      mockDb.offset.mockResolvedValue([testDispute]);
-      mockDb.where.mockResolvedValueOnce({ count: 1 });
+      let callCount = 0;
+      mockDb.offset.mockImplementation(() => Promise.resolve([testDispute]));
+      mockDb.where.mockImplementation(() => {
+        callCount++;
+        if (callCount <= 1) {
+          return mockDb;
+        }
+        return Promise.resolve([{ count: 1 }]);
+      });
 
       const result = await disputeRepository.findDisputesByCommunity('comm-123', {
         limit: 20,
@@ -307,8 +326,17 @@ describe('DisputeRepository', () => {
           },
         },
       ];
-      mockDb.offset.mockResolvedValue(messages);
-      mockDb.where.mockResolvedValueOnce({ count: 1 });
+      // Main query: select().from().leftJoin().where().orderBy().limit().offset()
+      // Count query: select({count}).from().where()
+      let callCount = 0;
+      mockDb.offset.mockImplementation(() => Promise.resolve(messages));
+      mockDb.where.mockImplementation(() => {
+        callCount++;
+        if (callCount <= 1) {
+          return mockDb;
+        }
+        return Promise.resolve([{ count: 1 }]);
+      });
 
       const result = await disputeRepository.findMessagesByDispute('dispute-123', {
         limit: 50,

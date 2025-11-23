@@ -9,7 +9,7 @@ import { TrustLevelPicker } from '@/components/common/TrustLevelPicker';
 import { useUpdateCommunityMutation } from '@/hooks/queries/useUpdateCommunityMutation';
 import { useDeleteCommunityMutation } from '@/hooks/queries/useDeleteCommunityMutation';
 import { useTrustLevelsQuery } from '@/hooks/queries/useTrustLevelsQuery';
-import type { UpdateCommunityDto, TrustLevelPickerValue, TrustRequirement } from '@/types/community.types';
+import type { UpdateCommunityDto, TrustLevelPickerValue, TrustRequirement, ValueRecognitionSettings } from '@/types/community.types';
 import { makeTranslator } from '@/i18n/makeTranslator';
 import { communitySettingsDict } from './CommunitySettings.i18n';
 
@@ -221,6 +221,27 @@ export const CommunitySettings: Component<CommunitySettingsProps> = (props) => {
     levelId: undefined,
   });
 
+  // Feature flags
+  const [poolsEnabled, setPoolsEnabled] = createSignal(true);
+  const [needsEnabled, setNeedsEnabled] = createSignal(true);
+  const [pollsEnabled, setPollsEnabled] = createSignal(true);
+  const [councilsEnabled, setCouncilsEnabled] = createSignal(true);
+  const [forumEnabled, setForumEnabled] = createSignal(true);
+  const [healthAnalyticsEnabled, setHealthAnalyticsEnabled] = createSignal(true);
+  const [disputesEnabled, setDisputesEnabled] = createSignal(true);
+  const [contributionsEnabled, setContributionsEnabled] = createSignal(true);
+
+  // Value Recognition Settings
+  const [vrEnabled, setVrEnabled] = createSignal(true);
+  const [vrAutoVerifySystemActions, setVrAutoVerifySystemActions] = createSignal(true);
+  const [vrAllowPeerGrants, setVrAllowPeerGrants] = createSignal(true);
+  const [vrPeerGrantMonthlyLimit, setVrPeerGrantMonthlyLimit] = createSignal(20);
+  const [vrPeerGrantSamePersonLimit, setVrPeerGrantSamePersonLimit] = createSignal(3);
+  const [vrRequireVerification, setVrRequireVerification] = createSignal(true);
+  const [vrAllowCouncilVerification, setVrAllowCouncilVerification] = createSignal(true);
+  const [vrShowAggregateStats, setVrShowAggregateStats] = createSignal(true);
+  const [vrVerificationReminderDays, setVrVerificationReminderDays] = createSignal(7);
+
   // Trust threshold fields - viewer thresholds (new)
   const [minTrustToViewTrust, setMinTrustToViewTrust] = createSignal<TrustLevelPickerValue>({
     customValue: 0,
@@ -328,6 +349,28 @@ export const CommunitySettings: Component<CommunitySettingsProps> = (props) => {
       setMinTrustToViewNeeds(
         trustRequirementToPickerValue(comm.minTrustToViewNeeds, levels, 0)
       );
+
+      // Feature flags
+      setPoolsEnabled(comm.featureFlags?.poolsEnabled ?? true);
+      setNeedsEnabled(comm.featureFlags?.needsEnabled ?? true);
+      setPollsEnabled(comm.featureFlags?.pollsEnabled ?? true);
+      setCouncilsEnabled(comm.featureFlags?.councilsEnabled ?? true);
+      setForumEnabled(comm.featureFlags?.forumEnabled ?? true);
+      setHealthAnalyticsEnabled(comm.featureFlags?.healthAnalyticsEnabled ?? true);
+      setDisputesEnabled(comm.featureFlags?.disputesEnabled ?? true);
+      setContributionsEnabled(comm.featureFlags?.contributionsEnabled ?? true);
+
+      // Value Recognition Settings
+      const vrs = comm.valueRecognitionSettings;
+      setVrEnabled(vrs?.enabled ?? true);
+      setVrAutoVerifySystemActions(vrs?.autoVerifySystemActions ?? true);
+      setVrAllowPeerGrants(vrs?.allowPeerGrants ?? true);
+      setVrPeerGrantMonthlyLimit(vrs?.peerGrantMonthlyLimit ?? 20);
+      setVrPeerGrantSamePersonLimit(vrs?.peerGrantSamePersonLimit ?? 3);
+      setVrRequireVerification(vrs?.requireVerification ?? true);
+      setVrAllowCouncilVerification(vrs?.allowCouncilVerification ?? true);
+      setVrShowAggregateStats(vrs?.showAggregateStats ?? true);
+      setVrVerificationReminderDays(vrs?.verificationReminderDays ?? 7);
     }
   });
 
@@ -356,6 +399,28 @@ export const CommunitySettings: Component<CommunitySettingsProps> = (props) => {
       minTrustToViewCouncils: pickerValueToTrustRequirement(minTrustToViewCouncils()),
       minTrustToViewForum: pickerValueToTrustRequirement(minTrustToViewForum()),
       minTrustToViewNeeds: pickerValueToTrustRequirement(minTrustToViewNeeds()),
+      featureFlags: {
+        poolsEnabled: poolsEnabled(),
+        needsEnabled: needsEnabled(),
+        pollsEnabled: pollsEnabled(),
+        councilsEnabled: councilsEnabled(),
+        forumEnabled: forumEnabled(),
+        healthAnalyticsEnabled: healthAnalyticsEnabled(),
+        disputesEnabled: disputesEnabled(),
+        contributionsEnabled: contributionsEnabled(),
+      },
+      valueRecognitionSettings: {
+        enabled: vrEnabled(),
+        autoVerifySystemActions: vrAutoVerifySystemActions(),
+        allowPeerGrants: vrAllowPeerGrants(),
+        peerGrantMonthlyLimit: vrPeerGrantMonthlyLimit(),
+        peerGrantSamePersonLimit: vrPeerGrantSamePersonLimit(),
+        requireVerification: vrRequireVerification(),
+        allowCouncilVerification: vrAllowCouncilVerification(),
+        showAggregateStats: vrShowAggregateStats(),
+        verificationReminderDays: vrVerificationReminderDays(),
+        softReciprocityNudges: false, // Always false as per design
+      },
     };
 
     // Mutation will automatically invalidate queries via onSuccess in the hook
@@ -372,6 +437,8 @@ export const CommunitySettings: Component<CommunitySettingsProps> = (props) => {
   const tabs = [
     { id: 'general', label: t('generalTab') },
     { id: 'trust-thresholds', label: t('trustThresholdsTab') },
+    { id: 'contributions', label: t('contributionsTab') },
+    { id: 'feature-flags', label: t('featureFlagsTab') },
   ];
 
   return (
@@ -664,6 +731,401 @@ export const CommunitySettings: Component<CommunitySettingsProps> = (props) => {
                     />
                   </tbody>
                 </table>
+              </div>
+
+              <Button onClick={handleUpdate} disabled={updateMutation.isPending}>
+                {updateMutation.isPending ? t('updating') : t('updateCommunity')}
+              </Button>
+            </div>
+          </Show>
+
+          <Show when={activeTab() === 'contributions'}>
+            <div class="space-y-6">
+              <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-200 dark:border-blue-800">
+                <p class="text-sm text-blue-900 dark:text-blue-100">
+                  {t('valueRecognitionDesc')}
+                </p>
+              </div>
+
+              <div class="space-y-4">
+                {/* Enable Value Recognition */}
+                <div class="flex items-start justify-between p-4 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg">
+                  <div class="flex-1">
+                    <label class="flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={vrEnabled()}
+                        onChange={(e) => setVrEnabled(e.currentTarget.checked)}
+                        class="w-5 h-5 text-ocean-600 bg-stone-100 dark:bg-stone-700 border-stone-300 dark:border-stone-600 rounded focus:ring-2 focus:ring-ocean-500 cursor-pointer"
+                      />
+                      <div class="ml-3">
+                        <span class="text-base font-semibold text-stone-900 dark:text-stone-100">
+                          {t('vrEnabled')}
+                        </span>
+                        <p class="text-sm text-stone-600 dark:text-stone-400 mt-1">
+                          {t('vrEnabledDesc')}
+                        </p>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                <Show when={vrEnabled()}>
+                  {/* Auto-verify System Actions */}
+                  <div class="flex items-start justify-between p-4 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg">
+                    <div class="flex-1">
+                      <label class="flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={vrAutoVerifySystemActions()}
+                          onChange={(e) => setVrAutoVerifySystemActions(e.currentTarget.checked)}
+                          class="w-5 h-5 text-ocean-600 bg-stone-100 dark:bg-stone-700 border-stone-300 dark:border-stone-600 rounded focus:ring-2 focus:ring-ocean-500 cursor-pointer"
+                        />
+                        <div class="ml-3">
+                          <span class="text-base font-semibold text-stone-900 dark:text-stone-100">
+                            {t('vrAutoVerifySystemActions')}
+                          </span>
+                          <p class="text-sm text-stone-600 dark:text-stone-400 mt-1">
+                            {t('vrAutoVerifySystemActionsDesc')}
+                          </p>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Allow Peer Grants */}
+                  <div class="flex items-start justify-between p-4 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg">
+                    <div class="flex-1">
+                      <label class="flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={vrAllowPeerGrants()}
+                          onChange={(e) => setVrAllowPeerGrants(e.currentTarget.checked)}
+                          class="w-5 h-5 text-ocean-600 bg-stone-100 dark:bg-stone-700 border-stone-300 dark:border-stone-600 rounded focus:ring-2 focus:ring-ocean-500 cursor-pointer"
+                        />
+                        <div class="ml-3">
+                          <span class="text-base font-semibold text-stone-900 dark:text-stone-100">
+                            {t('vrAllowPeerGrants')}
+                          </span>
+                          <p class="text-sm text-stone-600 dark:text-stone-400 mt-1">
+                            {t('vrAllowPeerGrantsDesc')}
+                          </p>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+
+                  <Show when={vrAllowPeerGrants()}>
+                    {/* Peer Grant Limits */}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pl-4">
+                      <div class="p-4 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg">
+                        <label class="block text-sm font-medium text-stone-900 dark:text-stone-100 mb-1">
+                          {t('vrPeerGrantMonthlyLimit')}
+                        </label>
+                        <p class="text-xs text-stone-600 dark:text-stone-400 mb-2">
+                          {t('vrPeerGrantMonthlyLimitDesc')}
+                        </p>
+                        <input
+                          type="number"
+                          min="1"
+                          value={vrPeerGrantMonthlyLimit()}
+                          onInput={(e) => setVrPeerGrantMonthlyLimit(parseInt(e.currentTarget.value, 10) || 20)}
+                          class="w-full px-3 py-2 border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ocean-500 focus:border-ocean-500"
+                        />
+                      </div>
+                      <div class="p-4 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg">
+                        <label class="block text-sm font-medium text-stone-900 dark:text-stone-100 mb-1">
+                          {t('vrPeerGrantSamePersonLimit')}
+                        </label>
+                        <p class="text-xs text-stone-600 dark:text-stone-400 mb-2">
+                          {t('vrPeerGrantSamePersonLimitDesc')}
+                        </p>
+                        <input
+                          type="number"
+                          min="1"
+                          value={vrPeerGrantSamePersonLimit()}
+                          onInput={(e) => setVrPeerGrantSamePersonLimit(parseInt(e.currentTarget.value, 10) || 3)}
+                          class="w-full px-3 py-2 border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ocean-500 focus:border-ocean-500"
+                        />
+                      </div>
+                    </div>
+                  </Show>
+
+                  {/* Require Verification */}
+                  <div class="flex items-start justify-between p-4 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg">
+                    <div class="flex-1">
+                      <label class="flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={vrRequireVerification()}
+                          onChange={(e) => setVrRequireVerification(e.currentTarget.checked)}
+                          class="w-5 h-5 text-ocean-600 bg-stone-100 dark:bg-stone-700 border-stone-300 dark:border-stone-600 rounded focus:ring-2 focus:ring-ocean-500 cursor-pointer"
+                        />
+                        <div class="ml-3">
+                          <span class="text-base font-semibold text-stone-900 dark:text-stone-100">
+                            {t('vrRequireVerification')}
+                          </span>
+                          <p class="text-sm text-stone-600 dark:text-stone-400 mt-1">
+                            {t('vrRequireVerificationDesc')}
+                          </p>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Allow Council Verification */}
+                  <div class="flex items-start justify-between p-4 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg">
+                    <div class="flex-1">
+                      <label class="flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={vrAllowCouncilVerification()}
+                          onChange={(e) => setVrAllowCouncilVerification(e.currentTarget.checked)}
+                          class="w-5 h-5 text-ocean-600 bg-stone-100 dark:bg-stone-700 border-stone-300 dark:border-stone-600 rounded focus:ring-2 focus:ring-ocean-500 cursor-pointer"
+                        />
+                        <div class="ml-3">
+                          <span class="text-base font-semibold text-stone-900 dark:text-stone-100">
+                            {t('vrAllowCouncilVerification')}
+                          </span>
+                          <p class="text-sm text-stone-600 dark:text-stone-400 mt-1">
+                            {t('vrAllowCouncilVerificationDesc')}
+                          </p>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Show Aggregate Stats */}
+                  <div class="flex items-start justify-between p-4 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg">
+                    <div class="flex-1">
+                      <label class="flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={vrShowAggregateStats()}
+                          onChange={(e) => setVrShowAggregateStats(e.currentTarget.checked)}
+                          class="w-5 h-5 text-ocean-600 bg-stone-100 dark:bg-stone-700 border-stone-300 dark:border-stone-600 rounded focus:ring-2 focus:ring-ocean-500 cursor-pointer"
+                        />
+                        <div class="ml-3">
+                          <span class="text-base font-semibold text-stone-900 dark:text-stone-100">
+                            {t('vrShowAggregateStats')}
+                          </span>
+                          <p class="text-sm text-stone-600 dark:text-stone-400 mt-1">
+                            {t('vrShowAggregateStatsDesc')}
+                          </p>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Verification Reminder Days */}
+                  <div class="p-4 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg">
+                    <label class="block text-sm font-medium text-stone-900 dark:text-stone-100 mb-1">
+                      {t('vrVerificationReminderDays')}
+                    </label>
+                    <p class="text-xs text-stone-600 dark:text-stone-400 mb-2">
+                      {t('vrVerificationReminderDaysDesc')}
+                    </p>
+                    <input
+                      type="number"
+                      min="1"
+                      value={vrVerificationReminderDays()}
+                      onInput={(e) => setVrVerificationReminderDays(parseInt(e.currentTarget.value, 10) || 7)}
+                      class="w-32 px-3 py-2 border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 text-stone-900 dark:text-stone-100 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ocean-500 focus:border-ocean-500"
+                    />
+                  </div>
+                </Show>
+              </div>
+
+              <Button onClick={handleUpdate} disabled={updateMutation.isPending}>
+                {updateMutation.isPending ? t('updating') : t('updateCommunity')}
+              </Button>
+            </div>
+          </Show>
+
+          <Show when={activeTab() === 'feature-flags'}>
+            <div class="space-y-6">
+              <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-200 dark:border-blue-800">
+                <p class="text-sm text-blue-900 dark:text-blue-100">
+                  {t('featureFlagsDesc')}
+                </p>
+              </div>
+
+              <div class="space-y-4">
+                {/* Pools */}
+                <div class="flex items-start justify-between p-4 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg">
+                  <div class="flex-1">
+                    <label class="flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={poolsEnabled()}
+                        onChange={(e) => setPoolsEnabled(e.currentTarget.checked)}
+                        class="w-5 h-5 text-ocean-600 bg-stone-100 dark:bg-stone-700 border-stone-300 dark:border-stone-600 rounded focus:ring-2 focus:ring-ocean-500 cursor-pointer"
+                      />
+                      <div class="ml-3">
+                        <span class="text-base font-semibold text-stone-900 dark:text-stone-100">
+                          {t('featureFlagsPools')}
+                        </span>
+                        <p class="text-sm text-stone-600 dark:text-stone-400 mt-1">
+                          {t('featureFlagsPoolsDesc')}
+                        </p>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Needs */}
+                <div class="flex items-start justify-between p-4 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg">
+                  <div class="flex-1">
+                    <label class="flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={needsEnabled()}
+                        onChange={(e) => setNeedsEnabled(e.currentTarget.checked)}
+                        class="w-5 h-5 text-ocean-600 bg-stone-100 dark:bg-stone-700 border-stone-300 dark:border-stone-600 rounded focus:ring-2 focus:ring-ocean-500 cursor-pointer"
+                      />
+                      <div class="ml-3">
+                        <span class="text-base font-semibold text-stone-900 dark:text-stone-100">
+                          {t('featureFlagsNeeds')}
+                        </span>
+                        <p class="text-sm text-stone-600 dark:text-stone-400 mt-1">
+                          {t('featureFlagsNeedsDesc')}
+                        </p>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Polls */}
+                <div class="flex items-start justify-between p-4 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg">
+                  <div class="flex-1">
+                    <label class="flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={pollsEnabled()}
+                        onChange={(e) => setPollsEnabled(e.currentTarget.checked)}
+                        class="w-5 h-5 text-ocean-600 bg-stone-100 dark:bg-stone-700 border-stone-300 dark:border-stone-600 rounded focus:ring-2 focus:ring-ocean-500 cursor-pointer"
+                      />
+                      <div class="ml-3">
+                        <span class="text-base font-semibold text-stone-900 dark:text-stone-100">
+                          {t('featureFlagsPolls')}
+                        </span>
+                        <p class="text-sm text-stone-600 dark:text-stone-400 mt-1">
+                          {t('featureFlagsPollsDesc')}
+                        </p>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Councils */}
+                <div class="flex items-start justify-between p-4 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg">
+                  <div class="flex-1">
+                    <label class="flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={councilsEnabled()}
+                        onChange={(e) => setCouncilsEnabled(e.currentTarget.checked)}
+                        class="w-5 h-5 text-ocean-600 bg-stone-100 dark:bg-stone-700 border-stone-300 dark:border-stone-600 rounded focus:ring-2 focus:ring-ocean-500 cursor-pointer"
+                      />
+                      <div class="ml-3">
+                        <span class="text-base font-semibold text-stone-900 dark:text-stone-100">
+                          {t('featureFlagsCouncils')}
+                        </span>
+                        <p class="text-sm text-stone-600 dark:text-stone-400 mt-1">
+                          {t('featureFlagsCouncilsDesc')}
+                        </p>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Forum */}
+                <div class="flex items-start justify-between p-4 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg">
+                  <div class="flex-1">
+                    <label class="flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={forumEnabled()}
+                        onChange={(e) => setForumEnabled(e.currentTarget.checked)}
+                        class="w-5 h-5 text-ocean-600 bg-stone-100 dark:bg-stone-700 border-stone-300 dark:border-stone-600 rounded focus:ring-2 focus:ring-ocean-500 cursor-pointer"
+                      />
+                      <div class="ml-3">
+                        <span class="text-base font-semibold text-stone-900 dark:text-stone-100">
+                          {t('featureFlagsForum')}
+                        </span>
+                        <p class="text-sm text-stone-600 dark:text-stone-400 mt-1">
+                          {t('featureFlagsForumDesc')}
+                        </p>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Health Analytics */}
+                <div class="flex items-start justify-between p-4 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg">
+                  <div class="flex-1">
+                    <label class="flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={healthAnalyticsEnabled()}
+                        onChange={(e) => setHealthAnalyticsEnabled(e.currentTarget.checked)}
+                        class="w-5 h-5 text-ocean-600 bg-stone-100 dark:bg-stone-700 border-stone-300 dark:border-stone-600 rounded focus:ring-2 focus:ring-ocean-500 cursor-pointer"
+                      />
+                      <div class="ml-3">
+                        <span class="text-base font-semibold text-stone-900 dark:text-stone-100">
+                          {t('featureFlagsHealthAnalytics')}
+                        </span>
+                        <p class="text-sm text-stone-600 dark:text-stone-400 mt-1">
+                          {t('featureFlagsHealthAnalyticsDesc')}
+                        </p>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Disputes */}
+                <div class="flex items-start justify-between p-4 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg">
+                  <div class="flex-1">
+                    <label class="flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={disputesEnabled()}
+                        onChange={(e) => setDisputesEnabled(e.currentTarget.checked)}
+                        class="w-5 h-5 text-ocean-600 bg-stone-100 dark:bg-stone-700 border-stone-300 dark:border-stone-600 rounded focus:ring-2 focus:ring-ocean-500 cursor-pointer"
+                      />
+                      <div class="ml-3">
+                        <span class="text-base font-semibold text-stone-900 dark:text-stone-100">
+                          {t('featureFlagsDisputes')}
+                        </span>
+                        <p class="text-sm text-stone-600 dark:text-stone-400 mt-1">
+                          {t('featureFlagsDisputesDesc')}
+                        </p>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Contributions */}
+                <div class="flex items-start justify-between p-4 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg">
+                  <div class="flex-1">
+                    <label class="flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={contributionsEnabled()}
+                        onChange={(e) => setContributionsEnabled(e.currentTarget.checked)}
+                        class="w-5 h-5 text-ocean-600 bg-stone-100 dark:bg-stone-700 border-stone-300 dark:border-stone-600 rounded focus:ring-2 focus:ring-ocean-500 cursor-pointer"
+                      />
+                      <div class="ml-3">
+                        <span class="text-base font-semibold text-stone-900 dark:text-stone-100">
+                          {t('featureFlagsContributions')}
+                        </span>
+                        <p class="text-sm text-stone-600 dark:text-stone-400 mt-1">
+                          {t('featureFlagsContributionsDesc')}
+                        </p>
+                      </div>
+                    </label>
+                  </div>
+                </div>
               </div>
 
               <Button onClick={handleUpdate} disabled={updateMutation.isPending}>

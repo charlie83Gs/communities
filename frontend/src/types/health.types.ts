@@ -11,9 +11,10 @@ export interface WealthOverview {
   totalShares: number;
   activeCategories: number;
   timeSeries: {
-    shares: TimeSeriesDataPoint[];
-    requests: TimeSeriesDataPoint[];
-    fulfilled: TimeSeriesDataPoint[];
+    openShares: TimeSeriesDataPoint[];
+    dailyRequests: TimeSeriesDataPoint[];
+    dailyFulfilled: TimeSeriesDataPoint[];
+    dailyValueContributed: TimeSeriesDataPoint[];
   };
 }
 
@@ -32,13 +33,14 @@ export interface WealthHealthData {
 
 // Trust Health Types
 export interface TrustOverview {
+  totalPeerTrust: number;
+  totalAdminTrust: number;
   totalTrust: number;
   averageTrust: number;
   trustPerDay: number;
   timeSeries: {
-    awarded: TimeSeriesDataPoint[];
-    removed: TimeSeriesDataPoint[];
-    net: TimeSeriesDataPoint[];
+    cumulativePeerTrust: TimeSeriesDataPoint[];
+    cumulativeAdminTrust: TimeSeriesDataPoint[];
   };
 }
 
@@ -64,8 +66,8 @@ export interface NeedsOverview {
     services: number;
   };
   timeSeries: {
-    needs: TimeSeriesDataPoint[];
-    wants: TimeSeriesDataPoint[];
+    cumulativeNeeds: TimeSeriesDataPoint[];
+    cumulativeWants: TimeSeriesDataPoint[];
   };
 }
 

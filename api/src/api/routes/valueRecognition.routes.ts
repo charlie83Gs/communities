@@ -36,6 +36,14 @@ router.get(
   valueRecognitionController.getMyProfile
 );
 
+// Get my contributions list
+router.get(
+  '/communities/:communityId/contributions/my',
+  verifyToken,
+  validateGetContributionProfile,
+  valueRecognitionController.getMyContributions
+);
+
 // Get user's contribution profile
 router.get(
   '/communities/:communityId/contributions/profile/:userId',

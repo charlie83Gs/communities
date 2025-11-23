@@ -1,0 +1,55 @@
+### Variables
+@baseUrl = http://localhost:3000/api/v1
+@token = YOUR_JWT_TOKEN_HERE
+@wealthId = YOUR_WEALTH_ID_HERE
+@requestId = YOUR_REQUEST_ID_HERE
+@notificationId = YOUR_NOTIFICATION_ID_HERE
+
+### Send a message in a wealth request thread
+POST {{baseUrl}}/wealth/{{wealthId}}/requests/{{requestId}}/messages
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "content": "Hello! I'm interested in your offer. When would be a good time to pick it up?"
+}
+
+### List messages for a wealth request
+GET {{baseUrl}}/wealth/{{wealthId}}/requests/{{requestId}}/messages
+Authorization: Bearer {{token}}
+
+### List notifications
+GET {{baseUrl}}/notifications?limit=20&offset=0
+Authorization: Bearer {{token}}
+
+### List notifications for a specific community
+GET {{baseUrl}}/notifications?community_id=YOUR_COMMUNITY_ID&limit=20
+Authorization: Bearer {{token}}
+
+### List only unread notifications
+GET {{baseUrl}}/notifications?unread_only=true
+Authorization: Bearer {{token}}
+
+### Get unread notification count
+GET {{baseUrl}}/notifications/unread-count
+Authorization: Bearer {{token}}
+
+### Get unread count for specific community
+GET {{baseUrl}}/notifications/unread-count?community_id=YOUR_COMMUNITY_ID
+Authorization: Bearer {{token}}
+
+### Mark notification as read
+POST {{baseUrl}}/notifications/{{notificationId}}/read
+Authorization: Bearer {{token}}
+
+### Mark all notifications as read
+POST {{baseUrl}}/notifications/read-all
+Authorization: Bearer {{token}}
+
+### Mark all notifications as read for a specific community
+POST {{baseUrl}}/notifications/read-all?community_id=YOUR_COMMUNITY_ID
+Authorization: Bearer {{token}}
+
+### Delete a notification
+DELETE {{baseUrl}}/notifications/{{notificationId}}
+Authorization: Bearer {{token}}

@@ -324,3 +324,25 @@ export const validateDeleteComment = (req: Request, res: Response, next: NextFun
     if (!r) next(err);
   }
 };
+
+// Request message validation schemas
+
+export const createRequestMessageSchema = z.object({
+  params: z.object({
+    id: z.string().uuid(),
+    requestId: z.string().uuid(),
+  }),
+  body: z.object({
+    content: z.string().min(1).max(5000),
+  }),
+}).passthrough();
+
+export const validateCreateRequestMessage = (req: Request, res: Response, next: NextFunction) => {
+  try {
+    createRequestMessageSchema.parse(req);
+    next();
+  } catch (err) {
+    const r = handleZodError(res, err);
+    if (!r) next(err);
+  }
+};

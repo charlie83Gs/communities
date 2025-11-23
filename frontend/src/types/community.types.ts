@@ -1,3 +1,27 @@
+export interface FeatureFlags {
+  poolsEnabled: boolean;
+  needsEnabled: boolean;
+  pollsEnabled: boolean;
+  councilsEnabled: boolean;
+  forumEnabled: boolean;
+  healthAnalyticsEnabled: boolean;
+  disputesEnabled: boolean;
+  contributionsEnabled: boolean;
+}
+
+export interface ValueRecognitionSettings {
+  enabled: boolean;
+  showAggregateStats: boolean;
+  allowPeerGrants: boolean;
+  peerGrantMonthlyLimit: number;
+  peerGrantSamePersonLimit: number;
+  requireVerification: boolean;
+  autoVerifySystemActions: boolean;
+  allowCouncilVerification: boolean;
+  verificationReminderDays: number;
+  softReciprocityNudges: boolean;
+}
+
 export interface Community {
   id: string;
   name: string;
@@ -28,6 +52,8 @@ export interface Community {
   minTrustToViewPools: TrustRequirement | null;
   minTrustToViewCouncils: TrustRequirement | null;
   minTrustToViewForum: TrustRequirement | null;
+  featureFlags: FeatureFlags;
+  valueRecognitionSettings?: ValueRecognitionSettings;
   createdBy: string | null;
   createdAt: Date | null;
   userTrustScore?: number | null;
@@ -58,6 +84,7 @@ export interface CreateCommunityDto {
   minTrustToViewPools?: TrustRequirement;
   minTrustToViewCouncils?: TrustRequirement;
   minTrustToViewForum?: TrustRequirement;
+  featureFlags?: FeatureFlags;
 }
 
 export interface UpdateCommunityDto {
@@ -85,6 +112,8 @@ export interface UpdateCommunityDto {
   minTrustToViewPools?: TrustRequirement;
   minTrustToViewCouncils?: TrustRequirement;
   minTrustToViewForum?: TrustRequirement;
+  featureFlags?: FeatureFlags;
+  valueRecognitionSettings?: Partial<ValueRecognitionSettings>;
 }
 
 export interface PaginatedCommunities {
@@ -180,4 +209,19 @@ export interface TrustRequirement {
 export interface TrustLevelPickerValue {
   customValue: number;
   levelId?: string;
+}
+
+export interface CommunityStatsSummary {
+  memberCount: number;
+  avgTrustScore: number;
+  wealthCount: number;
+  poolCount: number;
+  needsCount: number;
+}
+
+export interface CommunityPendingActions {
+  incomingRequests: number;
+  outgoingRequests: number;
+  poolDistributions: number;
+  openDisputes: number;
 }

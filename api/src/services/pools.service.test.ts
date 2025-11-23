@@ -14,6 +14,10 @@ const mockPoolsRepository = {
   incrementInventory: mock(() => Promise.resolve()),
   decrementInventory: mock(() => Promise.resolve(true)),
   batchDecrementInventory: mock(() => Promise.resolve(true)),
+  getAllowedItems: mock(() => Promise.resolve([])),
+  getAllowedItemIds: mock(() => Promise.resolve([] as string[])),
+  setAllowedItems: mock(() => Promise.resolve()),
+  isItemAllowed: mock(() => Promise.resolve(true)),
 };
 
 const mockCouncilRepository = {
@@ -52,6 +56,14 @@ const mockOpenFGAService = {
   createRelationship: mock(() => Promise.resolve()),
 };
 
+const mockRecognizedContributionRepository = {
+  create: mock(() => Promise.resolve({ id: 'contribution-123' })),
+};
+
+const mockContributionSummaryRepository = {
+  delete: mock(() => Promise.resolve()),
+};
+
 let poolsService: PoolsService;
 
 // Test data
@@ -61,9 +73,6 @@ const testPool = {
   councilId: 'council-123',
   name: 'Tomato Pool',
   description: 'Community tomato aggregation',
-  primaryItemId: 'item-tomato',
-  distributionLocation: 'Community Center',
-  distributionType: 'manual' as const,
   maxUnitsPerUser: 5,
   minimumContribution: 1,
   createdBy: 'user-123',
@@ -75,8 +84,8 @@ const testPool = {
 const testPoolWithDetails = {
   ...testPool,
   councilName: 'Food Council',
-  primaryItemName: 'Tomatoes',
   inventory: [{ itemId: 'item-tomato', itemName: 'Tomatoes', unitsAvailable: 50 }],
+  allowedItems: [],
 };
 
 const testCouncil = {
@@ -93,10 +102,13 @@ const testCouncil = {
 const testItem = {
   id: 'item-tomato',
   communityId: 'comm-123',
-  name: 'Tomatoes',
+  translations: {
+    en: { name: 'Tomatoes', description: 'Fresh tomatoes' },
+  },
   kind: 'object' as const,
-  description: 'Fresh tomatoes',
-  unit: 'kg',
+  wealthValue: '1.0',
+  contributionMetadata: null,
+  isDefault: false,
   createdBy: 'user-123',
   createdAt: new Date(),
   updatedAt: new Date(),
@@ -178,10 +190,14 @@ describe('PoolsService', () => {
     Object.values(mockNeedsRepository).forEach((m) => m.mockReset());
     Object.values(mockAppUserRepository).forEach((m) => m.mockReset());
     Object.values(mockOpenFGAService).forEach((m) => m.mockReset());
+    Object.values(mockRecognizedContributionRepository).forEach((m) => m.mockReset());
+    Object.values(mockContributionSummaryRepository).forEach((m) => m.mockReset());
 
     // Set up default mock implementations
     mockPoolsRepository.findById.mockResolvedValue(testPool);
     mockPoolsRepository.findByIdWithDetails.mockResolvedValue(testPoolWithDetails);
+    mockPoolsRepository.isItemAllowed.mockResolvedValue(true);
+    mockPoolsRepository.getAllowedItemIds.mockResolvedValue([]);
     mockCouncilRepository.findById.mockResolvedValue(testCouncil);
     mockCouncilRepository.isManager.mockResolvedValue(true);
     mockItemsRepository.findById.mockResolvedValue(testItem);
@@ -195,6 +211,8 @@ describe('PoolsService', () => {
       mockCouncilRepository as any,
       mockItemsRepository as any,
       mockAppUserRepository as any,
+      mockRecognizedContributionRepository as any,
+      mockContributionSummaryRepository as any,
       mockOpenFGAService as any
     );
   });
@@ -209,7 +227,6 @@ describe('PoolsService', () => {
         {
           name: 'Tomato Pool',
           description: 'Community tomato aggregation',
-          distributionType: 'manual',
         },
         'user-123'
       );
@@ -226,7 +243,7 @@ describe('PoolsService', () => {
         poolsService.createPool(
           'comm-123',
           'council-123',
-          { name: 'Pool', description: 'Test', distributionType: 'manual' },
+          { name: 'Pool', description: 'Test' },
           'user-456'
         )
       ).rejects.toThrow('Only council managers can create pools');
@@ -239,7 +256,7 @@ describe('PoolsService', () => {
         poolsService.createPool(
           'comm-123',
           'invalid-council',
-          { name: 'Pool', description: 'Test', distributionType: 'manual' },
+          { name: 'Pool', description: 'Test' },
           'user-123'
         )
       ).rejects.toThrow('Council not found');
@@ -255,7 +272,7 @@ describe('PoolsService', () => {
         poolsService.createPool(
           'comm-123',
           'council-123',
-          { name: 'Pool', description: 'Test', distributionType: 'manual' },
+          { name: 'Pool', description: 'Test' },
           'user-123'
         )
       ).rejects.toThrow('Council does not belong to this community');
@@ -282,6 +299,33 @@ describe('PoolsService', () => {
       expect(mockWealthRepository.createWealth).toHaveBeenCalled();
       // Should NOT create wealth_request
       expect(mockWealthRepository.createWealthRequest).not.toHaveBeenCalled();
+    });
+
+    it('should create recognized contribution for value analytics', async () => {
+      mockWealthRepository.createWealth.mockResolvedValue(testWealth);
+
+      await poolsService.contributeToPool(
+        'pool-123',
+        {
+          itemId: 'item-tomato',
+          unitsOffered: 10,
+          title: 'My tomatoes',
+        },
+        'user-123'
+      );
+
+      expect(mockRecognizedContributionRepository.create).toHaveBeenCalledWith({
+        communityId: 'comm-123',
+        contributorId: 'user-123',
+        itemId: 'item-tomato',
+        units: '10',
+        valuePerUnit: '1.0',
+        totalValue: '10',
+        description: 'Pool contribution: My tomatoes',
+        verificationStatus: 'auto_verified',
+        sourceType: 'pool_contribution',
+        sourceId: 'wealth-123',
+      });
     });
 
     it('should enforce minimum contribution', async () => {
@@ -455,11 +499,44 @@ describe('PoolsService', () => {
       expect(result[0].unitsOffered).toBe(10);
     });
 
-    it('should throw error if user is not council manager', async () => {
+    it('should filter contributions for non-managers to show only their own', async () => {
+      // Non-manager user
       mockCouncilRepository.isManager.mockResolvedValue(false);
 
+      const contributionsByOther = {
+        ...testWealth,
+        createdBy: 'other-user',
+        item: testItem,
+      };
+      const contributionsByUser = {
+        ...testWealth,
+        id: 'wealth-456',
+        createdBy: 'user-456',
+        item: testItem,
+      };
+
+      mockWealthRepository.getPendingContributionsByPoolId.mockResolvedValue([
+        contributionsByOther,
+        contributionsByUser,
+      ] as any);
+
+      mockAppUserRepository.findById.mockResolvedValue(testUser);
+
+      const result = await poolsService.listPendingContributions('pool-123', 'user-456');
+
+      // Should only see their own contribution
+      expect(result).toBeDefined();
+      expect(result.length).toBe(1);
+      expect(result[0].wealthId).toBe('wealth-456');
+      expect(result[0].contributorId).toBe('user-456');
+    });
+
+    it('should throw error if user does not have can_view_wealth permission', async () => {
+      mockCouncilRepository.isManager.mockResolvedValue(false);
+      mockOpenFGAService.checkAccess.mockResolvedValue(false);
+
       await expect(poolsService.listPendingContributions('pool-123', 'user-456')).rejects.toThrow(
-        'Only council managers can view pending contributions'
+        'You do not have permission to view contributions'
       );
     });
   });
@@ -494,6 +571,124 @@ describe('PoolsService', () => {
 
       await expect(poolsService.listDistributions('pool-123', 'user-456')).rejects.toThrow(
         'Only council managers can view distributions'
+      );
+    });
+  });
+
+  describe('createPool with allowedItemIds', () => {
+    it('should create pool with allowed items', async () => {
+      mockPoolsRepository.create.mockResolvedValue(testPool);
+      mockItemsRepository.findById.mockResolvedValue(testItem);
+
+      const result = await poolsService.createPool(
+        'comm-123',
+        'council-123',
+        {
+          name: 'Tomato Pool',
+          description: 'Community tomato aggregation',
+          allowedItemIds: ['item-tomato'],
+        },
+        'user-123'
+      );
+
+      expect(result).toBeDefined();
+      expect(mockPoolsRepository.setAllowedItems).toHaveBeenCalledWith('pool-123', ['item-tomato']);
+    });
+
+    it('should throw error if allowed item does not belong to community', async () => {
+      mockPoolsRepository.create.mockResolvedValue(testPool);
+      mockItemsRepository.findById.mockResolvedValue({
+        ...testItem,
+        communityId: 'other-community',
+      });
+
+      await expect(
+        poolsService.createPool(
+          'comm-123',
+          'council-123',
+          {
+            name: 'Pool',
+            description: 'Test',
+            allowedItemIds: ['item-tomato'],
+          },
+          'user-123'
+        )
+      ).rejects.toThrow('does not belong to this community');
+    });
+  });
+
+  describe('contributeToPool with whitelist', () => {
+    it('should reject contribution if item is not in whitelist', async () => {
+      mockWealthRepository.createWealth.mockResolvedValue(testWealth);
+      mockPoolsRepository.isItemAllowed.mockResolvedValue(false);
+
+      await expect(
+        poolsService.contributeToPool(
+          'pool-123',
+          {
+            itemId: 'item-tomato',
+            unitsOffered: 10,
+            title: 'My tomatoes',
+          },
+          'user-123'
+        )
+      ).rejects.toThrow('This item is not allowed in this pool');
+    });
+  });
+
+  describe('distributeFromPool with whitelist', () => {
+    it('should reject distribution if item is not in whitelist', async () => {
+      mockPoolsRepository.getInventoryForItem.mockResolvedValue(50);
+      mockAppUserRepository.findById.mockResolvedValue(testUser);
+      mockPoolsRepository.isItemAllowed.mockResolvedValue(false);
+
+      await expect(
+        poolsService.distributeFromPool(
+          'pool-123',
+          {
+            recipientId: 'user-456',
+            itemId: 'item-tomato',
+            unitsDistributed: 5,
+            title: 'Tomato distribution',
+          },
+          'user-123'
+        )
+      ).rejects.toThrow('This item is not allowed in this pool');
+    });
+  });
+
+  describe('getPoolNeeds', () => {
+    it('should return aggregated needs for pool', async () => {
+      mockNeedsRepository.listNeeds.mockResolvedValue(testNeeds);
+      mockPoolsRepository.getAllowedItemIds.mockResolvedValue([]);
+      mockPoolsRepository.getInventoryForItem.mockResolvedValue(50);
+
+      const result = await poolsService.getPoolNeeds('pool-123', 'user-123');
+
+      expect(result).toBeDefined();
+      expect(result.items).toBeDefined();
+      expect(mockNeedsRepository.listNeeds).toHaveBeenCalledWith({
+        communityId: 'comm-123',
+        status: 'active',
+      });
+    });
+
+    it('should filter needs by whitelist if pool has allowed items', async () => {
+      mockNeedsRepository.listNeeds.mockResolvedValue(testNeeds);
+      mockPoolsRepository.getAllowedItemIds.mockResolvedValue(['item-tomato']);
+      mockPoolsRepository.getInventoryForItem.mockResolvedValue(50);
+
+      const result = await poolsService.getPoolNeeds('pool-123', 'user-123');
+
+      expect(result).toBeDefined();
+      expect(result.items.length).toBe(1);
+    });
+
+    it('should throw error if user is not council manager', async () => {
+      mockCouncilRepository.isManager.mockResolvedValue(false);
+
+      await expect(poolsService.getPoolNeeds('pool-123', 'user-456')).rejects.toThrow(
+        'Only council managers can view pool needs'
       );
     });
   });

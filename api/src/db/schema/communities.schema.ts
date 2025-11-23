@@ -42,6 +42,9 @@ export const communities = pgTable('communities', {
   minTrustForPoolCreation: jsonb('min_trust_for_pool_creation').default({ type: 'number', value: 20 }),
   minTrustToViewPools: jsonb('min_trust_to_view_pools').default({ type: 'number', value: 0 }),
 
+  // Checkout Links Permissions (FT-21: Sharing Markets)
+  minTrustForCheckoutLinks: jsonb('min_trust_for_checkout_links').default({ type: 'number', value: 5 }),
+
   // Council Permissions
   minTrustForCouncilCreation: jsonb('min_trust_for_council_creation').default({ type: 'number', value: 25 }),
   minTrustToViewCouncils: jsonb('min_trust_to_view_councils').default({ type: 'number', value: 0 }),
@@ -92,6 +95,22 @@ export const communities = pgTable('communities', {
     verificationReminderDays: 7,
     softReciprocityNudges: false
   }),
+
+  // Skills & Endorsements Configuration (FT-19)
+  minTrustToEndorseSkills: jsonb('min_trust_to_endorse_skills').default({ type: 'number', value: 10 }),
+
+  // Feature Flags - toggles for optional features
+  // Core features (wealth, items, members, trust-timeline, activity, invites, trust-grants, settings) are always enabled
+  featureFlags: jsonb('feature_flags').default({
+    poolsEnabled: true,
+    needsEnabled: true,
+    pollsEnabled: true,
+    councilsEnabled: true,
+    forumEnabled: true,
+    healthAnalyticsEnabled: true,
+    disputesEnabled: true,
+    contributionsEnabled: true
+  }).notNull(),
 
   createdBy: text('created_by').references(() => appUsers.id),
   createdAt: timestamp('created_at').defaultNow(),

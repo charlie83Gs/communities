@@ -1,6 +1,6 @@
 import { Component, createSignal, For, Show } from 'solid-js';
 import { StatCard } from '@/components/common/StatCard';
-import { LineChart } from '@/components/common/LineChart';
+import { AreaChart } from '@/components/common/AreaChart';
 import { useTrustOverviewQuery, useTrustDistributionQuery } from '@/hooks/queries/useHealthQueries';
 import type { TimeRange } from '@/types/health.types';
 import { makeTranslator } from '@/i18n/makeTranslator';
@@ -91,12 +91,24 @@ export const TrustStatistics: Component<TrustStatisticsProps> = (props) => {
 
       {/* Overview Cards */}
       <Show when={!overviewQuery.isLoading && overviewQuery.data}>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <StatCard
             title={t('totalTrust')}
             value={overviewQuery.data!.totalTrust}
             subtitle={t('totalTrustSubtitle')}
             icon={<span class="text-2xl">🤝</span>}
+          />
+          <StatCard
+            title={t('peerTrust')}
+            value={overviewQuery.data!.totalPeerTrust}
+            subtitle={t('peerTrustSubtitle')}
+            icon={<span class="text-2xl">👥</span>}
+          />
+          <StatCard
+            title={t('adminTrust')}
+            value={overviewQuery.data!.totalAdminTrust}
+            subtitle={t('adminTrustSubtitle')}
+            icon={<span class="text-2xl">🛡️</span>}
           />
           <StatCard
             title={t('averageTrust')}
@@ -115,28 +127,24 @@ export const TrustStatistics: Component<TrustStatisticsProps> = (props) => {
 
       {/* Time Series Chart */}
       <Show when={!overviewQuery.isLoading && overviewQuery.data}>
-        <LineChart
+        <AreaChart
           title={t('chartTitle')}
           datasets={[
             {
-              label: t('awarded'),
-              data: overviewQuery.data!.timeSeries.awarded,
+              label: t('peerTrustLine'),
+              data: overviewQuery.data!.timeSeries.cumulativePeerTrust,
               color: '#16a34a', // forest-600
             },
             {
-              label: t('removed'),
-              data: overviewQuery.data!.timeSeries.removed,
-              color: '#dc2626', // danger-600
-            },
-            {
-              label: t('net'),
-              data: overviewQuery.data!.timeSeries.net,
-              color: '#0284c7', // ocean-600
+              label: t('adminTrustLine'),
+              data: overviewQuery.data!.timeSeries.cumulativeAdminTrust,
+              color: '#8b5cf6', // purple-500
             },
           ]}
           yAxisLabel={t('trustPoints')}
           height={300}
           loading={overviewQuery.isLoading}
+          stacked={true}
         />
       </Show>
 

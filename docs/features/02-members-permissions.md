@@ -3,7 +3,7 @@ id: FT-02
 title: Members & Permissions
 status: implemented
 version: 2.0
-last_updated: 2025-01-08
+last_updated: 2025-11-19
 related_features: [FT-01, FT-03, FT-04, FT-05, FT-06, FT-07, FT-10, FT-13]
 ---
 
@@ -215,10 +215,40 @@ Communities can configure trust thresholds to automatically grant roles. Each ro
 ## Role Assignment Methods
 
 ### Regular Role Assignment
-- **How**: Admin explicitly grants role via UI
+- **How**: Admin explicitly grants role via Member Edit UI
 - **Storage**: Stored as OpenFGA relation (e.g., `user:alice → forum_manager → community:xyz`)
 - **Use Case**: Grant special permissions to specific trusted members
 - **Revocable**: Admin can remove the role at any time
+- **UI**: Feature roles displayed in collapsible categories in the member edit modal
+
+### Feature Role Management UI
+Admins can assign feature roles through the member edit modal:
+
+**Base Role Section:**
+- Radio buttons to select between `member` and `admin`
+- Only one base role can be active at a time
+
+**Feature Roles Section:**
+- Collapsible categories grouped by feature domain:
+  - Trust (viewer, granter)
+  - Wealth (viewer, creator)
+  - Polls (viewer, creator)
+  - Disputes (viewer, handler)
+  - Pools (viewer, creator)
+  - Councils (viewer, creator)
+  - Forum (viewer, manager, thread_creator, attachment_uploader, content_flagger, flag_reviewer)
+  - Items (viewer, manager)
+  - Analytics (viewer)
+  - Needs (viewer, publisher)
+- Checkboxes for each role within categories
+- Multiple feature roles can be assigned simultaneously
+- Shows count of active roles per category and total
+
+**API Endpoint:**
+```
+PUT /api/v1/communities/{id}/members/{userId}/feature-roles
+Body: { roles: string[] }
+```
 
 ### Trust Role Assignment
 - **How**: Automatically granted when user's trust >= threshold

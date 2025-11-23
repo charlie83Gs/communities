@@ -1,7 +1,25 @@
 import { db as realDb } from '../db/index';
-import { communities, communityLinkInvites, communityUserInvites } from '../db/schema';
-import { eq, and, isNull, sql, inArray, or, ilike } from 'drizzle-orm';
-import { CreateCommunityDto, UpdateCommunityDto, Community } from '../types/community.types';
+import {
+  communities,
+  communityLinkInvites,
+  communityUserInvites,
+  trustViews,
+  wealth,
+  wealthRequests,
+  pools,
+  needs,
+  disputes,
+  disputeParticipants,
+} from '../db/schema';
+import { communityMemberRepository } from './communityMember.repository';
+import { eq, and, isNull, sql, inArray, or, ilike, notInArray } from 'drizzle-orm';
+import {
+  CreateCommunityDto,
+  UpdateCommunityDto,
+  Community,
+  CommunityStatsSummary,
+  CommunityPendingActions,
+} from '../types/community.types';
 
 export type CommunitySearchFilters = {
   q?: string;
@@ -118,6 +136,106 @@ export class CommunityRepository {
     const rows = await this.db.select().from(communities).where(where).limit(limit).offset(offset);
 
     return { rows: rows as Community[], total: count ?? 0 };
+  }
+
+  async getStatsSummary(communityId: string): Promise<CommunityStatsSummary> {
+    // Member count from OpenFGA (the source of truth for membership)
+    const members = await communityMemberRepository.findByCommunity(communityId);
+    const memberCount = members.length;
+
+    // Average trust score
+    const [trustResult] = await this.db
+      .select({ avg: sql<number>`coalesce(avg(${trustViews.points}), 0)` })
+      .from(trustViews)
+      .where(eq(trustViews.communityId, communityId));
+
+    // Active wealth count (excluding cancelled and fulfilled statuses)
+    const [wealthResult] = await this.db
+      .select({ count: sql<number>`cast(count(*) as int)` })
+      .from(wealth)
+      .where(
+        and(
+          eq(wealth.communityId, communityId),
+          notInArray(wealth.status, ['cancelled', 'fulfilled', 'expired'])
+        )
+      );
+
+    // Active pool count
+    const [poolResult] = await this.db
+      .select({ count: sql<number>`cast(count(*) as int)` })
+      .from(pools)
+      .where(and(eq(pools.communityId, communityId), isNull(pools.deletedAt)));
+
+    // Active needs count
+    const [needsResult] = await this.db
+      .select({ count: sql<number>`cast(count(*) as int)` })
+      .from(needs)
+      .where(
+        and(eq(needs.communityId, communityId), isNull(needs.deletedAt), eq(needs.status, 'active'))
+      );
+
+    return {
+      memberCount,
+      avgTrustScore: Math.round(Number(trustResult?.avg) || 0),
+      wealthCount: wealthResult?.count ?? 0,
+      poolCount: poolResult?.count ?? 0,
+      needsCount: needsResult?.count ?? 0,
+    };
+  }
+
+  async getPendingActionsCounts(
+    communityId: string,
+    userId: string
+  ): Promise<CommunityPendingActions> {
+    // Incoming requests (to user's wealth items)
+    const [incomingResult] = await this.db
+      .select({ count: sql<number>`cast(count(*) as int)` })
+      .from(wealthRequests)
+      .innerJoin(wealth, eq(wealthRequests.wealthId, wealth.id))
+      .where(
+        and(
+          eq(wealth.communityId, communityId),
+          eq(wealth.createdBy, userId),
+          eq(wealthRequests.status, 'pending')
+        )
+      );
+
+    // Outgoing requests (user's requests to others)
+    const [outgoingResult] = await this.db
+      .select({ count: sql<number>`cast(count(*) as int)` })
+      .from(wealthRequests)
+      .innerJoin(wealth, eq(wealthRequests.wealthId, wealth.id))
+      .where(
+        and(
+          eq(wealth.communityId, communityId),
+          eq(wealthRequests.requesterId, userId),
+          eq(wealthRequests.status, 'pending')
+        )
+      );
+
+    // Pool distributions (awaiting user action)
+    // Note: pool_distributions table doesn't exist yet, returning 0
+    const poolDistributions = 0;
+
+    // Open disputes (where user is participant)
+    const [disputesResult] = await this.db
+      .select({ count: sql<number>`cast(count(distinct ${disputes.id}) as int)` })
+      .from(disputes)
+      .innerJoin(disputeParticipants, eq(disputeParticipants.disputeId, disputes.id))
+      .where(
+        and(
+          eq(disputes.communityId, communityId),
+          eq(disputeParticipants.userId, userId),
+          inArray(disputes.status, ['open', 'in_mediation'])
+        )
+      );
+
+    return {
+      incomingRequests: incomingResult?.count ?? 0,
+      outgoingRequests: outgoingResult?.count ?? 0,
+      poolDistributions,
+      openDisputes: disputesResult?.count ?? 0,
+    };
   }
 
   async cleanupOldDeleted() {

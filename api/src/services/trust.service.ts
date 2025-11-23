@@ -10,6 +10,7 @@ import { trustHistoryRepository } from '../repositories/trustHistory.repository'
 import { trustLevelRepository } from '../repositories/trustLevel.repository';
 import { resolveTrustRequirement } from '../utils/trustResolver';
 import { openFGAService } from './openfga.service';
+import { getDecayInfo } from '../utils/trustDecay';
 
 export type TrustMeResult = {
   trusted: boolean;
@@ -103,6 +104,7 @@ export class TrustService {
         trust_item_viewer: (community.minTrustToViewItems as any)?.value ?? 0,
         trust_item_manager: (community.minTrustForItemManagement as any)?.value ?? 20,
         trust_analytics_viewer: (community.minTrustForHealthAnalytics as any)?.value ?? 20,
+        trust_skill_endorser: (community.minTrustToEndorseSkills as any)?.value ?? 10,
       };
 
       // Sync trust roles in OpenFGA
@@ -900,6 +902,96 @@ export class TrustService {
     return {
       userTrustScore,
       timeline,
+    };
+  }
+
+  // ========== TRUST DECAY METHODS ==========
+
+  /**
+   * Get all decaying endorsements granted by the current user
+   */
+  async getDecayingEndorsements(communityId: string, userId: string) {
+    const role = await this.getUserRole(communityId, userId);
+    if (!role) {
+      throw new AppError('Forbidden: not a member of this community', 403);
+    }
+
+    const endorsements = await trustAwardRepository.getDecayingEndorsementsByGrantor(
+      communityId,
+      userId
+    );
+
+    return endorsements.map(
+      (e: {
+        toUserId: string;
+        recipientName: string | null;
+        recipientUsername: string;
+        updatedAt: Date;
+      }) => {
+        const decayInfo = getDecayInfo(e.updatedAt);
+        return {
+          recipientId: e.toUserId,
+          recipientName: e.recipientName || e.recipientUsername,
+          recipientUsername: e.recipientUsername,
+          lastUpdated: e.updatedAt,
+          ...decayInfo,
+        };
+      }
+    );
+  }
+
+  /**
+   * Recertify trust endorsements (bulk)
+   * Resets the updatedAt timestamp, stopping decay
+   */
+  async recertifyTrust(communityId: string, fromUserId: string, toUserIds: string[]) {
+    const role = await this.getUserRole(communityId, fromUserId);
+    if (!role) {
+      throw new AppError('Forbidden: not a member of this community', 403);
+    }
+
+    if (toUserIds.length === 0) {
+      throw new AppError('No users specified for recertification', 400);
+    }
+
+    // Recertify the awards
+    const updated = await trustAwardRepository.recertify(communityId, fromUserId, toUserIds);
+
+    // Recalculate trust scores and sync OpenFGA for each recipient
+    for (const userId of toUserIds) {
+      await trustViewRepository.recalculatePoints(communityId, userId);
+      await this.syncTrustRoles(userId, communityId);
+    }
+
+    // Log to history
+    for (const toUserId of toUserIds) {
+      await trustHistoryRepository.logAction({
+        communityId,
+        fromUserId,
+        toUserId,
+        action: 'recertify',
+        pointsDelta: 0,
+      });
+    }
+
+    return { recertified: updated.length };
+  }
+
+  /**
+   * Get trust status for a specific endorsement (including decay info)
+   */
+  async getTrustStatus(communityId: string, fromUserId: string, toUserId: string) {
+    const award = await trustAwardRepository.getAward(communityId, fromUserId, toUserId);
+
+    if (!award) {
+      return null;
+    }
+
+    const decayInfo = getDecayInfo(award.updatedAt);
+    return {
+      hasTrust: true,
+      lastUpdated: award.updatedAt,
+      ...decayInfo,
     };
   }
 }

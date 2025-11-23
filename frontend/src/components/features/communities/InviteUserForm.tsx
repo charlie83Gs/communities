@@ -14,6 +14,7 @@ import type { SearchUser } from '@/types/user.types';
 interface InviteUserFormProps {
   communityId: string;
   onSuccess?: () => void;
+  embedded?: boolean;
 }
 
 export const InviteUserForm: Component<InviteUserFormProps> = (props) => {
@@ -112,9 +113,11 @@ export const InviteUserForm: Component<InviteUserFormProps> = (props) => {
     );
   };
 
-  return (
-    <div class="p-4 border border-stone-200 dark:border-stone-700 rounded-lg bg-white dark:bg-stone-800">
-      <h3 class="font-semibold mb-4 text-stone-900 dark:text-stone-100">{t('title')}</h3>
+  const formContent = (
+    <>
+      <Show when={!props.embedded}>
+        <h3 class="font-semibold mb-4 text-stone-900 dark:text-stone-100">{t('title')}</h3>
+      </Show>
       <div class="space-y-3 relative">
         <Input
           placeholder={t('searchPlaceholder')}
@@ -196,6 +199,16 @@ export const InviteUserForm: Component<InviteUserFormProps> = (props) => {
           <p class="text-green-500 text-sm">{t('success')}</p>
         </Show>
       </div>
+    </>
+  );
+
+  if (props.embedded) {
+    return <div>{formContent}</div>;
+  }
+
+  return (
+    <div class="p-4 border border-stone-200 dark:border-stone-700 rounded-lg bg-white dark:bg-stone-800">
+      {formContent}
     </div>
   );
 };

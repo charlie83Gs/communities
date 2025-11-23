@@ -59,6 +59,16 @@ interface CommunityContextValue {
   // Needs permissions
   canViewNeeds: () => boolean;
   canPublishNeeds: () => boolean;
+
+  // Feature flags
+  isPoolsEnabled: () => boolean;
+  isNeedsEnabled: () => boolean;
+  isPollsEnabled: () => boolean;
+  isCouncilsEnabled: () => boolean;
+  isForumEnabled: () => boolean;
+  isHealthAnalyticsEnabled: () => boolean;
+  isDisputesEnabled: () => boolean;
+  isContributionsEnabled: () => boolean;
 }
 
 const CommunityContext = createContext<CommunityContextValue>();
@@ -107,6 +117,16 @@ export const CommunityProvider = (props: ParentProps<{ communityId: string }>) =
   const canViewNeeds = createMemo(() => trustMeQuery.data?.canViewNeeds || false);
   const canPublishNeeds = createMemo(() => trustMeQuery.data?.canPublishNeeds || false);
 
+  // Feature flags
+  const isPoolsEnabled = createMemo(() => communityQuery.data?.featureFlags?.poolsEnabled ?? true);
+  const isNeedsEnabled = createMemo(() => communityQuery.data?.featureFlags?.needsEnabled ?? true);
+  const isPollsEnabled = createMemo(() => communityQuery.data?.featureFlags?.pollsEnabled ?? true);
+  const isCouncilsEnabled = createMemo(() => communityQuery.data?.featureFlags?.councilsEnabled ?? true);
+  const isForumEnabled = createMemo(() => communityQuery.data?.featureFlags?.forumEnabled ?? true);
+  const isHealthAnalyticsEnabled = createMemo(() => communityQuery.data?.featureFlags?.healthAnalyticsEnabled ?? true);
+  const isDisputesEnabled = createMemo(() => communityQuery.data?.featureFlags?.disputesEnabled ?? true);
+  const isContributionsEnabled = createMemo(() => communityQuery.data?.featureFlags?.contributionsEnabled ?? true);
+
   const value: CommunityContextValue = {
     community: () => communityQuery.data,
     role: () => roleQuery.data,
@@ -144,6 +164,16 @@ export const CommunityProvider = (props: ParentProps<{ communityId: string }>) =
     canViewAnalytics,
     canViewNeeds,
     canPublishNeeds,
+
+    // Feature flags
+    isPoolsEnabled,
+    isNeedsEnabled,
+    isPollsEnabled,
+    isCouncilsEnabled,
+    isForumEnabled,
+    isHealthAnalyticsEnabled,
+    isDisputesEnabled,
+    isContributionsEnabled,
   };
 
   return (

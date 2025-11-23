@@ -8,7 +8,7 @@ import {
   initiativeComments,
   initiativeReportComments,
 } from '../db/schema';
-import { eq, and, desc, sql, count } from 'drizzle-orm';
+import { eq, and, desc, sql, count, inArray } from 'drizzle-orm';
 import {
   CreateInitiativeDto,
   UpdateInitiativeDto,
@@ -125,7 +125,7 @@ export class InitiativeRepository {
         .from(initiativeVotes)
         .where(
           and(
-            sql`${initiativeVotes.initiativeId} = ANY(${initiativeIds})`,
+            inArray(initiativeVotes.initiativeId, initiativeIds),
             eq(initiativeVotes.userId, userId)
           )
         );

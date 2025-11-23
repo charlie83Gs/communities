@@ -48,6 +48,8 @@ spec:
               value: "https://api.communities.plv.it.com"
             - name: WEBSITE_DOMAIN
               value: "https://communities.plv.it.com"
+            - name: FRONTEND_URL
+              value: "https://communities.plv.it.com"
             - name: OPENFGA_API_URL
               value: "http://openfga-openfga.openfga.svc.cluster.local:8080"
             - name: OPENFGA_STORE_ID
