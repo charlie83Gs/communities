@@ -201,15 +201,43 @@
     {
       "idx": 28,
       "version": "7",
-      "when": 1763015000000,
-      "tag": "0029_pool_consumptions",
+      "when": 1763012500000,
+      "tag": "0028_remove_council_inventory",
       "breakpoints": true
     },
     {
       "idx": 29,
       "version": "7",
+      "when": 1763015000000,
+      "tag": "0029_pool_consumptions",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
       "when": 1763020000000,
       "tag": "0030_pool_contribution_source_type",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1763025000000,
+      "tag": "0031_sharing_markets_checkout_links",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1763030000000,
+      "tag": "0032_add_min_trust_for_checkout_links",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1763035000000,
+      "tag": "0033_add_skills_endorsements",
       "breakpoints": true
     }
   ]
